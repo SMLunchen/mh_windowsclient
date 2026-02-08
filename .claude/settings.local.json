@@ -7,7 +7,9 @@
       "Bash(cmd /c build.bat)",
       "Bash(dotnet restore:*)",
       "WebSearch",
-      "Bash(if not exist \"Resources\" mkdir Resources)"
+      "Bash(if not exist \"Resources\" mkdir Resources)",
+      "Bash(dir \"c:\\\\Users\\\\Install\\\\Documents\\\\meshtastic\\\\mh_windowsclient\\\\MeshhessenClient\"\" /s /b | findstr /E \".xaml$)",
+      "Bash(.cs$ \")"
     ]
   }
 }

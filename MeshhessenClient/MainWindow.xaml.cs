@@ -71,6 +71,29 @@ public partial class MainWindow : Window
         // Checkbox für verschlüsselte Nachrichten
         ShowEncryptedMessagesCheckBox.Checked += (s, e) => _showEncryptedMessages = true;
         ShowEncryptedMessagesCheckBox.Unchecked += (s, e) => _showEncryptedMessages = false;
+
+        // Einstellungen laden
+        LoadSettings();
+    }
+
+    private void LoadSettings()
+    {
+        try
+        {
+            var settings = SettingsService.Load();
+            DarkModeCheckBox.IsChecked = settings.DarkMode;
+            StationNameTextBox.Text = settings.StationName;
+            StationNameLabel.Text = settings.StationName;
+            ShowEncryptedMessagesCheckBox.IsChecked = settings.ShowEncryptedMessages;
+            _showEncryptedMessages = settings.ShowEncryptedMessages;
+
+            if (settings.DarkMode)
+                ModernWpf.ThemeManager.Current.ApplicationTheme = ModernWpf.ApplicationTheme.Dark;
+        }
+        catch (Exception ex)
+        {
+            Services.Logger.WriteLine($"ERROR loading settings: {ex.Message}");
+        }
     }
 
     private void OnLogMessageReceived(object? sender, string logMessage)
@@ -301,7 +324,22 @@ public partial class MainWindow : Window
 
     private void SaveSettings_Click(object sender, RoutedEventArgs e)
     {
-        MessageBox.Show("Einstellungen speichern - wird in Kürze implementiert", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
+        try
+        {
+            var settings = new AppSettings(
+                DarkMode: DarkModeCheckBox.IsChecked == true,
+                StationName: StationNameTextBox.Text,
+                ShowEncryptedMessages: ShowEncryptedMessagesCheckBox.IsChecked == true
+            );
+            SettingsService.Save(settings);
+            StationNameLabel.Text = settings.StationName;
+            _showEncryptedMessages = settings.ShowEncryptedMessages;
+            MessageBox.Show("Einstellungen gespeichert.", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Fehler beim Speichern: {ex.Message}", "Fehler", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
     }
 
     private void OnConnectionStateChanged(object? sender, bool isConnected)
