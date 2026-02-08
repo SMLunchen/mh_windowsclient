@@ -4,7 +4,6 @@ Ein **offline-fähiger, nativer Windows-Client** für Meshtastic Geräte mit USB
 
 ![Windows](https://img.shields.io/badge/Windows-10%2F11-blue)
 ![.NET](https://img.shields.io/badge/.NET-8.0-purple)
-![License](https://img.shields.io/badge/License-MIT-green)
 ![Status](https://img.shields.io/badge/Status-v1.0--Beta-yellow)
 
 ---
@@ -22,7 +21,6 @@ Ein **offline-fähiger, nativer Windows-Client** für Meshtastic Geräte mit USB
 - [Bekannte Einschränkungen](#bekannte-einschränkungen)
 - [Changelog](#changelog)
 - [Roadmap](#roadmap)
-- [Lizenz](#lizenz)
 
 ---
 
@@ -141,9 +139,6 @@ Ein **offline-fähiger, nativer Windows-Client** für Meshtastic Geräte mit USB
   - Telemetrie-Dashboard
 
 - **Erweiterte Features**
-  - Firmware-Update über Client
-  - Multi-Device-Support
-  - Export/Import von Nachrichten
   - Mehrsprachigkeit (Englisch)
 
 ---
@@ -196,7 +191,7 @@ Ein **offline-fähiger, nativer Windows-Client** für Meshtastic Geräte mit USB
 
 ```bash
 # Projekt klonen
-git clone https://github.com/yourusername/meshtastic-windows-client.git
+git clone https://github.com/SMLunchen/mh_windowsclient/meshtastic-windows-client.git
 cd meshtastic-windows-client
 
 # Bauen
@@ -662,8 +657,6 @@ Config complete! Received 0 channels so far
 - [ ] Telemetrie-Dashboard
 
 ### v2.0 - Pro Features
-- [ ] Firmware-Update über Client
-- [ ] Multi-Device-Support
 - [ ] Remote-Node-Verwaltung
 - [ ] Erweiterte Statistiken
 - [ ] Mehrsprachigkeit
@@ -675,25 +668,6 @@ Config complete! Received 0 channels so far
 - **[CHANGELOG.md](CHANGELOG.md)** - Detailliertes Änderungsprotokoll
 - **Meshtastic Docs**: https://meshtastic.org/docs
 
----
-
-## 🤝 Beitragen
-
-Contributions sind willkommen!
-
-1. Fork das Repository
-2. Feature-Branch erstellen: `git checkout -b feature/amazing-feature`
-3. Änderungen committen: `git commit -m 'Add amazing feature'`
-4. Branch pushen: `git push origin feature/amazing-feature`
-5. Pull Request erstellen
-
----
-
-## 📜 Lizenz
-
-MIT License - siehe [LICENSE](LICENSE)
-
----
 
 ## 🙏 Credits
 
@@ -705,20 +679,7 @@ MIT License - siehe [LICENSE](LICENSE)
 
 ---
 
-## 📧 Support
-
-Bei Fragen oder Problemen:
-
-1. **Debug-Logs prüfen** (Debug-Tab im Client)
-2. Issue auf GitHub öffnen
-3. Meshtastic Community:
-   - Discord: https://discord.gg/meshtastic
-   - Forum: https://meshtastic.discourse.group
-
----
-
 **Made with ❤️ for the Meshtastic Community**
 
-*Entwickelt mit Claude AI • Stand: Februar 2026*
 
 **Unterstützt von Meshhessen.de** 🦆
