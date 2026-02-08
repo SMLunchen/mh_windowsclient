@@ -1,14 +1,14 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.IO.Ports;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using MeshtasticClient.Models;
-using MeshtasticClient.Services;
+using MeshhessenClient.Models;
+using MeshhessenClient.Services;
 using LoRaConfig = Meshtastic.Protobufs.LoRaConfig;
 
-namespace MeshtasticClient;
+namespace MeshhessenClient;
 
 public enum ConnectionStatus
 {

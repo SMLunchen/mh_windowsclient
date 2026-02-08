@@ -1,11 +1,11 @@
-using System.Text;
+﻿using System.Text;
 using Google.Protobuf;
 using Meshtastic.Protobufs;
-using MeshtasticClient.Models;
+using MeshhessenClient.Models;
 using ProtoNodeInfo = Meshtastic.Protobufs.NodeInfo;
-using ModelNodeInfo = MeshtasticClient.Models.NodeInfo;
+using ModelNodeInfo = MeshhessenClient.Models.NodeInfo;
 
-namespace MeshtasticClient.Services;
+namespace MeshhessenClient.Services;
 
 public class MeshtasticProtocolService
 {

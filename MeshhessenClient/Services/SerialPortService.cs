@@ -1,6 +1,6 @@
-using System.IO.Ports;
+﻿using System.IO.Ports;
 
-namespace MeshtasticClient.Services;
+namespace MeshhessenClient.Services;
 
 public class SerialPortService : IDisposable
 {

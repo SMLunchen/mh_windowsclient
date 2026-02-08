@@ -1,6 +1,6 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 
-namespace MeshtasticClient.Models;
+namespace MeshhessenClient.Models;
 
 public class DirectMessageConversation
 {

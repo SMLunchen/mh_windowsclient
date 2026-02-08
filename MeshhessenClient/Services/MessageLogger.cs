@@ -1,7 +1,7 @@
-using System.IO;
+﻿using System.IO;
 using System.Text;
 
-namespace MeshtasticClient.Services;
+namespace MeshhessenClient.Services;
 
 public static class MessageLogger
 {

@@ -1,4 +1,4 @@
-namespace MeshtasticClient.Models;
+﻿namespace MeshhessenClient.Models;
 
 public class ChannelInfo
 {

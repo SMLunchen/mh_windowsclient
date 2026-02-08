@@ -1,4 +1,4 @@
-# Meshtastic Windows Client
+﻿# Meshhessen Client
 
 Ein **offline-fähiger, nativer Windows-Client** für Meshtastic Geräte mit USB/serieller Verbindung.
 
@@ -171,9 +171,9 @@ Ein **offline-fähiger, nativer Windows-Client** für Meshtastic Geräte mit USB
 
 ### Option 1: Fertige EXE (Empfohlen für Endbenutzer)
 
-1. **Download:** `public\MeshtasticClient.exe`
+1. **Download:** `public\MeshhessenClient.exe`
 2. **Gerät anschließen:** Meshtastic-Device per USB
-3. **Starten:** Doppelklick auf `MeshtasticClient.exe`
+3. **Starten:** Doppelklick auf `MeshhessenClient.exe`
 4. **Verbinden:**
    - COM-Port wählen → "Verbinden"
    - Status wird **Gelb** (Verbinde) → **Orange** (Initialisiere) → **Grün** (Bereit)
@@ -202,7 +202,7 @@ dotnet build -c Release
 dotnet publish -c Release
 
 # EXE ist hier:
-public\MeshtasticClient.exe
+public\MeshhessenClient.exe
 ```
 
 ---
@@ -223,26 +223,26 @@ public\MeshtasticClient.exe
 
 1. Download: Visual Studio 2022 Community (kostenlos)
 2. Bei Installation ".NET Desktop-Entwicklung" auswählen
-3. Solution öffnen: `MeshtasticClient.sln`
+3. Solution öffnen: `MeshhessenClient.sln`
 4. F5 drücken zum Debuggen
 
 ### Projekt-Struktur
 
 ```
 windows-client/
-├── MeshtasticClient.sln          # Visual Studio Solution
+├── MeshhessenClient.sln          # Visual Studio Solution
 ├── README.md                      # Diese Datei
 ├── CHANGELOG.md                   # Änderungsprotokoll
 ├── LICENSE                        # MIT Lizenz
 │
 ├── public/                        # Fertige EXE (nach Build)
-│   ├── MeshtasticClient.exe       # Standalone executable
+│   ├── MeshhessenClient.exe       # Standalone executable
 │   └── logs/                      # Message-Logs (automatisch erstellt)
 │       ├── Channel_0_Primary.log
 │       └── DM_DEADBEEF_Node123.log
 │
-└── MeshtasticClient/
-    ├── MeshtasticClient.csproj    # Projekt-Konfiguration
+└── MeshhessenClient/
+    ├── MeshhessenClient.csproj    # Projekt-Konfiguration
     ├── App.xaml + .cs             # WPF Application Entry Point
     ├── MainWindow.xaml + .cs      # Haupt-UI
     ├── DirectMessagesWindow.xaml + .cs  # DM-Fenster
@@ -281,7 +281,7 @@ windows-client/
    - Windows installiert automatisch Treiber (CP210x oder ähnlich)
 
 2. **Client starten**
-   - `MeshtasticClient.exe` ausführen
+   - `MeshhessenClient.exe` ausführen
    - Klick auf "🔄" um Ports zu aktualisieren
 
 3. **Verbinden**
@@ -425,7 +425,7 @@ Der Client hat **intensives Debug-Logging**. So siehst du die Logs:
 1. **Download:** https://learn.microsoft.com/en-us/sysinternals/downloads/debugview
 2. **Starten** (als Administrator)
 3. **Capture → Capture Win32** aktivieren
-4. **Client starten:** `MeshtasticClient.exe`
+4. **Client starten:** `MeshhessenClient.exe`
 5. **Logs live sehen:**
    ```
    === Initializing Meshtastic connection ===

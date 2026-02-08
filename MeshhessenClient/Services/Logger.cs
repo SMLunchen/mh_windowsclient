@@ -1,7 +1,7 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.IO;
 
-namespace MeshtasticClient.Services;
+namespace MeshhessenClient.Services;
 
 public static class Logger
 {
@@ -18,7 +18,7 @@ public static class Logger
         {
             // Log-Datei im Anwendungsverzeichnis erstellen
             string appPath = AppDomain.CurrentDomain.BaseDirectory;
-            _logFilePath = Path.Combine(appPath, "meshtastic-client.log");
+            _logFilePath = Path.Combine(appPath, "meshhessen-client.log");
 
             // Alte Log-Datei löschen wenn größer als 5MB
             if (File.Exists(_logFilePath))
@@ -36,7 +36,7 @@ public static class Logger
                 AutoFlush = true
             };
 
-            WriteLine("=== Meshtastic Client gestartet ===");
+            WriteLine("=== Meshhessen Client gestartet ===");
             WriteLine($"Log-Datei: {_logFilePath}");
         }
         catch (Exception ex)
@@ -81,7 +81,7 @@ public static class Logger
         {
             try
             {
-                WriteLine("=== Meshtastic Client beendet ===");
+                WriteLine("=== Meshhessen Client beendet ===");
                 _logWriter?.Flush();
                 _logWriter?.Close();
                 _logWriter?.Dispose();

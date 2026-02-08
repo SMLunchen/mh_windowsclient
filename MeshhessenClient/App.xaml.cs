@@ -1,6 +1,6 @@
-using System.Windows;
+﻿using System.Windows;
 
-namespace MeshtasticClient;
+namespace MeshhessenClient;
 
 public partial class App : Application
 {

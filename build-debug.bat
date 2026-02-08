@@ -1,6 +1,6 @@
-@echo off
+﻿@echo off
 echo ========================================
-echo Meshtastic Client - Debug Build
+echo Meshhessen Client - Debug Build
 echo ========================================
 echo.
 
@@ -35,8 +35,8 @@ echo ========================================
 echo Build erfolgreich!
 echo ========================================
 echo.
-echo Debug EXE: publish-debug\MeshtasticClient.exe
-echo Log-Datei: publish-debug\meshtastic-client.log
+echo Debug EXE: publish-debug\MeshhessenClient.exe
+echo Log-Datei: publish-debug\meshhessen-client.log
 echo.
 echo HINWEIS: Debug-Build zeigt detaillierte Ausgaben in DebugView.
 echo.

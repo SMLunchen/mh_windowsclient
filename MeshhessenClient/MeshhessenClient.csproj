@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
@@ -16,11 +16,11 @@
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
     <PublishDir>..\public\</PublishDir>
 
-    <AssemblyName>MeshtasticClient</AssemblyName>
+    <AssemblyName>MeshhessenClient</AssemblyName>
     <AssemblyVersion>1.0.0.0</AssemblyVersion>
     <FileVersion>1.0.0.0</FileVersion>
     <Company>Meshtastic Community</Company>
-    <Product>Meshtastic Windows Client</Product>
+    <Product>Meshhessen Client</Product>
     <Description>Offline-fähiger Windows Client für Meshtastic Geräte</Description>
     <ApplicationIcon>Resources\app.ico</ApplicationIcon>
   </PropertyGroup>
