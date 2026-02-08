@@ -5,6 +5,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Navigation;
 using MeshhessenClient.Models;
 using MeshhessenClient.Services;
 using Mapsui;
@@ -371,6 +372,36 @@ public partial class MainWindow : Window
         var tileDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "maptiles");
         MapStatusText.Text = Directory.Exists(tileDir) && Directory.EnumerateFiles(tileDir, "*.png", SearchOption.AllDirectories).Any()
             ? "" : "Keine Tiles – bitte herunterladen";
+    }
+
+    private void MapZoomIn_Click(object sender, RoutedEventArgs e)
+    {
+        if (_map != null)
+        {
+            var res = _map.Navigator.Viewport.Resolution;
+            _map.Navigator.ZoomTo(res / 2);
+            MapControl.Refresh();
+        }
+    }
+
+    private void MapZoomOut_Click(object sender, RoutedEventArgs e)
+    {
+        if (_map != null)
+        {
+            var res = _map.Navigator.Viewport.Resolution;
+            _map.Navigator.ZoomTo(res * 2);
+            MapControl.Refresh();
+        }
+    }
+
+    private void Hyperlink_RequestNavigate(object sender, RequestNavigateEventArgs e)
+    {
+        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+        {
+            FileName = e.Uri.AbsoluteUri,
+            UseShellExecute = true
+        });
+        e.Handled = true;
     }
 
     private class LocalFileTileProvider : ITileProvider

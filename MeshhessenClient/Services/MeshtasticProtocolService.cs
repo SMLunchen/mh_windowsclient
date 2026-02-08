@@ -650,7 +650,9 @@ public class MeshtasticProtocolService
                     Payload = ByteString.CopyFromUtf8(text)
                 },
                 Id = (uint)Random.Shared.Next(),
-                WantAck = false
+                WantAck = false,
+                HopLimit = 7,
+                HopStart = 0
             };
 
             var toRadio = new ToRadio
