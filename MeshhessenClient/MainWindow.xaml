@@ -7,6 +7,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
         ui:WindowHelper.UseModernWindowStyle="True"
+        Icon="Resources/app.ico"
         Title="Meshhessen Client"
         Height="600"
         Width="900"

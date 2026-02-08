@@ -45,6 +45,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="Resources\app.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Protobuf Include="Proto\**\*.proto" GrpcServices="None" ProtoRoot="Proto" />
   </ItemGroup>
 
