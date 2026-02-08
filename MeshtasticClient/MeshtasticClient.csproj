@@ -1,0 +1,46 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+
+    <!-- Standalone EXE Configuration -->
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>true</SelfContained>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <PublishTrimmed>false</PublishTrimmed>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <PublishDir>..\public\</PublishDir>
+
+    <AssemblyName>MeshtasticClient</AssemblyName>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    <Company>Meshtastic Community</Company>
+    <Product>Meshtastic Windows Client</Product>
+    <Description>Offline-fähiger Windows Client für Meshtastic Geräte</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Serial Port Communication -->
+    <PackageReference Include="System.IO.Ports" Version="8.0.0" />
+
+    <!-- Protobuf for Meshtastic Protocol -->
+    <PackageReference Include="Google.Protobuf" Version="3.25.2" />
+    <PackageReference Include="Grpc.Tools" Version="2.60.0" PrivateAssets="All" />
+
+    <!-- MVVM Helper -->
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.2" />
+
+    <!-- Modern UI -->
+    <PackageReference Include="ModernWpfUI" Version="0.9.6" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Protobuf Include="Proto\**\*.proto" GrpcServices="None" ProtoRoot="Proto" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package meshtastic;
+
+option csharp_namespace = "Meshtastic.Protobufs";
+
+import "mesh.proto";
+
+message AdminMessage {
+  oneof payload_variant {
+    uint32 get_channel_request = 1;
+    Channel get_channel_response = 2;
+    uint32 get_owner_request = 3;
+    User get_owner_response = 4;
+    uint32 get_config_request = 5;
+    Config get_config_response = 6;
+    uint32 get_module_config_request = 7;
+    ModuleConfig get_module_config_response = 8;
+    Channel set_channel = 32;
+    User set_owner = 33;
+    Config set_config = 34;
+    ModuleConfig set_module_config = 35;
+    uint32 begin_edit_settings = 64;
+    uint32 commit_edit_settings = 65;
+    uint32 factory_reset_device = 94;
+    uint32 reboot_ota_seconds = 95;
+    uint32 exit_simulator = 96;
+    uint32 reboot_seconds = 97;
+    uint32 shutdown_seconds = 98;
+    uint32 factory_reset_config = 99;
+    uint32 nodedb_reset = 100;
+  }
+}

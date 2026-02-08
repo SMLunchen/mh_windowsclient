@@ -1,0 +1,284 @@
+<Window x:Class="MeshtasticClient.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="http://schemas.modernwpf.com/2019"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        ui:WindowHelper.UseModernWindowStyle="True"
+        Title="Meshtastic Client"
+        Height="600"
+        Width="900"
+        MinHeight="400"
+        MinWidth="600">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Toolbar -->
+        <Border Grid.Row="0" Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}" Padding="10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Connection Controls -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal">
+                    <TextBlock Text="COM Port:" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                    <ComboBox x:Name="PortComboBox"
+                             Width="120"
+                             VerticalAlignment="Center"
+                             SelectionChanged="PortComboBox_SelectionChanged"/>
+                    <Button x:Name="RefreshPortsButton"
+                           Content="🔄"
+                           Margin="5,0,0,0"
+                           Width="45"
+                           ToolTip="Ports aktualisieren"
+                           Click="RefreshPorts_Click"/>
+                    <Button x:Name="ConnectButton"
+                           Content="Verbinden"
+                           Margin="10,0,0,0"
+                           Click="Connect_Click"/>
+                </StackPanel>
+
+                <!-- Channel Selection -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <TextBlock Text="Kanal:" VerticalAlignment="Center" Margin="0,0,10,0" FontWeight="Bold"/>
+                    <ComboBox x:Name="ActiveChannelComboBox"
+                             Width="200"
+                             VerticalAlignment="Center"
+                             SelectionChanged="ActiveChannelComboBox_SelectionChanged"
+                             DisplayMemberPath="Name"
+                             IsEnabled="False"/>
+                </StackPanel>
+
+                <!-- Connection Status -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal">
+                    <Ellipse x:Name="StatusIndicator"
+                            Width="12"
+                            Height="12"
+                            Fill="Gray"
+                            Margin="0,0,8,0"/>
+                    <TextBlock x:Name="StatusText"
+                              Text="Nicht verbunden"
+                              VerticalAlignment="Center"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Main Content Area -->
+        <TabControl Grid.Row="1" Margin="0">
+
+            <!-- Messages Tab -->
+            <TabItem Header="📨 Nachrichten">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Message List -->
+                    <ListView x:Name="MessageListView"
+                             Grid.Row="0"
+                             Margin="10">
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn Header="Zeit" Width="120" DisplayMemberBinding="{Binding Time}"/>
+                                <GridViewColumn Header="Von" Width="150" DisplayMemberBinding="{Binding From}"/>
+                                <GridViewColumn Header="Nachricht" Width="400" DisplayMemberBinding="{Binding Message}"/>
+                                <GridViewColumn Header="Kanal" Width="100" DisplayMemberBinding="{Binding Channel}"/>
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
+
+                    <!-- Send Message -->
+                    <Grid Grid.Row="1" Margin="10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <TextBox x:Name="MessageTextBox"
+                                Grid.Column="0"
+                                ui:ControlHelper.PlaceholderText="Nachricht eingeben..."
+                                VerticalContentAlignment="Center"
+                                Padding="10"
+                                KeyDown="MessageTextBox_KeyDown"/>
+
+                        <Button x:Name="SendButton"
+                               Grid.Column="1"
+                               Content="Senden"
+                               Width="100"
+                               Margin="10,0,0,0"
+                               Click="Send_Click"/>
+                    </Grid>
+                </Grid>
+            </TabItem>
+
+            <!-- Nodes Tab -->
+            <TabItem Header="🌐 Knoten">
+                <Grid Margin="10">
+                    <ListView x:Name="NodesListView">
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn Header="Name" Width="150" DisplayMemberBinding="{Binding Name}"/>
+                                <GridViewColumn Header="ID" Width="120" DisplayMemberBinding="{Binding Id}"/>
+                                <GridViewColumn Header="Entfernung" Width="100" DisplayMemberBinding="{Binding Distance}"/>
+                                <GridViewColumn Header="SNR" Width="80" DisplayMemberBinding="{Binding Snr}"/>
+                                <GridViewColumn Header="Batterie" Width="80" DisplayMemberBinding="{Binding Battery}"/>
+                                <GridViewColumn Header="Zuletzt gesehen" Width="150" DisplayMemberBinding="{Binding LastSeen}"/>
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
+                </Grid>
+            </TabItem>
+
+            <!-- Channels Tab -->
+            <TabItem Header="📡 Kanäle">
+                <Grid Margin="10">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <ListView x:Name="ChannelsListView" Grid.Row="0">
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn Header="Index" Width="60" DisplayMemberBinding="{Binding Index}"/>
+                                <GridViewColumn Header="Name" Width="150" DisplayMemberBinding="{Binding Name}"/>
+                                <GridViewColumn Header="PSK" Width="300" DisplayMemberBinding="{Binding Psk}"/>
+                                <GridViewColumn Header="Role" Width="100" DisplayMemberBinding="{Binding Role}"/>
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
+
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,10,0,0">
+                        <Button Content="Kanal hinzufügen" Margin="0,0,10,0" Click="AddChannel_Click"/>
+                        <Button Content="Kanal bearbeiten" Margin="0,0,10,0" Click="EditChannel_Click"/>
+                        <Button Content="Kanal löschen" Click="DeleteChannel_Click"/>
+                    </StackPanel>
+                </Grid>
+            </TabItem>
+
+            <!-- Settings Tab -->
+            <TabItem Header="⚙️ Einstellungen">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="20">
+                        <TextBlock Text="Geräteeinstellungen" FontSize="18" FontWeight="Bold" Margin="0,0,0,20"/>
+
+                        <GroupBox Header="Radio Einstellungen" Margin="0,0,0,20">
+                            <StackPanel Margin="10">
+                                <StackPanel Orientation="Horizontal" Margin="0,10,0,10">
+                                    <TextBlock Text="Region:" Width="150" VerticalAlignment="Center"/>
+                                    <ComboBox x:Name="RegionComboBox" Width="200"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,10,0,10">
+                                    <TextBlock Text="Modem Preset:" Width="150" VerticalAlignment="Center"/>
+                                    <ComboBox x:Name="ModemPresetComboBox" Width="200"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </GroupBox>
+
+                        <GroupBox Header="Geräteinfo" Margin="0,0,0,20">
+                            <StackPanel Margin="10">
+                                <StackPanel Orientation="Horizontal" Margin="0,10,0,10">
+                                    <TextBlock Text="Name:" Width="150" VerticalAlignment="Center"/>
+                                    <TextBox x:Name="DeviceNameTextBox" Width="200"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,10,0,10">
+                                    <TextBlock Text="Hardware Model:" Width="150" VerticalAlignment="Center"/>
+                                    <TextBlock x:Name="HardwareModelText" Width="200"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,10,0,10">
+                                    <TextBlock Text="Firmware Version:" Width="150" VerticalAlignment="Center"/>
+                                    <TextBlock x:Name="FirmwareVersionText" Width="200"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </GroupBox>
+
+                        <GroupBox Header="Nachrichten Anzeige" Margin="0,0,0,20">
+                            <StackPanel Margin="10">
+                                <CheckBox x:Name="ShowEncryptedMessagesCheckBox"
+                                         Content="Verschlüsselte Nachrichten anzeigen (ohne PSK)"
+                                         Margin="0,10,0,10"
+                                         IsChecked="True"/>
+                                <TextBlock Text="Wenn deaktiviert, werden verschlüsselte Nachrichten ausgeblendet."
+                                          FontStyle="Italic"
+                                          Foreground="Gray"
+                                          TextWrapping="Wrap"
+                                          Margin="20,0,0,10"/>
+                            </StackPanel>
+                        </GroupBox>
+
+                        <Button Content="Einstellungen speichern"
+                               Width="200"
+                               HorizontalAlignment="Left"
+                               Click="SaveSettings_Click"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- Debug Tab -->
+            <TabItem Header="🐛 Debug">
+                <Grid Margin="10">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Debug Controls -->
+                    <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
+                        <Button x:Name="ClearLogButton"
+                               Content="Log löschen"
+                               Click="ClearLog_Click"
+                               Margin="0,0,10,0"/>
+                        <Button x:Name="CopyLogButton"
+                               Content="Log kopieren"
+                               Click="CopyLog_Click"
+                               Margin="0,0,10,0"/>
+                        <Button x:Name="OpenLogFileButton"
+                               Content="Log-Datei öffnen"
+                               Click="OpenLogFile_Click"/>
+                    </StackPanel>
+
+                    <!-- Debug Log Output -->
+                    <TextBox x:Name="DebugLogTextBox"
+                            Grid.Row="1"
+                            IsReadOnly="True"
+                            FontFamily="Consolas"
+                            FontSize="12"
+                            VerticalScrollBarVisibility="Auto"
+                            HorizontalScrollBarVisibility="Auto"
+                            TextWrapping="NoWrap"
+                            Background="#F5F5F5"/>
+                </Grid>
+            </TabItem>
+
+        </TabControl>
+
+        <!-- Status Bar -->
+        <Border Grid.Row="2" Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}" Padding="10,5">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock x:Name="StatusBarText"
+                          Text="Bereit"
+                          VerticalAlignment="Center"/>
+
+                <TextBlock x:Name="PacketCountText"
+                          Grid.Column="1"
+                          Text="Pakete: 0"
+                          VerticalAlignment="Center"/>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>
