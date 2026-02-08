@@ -10,16 +10,30 @@ using LoRaConfig = Meshtastic.Protobufs.LoRaConfig;
 
 namespace MeshtasticClient;
 
+public enum ConnectionStatus
+{
+    Disconnected,
+    Connecting,
+    Initializing,
+    Ready,
+    Disconnecting,
+    Error
+}
+
 public partial class MainWindow : Window
 {
     private readonly SerialPortService _serialPortService;
     private readonly MeshtasticProtocolService _protocolService;
 
     private ObservableCollection<MessageItem> _messages = new();
+    private List<MessageItem> _allMessages = new(); // Ungefilterte Liste aller Nachrichten
     private ObservableCollection<Models.NodeInfo> _nodes = new();
     private ObservableCollection<ChannelInfo> _channels = new();
     private int _activeChannelIndex = 0;
     private bool _showEncryptedMessages = true;
+    private ChannelInfo? _messageChannelFilter = null;
+    private DirectMessagesWindow? _dmWindow = null;
+    private uint _myNodeId = 0;
 
     public MainWindow()
     {
@@ -120,6 +134,7 @@ public partial class MainWindow : Window
             {
                 ConnectButton.IsEnabled = false;
                 UpdateStatusBar("Trenne Verbindung...");
+                SetConnectionStatus(ConnectionStatus.Disconnecting);
 
                 // Disconnect im Hintergrund, nicht auf UI-Thread blockieren
                 await Task.Run(() =>
@@ -131,11 +146,13 @@ public partial class MainWindow : Window
 
                 ConnectButton.Content = "Verbinden";
                 UpdateStatusBar("Getrennt");
+                SetConnectionStatus(ConnectionStatus.Disconnected);
             }
             catch (Exception ex)
             {
                 Services.Logger.WriteLine($"Disconnect error: {ex.Message}");
                 UpdateStatusBar("Fehler beim Trennen");
+                SetConnectionStatus(ConnectionStatus.Error);
             }
             finally
             {
@@ -155,6 +172,7 @@ public partial class MainWindow : Window
             {
                 ConnectButton.IsEnabled = false;
                 UpdateStatusBar($"Verbinde mit {selectedPort}...");
+                SetConnectionStatus(ConnectionStatus.Connecting);
 
                 await _serialPortService.ConnectAsync(selectedPort);
 
@@ -162,6 +180,7 @@ public partial class MainWindow : Window
                 ConnectButton.Content = "Trennen";
                 ConnectButton.IsEnabled = true;
                 UpdateStatusBar($"Verbunden mit {selectedPort} - Initialisiere...");
+                SetConnectionStatus(ConnectionStatus.Initializing);
 
                 // Initialisierung im Hintergrund starten (nicht blockieren!)
                 _ = Task.Run(async () =>
@@ -169,12 +188,20 @@ public partial class MainWindow : Window
                     try
                     {
                         await _protocolService.InitializeAsync();
-                        Dispatcher.BeginInvoke(() => UpdateStatusBar($"Verbunden mit {selectedPort} - Bereit"));
+                        Dispatcher.BeginInvoke(() =>
+                        {
+                            UpdateStatusBar($"Verbunden mit {selectedPort} - Bereit");
+                            SetConnectionStatus(ConnectionStatus.Ready);
+                        });
                     }
                     catch (Exception initEx)
                     {
                         Services.Logger.WriteLine($"Initialization error: {initEx.Message}");
-                        Dispatcher.BeginInvoke(() => UpdateStatusBar($"Verbunden mit {selectedPort} - Init-Fehler"));
+                        Dispatcher.BeginInvoke(() =>
+                        {
+                            UpdateStatusBar($"Verbunden mit {selectedPort} - Init-Fehler");
+                            SetConnectionStatus(ConnectionStatus.Error);
+                        });
                     }
                 });
             }
@@ -182,6 +209,7 @@ public partial class MainWindow : Window
             {
                 MessageBox.Show($"Verbindung fehlgeschlagen: {ex.Message}", "Fehler", MessageBoxButton.OK, MessageBoxImage.Error);
                 UpdateStatusBar("Verbindung fehlgeschlagen");
+                SetConnectionStatus(ConnectionStatus.Error);
                 ConnectButton.IsEnabled = true;
             }
         }
@@ -226,15 +254,22 @@ public partial class MainWindow : Window
             await _protocolService.SendTextMessageAsync(message, 0xFFFFFFFF, (uint)_activeChannelIndex);
 
             // Zeige gesendete Nachricht in der Liste
+            var activeChannel = _channels.FirstOrDefault(c => c.Index == _activeChannelIndex);
+            var channelName = activeChannel?.Name ?? $"Kanal {_activeChannelIndex}";
+
             var sentMessage = new MessageItem
             {
                 Time = DateTime.Now.ToString("HH:mm:ss"),
                 From = "Ich",
                 Message = message,
-                Channel = _activeChannelIndex.ToString()
+                Channel = _activeChannelIndex.ToString(),
+                ChannelName = channelName
             };
             _messages.Add(sentMessage);
             MessageListView.ScrollIntoView(sentMessage);
+
+            // Log die gesendete Nachricht
+            Services.MessageLogger.LogChannelMessage(_activeChannelIndex, channelName, "Ich", message);
 
             MessageTextBox.Clear();
             UpdateStatusBar($"Nachricht gesendet (Kanal {_activeChannelIndex})");
@@ -283,6 +318,7 @@ public partial class MainWindow : Window
                 {
                     ActiveChannelComboBox.IsEnabled = false;
                     _messages.Clear();
+                    _allMessages.Clear();
                     _nodes.Clear();
                     _channels.Clear();
                 }
@@ -301,14 +337,69 @@ public partial class MainWindow : Window
         {
             try
             {
+                // Prüfe ob es eine Direktnachricht ist (nicht Broadcast)
+                bool isDirectMessage = message.ToId != 0xFFFFFFFF && message.ToId != 0;
+
+                if (isDirectMessage)
+                {
+                    // Leite an DM-Fenster weiter
+                    if (_dmWindow == null)
+                    {
+                        _dmWindow = new DirectMessagesWindow(_protocolService, _myNodeId);
+                    }
+                    _dmWindow.AddOrUpdateMessage(message);
+
+                    // Optional: Zeige DM-Fenster automatisch bei neuer Nachricht
+                    if (!_dmWindow.IsVisible)
+                    {
+                        // Blinke den Button oder zeige Notification
+                        OpenDmWindowButton.FontWeight = FontWeights.Bold;
+                    }
+                    return; // Nicht in Hauptnachrichten anzeigen
+                }
+
                 // Filter verschlüsselte Nachrichten wenn Checkbox deaktiviert
                 if (message.IsEncrypted && !_showEncryptedMessages)
                 {
                     return; // Nicht anzeigen
                 }
 
-                _messages.Add(message);
-                MessageListView.ScrollIntoView(message);
+                // Setze ChannelName basierend auf Channel Index
+                if (uint.TryParse(message.Channel, out uint channelIndex))
+                {
+                    var channel = _channels.FirstOrDefault(c => c.Index == channelIndex);
+                    message.ChannelName = channel?.Name ?? $"Kanal {channelIndex}";
+                }
+                else
+                {
+                    message.ChannelName = message.Channel;
+                }
+
+                // Speichere in ungefilterte Liste
+                _allMessages.Add(message);
+
+                // Log die Kanal-Nachricht
+                if (uint.TryParse(message.Channel, out uint logChannelIndex))
+                {
+                    Services.MessageLogger.LogChannelMessage((int)logChannelIndex, message.ChannelName, message.From, message.Message);
+                }
+
+                // Prüfe ob Nachricht den aktuellen Filter passiert
+                bool passesFilter = true;
+                if (_messageChannelFilter != null && _messageChannelFilter.Index != 999)
+                {
+                    if (uint.TryParse(message.Channel, out uint msgChannelIndex))
+                    {
+                        passesFilter = (msgChannelIndex == _messageChannelFilter.Index);
+                    }
+                }
+
+                // Füge zu sichtbarer Liste hinzu wenn Filter passt
+                if (passesFilter)
+                {
+                    _messages.Add(message);
+                    MessageListView.ScrollIntoView(message);
+                }
             }
             catch (Exception ex)
             {
@@ -369,6 +460,9 @@ public partial class MainWindow : Window
                     }
                 }
 
+                // Update Message Filter ComboBox
+                UpdateMessageFilterComboBox();
+
                 UpdateStatusBar($"Kanal {channel.Index} empfangen: {channel.Name}");
             }
             catch (Exception ex)
@@ -386,6 +480,9 @@ public partial class MainWindow : Window
             try
             {
                 Services.Logger.WriteLine($"OnDeviceInfoReceived: NodeId={deviceInfo.NodeIdHex}");
+
+                // Speichere eigene Node-ID für DM-Fenster
+                _myNodeId = deviceInfo.NodeId;
 
                 // Suche die eigene NodeInfo in der Node-Liste
                 var myNode = _nodes.FirstOrDefault(n => n.NodeId == deviceInfo.NodeId);
@@ -569,6 +666,182 @@ public partial class MainWindow : Window
         catch (Exception ex)
         {
             MessageBox.Show($"Fehler beim Öffnen der Log-Datei: {ex.Message}", "Fehler", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private void SetConnectionStatus(ConnectionStatus status)
+    {
+        switch (status)
+        {
+            case ConnectionStatus.Disconnected:
+                StatusIndicator.Fill = new SolidColorBrush(Colors.Gray);
+                StatusText.Text = "Nicht verbunden";
+                break;
+            case ConnectionStatus.Connecting:
+                StatusIndicator.Fill = new SolidColorBrush(Colors.Yellow);
+                StatusText.Text = "Verbinde...";
+                break;
+            case ConnectionStatus.Initializing:
+                StatusIndicator.Fill = new SolidColorBrush(Colors.Orange);
+                StatusText.Text = "Initialisiere...";
+                break;
+            case ConnectionStatus.Ready:
+                StatusIndicator.Fill = new SolidColorBrush(Colors.LimeGreen);
+                StatusText.Text = "Verbunden";
+                break;
+            case ConnectionStatus.Disconnecting:
+                StatusIndicator.Fill = new SolidColorBrush(Colors.Orange);
+                StatusText.Text = "Trenne...";
+                break;
+            case ConnectionStatus.Error:
+                StatusIndicator.Fill = new SolidColorBrush(Colors.Red);
+                StatusText.Text = "Fehler";
+                break;
+        }
+    }
+
+    private void UpdateMessageFilterComboBox()
+    {
+        // Speichere aktuelle Auswahl
+        var selectedFilter = MessageChannelFilterComboBox.SelectedItem as ChannelInfo;
+
+        // Erstelle Liste mit "Alle" Option
+        var filterItems = new List<ChannelInfo>();
+        filterItems.Add(new ChannelInfo { Index = 999, Name = "Alle Kanäle", Role = "" });
+        filterItems.AddRange(_channels);
+
+        MessageChannelFilterComboBox.ItemsSource = filterItems;
+
+        // Stelle Auswahl wieder her oder wähle "Alle"
+        if (selectedFilter != null)
+        {
+            var restored = filterItems.FirstOrDefault(c => c.Index == selectedFilter.Index);
+            MessageChannelFilterComboBox.SelectedItem = restored ?? filterItems[0];
+        }
+        else
+        {
+            MessageChannelFilterComboBox.SelectedIndex = 0;
+        }
+    }
+
+    private void DarkMode_Changed(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var isDarkMode = DarkModeCheckBox.IsChecked == true;
+            ModernWpf.ThemeManager.Current.ApplicationTheme = isDarkMode
+                ? ModernWpf.ApplicationTheme.Dark
+                : ModernWpf.ApplicationTheme.Light;
+
+            Services.Logger.WriteLine($"Theme changed to: {(isDarkMode ? "Dark" : "Light")}");
+        }
+        catch (Exception ex)
+        {
+            Services.Logger.WriteLine($"Error changing theme: {ex.Message}");
+        }
+    }
+
+    private void OpenDmWindow_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            if (_dmWindow == null)
+            {
+                _dmWindow = new DirectMessagesWindow(_protocolService, _myNodeId);
+            }
+
+            // Zeige Fenster
+            if (_dmWindow.IsVisible)
+            {
+                _dmWindow.Activate(); // Bringe in den Vordergrund
+            }
+            else
+            {
+                _dmWindow.Show();
+            }
+
+            // Reset Button-Hervorhebung
+            OpenDmWindowButton.FontWeight = FontWeights.Normal;
+        }
+        catch (Exception ex)
+        {
+            Services.Logger.WriteLine($"ERROR opening DM window: {ex.Message}");
+            MessageBox.Show($"Fehler beim Öffnen des DM-Fensters: {ex.Message}", "Fehler", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private void MessageChannelFilter_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        try
+        {
+            _messageChannelFilter = MessageChannelFilterComboBox.SelectedItem as ChannelInfo;
+
+            // Reload messages with new filter from ALL messages
+            _messages.Clear();
+
+            foreach (var msg in _allMessages)
+            {
+                // Apply filter
+                if (_messageChannelFilter == null || _messageChannelFilter.Index == 999)
+                {
+                    // "Alle Kanäle" ausgewählt - zeige alle
+                    _messages.Add(msg);
+                }
+                else
+                {
+                    // Spezifischer Kanal ausgewählt - nur diesen zeigen
+                    if (uint.TryParse(msg.Channel, out uint channelIndex))
+                    {
+                        if (channelIndex == _messageChannelFilter.Index)
+                        {
+                            _messages.Add(msg);
+                        }
+                    }
+                }
+            }
+
+            Services.Logger.WriteLine($"Message filter changed to: {_messageChannelFilter?.Name ?? "Alle"} ({_messages.Count}/{_allMessages.Count} messages)");
+        }
+        catch (Exception ex)
+        {
+            Services.Logger.WriteLine($"Error changing message filter: {ex.Message}");
+        }
+    }
+
+    private void SendDmToNode_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            // Hole ausgewählten Knoten
+            var selectedNode = NodesListView.SelectedItem as Models.NodeInfo;
+            if (selectedNode == null)
+            {
+                MessageBox.Show("Bitte wählen Sie einen Knoten aus.", "Hinweis", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            // Prüfe ob eigener Knoten
+            if (selectedNode.NodeId == _myNodeId)
+            {
+                MessageBox.Show("Sie können keine DM an sich selbst senden.", "Hinweis", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            // Öffne/Erstelle DM-Fenster
+            if (_dmWindow == null)
+            {
+                _dmWindow = new DirectMessagesWindow(_protocolService, _myNodeId);
+            }
+
+            // Öffne Chat mit diesem Knoten
+            _dmWindow.OpenChatWithNode(selectedNode.NodeId, selectedNode.Name);
+
+            Services.Logger.WriteLine($"Opening DM chat with node: {selectedNode.Name} ({selectedNode.Id})");
+        }
+        catch (Exception ex)
+        {
+            Services.Logger.WriteLine($"ERROR in SendDmToNode_Click: {ex.Message}");
+            MessageBox.Show($"Fehler beim Öffnen des Chats: {ex.Message}", "Fehler", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 

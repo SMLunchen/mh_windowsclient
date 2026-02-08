@@ -22,6 +22,7 @@
     <Company>Meshtastic Community</Company>
     <Product>Meshtastic Windows Client</Product>
     <Description>Offline-fähiger Windows Client für Meshtastic Geräte</Description>
+    <ApplicationIcon>Resources\app.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>

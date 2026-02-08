@@ -5,7 +5,9 @@
       "Bash(dotnet publish:*)",
       "Bash(.build.bat)",
       "Bash(cmd /c build.bat)",
-      "Bash(dotnet restore:*)"
+      "Bash(dotnet restore:*)",
+      "WebSearch",
+      "Bash(if not exist \"Resources\" mkdir Resources)"
     ]
   }
 }
