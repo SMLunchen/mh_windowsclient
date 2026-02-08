@@ -10,13 +10,19 @@ Ein **offline-fähiger, nativer Windows-Client** für Meshtastic-Geräte mit USB
 
 ## 🚀 Schnellstart
 
-1. **Download:** Neueste `MeshhessenClient.exe` aus den [Releases](../../releases) herunterladen
-2. **Gerät anschließen:** Meshtastic-Device per USB anstecken
-3. **Starten:** Doppelklick auf `MeshhessenClient.exe` – keine Installation nötig
-4. **Verbinden:** COM-Port wählen → „Verbinden" klicken
-5. **Loslegen:** 3–10 Sekunden warten bis Kanäle geladen sind, dann Nachrichten senden
+### .NET SDK installieren
+
+1. Download: https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-8.0.23-windows-x64-installer
+2. Installer ausführen
+
+3. **Download:** Neueste `MeshhessenClient.exe` aus den [Releases](../../releases) herunterladen
+4. **Gerät anschließen:** Meshtastic-Device per USB anstecken
+5. **Starten:** Doppelklick auf `MeshhessenClient.exe` – keine Installation nötig
+6. **Verbinden:** COM-Port wählen → „Verbinden" klicken
+7. **Loslegen:** 3–10 Sekunden warten bis Kanäle geladen sind, dann Nachrichten senden
 
 > Die App ist vollständig offline-fähig. Keine Cloud, keine Registrierung.
+
 
 ---
 
