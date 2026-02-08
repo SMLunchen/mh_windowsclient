@@ -412,6 +412,8 @@ public class MeshtasticProtocolService
             {
                 NodeId = protoNodeInfo.Num,
                 Id = $"!{protoNodeInfo.Num:x8}",
+                ShortName = protoNodeInfo.User?.ShortName ?? $"{protoNodeInfo.Num:x4}",
+                LongName = protoNodeInfo.User?.LongName ?? protoNodeInfo.User?.ShortName ?? $"Node-{protoNodeInfo.Num:x4}",
                 Name = protoNodeInfo.User?.LongName ?? protoNodeInfo.User?.ShortName ?? $"Node-{protoNodeInfo.Num:x4}",
                 Snr = protoNodeInfo.Snr.ToString("F1"),
                 LastSeen = protoNodeInfo.LastHeard > 0
@@ -421,9 +423,21 @@ public class MeshtasticProtocolService
 
             if (protoNodeInfo.Position != null)
             {
-                nodeInfo.Latitude = protoNodeInfo.Position.LatitudeI / 1e7;
-                nodeInfo.Longitude = protoNodeInfo.Position.LongitudeI / 1e7;
-                nodeInfo.Altitude = protoNodeInfo.Position.Altitude;
+                if (protoNodeInfo.Position.LatitudeI != 0 || protoNodeInfo.Position.LongitudeI != 0)
+                {
+                    nodeInfo.Latitude = protoNodeInfo.Position.LatitudeI / 1e7;
+                    nodeInfo.Longitude = protoNodeInfo.Position.LongitudeI / 1e7;
+                    nodeInfo.Altitude = protoNodeInfo.Position.Altitude;
+                    Logger.WriteLine($"  Node {nodeInfo.Id}: GPS lat={nodeInfo.Latitude:F6}, lon={nodeInfo.Longitude:F6}, alt={nodeInfo.Altitude}m");
+                }
+                else
+                {
+                    Logger.WriteLine($"  Node {nodeInfo.Id}: Position vorhanden aber LatI=LonI=0 (kein GPS-Fix)");
+                }
+            }
+            else
+            {
+                Logger.WriteLine($"  Node {nodeInfo.Id}: Keine Positionsdaten");
             }
 
             if (protoNodeInfo.DeviceMetrics != null)
@@ -493,19 +507,30 @@ public class MeshtasticProtocolService
             ModelNodeInfo? nodeToFire = null;
             bool shouldFireEvent;
 
+            Logger.WriteLine($"Position-Packet von !{packet.From:x8}: LatI={position.LatitudeI}, LonI={position.LongitudeI}, Alt={position.Altitude}");
+
             lock (_dataLock)
             {
                 if (_knownNodes.TryGetValue(packet.From, out var nodeInfo))
                 {
-                    nodeInfo.Latitude = position.LatitudeI / 1e7;
-                    nodeInfo.Longitude = position.LongitudeI / 1e7;
-                    nodeInfo.Altitude = position.Altitude;
+                    if (position.LatitudeI != 0 || position.LongitudeI != 0)
+                    {
+                        nodeInfo.Latitude = position.LatitudeI / 1e7;
+                        nodeInfo.Longitude = position.LongitudeI / 1e7;
+                        nodeInfo.Altitude = position.Altitude;
+                        Logger.WriteLine($"  Position aktualisiert: lat={nodeInfo.Latitude:F6}, lon={nodeInfo.Longitude:F6}");
+                    }
+                    else
+                    {
+                        Logger.WriteLine($"  Position ignoriert (LatI=LonI=0, kein GPS-Fix)");
+                    }
                     nodeInfo.LastSeen = DateTime.Now.ToString("HH:mm:ss");
                     nodeToFire = nodeInfo;
                     shouldFireEvent = !_isInitializing;
                 }
                 else
                 {
+                    Logger.WriteLine($"  Node !{packet.From:x8} unbekannt, Position verworfen");
                     shouldFireEvent = false;
                 }
             }

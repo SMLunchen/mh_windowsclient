@@ -1,4 +1,5 @@
 ﻿using System.Collections.ObjectModel;
+using System.IO;
 using System.IO.Ports;
 using System.Windows;
 using System.Windows.Controls;
@@ -6,6 +7,14 @@ using System.Windows.Input;
 using System.Windows.Media;
 using MeshhessenClient.Models;
 using MeshhessenClient.Services;
+using Mapsui;
+using Mapsui.Layers;
+using Mapsui.Styles;
+using Mapsui.Projections;
+using Mapsui.Tiling.Layers;
+using Mapsui.Extensions;
+using BruTile;
+using BruTile.Predefined;
 using LoRaConfig = Meshtastic.Protobufs.LoRaConfig;
 
 namespace MeshhessenClient;
@@ -34,6 +43,16 @@ public partial class MainWindow : Window
     private ChannelInfo? _messageChannelFilter = null;
     private DirectMessagesWindow? _dmWindow = null;
     private uint _myNodeId = 0;
+
+    // Karte
+    private Mapsui.Map? _map;
+    private MemoryLayer? _nodeLayer;
+    private MemoryLayer? _myPosLayer;
+    private readonly List<IFeature> _nodeFeatures = new();
+    private readonly List<IFeature> _myPosFeatures = new();
+    private readonly Dictionary<uint, MPoint> _nodePinPositions = new();
+    private AppSettings _currentSettings = new(false, string.Empty, true, 50.9, 9.5);
+    private NodeInfo? _mapContextMenuNode;
 
     public MainWindow()
     {
@@ -74,6 +93,9 @@ public partial class MainWindow : Window
 
         // Einstellungen laden
         LoadSettings();
+
+        // Karte initialisieren
+        InitializeMap();
     }
 
     private void LoadSettings()
@@ -87,6 +109,8 @@ public partial class MainWindow : Window
             ShowEncryptedMessagesCheckBox.IsChecked = settings.ShowEncryptedMessages;
             _showEncryptedMessages = settings.ShowEncryptedMessages;
 
+            _currentSettings = settings;
+
             if (settings.DarkMode)
                 ModernWpf.ThemeManager.Current.ApplicationTheme = ModernWpf.ApplicationTheme.Dark;
         }
@@ -95,6 +119,281 @@ public partial class MainWindow : Window
             Services.Logger.WriteLine($"ERROR loading settings: {ex.Message}");
         }
     }
+
+    #region Karte
+
+    private void InitializeMap()
+    {
+        try
+        {
+            _map = new Mapsui.Map();
+
+            // Lokale Tile-Layer
+            var tileDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "maptiles");
+            var schema = new GlobalSphericalMercator(YAxis.TMS, 0, 18, "OSM");
+            var tileSource = new TileSource(new LocalFileTileProvider(tileDir), schema);
+            _map.Layers.Add(new TileLayer(tileSource) { Name = "OSM" });
+
+            // Node-Layer
+            _nodeLayer = new MemoryLayer("Nodes") { Features = _nodeFeatures, Style = null };
+            _map.Layers.Add(_nodeLayer);
+
+            // Eigener-Standort-Layer
+            _myPosLayer = new MemoryLayer("MyPosition") { Features = _myPosFeatures, Style = null };
+            _map.Layers.Add(_myPosLayer);
+
+            MapControl.Map = _map;
+            MapControl.MouseRightButtonUp += MapControl_RightClick;
+            MapControl.MouseLeftButtonUp += MapControl_LeftClick;
+
+            // Karte auf eigenen Standort zentrieren
+            var center = SphericalMercator.FromLonLat(_currentSettings.MyLongitude, _currentSettings.MyLatitude);
+            // Resolution ~611 entspricht Zoom-Level 8 in Web-Mercator
+            _map.Home = n => n.CenterOnAndZoomTo(new MPoint(center.x, center.y), 611.0);
+
+            UpdateMyPositionPin();
+
+            MapStatusText.Text = Directory.Exists(tileDir) && Directory.EnumerateFiles(tileDir, "*.png", SearchOption.AllDirectories).Any()
+                ? "" : "Keine Tiles – bitte herunterladen";
+        }
+        catch (Exception ex)
+        {
+            Services.Logger.WriteLine($"ERROR initializing map: {ex.Message}");
+        }
+    }
+
+    private void UpdateMyPositionPin()
+    {
+        _myPosFeatures.Clear();
+        var pos = SphericalMercator.FromLonLat(_currentSettings.MyLongitude, _currentSettings.MyLatitude);
+        var label = string.IsNullOrEmpty(_currentSettings.StationName) ? "Ich" : _currentSettings.StationName;
+        Services.Logger.WriteLine($"UpdateMyPositionPin: label='{label}' lat={_currentSettings.MyLatitude:F6}, lon={_currentSettings.MyLongitude:F6}");
+        var feature = new PointFeature(new MPoint(pos.x, pos.y));
+        feature.Styles.Add(new SymbolStyle
+        {
+            SymbolType = SymbolType.Ellipse,
+            Fill = new Mapsui.Styles.Brush(Mapsui.Styles.Color.Blue),
+            Outline = new Mapsui.Styles.Pen(Mapsui.Styles.Color.White, 2),
+            SymbolScale = 0.6
+        });
+        feature.Styles.Add(new LabelStyle
+        {
+            Text = label,
+            ForeColor = Mapsui.Styles.Color.Blue,
+            BackColor = new Mapsui.Styles.Brush(Mapsui.Styles.Color.White),
+            HorizontalAlignment = LabelStyle.HorizontalAlignmentEnum.Center,
+            VerticalAlignment = LabelStyle.VerticalAlignmentEnum.Top,
+            Offset = new Offset(0, -20)
+        });
+        _myPosFeatures.Add(feature);
+        _myPosLayer?.DataHasChanged();
+        MapControl.Refresh();
+    }
+
+    private void UpdateNodePin(NodeInfo node)
+    {
+        if (!node.Latitude.HasValue || !node.Longitude.HasValue)
+        {
+            Services.Logger.WriteLine($"UpdateNodePin: {node.Id} ({node.ShortName}) – kein GPS, wird übersprungen");
+            return;
+        }
+        Services.Logger.WriteLine($"UpdateNodePin: {node.Id} ({node.ShortName}) lat={node.Latitude:F6}, lon={node.Longitude:F6}");
+
+        var pos = SphericalMercator.FromLonLat(node.Longitude.Value, node.Latitude.Value);
+        var mPoint = new MPoint(pos.x, pos.y);
+        _nodePinPositions[node.NodeId] = mPoint;
+
+        // Alten Pin entfernen
+        _nodeFeatures.RemoveAll(f => f["nodeid"] is uint id && id == node.NodeId);
+
+        var feature = new PointFeature(new MPoint(pos.x, pos.y));
+        feature["nodeid"] = node.NodeId;
+        feature.Styles.Add(new SymbolStyle
+        {
+            SymbolType = SymbolType.Ellipse,
+            Fill = new Mapsui.Styles.Brush(Mapsui.Styles.Color.Red),
+            Outline = new Mapsui.Styles.Pen(Mapsui.Styles.Color.White, 2),
+            SymbolScale = 0.5
+        });
+        feature.Styles.Add(new LabelStyle
+        {
+            Text = string.IsNullOrEmpty(node.ShortName) ? node.Id : node.ShortName,
+            ForeColor = Mapsui.Styles.Color.Black,
+            BackColor = new Mapsui.Styles.Brush(new Mapsui.Styles.Color(255, 255, 255, 180)),
+            HorizontalAlignment = LabelStyle.HorizontalAlignmentEnum.Center,
+            VerticalAlignment = LabelStyle.VerticalAlignmentEnum.Top,
+            Offset = new Offset(0, -20)
+        });
+        _nodeFeatures.Add(feature);
+        if (_nodeLayer != null)
+        {
+            _nodeLayer.Features = _nodeFeatures;
+            _nodeLayer.DataHasChanged();
+            MapControl.Refresh();
+        }
+    }
+
+    private void MapControl_RightClick(object sender, MouseButtonEventArgs e)
+    {
+        try
+        {
+            var screenPos = e.GetPosition(MapControl);
+            if (MapControl.Map == null) return;
+            var worldPos = MapControl.Map.Navigator.Viewport.ScreenToWorld(screenPos.X, screenPos.Y);
+
+            // Hit-Test: Node in der Nähe?
+            NodeInfo? hitNode = null;
+            double minDist = 20; // Pixel-Schwellwert
+
+            foreach (var (nodeId, pinWorld) in _nodePinPositions)
+            {
+                var pinScreen = MapControl.Map.Navigator.Viewport.WorldToScreen(pinWorld);
+                var dist = Math.Sqrt(Math.Pow(screenPos.X - pinScreen.X, 2) + Math.Pow(screenPos.Y - pinScreen.Y, 2));
+                if (dist < minDist)
+                {
+                    hitNode = _nodes.FirstOrDefault(n => n.NodeId == nodeId);
+                    minDist = dist;
+                }
+            }
+
+            var menu = new ContextMenu();
+
+            if (hitNode != null)
+            {
+                _mapContextMenuNode = hitNode;
+                var dmItem = new MenuItem { Header = "💬 DM senden" };
+                dmItem.Click += (s, ev) => { if (_mapContextMenuNode != null) OpenDmToNode(_mapContextMenuNode); };
+                menu.Items.Add(dmItem);
+
+                var infoItem = new MenuItem { Header = "ℹ️ Node Info" };
+                infoItem.Click += (s, ev) => { if (_mapContextMenuNode != null) ShowNodeInfoDialog(_mapContextMenuNode); };
+                menu.Items.Add(infoItem);
+            }
+            else
+            {
+                var lonLat = SphericalMercator.ToLonLat(worldPos.X, worldPos.Y);
+                var clickLat = lonLat.lat;
+                var clickLon = lonLat.lon;
+
+                var setPosItem = new MenuItem { Header = $"📍 Eigenen Standort hier setzen ({clickLat:F4}, {clickLon:F4})" };
+                setPosItem.Click += (s, ev) => SetMyPosition(clickLat, clickLon);
+                menu.Items.Add(setPosItem);
+            }
+
+            menu.PlacementTarget = MapControl;
+            menu.IsOpen = true;
+            e.Handled = true;
+        }
+        catch (Exception ex)
+        {
+            Services.Logger.WriteLine($"ERROR map right-click: {ex.Message}");
+        }
+    }
+
+    private void MapControl_LeftClick(object sender, MouseButtonEventArgs e)
+    {
+        try
+        {
+            var screenPos = e.GetPosition(MapControl);
+            if (MapControl.Map == null) return;
+
+            NodeInfo? hitNode = null;
+            double minDist = 20;
+
+            foreach (var (nodeId, pinWorld) in _nodePinPositions)
+            {
+                var pinScreen = MapControl.Map.Navigator.Viewport.WorldToScreen(pinWorld);
+                var dist = Math.Sqrt(Math.Pow(screenPos.X - pinScreen.X, 2) + Math.Pow(screenPos.Y - pinScreen.Y, 2));
+                if (dist < minDist)
+                {
+                    hitNode = _nodes.FirstOrDefault(n => n.NodeId == nodeId);
+                    minDist = dist;
+                }
+            }
+
+            if (hitNode != null && hitNode.Latitude.HasValue && hitNode.Longitude.HasValue)
+            {
+                var km = HaversineKm(_currentSettings.MyLatitude, _currentSettings.MyLongitude,
+                                     hitNode.Latitude.Value, hitNode.Longitude.Value);
+                MapStatusText.Text = $"{hitNode.ShortName} ({hitNode.Id}): {km:F2} km Entfernung | Last seen: {hitNode.LastSeen}";
+            }
+            else
+            {
+                MapStatusText.Text = string.Empty;
+            }
+        }
+        catch (Exception ex)
+        {
+            Services.Logger.WriteLine($"ERROR map left-click: {ex.Message}");
+        }
+    }
+
+    private static double HaversineKm(double lat1, double lon1, double lat2, double lon2)
+    {
+        const double R = 6371.0;
+        var dLat = (lat2 - lat1) * Math.PI / 180;
+        var dLon = (lon2 - lon1) * Math.PI / 180;
+        var a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2)
+              + Math.Cos(lat1 * Math.PI / 180) * Math.Cos(lat2 * Math.PI / 180)
+              * Math.Sin(dLon / 2) * Math.Sin(dLon / 2);
+        return R * 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
+    }
+
+    private void SetMyPosition(double lat, double lon)
+    {
+        _currentSettings = _currentSettings with { MyLatitude = lat, MyLongitude = lon };
+        SettingsService.Save(_currentSettings);
+        UpdateMyPositionPin();
+        Services.Logger.WriteLine($"Eigener Standort gesetzt: {lat:F6}, {lon:F6}");
+    }
+
+    private void OpenDmToNode(NodeInfo node)
+    {
+        if (_dmWindow == null || !_dmWindow.IsVisible)
+        {
+            _dmWindow = new DirectMessagesWindow(_protocolService, _myNodeId);
+            _dmWindow.Show();
+        }
+        _dmWindow.OpenChatWithNode(node.NodeId, node.Name);
+    }
+
+    private void ShowNodeInfoDialog(NodeInfo node)
+    {
+        var win = new NodeInfoWindow(node) { Owner = this };
+        win.ShowDialog();
+    }
+
+    private void DownloadTiles_Click(object sender, RoutedEventArgs e)
+    {
+        var win = new TileDownloaderWindow { Owner = this };
+        win.ShowDialog();
+        // Nach Download: Map-Status aktualisieren
+        var tileDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "maptiles");
+        MapStatusText.Text = Directory.Exists(tileDir) && Directory.EnumerateFiles(tileDir, "*.png", SearchOption.AllDirectories).Any()
+            ? "" : "Keine Tiles – bitte herunterladen";
+    }
+
+    private class LocalFileTileProvider : ITileProvider
+    {
+        private readonly string _baseDir;
+        public LocalFileTileProvider(string baseDir) => _baseDir = baseDir;
+
+        public Task<byte[]?> GetTileAsync(TileInfo tileInfo)
+        {
+            var z = tileInfo.Index.Level;
+            var x = tileInfo.Index.Col;
+            // BruTile TMS hat Row 0 im Süden, OSM-Dateien haben Y=0 im Norden → konvertieren
+            var yOsm = (1 << z) - 1 - tileInfo.Index.Row;
+            var path = Path.Combine(_baseDir, z.ToString(), x.ToString(), $"{yOsm}.png");
+            if (File.Exists(path))
+            {
+                try { return Task.FromResult<byte[]?>(File.ReadAllBytes(path)); } catch { }
+            }
+            return Task.FromResult<byte[]?>(null);
+        }
+    }
+
+    #endregion
 
     private void OnLogMessageReceived(object? sender, string logMessage)
     {
@@ -329,8 +628,11 @@ public partial class MainWindow : Window
             var settings = new AppSettings(
                 DarkMode: DarkModeCheckBox.IsChecked == true,
                 StationName: StationNameTextBox.Text,
-                ShowEncryptedMessages: ShowEncryptedMessagesCheckBox.IsChecked == true
+                ShowEncryptedMessages: ShowEncryptedMessagesCheckBox.IsChecked == true,
+                MyLatitude: _currentSettings.MyLatitude,
+                MyLongitude: _currentSettings.MyLongitude
             );
+            _currentSettings = settings;
             SettingsService.Save(settings);
             StationNameLabel.Text = settings.StationName;
             _showEncryptedMessages = settings.ShowEncryptedMessages;
@@ -459,6 +761,7 @@ public partial class MainWindow : Window
                     _nodes.Remove(existing);
                 }
                 _nodes.Add(node);
+                UpdateNodePin(node);
             }
             catch (Exception ex)
             {

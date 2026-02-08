@@ -1,0 +1,55 @@
+<Window x:Class="MeshhessenClient.NodeInfoWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="http://schemas.modernwpf.com/2019"
+        ui:WindowHelper.UseModernWindowStyle="True"
+        Title="Node Info"
+        Width="380"
+        Height="320"
+        ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner">
+    <StackPanel Margin="20">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="130"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <TextBlock Grid.Row="0" Grid.Column="0" Text="Short Name:" FontWeight="Bold" Margin="0,6"/>
+            <TextBlock Grid.Row="0" Grid.Column="1" x:Name="ShortNameText" Margin="0,6"/>
+
+            <TextBlock Grid.Row="1" Grid.Column="0" Text="Long Name:" FontWeight="Bold" Margin="0,6"/>
+            <TextBlock Grid.Row="1" Grid.Column="1" x:Name="LongNameText" Margin="0,6"/>
+
+            <TextBlock Grid.Row="2" Grid.Column="0" Text="Node ID:" FontWeight="Bold" Margin="0,6"/>
+            <TextBlock Grid.Row="2" Grid.Column="1" x:Name="NodeIdText" Margin="0,6"/>
+
+            <TextBlock Grid.Row="3" Grid.Column="0" Text="Latitude:" FontWeight="Bold" Margin="0,6"/>
+            <TextBlock Grid.Row="3" Grid.Column="1" x:Name="LatText" Margin="0,6"/>
+
+            <TextBlock Grid.Row="4" Grid.Column="0" Text="Longitude:" FontWeight="Bold" Margin="0,6"/>
+            <TextBlock Grid.Row="4" Grid.Column="1" x:Name="LonText" Margin="0,6"/>
+
+            <TextBlock Grid.Row="5" Grid.Column="0" Text="Altitude:" FontWeight="Bold" Margin="0,6"/>
+            <TextBlock Grid.Row="5" Grid.Column="1" x:Name="AltText" Margin="0,6"/>
+
+            <TextBlock Grid.Row="6" Grid.Column="0" Text="Last Seen:" FontWeight="Bold" Margin="0,6"/>
+            <TextBlock Grid.Row="6" Grid.Column="1" x:Name="LastSeenText" Margin="0,6"/>
+        </Grid>
+
+        <Button Content="Schließen"
+                Width="100"
+                Margin="0,16,0,0"
+                HorizontalAlignment="Right"
+                Click="Close_Click"/>
+    </StackPanel>
+</Window>

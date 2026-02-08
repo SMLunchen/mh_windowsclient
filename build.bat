@@ -23,7 +23,7 @@ if %errorlevel% neq 0 (
 
 echo.
 echo [3/3] Publishing standalone EXE...
-dotnet publish MeshhessenClient\MeshhessenClient.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=false -o publish
+dotnet publish MeshhessenClient\MeshhessenClient.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=false -o public
 if %errorlevel% neq 0 (
     echo ERROR: Publish failed!
     pause
@@ -36,9 +36,9 @@ echo Build completed successfully!
 echo ========================================
 echo.
 echo Executable location:
-echo %CD%\publish\MeshhessenClient.exe
+echo %CD%\public\MeshhessenClient.exe
 echo.
 echo File size:
-dir publish\MeshhessenClient.exe | find "MeshhessenClient.exe"
+dir public\MeshhessenClient.exe | find "MeshhessenClient.exe"
 echo.
 pause

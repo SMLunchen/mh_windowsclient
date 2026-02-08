@@ -5,10 +5,10 @@ package meshtastic;
 option csharp_namespace = "Meshtastic.Protobufs";
 
 message Position {
-  int32 latitude_i = 1;
-  int32 longitude_i = 2;
+  sfixed32 latitude_i = 1;
+  sfixed32 longitude_i = 2;
   int32 altitude = 3;
-  int32 time = 4;
+  fixed32 time = 4;
 }
 
 message User {

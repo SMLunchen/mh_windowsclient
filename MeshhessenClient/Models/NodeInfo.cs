@@ -3,6 +3,8 @@
 public class NodeInfo
 {
     public string Name { get; set; } = "Unknown";
+    public string ShortName { get; set; } = string.Empty;
+    public string LongName { get; set; } = string.Empty;
     public string Id { get; set; } = string.Empty;
     public string Distance { get; set; } = "-";
     public string Snr { get; set; } = "-";

@@ -38,6 +38,10 @@
 
     <!-- Modern UI -->
     <PackageReference Include="ModernWpfUI" Version="0.9.6" />
+
+    <!-- Offline Map -->
+    <PackageReference Include="Mapsui" Version="4.1.7" />
+    <PackageReference Include="Mapsui.Wpf" Version="4.1.7" />
   </ItemGroup>
 
   <ItemGroup>
