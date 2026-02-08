@@ -45,7 +45,7 @@
                 <ColumnDefinition Width="80"/>
             </Grid.ColumnDefinitions>
             <TextBlock Grid.Column="0" Text="Min / Max Zoom:" VerticalAlignment="Center"/>
-            <TextBox Grid.Column="1" x:Name="MinZoomBox" Text="8" TextChanged="ZoomChanged"/>
+            <TextBox Grid.Column="1" x:Name="MinZoomBox" Text="1" TextChanged="ZoomChanged"/>
             <TextBlock Grid.Column="2" Text=" – " VerticalAlignment="Center" HorizontalAlignment="Center"/>
             <TextBox Grid.Column="3" x:Name="MaxZoomBox" Text="14" TextChanged="ZoomChanged"/>
         </Grid>

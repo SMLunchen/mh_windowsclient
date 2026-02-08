@@ -1,0 +1,46 @@
+name: Build & Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore MeshhessenClient/MeshhessenClient.csproj
+
+      - name: Publish standalone EXE
+        run: dotnet publish MeshhessenClient/MeshhessenClient.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=false -o publish_output
+
+      - name: Create Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Meshhessen Client ${{ github.ref_name }}
+          body: |
+            ## Meshhessen Client ${{ github.ref_name }}
+
+            Windows-Client für Meshtastic-Geräte – entwickelt von der [Meshhessen Community](https://www.meshhessen.de).
+
+            ### Download
+            👇 Einfach `MeshhessenClient.exe` herunterladen und starten – keine Installation nötig!
+
+            ### Voraussetzungen
+            - Windows 10/11 x64
+            - Meshtastic-Gerät mit USB-Anschluss
+          files: publish_output/MeshhessenClient.exe
+          draft: false
+          prerelease: ${{ contains(github.ref_name, 'beta') || contains(github.ref_name, 'alpha') }}
