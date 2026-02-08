@@ -50,13 +50,11 @@
 
   <ItemGroup>
     <None Remove="logo_mh_wide.jpg" />
-    <None Remove="MH_WebseitenLogo_nM.png" />
     <None Remove="Resources\app.ico" />
   </ItemGroup>
 
   <ItemGroup>
     <Resource Include="logo_mh_wide.jpg" />
-    <Resource Include="MH_WebseitenLogo_nM.png" />
     <Resource Include="Resources\app.ico" />
   </ItemGroup>
 

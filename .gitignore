@@ -49,3 +49,9 @@ _ReSharper*/
 
 # Build results
 publish/
+
+# Claude Code
+.claude/
+
+# Unused assets
+MeshhessenClient/MH_WebseitenLogo_nM.png
