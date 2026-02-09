@@ -38,12 +38,15 @@ public partial class MainWindow : Window
     private ObservableCollection<MessageItem> _messages = new();
     private List<MessageItem> _allMessages = new(); // Ungefilterte Liste aller Nachrichten
     private ObservableCollection<Models.NodeInfo> _nodes = new();
+    private List<Models.NodeInfo> _allNodes = new(); // Ungefilterte Liste aller Nodes
     private ObservableCollection<ChannelInfo> _channels = new();
     private int _activeChannelIndex = 0;
     private bool _showEncryptedMessages = true;
     private ChannelInfo? _messageChannelFilter = null;
     private DirectMessagesWindow? _dmWindow = null;
     private uint _myNodeId = 0;
+    private string? _nodeSortColumn = null;
+    private bool _nodeSortAscending = true;
 
     // Karte
     private Mapsui.Map? _map;
@@ -52,7 +55,7 @@ public partial class MainWindow : Window
     private readonly List<IFeature> _nodeFeatures = new();
     private readonly List<IFeature> _myPosFeatures = new();
     private readonly Dictionary<uint, MPoint> _nodePinPositions = new();
-    private AppSettings _currentSettings = new(false, string.Empty, true, 50.9, 9.5);
+    private AppSettings _currentSettings = new(false, string.Empty, true, 50.9, 9.5, string.Empty, new Dictionary<uint, string>(), new Dictionary<uint, string>(), false, false);
     private NodeInfo? _mapContextMenuNode;
 
     public MainWindow()
@@ -73,6 +76,7 @@ public partial class MainWindow : Window
         _protocolService.ChannelInfoReceived += OnChannelInfoReceived;
         _protocolService.LoRaConfigReceived += OnLoRaConfigReceived;
         _protocolService.DeviceInfoReceived += OnDeviceInfoReceived;
+        _protocolService.PacketCountChanged += OnPacketCountChanged;
 
         RefreshPorts();
         LoadRegions();
@@ -109,8 +113,11 @@ public partial class MainWindow : Window
             StationNameLabel.Text = settings.StationName;
             ShowEncryptedMessagesCheckBox.IsChecked = settings.ShowEncryptedMessages;
             _showEncryptedMessages = settings.ShowEncryptedMessages;
+            DebugMessagesCheckBox.IsChecked = settings.DebugMessages;
+            DebugSerialCheckBox.IsChecked = settings.DebugSerial;
 
             _currentSettings = settings;
+            _protocolService.SetDebugSerial(settings.DebugSerial);
 
             if (settings.DarkMode)
                 ModernWpf.ThemeManager.Current.ApplicationTheme = ModernWpf.ApplicationTheme.Dark;
@@ -209,16 +216,40 @@ public partial class MainWindow : Window
 
         var feature = new PointFeature(new MPoint(pos.x, pos.y));
         feature["nodeid"] = node.NodeId;
+
+        // Determine pin color
+        Mapsui.Styles.Color pinColor = Mapsui.Styles.Color.Red; // Default
+        if (!string.IsNullOrEmpty(node.ColorHex))
+        {
+            try
+            {
+                var wpfColor = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(node.ColorHex);
+                pinColor = new Mapsui.Styles.Color(wpfColor.R, wpfColor.G, wpfColor.B, wpfColor.A);
+            }
+            catch
+            {
+                // Keep default color if conversion fails
+            }
+        }
+
         feature.Styles.Add(new SymbolStyle
         {
             SymbolType = SymbolType.Ellipse,
-            Fill = new Mapsui.Styles.Brush(Mapsui.Styles.Color.Red),
+            Fill = new Mapsui.Styles.Brush(pinColor),
             Outline = new Mapsui.Styles.Pen(Mapsui.Styles.Color.White, 2),
             SymbolScale = 0.5
         });
+
+        // Build label text with note if available
+        var labelText = string.IsNullOrEmpty(node.ShortName) ? node.Id : node.ShortName;
+        if (!string.IsNullOrEmpty(node.Note))
+        {
+            labelText += $" ({node.Note})";
+        }
+
         feature.Styles.Add(new LabelStyle
         {
-            Text = string.IsNullOrEmpty(node.ShortName) ? node.Id : node.ShortName,
+            Text = labelText,
             ForeColor = Mapsui.Styles.Color.Black,
             BackColor = new Mapsui.Styles.Brush(new Mapsui.Styles.Color(255, 255, 255, 180)),
             HorizontalAlignment = LabelStyle.HorizontalAlignmentEnum.Center,
@@ -269,6 +300,58 @@ public partial class MainWindow : Window
                 var infoItem = new MenuItem { Header = "ℹ️ Node Info" };
                 infoItem.Click += (s, ev) => { if (_mapContextMenuNode != null) ShowNodeInfoDialog(_mapContextMenuNode); };
                 menu.Items.Add(infoItem);
+
+                menu.Items.Add(new Separator());
+
+                // Color submenu
+                var colorMenu = new MenuItem { Header = "🎨 Farbe setzen" };
+                var colors = new[]
+                {
+                    ("Grün", "#00FF00"),
+                    ("Blau", "#0080FF"),
+                    ("Gelb", "#FFFF00"),
+                    ("Orange", "#FF8000"),
+                    ("Lila", "#8000FF"),
+                    ("Braun", "#804000"),
+                    ("Pink", "#FF00FF"),
+                    ("Türkis", "#00FFFF")
+                };
+
+                foreach (var (label, colorHex) in colors)
+                {
+                    var textBlock = new TextBlock
+                    {
+                        Text = $"■ {label}",
+                        Foreground = new SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(colorHex)),
+                        FontWeight = FontWeights.Bold
+                    };
+                    var colorItem = new MenuItem { Header = textBlock, Tag = colorHex };
+                    colorItem.Click += (s, ev) =>
+                    {
+                        if (_mapContextMenuNode != null && s is MenuItem mi && mi.Tag is string c)
+                            SetNodeColorInternal(_mapContextMenuNode, c);
+                    };
+                    colorMenu.Items.Add(colorItem);
+                }
+
+                colorMenu.Items.Add(new Separator());
+                var removeColorItem = new MenuItem { Header = "❌ Farbe entfernen" };
+                removeColorItem.Click += (s, ev) =>
+                {
+                    if (_mapContextMenuNode != null)
+                        RemoveNodeColorInternal(_mapContextMenuNode);
+                };
+                colorMenu.Items.Add(removeColorItem);
+                menu.Items.Add(colorMenu);
+
+                // Note option
+                var noteItem = new MenuItem { Header = "📝 Notiz bearbeiten..." };
+                noteItem.Click += (s, ev) =>
+                {
+                    if (_mapContextMenuNode != null)
+                        EditNodeNoteInternal(_mapContextMenuNode);
+                };
+                menu.Items.Add(noteItem);
             }
             else
             {
@@ -457,7 +540,15 @@ public partial class MainWindow : Window
         PortComboBox.ItemsSource = ports;
         if (ports.Length > 0)
         {
-            PortComboBox.SelectedIndex = 0;
+            // Try to select last used port
+            if (!string.IsNullOrEmpty(_currentSettings.LastComPort) && ports.Contains(_currentSettings.LastComPort))
+            {
+                PortComboBox.SelectedItem = _currentSettings.LastComPort;
+            }
+            else
+            {
+                PortComboBox.SelectedIndex = 0;
+            }
         }
     }
 
@@ -528,6 +619,10 @@ public partial class MainWindow : Window
                 SetConnectionStatus(ConnectionStatus.Connecting);
 
                 await _serialPortService.ConnectAsync(selectedPort);
+
+                // Save last used port
+                _currentSettings = _currentSettings with { LastComPort = selectedPort };
+                SettingsService.Save(_currentSettings);
 
                 // GUI sofort als "Verbunden" anzeigen
                 ConnectButton.Content = "Trennen";
@@ -663,12 +758,18 @@ public partial class MainWindow : Window
                 StationName: StationNameTextBox.Text,
                 ShowEncryptedMessages: ShowEncryptedMessagesCheckBox.IsChecked == true,
                 MyLatitude: _currentSettings.MyLatitude,
-                MyLongitude: _currentSettings.MyLongitude
+                MyLongitude: _currentSettings.MyLongitude,
+                LastComPort: _currentSettings.LastComPort,
+                NodeColors: _currentSettings.NodeColors,
+                NodeNotes: _currentSettings.NodeNotes,
+                DebugMessages: DebugMessagesCheckBox.IsChecked == true,
+                DebugSerial: DebugSerialCheckBox.IsChecked == true
             );
             _currentSettings = settings;
             SettingsService.Save(settings);
             StationNameLabel.Text = settings.StationName;
             _showEncryptedMessages = settings.ShowEncryptedMessages;
+            _protocolService.SetDebugSerial(settings.DebugSerial);
             MessageBox.Show("Einstellungen gespeichert.", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
         }
         catch (Exception ex)
@@ -693,7 +794,9 @@ public partial class MainWindow : Window
                     _messages.Clear();
                     _allMessages.Clear();
                     _nodes.Clear();
+                    _allNodes.Clear();
                     _channels.Clear();
+                    PacketCountText.Text = "Pakete: 0";
                 }
             }
             catch (Exception ex)
@@ -710,11 +813,24 @@ public partial class MainWindow : Window
         {
             try
             {
+                if (_currentSettings.DebugMessages)
+                {
+                    var msgPreview = message.Message != null && message.Message.Length > 0
+                        ? message.Message.Substring(0, Math.Min(50, message.Message.Length))
+                        : "";
+                    Services.Logger.WriteLine($"[MSG DEBUG] Received message: From={message.From} (ID=!{message.FromId:x8}), To=!{message.ToId:x8}, Channel={message.Channel}, Encrypted={message.IsEncrypted}, MQTT={message.IsViaMqtt}, Text={msgPreview}...");
+                }
+
                 // Prüfe ob es eine Direktnachricht ist (nicht Broadcast)
                 bool isDirectMessage = message.ToId != 0xFFFFFFFF && message.ToId != 0;
 
                 if (isDirectMessage)
                 {
+                    if (_currentSettings.DebugMessages)
+                    {
+                        Services.Logger.WriteLine($"[MSG DEBUG] Message is DM, routing to DM window");
+                    }
+
                     // Leite an DM-Fenster weiter
                     if (_dmWindow == null)
                     {
@@ -734,6 +850,10 @@ public partial class MainWindow : Window
                 // Filter verschlüsselte Nachrichten wenn Checkbox deaktiviert
                 if (message.IsEncrypted && !_showEncryptedMessages)
                 {
+                    if (_currentSettings.DebugMessages)
+                    {
+                        Services.Logger.WriteLine($"[MSG DEBUG] Message filtered: Encrypted and ShowEncrypted=false");
+                    }
                     return; // Nicht anzeigen
                 }
 
@@ -748,13 +868,21 @@ public partial class MainWindow : Window
                     message.ChannelName = message.Channel;
                 }
 
+                // Load sender color and note from settings
+                var senderNode = _allNodes.FirstOrDefault(n => n.NodeId == message.FromId);
+                if (senderNode != null)
+                {
+                    message.SenderColorHex = senderNode.ColorHex;
+                    message.SenderNote = senderNode.Note;
+                }
+
                 // Speichere in ungefilterte Liste
                 _allMessages.Add(message);
 
                 // Log die Kanal-Nachricht
                 if (uint.TryParse(message.Channel, out uint logChannelIndex))
                 {
-                    Services.MessageLogger.LogChannelMessage((int)logChannelIndex, message.ChannelName, message.From, message.Message, message.IsViaMqtt);
+                    Services.MessageLogger.LogChannelMessage((int)logChannelIndex, message.ChannelName, message.From, message.Message, message.IsViaMqtt, message.SenderNote);
                 }
 
                 // Prüfe ob Nachricht den aktuellen Filter passiert
@@ -764,7 +892,16 @@ public partial class MainWindow : Window
                     if (uint.TryParse(message.Channel, out uint msgChannelIndex))
                     {
                         passesFilter = (msgChannelIndex == _messageChannelFilter.Index);
+                        if (_currentSettings.DebugMessages && !passesFilter)
+                        {
+                            Services.Logger.WriteLine($"[MSG DEBUG] Message filtered by channel: msgChannel={msgChannelIndex}, filterChannel={_messageChannelFilter.Index}");
+                        }
                     }
+                }
+
+                if (_currentSettings.DebugMessages)
+                {
+                    Services.Logger.WriteLine($"[MSG DEBUG] Message passes filter: {passesFilter}, adding to display");
                 }
 
                 // Füge zu sichtbarer Liste hinzu wenn Filter passt
@@ -788,12 +925,40 @@ public partial class MainWindow : Window
         {
             try
             {
-                var existing = _nodes.FirstOrDefault(n => n.Id == node.Id);
-                if (existing != null)
+                // Calculate distance if coordinates are available
+                if (node.Latitude.HasValue && node.Longitude.HasValue)
                 {
-                    _nodes.Remove(existing);
+                    var distance = CalculateDistance(
+                        _currentSettings.MyLatitude,
+                        _currentSettings.MyLongitude,
+                        node.Latitude.Value,
+                        node.Longitude.Value
+                    );
+                    node.Distance = FormatDistance(distance);
                 }
-                _nodes.Add(node);
+
+                // Load color and note from settings
+                if (_currentSettings.NodeColors.TryGetValue(node.NodeId, out var color))
+                {
+                    node.ColorHex = color;
+                }
+                if (_currentSettings.NodeNotes.TryGetValue(node.NodeId, out var note))
+                {
+                    node.Note = note;
+                }
+
+                // Update in _allNodes
+                var existingInAll = _allNodes.FirstOrDefault(n => n.Id == node.Id);
+                if (existingInAll != null)
+                {
+                    _allNodes.Remove(existingInAll);
+                }
+                _allNodes.Add(node);
+
+                // Apply sorting and filtering
+                ApplyNodeSortAndFilter();
+
+                // Update map pin
                 UpdateNodePin(node);
             }
             catch (Exception ex)
@@ -857,6 +1022,12 @@ public partial class MainWindow : Window
 
                 // Speichere eigene Node-ID für DM-Fenster
                 _myNodeId = deviceInfo.NodeId;
+
+                // Set hardware model and firmware version
+                HardwareModelText.Text = deviceInfo.HardwareModel;
+                FirmwareVersionText.Text = deviceInfo.FirmwareVersion;
+                Services.Logger.WriteLine($"  Hardware: {deviceInfo.HardwareModel}");
+                Services.Logger.WriteLine($"  Firmware: {deviceInfo.FirmwareVersion}");
 
                 // Suche die eigene NodeInfo in der Node-Liste
                 var myNode = _nodes.FirstOrDefault(n => n.NodeId == deviceInfo.NodeId);
@@ -952,6 +1123,22 @@ public partial class MainWindow : Window
             catch (Exception ex)
             {
                 Services.Logger.WriteLine($"ERROR updating LoRa config in UI: {ex.Message}");
+            }
+        });
+    }
+
+    private void OnPacketCountChanged(object? sender, int count)
+    {
+        // Async Update - blockiert nicht den UI Thread
+        Dispatcher.BeginInvoke(() =>
+        {
+            try
+            {
+                PacketCountText.Text = $"Pakete: {count}";
+            }
+            catch (Exception ex)
+            {
+                Services.Logger.WriteLine($"ERROR updating packet count in UI: {ex.Message}");
             }
         });
     }
@@ -1251,5 +1438,309 @@ public partial class MainWindow : Window
         }
 
         base.OnClosing(e);
+    }
+
+    // ========== Node List Sorting and Filtering ==========
+
+    private void NodeColumnHeader_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is GridViewColumnHeader header && header.Tag is string column)
+        {
+            // Toggle sort direction if same column, otherwise default to ascending
+            if (_nodeSortColumn == column)
+            {
+                _nodeSortAscending = !_nodeSortAscending;
+            }
+            else
+            {
+                _nodeSortColumn = column;
+                _nodeSortAscending = true;
+            }
+
+            ApplyNodeSortAndFilter();
+        }
+    }
+
+    private void NodeFilterTextBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
+    {
+        ApplyNodeSortAndFilter();
+    }
+
+    private void ApplyNodeSortAndFilter()
+    {
+        var filterText = NodeFilterTextBox?.Text?.ToLowerInvariant() ?? string.Empty;
+
+        // Start with all nodes
+        var filtered = _allNodes.AsEnumerable();
+
+        // Apply filter
+        if (!string.IsNullOrWhiteSpace(filterText))
+        {
+            filtered = filtered.Where(n =>
+                n.Name.ToLowerInvariant().Contains(filterText) ||
+                n.ShortName.ToLowerInvariant().Contains(filterText) ||
+                n.Id.ToLowerInvariant().Contains(filterText) ||
+                n.Distance.ToLowerInvariant().Contains(filterText) ||
+                n.Snr.ToLowerInvariant().Contains(filterText) ||
+                n.Rssi.ToLowerInvariant().Contains(filterText) ||
+                n.Battery.ToLowerInvariant().Contains(filterText) ||
+                n.LastSeen.ToLowerInvariant().Contains(filterText)
+            );
+        }
+
+        // Apply sorting
+        if (!string.IsNullOrEmpty(_nodeSortColumn))
+        {
+            filtered = _nodeSortColumn switch
+            {
+                "Name" => _nodeSortAscending
+                    ? filtered.OrderBy(n => n.Name)
+                    : filtered.OrderByDescending(n => n.Name),
+                "ShortName" => _nodeSortAscending
+                    ? filtered.OrderBy(n => n.ShortName)
+                    : filtered.OrderByDescending(n => n.ShortName),
+                "Id" => _nodeSortAscending
+                    ? filtered.OrderBy(n => n.Id)
+                    : filtered.OrderByDescending(n => n.Id),
+                "Distance" => _nodeSortAscending
+                    ? filtered.OrderBy(n => ParseDistanceForSorting(n.Distance))
+                    : filtered.OrderByDescending(n => ParseDistanceForSorting(n.Distance)),
+                "Snr" => _nodeSortAscending
+                    ? filtered.OrderBy(n => ParseNumericForSorting(n.Snr))
+                    : filtered.OrderByDescending(n => ParseNumericForSorting(n.Snr)),
+                "Rssi" => _nodeSortAscending
+                    ? filtered.OrderBy(n => ParseNumericForSorting(n.Rssi))
+                    : filtered.OrderByDescending(n => ParseNumericForSorting(n.Rssi)),
+                "Battery" => _nodeSortAscending
+                    ? filtered.OrderBy(n => ParseNumericForSorting(n.Battery))
+                    : filtered.OrderByDescending(n => ParseNumericForSorting(n.Battery)),
+                "LastSeen" => _nodeSortAscending
+                    ? filtered.OrderBy(n => n.LastSeen)
+                    : filtered.OrderByDescending(n => n.LastSeen),
+                _ => filtered
+            };
+        }
+
+        // Update UI
+        _nodes.Clear();
+        foreach (var node in filtered)
+        {
+            _nodes.Add(node);
+        }
+    }
+
+    private double ParseDistanceForSorting(string distance)
+    {
+        if (string.IsNullOrEmpty(distance) || distance == "-")
+            return double.MaxValue;
+
+        var cleaned = distance.Replace("km", "").Replace("m", "").Trim();
+        if (double.TryParse(cleaned, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var value))
+        {
+            // Convert meters to km if needed
+            if (distance.EndsWith("m") && !distance.EndsWith("km"))
+                return value / 1000.0;
+            return value;
+        }
+        return double.MaxValue;
+    }
+
+    private double ParseNumericForSorting(string value)
+    {
+        if (string.IsNullOrEmpty(value) || value == "-")
+            return double.MinValue;
+
+        var cleaned = value.Replace("%", "").Replace("dB", "").Trim();
+        if (double.TryParse(cleaned, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var result))
+        {
+            // Treat 0.0 as "no value" for SNR/RSSI (sort to bottom when ascending)
+            if (Math.Abs(result) < 0.01)
+                return double.MinValue;
+            return result;
+        }
+        return double.MinValue;
+    }
+
+    private double CalculateDistance(double lat1, double lon1, double lat2, double lon2)
+    {
+        // Haversine formula
+        const double R = 6371; // Earth radius in km
+
+        var dLat = (lat2 - lat1) * Math.PI / 180.0;
+        var dLon = (lon2 - lon1) * Math.PI / 180.0;
+
+        var a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2) +
+                Math.Cos(lat1 * Math.PI / 180.0) * Math.Cos(lat2 * Math.PI / 180.0) *
+                Math.Sin(dLon / 2) * Math.Sin(dLon / 2);
+
+        var c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
+        return R * c;
+    }
+
+    private string FormatDistance(double distanceKm)
+    {
+        if (distanceKm < 1.0)
+            return $"{(int)(distanceKm * 1000)}m";
+        else if (distanceKm < 10.0)
+            return $"{distanceKm:F2}km";
+        else
+            return $"{distanceKm:F1}km";
+    }
+
+    // ========== Node Color and Note Management ==========
+
+    private void SetNodeColor_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem menuItem && menuItem.Tag is string color && NodesListView.SelectedItem is NodeInfo node)
+        {
+            SetNodeColorInternal(node, color);
+        }
+    }
+
+    private void RemoveNodeColor_Click(object sender, RoutedEventArgs e)
+    {
+        if (NodesListView.SelectedItem is NodeInfo node)
+        {
+            RemoveNodeColorInternal(node);
+        }
+    }
+
+    private void EditNodeNote_Click(object sender, RoutedEventArgs e)
+    {
+        if (NodesListView.SelectedItem is NodeInfo node)
+        {
+            EditNodeNoteInternal(node);
+        }
+    }
+
+    private void SetNodeColorInternal(NodeInfo node, string color)
+    {
+        try
+        {
+            node.ColorHex = color;
+            _currentSettings.NodeColors[node.NodeId] = color;
+            SettingsService.Save(_currentSettings);
+
+            // Update in _allNodes
+            var existing = _allNodes.FirstOrDefault(n => n.NodeId == node.NodeId);
+            if (existing != null)
+            {
+                existing.ColorHex = color;
+            }
+
+            // Refresh display
+            ApplyNodeSortAndFilter();
+            UpdateNodePin(node);
+
+            Services.Logger.WriteLine($"Set color {color} for node {node.Name} ({node.Id})");
+        }
+        catch (Exception ex)
+        {
+            Services.Logger.WriteLine($"Error setting node color: {ex.Message}");
+        }
+    }
+
+    private void RemoveNodeColorInternal(NodeInfo node)
+    {
+        try
+        {
+            node.ColorHex = string.Empty;
+            _currentSettings.NodeColors.Remove(node.NodeId);
+            SettingsService.Save(_currentSettings);
+
+            // Update in _allNodes
+            var existing = _allNodes.FirstOrDefault(n => n.NodeId == node.NodeId);
+            if (existing != null)
+            {
+                existing.ColorHex = string.Empty;
+            }
+
+            // Refresh display
+            ApplyNodeSortAndFilter();
+            UpdateNodePin(node);
+
+            Services.Logger.WriteLine($"Removed color from node {node.Name} ({node.Id})");
+        }
+        catch (Exception ex)
+        {
+            Services.Logger.WriteLine($"Error removing node color: {ex.Message}");
+        }
+    }
+
+    private void EditNodeNoteInternal(NodeInfo node)
+    {
+        try
+        {
+            var dialog = new System.Windows.Window
+            {
+                Title = $"Notiz für {node.Name}",
+                Width = 400,
+                Height = 200,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                Owner = this
+            };
+
+            var grid = new Grid { Margin = new Thickness(10) };
+            grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+
+            var textBox = new TextBox
+            {
+                Text = node.Note,
+                AcceptsReturn = true,
+                TextWrapping = TextWrapping.Wrap,
+                VerticalScrollBarVisibility = ScrollBarVisibility.Auto
+            };
+            Grid.SetRow(textBox, 0);
+            grid.Children.Add(textBox);
+
+            var buttonPanel = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 10, 0, 0) };
+            Grid.SetRow(buttonPanel, 1);
+
+            var okButton = new Button { Content = "OK", Width = 80, Margin = new Thickness(0, 0, 10, 0), IsDefault = true };
+            okButton.Click += (s, ev) => { dialog.DialogResult = true; dialog.Close(); };
+            buttonPanel.Children.Add(okButton);
+
+            var cancelButton = new Button { Content = "Abbrechen", Width = 80, IsCancel = true };
+            cancelButton.Click += (s, ev) => { dialog.DialogResult = false; dialog.Close(); };
+            buttonPanel.Children.Add(cancelButton);
+
+            grid.Children.Add(buttonPanel);
+            dialog.Content = grid;
+
+            if (dialog.ShowDialog() == true)
+            {
+                var newNote = textBox.Text.Trim();
+                node.Note = newNote;
+
+                if (string.IsNullOrEmpty(newNote))
+                {
+                    _currentSettings.NodeNotes.Remove(node.NodeId);
+                }
+                else
+                {
+                    _currentSettings.NodeNotes[node.NodeId] = newNote;
+                }
+
+                SettingsService.Save(_currentSettings);
+
+                // Update in _allNodes
+                var existing = _allNodes.FirstOrDefault(n => n.NodeId == node.NodeId);
+                if (existing != null)
+                {
+                    existing.Note = newNote;
+                }
+
+                // Refresh display
+                ApplyNodeSortAndFilter();
+                UpdateNodePin(node);
+
+                Services.Logger.WriteLine($"Updated note for node {node.Name} ({node.Id}): {newNote}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Services.Logger.WriteLine($"Error editing node note: {ex.Message}");
+        }
     }
 }

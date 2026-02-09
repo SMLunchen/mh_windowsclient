@@ -17,6 +17,9 @@
     <Window.Resources>
         <converters:MqttIconConverter x:Key="MqttIconConverter"/>
         <converters:MqttTooltipConverter x:Key="MqttTooltipConverter"/>
+        <converters:HexToColorConverter x:Key="HexToColorConverter"/>
+        <converters:IsNotEmptyConverter x:Key="IsNotEmptyConverter"/>
+        <converters:NoteToParenthesesConverter x:Key="NoteToParenthesesConverter"/>
 
         <Style TargetType="ComboBoxItem">
             <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
@@ -119,7 +122,7 @@
                              Margin="10,5,10,10">
                         <ListView.View>
                             <GridView>
-                                <GridViewColumn Header="" Width="30">
+                                <GridViewColumn Header="" Width="50">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate>
                                             <TextBlock Text="{Binding IsViaMqtt, Converter={StaticResource MqttIconConverter}}"
@@ -129,10 +132,28 @@
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
+                                <GridViewColumn Header="🎨" Width="50">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Border Width="20" Height="20"
+                                                    BorderBrush="Gray"
+                                                    BorderThickness="1"
+                                                    Background="{Binding SenderColorHex, Converter={StaticResource HexToColorConverter}}"
+                                                    Visibility="{Binding SenderColorHex, Converter={StaticResource IsNotEmptyConverter}}"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
                                 <GridViewColumn Header="Zeit" Width="120" DisplayMemberBinding="{Binding Time}"/>
-                                <GridViewColumn Header="Von" Width="150" DisplayMemberBinding="{Binding From}"/>
-                                <GridViewColumn Header="Nachricht" Width="370" DisplayMemberBinding="{Binding Message}"/>
-                                <GridViewColumn Header="Kanal" Width="100" DisplayMemberBinding="{Binding ChannelName}"/>
+                                <GridViewColumn Header="Von" Width="120" DisplayMemberBinding="{Binding From}"/>
+                                <GridViewColumn Header="Notiz" Width="100">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding SenderNote}" FontStyle="Italic"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                                <GridViewColumn Header="Nachricht" Width="300" DisplayMemberBinding="{Binding Message}"/>
+                                <GridViewColumn Header="Kanal" Width="80" DisplayMemberBinding="{Binding ChannelName}"/>
                             </GridView>
                         </ListView.View>
                     </ListView>
@@ -176,20 +197,150 @@
             <!-- Nodes Tab -->
             <TabItem Header="🌐 Knoten">
                 <Grid Margin="10">
-                    <ListView x:Name="NodesListView">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Quick Filter -->
+                    <TextBox x:Name="NodeFilterTextBox"
+                             Grid.Row="0"
+                             Margin="0,0,0,10"
+                             TextChanged="NodeFilterTextBox_TextChanged"
+                             Tag="🔍 Filter nach Name, ID, SNR, Batterie..."/>
+
+                    <ListView x:Name="NodesListView" Grid.Row="1">
                         <ListView.View>
-                            <GridView>
-                                <GridViewColumn Header="Name" Width="150" DisplayMemberBinding="{Binding Name}"/>
-                                <GridViewColumn Header="ID" Width="120" DisplayMemberBinding="{Binding Id}"/>
-                                <GridViewColumn Header="Entfernung" Width="100" DisplayMemberBinding="{Binding Distance}"/>
-                                <GridViewColumn Header="SNR" Width="80" DisplayMemberBinding="{Binding Snr}"/>
-                                <GridViewColumn Header="Batterie" Width="80" DisplayMemberBinding="{Binding Battery}"/>
-                                <GridViewColumn Header="Zuletzt gesehen" Width="150" DisplayMemberBinding="{Binding LastSeen}"/>
+                            <GridView x:Name="NodesGridView">
+                                <GridViewColumn Width="30">
+                                    <GridViewColumn.Header>
+                                        <GridViewColumnHeader Content="🎨"/>
+                                    </GridViewColumn.Header>
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Border Width="16" Height="16"
+                                                    BorderBrush="Gray"
+                                                    BorderThickness="1"
+                                                    Background="{Binding ColorHex, Converter={StaticResource HexToColorConverter}}"
+                                                    Visibility="{Binding ColorHex, Converter={StaticResource IsNotEmptyConverter}}"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                                <GridViewColumn Width="150">
+                                    <GridViewColumn.Header>
+                                        <GridViewColumnHeader Content="Name" Click="NodeColumnHeader_Click" Tag="Name"/>
+                                    </GridViewColumn.Header>
+                                    <GridViewColumn.DisplayMemberBinding>
+                                        <Binding Path="Name"/>
+                                    </GridViewColumn.DisplayMemberBinding>
+                                </GridViewColumn>
+                                <GridViewColumn Width="80">
+                                    <GridViewColumn.Header>
+                                        <GridViewColumnHeader Content="Kurz" Click="NodeColumnHeader_Click" Tag="ShortName"/>
+                                    </GridViewColumn.Header>
+                                    <GridViewColumn.DisplayMemberBinding>
+                                        <Binding Path="ShortName"/>
+                                    </GridViewColumn.DisplayMemberBinding>
+                                </GridViewColumn>
+                                <GridViewColumn Width="120">
+                                    <GridViewColumn.Header>
+                                        <GridViewColumnHeader Content="ID" Click="NodeColumnHeader_Click" Tag="Id"/>
+                                    </GridViewColumn.Header>
+                                    <GridViewColumn.DisplayMemberBinding>
+                                        <Binding Path="Id"/>
+                                    </GridViewColumn.DisplayMemberBinding>
+                                </GridViewColumn>
+                                <GridViewColumn Width="100">
+                                    <GridViewColumn.Header>
+                                        <GridViewColumnHeader Content="Entfernung" Click="NodeColumnHeader_Click" Tag="Distance"/>
+                                    </GridViewColumn.Header>
+                                    <GridViewColumn.DisplayMemberBinding>
+                                        <Binding Path="Distance"/>
+                                    </GridViewColumn.DisplayMemberBinding>
+                                </GridViewColumn>
+                                <GridViewColumn Width="80">
+                                    <GridViewColumn.Header>
+                                        <GridViewColumnHeader Content="SNR" Click="NodeColumnHeader_Click" Tag="Snr"/>
+                                    </GridViewColumn.Header>
+                                    <GridViewColumn.DisplayMemberBinding>
+                                        <Binding Path="Snr"/>
+                                    </GridViewColumn.DisplayMemberBinding>
+                                </GridViewColumn>
+                                <GridViewColumn Width="80">
+                                    <GridViewColumn.Header>
+                                        <GridViewColumnHeader Content="RSSI" Click="NodeColumnHeader_Click" Tag="Rssi"/>
+                                    </GridViewColumn.Header>
+                                    <GridViewColumn.DisplayMemberBinding>
+                                        <Binding Path="Rssi"/>
+                                    </GridViewColumn.DisplayMemberBinding>
+                                </GridViewColumn>
+                                <GridViewColumn Width="80">
+                                    <GridViewColumn.Header>
+                                        <GridViewColumnHeader Content="Batterie" Click="NodeColumnHeader_Click" Tag="Battery"/>
+                                    </GridViewColumn.Header>
+                                    <GridViewColumn.DisplayMemberBinding>
+                                        <Binding Path="Battery"/>
+                                    </GridViewColumn.DisplayMemberBinding>
+                                </GridViewColumn>
+                                <GridViewColumn Width="150">
+                                    <GridViewColumn.Header>
+                                        <GridViewColumnHeader Content="Zuletzt gesehen" Click="NodeColumnHeader_Click" Tag="LastSeen"/>
+                                    </GridViewColumn.Header>
+                                    <GridViewColumn.DisplayMemberBinding>
+                                        <Binding Path="LastSeen"/>
+                                    </GridViewColumn.DisplayMemberBinding>
+                                </GridViewColumn>
                             </GridView>
                         </ListView.View>
                         <ListView.ContextMenu>
                             <ContextMenu>
                                 <MenuItem Header="💬 DM senden" Click="SendDmToNode_Click"/>
+                                <Separator/>
+                                <MenuItem Header="🎨 Farbe setzen">
+                                    <MenuItem Tag="#00FF00" Click="SetNodeColor_Click">
+                                        <MenuItem.Header>
+                                            <TextBlock Text="■ Grün" Foreground="#00FF00" FontWeight="Bold"/>
+                                        </MenuItem.Header>
+                                    </MenuItem>
+                                    <MenuItem Tag="#0080FF" Click="SetNodeColor_Click">
+                                        <MenuItem.Header>
+                                            <TextBlock Text="■ Blau" Foreground="#0080FF" FontWeight="Bold"/>
+                                        </MenuItem.Header>
+                                    </MenuItem>
+                                    <MenuItem Tag="#FFFF00" Click="SetNodeColor_Click">
+                                        <MenuItem.Header>
+                                            <TextBlock Text="■ Gelb" Foreground="#FFFF00" FontWeight="Bold"/>
+                                        </MenuItem.Header>
+                                    </MenuItem>
+                                    <MenuItem Tag="#FF8000" Click="SetNodeColor_Click">
+                                        <MenuItem.Header>
+                                            <TextBlock Text="■ Orange" Foreground="#FF8000" FontWeight="Bold"/>
+                                        </MenuItem.Header>
+                                    </MenuItem>
+                                    <MenuItem Tag="#8000FF" Click="SetNodeColor_Click">
+                                        <MenuItem.Header>
+                                            <TextBlock Text="■ Lila" Foreground="#8000FF" FontWeight="Bold"/>
+                                        </MenuItem.Header>
+                                    </MenuItem>
+                                    <MenuItem Tag="#804000" Click="SetNodeColor_Click">
+                                        <MenuItem.Header>
+                                            <TextBlock Text="■ Braun" Foreground="#804000" FontWeight="Bold"/>
+                                        </MenuItem.Header>
+                                    </MenuItem>
+                                    <MenuItem Tag="#FF00FF" Click="SetNodeColor_Click">
+                                        <MenuItem.Header>
+                                            <TextBlock Text="■ Pink" Foreground="#FF00FF" FontWeight="Bold"/>
+                                        </MenuItem.Header>
+                                    </MenuItem>
+                                    <MenuItem Tag="#00FFFF" Click="SetNodeColor_Click">
+                                        <MenuItem.Header>
+                                            <TextBlock Text="■ Türkis" Foreground="#00FFFF" FontWeight="Bold"/>
+                                        </MenuItem.Header>
+                                    </MenuItem>
+                                    <Separator/>
+                                    <MenuItem Header="❌ Farbe entfernen" Click="RemoveNodeColor_Click"/>
+                                </MenuItem>
+                                <MenuItem Header="📝 Notiz bearbeiten..." Click="EditNodeNote_Click"/>
                             </ContextMenu>
                         </ListView.ContextMenu>
                     </ListView>
@@ -309,6 +460,26 @@
                                        Width="200"
                                        HorizontalAlignment="Left"
                                        Click="DownloadTiles_Click"/>
+                            </StackPanel>
+                        </GroupBox>
+
+                        <GroupBox Header="Debug" Margin="0,0,0,20">
+                            <StackPanel>
+                                <CheckBox x:Name="DebugMessagesCheckBox"
+                                         Content="Nachrichten-Debug aktivieren (Details im Log)"
+                                         Margin="0,0,0,10"/>
+                                <TextBlock Text="Zeigt detaillierte Informationen über empfangene und gefilterte Nachrichten im Log an."
+                                          TextWrapping="Wrap"
+                                          FontSize="11"
+                                          Foreground="Gray"
+                                          Margin="0,0,0,15"/>
+                                <CheckBox x:Name="DebugSerialCheckBox"
+                                         Content="Serielle Daten-Debug aktivieren (Hex-Dump)"
+                                         Margin="0,0,0,10"/>
+                                <TextBlock Text="Zeigt empfangene und gesendete Protobuf-Pakete als Hex-Dump im Log an. Sehr ausführlich!"
+                                          TextWrapping="Wrap"
+                                          FontSize="11"
+                                          Foreground="Gray"/>
                             </StackPanel>
                         </GroupBox>
 

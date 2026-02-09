@@ -20,12 +20,16 @@ public class MeshtasticProtocolService
     private bool _isInitializing = false;
     private bool _isDisconnecting = false; // Flag für sauberes Beenden
     private readonly object _dataLock = new(); // Lock für Thread-Safety
+    private int _packetCount = 0;
+    private DateTime _lastPacketTime = DateTime.MinValue;
+    private bool _debugSerial = false;
 
     public event EventHandler<MessageItem>? MessageReceived;
     public event EventHandler<ModelNodeInfo>? NodeInfoReceived;
     public event EventHandler<ChannelInfo>? ChannelInfoReceived;
     public event EventHandler<LoRaConfig>? LoRaConfigReceived;
     public event EventHandler<DeviceInfo>? DeviceInfoReceived;
+    public event EventHandler<int>? PacketCountChanged;
 
     private const byte PACKET_START_BYTE_1 = 0x94;
     private const byte PACKET_START_BYTE_2 = 0xC3;
@@ -58,6 +62,10 @@ public class MeshtasticProtocolService
         for (int i = 0; i < 32; i++)
         {
             wakeup[i] = PACKET_START_BYTE_2; // 0xC3
+        }
+        if (_debugSerial)
+        {
+            Logger.WriteLine($"[SERIAL TX] Wakeup {wakeup.Length} bytes:\n    {ToHexString(wakeup)}");
         }
         await _serialPort.WriteAsync(wakeup);
         await Task.Delay(100);
@@ -173,10 +181,35 @@ public class MeshtasticProtocolService
 
     private void OnDataReceived(object? sender, byte[] data)
     {
-        lock (_receiveBuffer)
+        try
         {
-            _receiveBuffer.AddRange(data);
-            ProcessBuffer();
+            if (_debugSerial && data.Length > 0)
+            {
+                Logger.WriteLine($"[SERIAL RX] {data.Length} bytes:\n    {ToHexString(data)}");
+            }
+
+            lock (_receiveBuffer)
+            {
+                _receiveBuffer.AddRange(data);
+                ProcessBuffer();
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.WriteLine($"FATAL: OnDataReceived crashed: {ex.Message}");
+            Logger.WriteLine($"  Stack trace: {ex.StackTrace}");
+            // Try to recover by clearing the buffer
+            try
+            {
+                lock (_receiveBuffer)
+                {
+                    _receiveBuffer.Clear();
+                }
+            }
+            catch
+            {
+                // Ignore
+            }
         }
     }
 
@@ -184,6 +217,14 @@ public class MeshtasticProtocolService
     {
         try
         {
+            // Safety: If buffer grows too large, clear it to prevent memory issues
+            if (_receiveBuffer.Count > 100000) // 100KB limit
+            {
+                Logger.WriteLine($"WARNING: Receive buffer exceeded 100KB, clearing buffer");
+                _receiveBuffer.Clear();
+                return;
+            }
+
             while (_receiveBuffer.Count >= 4)
             {
                 int startIndex = FindPacketStart();
@@ -205,6 +246,14 @@ public class MeshtasticProtocolService
 
                 int packetLength = (_receiveBuffer[2] << 8) | _receiveBuffer[3];
 
+                // Sanity check on packet length
+                if (packetLength < 0 || packetLength > 10000)
+                {
+                    Logger.WriteLine($"WARNING: Invalid packet length {packetLength}, skipping");
+                    _receiveBuffer.RemoveRange(0, Math.Min(4, _receiveBuffer.Count));
+                    continue;
+                }
+
                 if (_receiveBuffer.Count < 4 + packetLength)
                 {
                     break;
@@ -220,12 +269,14 @@ public class MeshtasticProtocolService
                 catch (Exception ex)
                 {
                     Logger.WriteLine($"ERROR: Packet processing failed: {ex.Message}");
+                    Logger.WriteLine($"  Stack trace: {ex.StackTrace}");
                 }
             }
         }
         catch (Exception ex)
         {
             Logger.WriteLine($"FATAL: ProcessBuffer crashed: {ex.Message}");
+            Logger.WriteLine($"  Stack trace: {ex.StackTrace}");
             _receiveBuffer.Clear();
         }
     }
@@ -248,6 +299,12 @@ public class MeshtasticProtocolService
         {
             var fromRadio = FromRadio.Parser.ParseFrom(packet);
             Logger.WriteLine($"Received FromRadio packet, type: {fromRadio.PayloadVariantCase}");
+
+            // Update packet counter
+            _packetCount++;
+            _lastPacketTime = DateTime.Now;
+            PacketCountChanged?.Invoke(this, _packetCount);
+
             HandleFromRadio(fromRadio);
         }
         catch (Exception ex)
@@ -274,6 +331,7 @@ public class MeshtasticProtocolService
                     _myDeviceInfo = new DeviceInfo
                     {
                         NodeId = _myNodeId,
+                        // Hardware and firmware info will be filled from other sources
                         // User-Daten werden später aus NodeInfo ergänzt
                     };
                 }
@@ -477,9 +535,24 @@ public class MeshtasticProtocolService
                 NodeId = packet.From,
                 Id = $"!{packet.From:x8}",
                 Name = user.LongName ?? user.ShortName ?? $"Node-{packet.From:x4}",
+                ShortName = user.ShortName ?? "",
+                LongName = user.LongName ?? "",
                 Snr = packet.RxSnr.ToString("F1"),
+                Rssi = packet.RxRssi.ToString(),
                 LastSeen = DateTime.Now.ToString("HH:mm:ss")
             };
+
+            // Update DeviceInfo if this is our own node
+            if (packet.From == _myNodeId && _myDeviceInfo != null)
+            {
+                lock (_dataLock)
+                {
+                    _myDeviceInfo.HardwareModel = user.HwModel.ToString();
+                    _myDeviceInfo.ShortName = user.ShortName ?? "";
+                    _myDeviceInfo.LongName = user.LongName ?? "";
+                    Logger.WriteLine($"Updated own DeviceInfo: HW={_myDeviceInfo.HardwareModel}, Name={_myDeviceInfo.LongName}");
+                }
+            }
 
             bool shouldFireEvent;
             lock (_dataLock)
@@ -617,10 +690,23 @@ public class MeshtasticProtocolService
 
             if (shouldFireEvent && channel.Role != ChannelRole.Disabled)
             {
+                var channelName = channel.Settings?.Name ?? "";
+
+                // Fallback: Use ModemPreset name for PRIMARY channel without name
+                if (string.IsNullOrWhiteSpace(channelName) && channel.Role == ChannelRole.Primary && _currentLoRaConfig != null)
+                {
+                    channelName = _currentLoRaConfig.ModemPreset.ToString().Replace("_", " ");
+                    Logger.WriteLine($"  Using preset name for primary channel: '{channelName}'");
+                }
+                else if (string.IsNullOrWhiteSpace(channelName))
+                {
+                    channelName = $"Channel {channel.Index}";
+                }
+
                 var channelInfo = new ChannelInfo
                 {
                     Index = channel.Index,
-                    Name = string.IsNullOrWhiteSpace(channel.Settings?.Name) ? $"Channel {channel.Index}" : channel.Settings.Name,
+                    Name = channelName,
                     Role = channel.Role.ToString(),
                     Psk = channel.Settings?.Psk != null && channel.Settings.Psk.Length > 0
                         ? Convert.ToBase64String(channel.Settings.Psk.ToByteArray())
@@ -681,6 +767,11 @@ public class MeshtasticProtocolService
         frame[2] = (byte)(protoData.Length >> 8);
         frame[3] = (byte)(protoData.Length & 0xFF);
         Array.Copy(protoData, 0, frame, 4, protoData.Length);
+
+        if (_debugSerial)
+        {
+            Logger.WriteLine($"[SERIAL TX] ToRadio {frame.Length} bytes (payload {protoData.Length}):\n    {ToHexString(frame)}");
+        }
 
         await _serialPort.WriteAsync(frame);
     }
@@ -898,5 +989,28 @@ public class MeshtasticProtocolService
         {
             Logger.WriteLine($"ERROR: Admin message failed: {ex.Message}");
         }
+    }
+
+    public void SetDebugSerial(bool enabled)
+    {
+        _debugSerial = enabled;
+        Logger.WriteLine($"Serial debug {(enabled ? "enabled" : "disabled")}");
+    }
+
+    private static string ToHexString(byte[] data)
+    {
+        if (data == null || data.Length == 0)
+            return "";
+
+        var sb = new StringBuilder(data.Length * 3);
+        for (int i = 0; i < data.Length; i++)
+        {
+            if (i > 0 && i % 16 == 0)
+                sb.Append("\n    ");
+            else if (i > 0)
+                sb.Append(" ");
+            sb.Append(data[i].ToString("X2"));
+        }
+        return sb.ToString();
     }
 }

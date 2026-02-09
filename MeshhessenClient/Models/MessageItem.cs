@@ -11,4 +11,6 @@ public class MessageItem
     public uint ToId { get; set; }
     public bool IsEncrypted { get; set; } = false;
     public bool IsViaMqtt { get; set; } = false;
+    public string SenderColorHex { get; set; } = string.Empty;
+    public string SenderNote { get; set; } = string.Empty;
 }
