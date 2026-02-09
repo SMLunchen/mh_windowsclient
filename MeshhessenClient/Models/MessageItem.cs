@@ -10,4 +10,5 @@ public class MessageItem
     public uint FromId { get; set; }
     public uint ToId { get; set; }
     public bool IsEncrypted { get; set; } = false;
+    public bool IsViaMqtt { get; set; } = false;
 }

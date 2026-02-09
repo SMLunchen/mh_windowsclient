@@ -5,6 +5,7 @@
         xmlns:mapsui="clr-namespace:Mapsui.UI.Wpf;assembly=Mapsui.UI.Wpf"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:converters="clr-namespace:MeshhessenClient.Converters"
         mc:Ignorable="d"
         ui:WindowHelper.UseModernWindowStyle="True"
         Icon="pack://application:,,,/Resources/app.ico"
@@ -14,6 +15,9 @@
         MinHeight="400"
         MinWidth="600">
     <Window.Resources>
+        <converters:MqttIconConverter x:Key="MqttIconConverter"/>
+        <converters:MqttTooltipConverter x:Key="MqttTooltipConverter"/>
+
         <Style TargetType="ComboBoxItem">
             <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
         </Style>
@@ -115,9 +119,19 @@
                              Margin="10,5,10,10">
                         <ListView.View>
                             <GridView>
+                                <GridViewColumn Header="" Width="30">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding IsViaMqtt, Converter={StaticResource MqttIconConverter}}"
+                                                       ToolTip="{Binding IsViaMqtt, Converter={StaticResource MqttTooltipConverter}}"
+                                                       FontSize="16"
+                                                       HorizontalAlignment="Center"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
                                 <GridViewColumn Header="Zeit" Width="120" DisplayMemberBinding="{Binding Time}"/>
                                 <GridViewColumn Header="Von" Width="150" DisplayMemberBinding="{Binding From}"/>
-                                <GridViewColumn Header="Nachricht" Width="400" DisplayMemberBinding="{Binding Message}"/>
+                                <GridViewColumn Header="Nachricht" Width="370" DisplayMemberBinding="{Binding Message}"/>
                                 <GridViewColumn Header="Kanal" Width="100" DisplayMemberBinding="{Binding ChannelName}"/>
                             </GridView>
                         </ListView.View>

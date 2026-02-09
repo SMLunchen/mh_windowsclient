@@ -365,7 +365,8 @@ public class MeshtasticProtocolService
                 ToId = packet.To,
                 Message = "[Verschlüsselte Nachricht - PSK erforderlich]",
                 Channel = packet.Channel.ToString(),
-                IsEncrypted = true
+                IsEncrypted = true,
+                IsViaMqtt = packet.ViaMqtt
             };
             MessageReceived?.Invoke(this, messageItem);
         }
@@ -393,7 +394,8 @@ public class MeshtasticProtocolService
                 FromId = packet.From,
                 ToId = packet.To,
                 Message = messageText,
-                Channel = packet.Channel.ToString()
+                Channel = packet.Channel.ToString(),
+                IsViaMqtt = packet.ViaMqtt
             };
 
             MessageReceived?.Invoke(this, messageItem);

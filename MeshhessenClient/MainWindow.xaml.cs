@@ -616,13 +616,15 @@ public partial class MainWindow : Window
                 From = "Ich",
                 Message = message,
                 Channel = _activeChannelIndex.ToString(),
-                ChannelName = channelName
+                ChannelName = channelName,
+                IsViaMqtt = false
             };
+            _allMessages.Add(sentMessage);
             _messages.Add(sentMessage);
             MessageListView.ScrollIntoView(sentMessage);
 
             // Log die gesendete Nachricht
-            Services.MessageLogger.LogChannelMessage(_activeChannelIndex, channelName, "Ich", message);
+            Services.MessageLogger.LogChannelMessage(_activeChannelIndex, channelName, "Ich", message, false);
 
             MessageTextBox.Clear();
             UpdateStatusBar($"Nachricht gesendet (Kanal {_activeChannelIndex})");
@@ -752,7 +754,7 @@ public partial class MainWindow : Window
                 // Log die Kanal-Nachricht
                 if (uint.TryParse(message.Channel, out uint logChannelIndex))
                 {
-                    Services.MessageLogger.LogChannelMessage((int)logChannelIndex, message.ChannelName, message.From, message.Message);
+                    Services.MessageLogger.LogChannelMessage((int)logChannelIndex, message.ChannelName, message.From, message.Message, message.IsViaMqtt);
                 }
 
                 // Prüfe ob Nachricht den aktuellen Filter passiert
