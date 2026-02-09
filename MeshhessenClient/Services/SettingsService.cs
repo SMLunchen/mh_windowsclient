@@ -1,4 +1,5 @@
 using System.IO;
+using System.Globalization;
 
 namespace MeshhessenClient.Services;
 
@@ -7,7 +8,12 @@ public record AppSettings(
     string StationName,
     bool ShowEncryptedMessages,
     double MyLatitude,
-    double MyLongitude);
+    double MyLongitude,
+    string LastComPort,
+    Dictionary<uint, string> NodeColors,     // NodeId -> Color (hex)
+    Dictionary<uint, string> NodeNotes,      // NodeId -> Note text
+    bool DebugMessages,                      // Enable message debug logging
+    bool DebugSerial);                       // Enable serial data hex dump
 
 public static class SettingsService
 {
@@ -15,7 +21,7 @@ public static class SettingsService
 
     public static AppSettings Load()
     {
-        var defaults = new AppSettings(false, string.Empty, true, 50.9, 9.5);
+        var defaults = new AppSettings(false, string.Empty, true, 50.9, 9.5, string.Empty, new Dictionary<uint, string>(), new Dictionary<uint, string>(), false, false);
 
         try
         {
@@ -34,12 +40,47 @@ public static class SettingsService
                     values[trimmed[..eq].Trim()] = trimmed[(eq + 1)..].Trim();
             }
 
+            var lastComPort = values.TryGetValue("LastComPort", out var lcp) ? lcp : string.Empty;
+
+            // Load node colors
+            var nodeColors = new Dictionary<uint, string>();
+            foreach (var key in values.Keys)
+            {
+                if (key.StartsWith("NodeColor_", StringComparison.OrdinalIgnoreCase))
+                {
+                    var nodeIdHex = key.Substring(10);
+                    if (uint.TryParse(nodeIdHex, NumberStyles.HexNumber, null, out uint nodeId))
+                    {
+                        nodeColors[nodeId] = values[key];
+                    }
+                }
+            }
+
+            // Load node notes
+            var nodeNotes = new Dictionary<uint, string>();
+            foreach (var key in values.Keys)
+            {
+                if (key.StartsWith("NodeNote_", StringComparison.OrdinalIgnoreCase))
+                {
+                    var nodeIdHex = key.Substring(9);
+                    if (uint.TryParse(nodeIdHex, NumberStyles.HexNumber, null, out uint nodeId))
+                    {
+                        nodeNotes[nodeId] = values[key];
+                    }
+                }
+            }
+
             return new AppSettings(
                 DarkMode: values.TryGetValue("DarkMode", out var dm) && bool.TryParse(dm, out var dmBool) ? dmBool : defaults.DarkMode,
                 StationName: values.TryGetValue("StationName", out var sn) ? sn : defaults.StationName,
                 ShowEncryptedMessages: !values.TryGetValue("ShowEncryptedMessages", out var se) || !bool.TryParse(se, out var seBool) || seBool,
-                MyLatitude: values.TryGetValue("MyLatitude", out var lat) && double.TryParse(lat, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var latVal) ? latVal : defaults.MyLatitude,
-                MyLongitude: values.TryGetValue("MyLongitude", out var lon) && double.TryParse(lon, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var lonVal) ? lonVal : defaults.MyLongitude
+                MyLatitude: values.TryGetValue("MyLatitude", out var lat) && double.TryParse(lat, NumberStyles.Float, CultureInfo.InvariantCulture, out var latVal) ? latVal : defaults.MyLatitude,
+                MyLongitude: values.TryGetValue("MyLongitude", out var lon) && double.TryParse(lon, NumberStyles.Float, CultureInfo.InvariantCulture, out var lonVal) ? lonVal : defaults.MyLongitude,
+                LastComPort: lastComPort,
+                NodeColors: nodeColors,
+                NodeNotes: nodeNotes,
+                DebugMessages: values.TryGetValue("DebugMessages", out var dbg) && bool.TryParse(dbg, out var dbgBool) && dbgBool,
+                DebugSerial: values.TryGetValue("DebugSerial", out var dbs) && bool.TryParse(dbs, out var dbsBool) && dbsBool
             );
         }
         catch (Exception ex)
@@ -53,16 +94,32 @@ public static class SettingsService
     {
         try
         {
-            var ci = System.Globalization.CultureInfo.InvariantCulture;
-            var lines = new[]
+            var ci = CultureInfo.InvariantCulture;
+            var lines = new List<string>
             {
                 "[App]",
                 $"DarkMode={settings.DarkMode}",
                 $"StationName={settings.StationName}",
                 $"ShowEncryptedMessages={settings.ShowEncryptedMessages}",
                 $"MyLatitude={settings.MyLatitude.ToString("F7", ci)}",
-                $"MyLongitude={settings.MyLongitude.ToString("F7", ci)}"
+                $"MyLongitude={settings.MyLongitude.ToString("F7", ci)}",
+                $"LastComPort={settings.LastComPort}",
+                $"DebugMessages={settings.DebugMessages}",
+                $"DebugSerial={settings.DebugSerial}"
             };
+
+            // Save node colors
+            foreach (var kvp in settings.NodeColors)
+            {
+                lines.Add($"NodeColor_{kvp.Key:X8}={kvp.Value}");
+            }
+
+            // Save node notes
+            foreach (var kvp in settings.NodeNotes)
+            {
+                lines.Add($"NodeNote_{kvp.Key:X8}={kvp.Value}");
+            }
+
             File.WriteAllLines(IniFilePath, lines);
             Logger.WriteLine($"Settings saved to {IniFilePath}");
         }

@@ -1,4 +1,5 @@
-﻿using System.IO.Ports;
+﻿using System.IO;
+using System.IO.Ports;
 
 namespace MeshhessenClient.Services;
 
@@ -9,6 +10,8 @@ public class SerialPortService : IDisposable
     private readonly object _lock = new();
     private Thread? _readerThread;
     private bool _wantExit = false;
+    private DateTime _lastReaderHeartbeat = DateTime.MinValue;
+    private System.Threading.Timer? _watchdogTimer;
 
     public event EventHandler<bool>? ConnectionStateChanged;
     public event EventHandler<byte[]>? DataReceived;
@@ -67,12 +70,16 @@ public class SerialPortService : IDisposable
 
                 // Starte Reader-Thread
                 _wantExit = false;
+                _lastReaderHeartbeat = DateTime.Now;
                 _readerThread = new Thread(ReaderThreadFunc)
                 {
                     IsBackground = true,
                     Name = "SerialReader"
                 };
                 _readerThread.Start();
+
+                // Start watchdog timer (checks every 10 seconds)
+                _watchdogTimer = new System.Threading.Timer(WatchdogCallback, null, 10000, 10000);
             }
             catch (Exception ex)
             {
@@ -89,6 +96,10 @@ public class SerialPortService : IDisposable
         try
         {
             Logger.WriteLine("Disconnecting...");
+
+            // Stop watchdog timer
+            _watchdogTimer?.Dispose();
+            _watchdogTimer = null;
 
             // Stoppe Reader Thread zuerst
             _wantExit = true;
@@ -171,6 +182,9 @@ public class SerialPortService : IDisposable
             {
                 try
                 {
+                    // Update heartbeat
+                    _lastReaderHeartbeat = DateTime.Now;
+
                     // Prüfe Port
                     if (_serialPort == null || !_serialPort.IsOpen)
                     {
@@ -210,26 +224,72 @@ public class SerialPortService : IDisposable
                     // Normal - Read timeout (500ms), weiter machen
                     continue;
                 }
-                catch (InvalidOperationException)
+                catch (InvalidOperationException ioe)
                 {
                     // Port geschlossen
+                    Logger.WriteLine($"Reader thread: Port closed ({ioe.Message})");
+                    break;
+                }
+                catch (IOException ioe)
+                {
+                    // I/O error - USB disconnect, cable unplugged, etc.
+                    Logger.WriteLine($"CRITICAL: Reader thread I/O error: {ioe.Message}");
+                    Logger.WriteLine($"  This usually indicates hardware disconnection");
                     break;
                 }
                 catch (Exception ex)
                 {
                     if (!_wantExit)
                     {
-                        Logger.WriteLine($"ERROR: Reader thread: {ex.GetType().Name}: {ex.Message}");
+                        Logger.WriteLine($"CRITICAL: Reader thread unexpected exception: {ex.GetType().Name}: {ex.Message}");
+                        Logger.WriteLine($"  Stack trace: {ex.StackTrace}");
                     }
                     break;
                 }
             }
 
-            Logger.WriteLine("Serial reader thread stopped");
+            Logger.WriteLine($"Serial reader thread stopped (wantExit={_wantExit}, port={((_serialPort?.IsOpen ?? false) ? "open" : "closed")})");
+
+            // If thread is stopping unexpectedly, trigger disconnect to clean up state
+            if (!_wantExit && IsConnected)
+            {
+                Logger.WriteLine("WARNING: Reader thread stopped unexpectedly, forcing disconnect");
+                Task.Run(() => Disconnect());
+            }
         }
         catch (Exception ex)
         {
             Logger.WriteLine($"FATAL: Reader thread crashed: {ex.GetType().Name}: {ex.Message}");
+        }
+    }
+
+    private void WatchdogCallback(object? state)
+    {
+        try
+        {
+            // Check if reader thread is still alive and actively running
+            if (_isConnected && _readerThread != null)
+            {
+                var timeSinceHeartbeat = DateTime.Now - _lastReaderHeartbeat;
+
+                // If no heartbeat for more than 30 seconds, something is wrong
+                if (timeSinceHeartbeat.TotalSeconds > 30)
+                {
+                    Logger.WriteLine($"CRITICAL: Reader thread appears to be dead (no heartbeat for {timeSinceHeartbeat.TotalSeconds:F0}s)!");
+                    Logger.WriteLine($"  Thread state: {(_readerThread.IsAlive ? "Alive" : "Dead")}");
+
+                    // Force disconnect to clean up state
+                    Task.Run(() => Disconnect());
+                }
+                else if (timeSinceHeartbeat.TotalSeconds > 10)
+                {
+                    Logger.WriteLine($"WARNING: Reader thread heartbeat delayed ({timeSinceHeartbeat.TotalSeconds:F0}s)");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.WriteLine($"ERROR in watchdog: {ex.Message}");
         }
     }
 

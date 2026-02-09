@@ -8,10 +8,13 @@ public class NodeInfo
     public string Id { get; set; } = string.Empty;
     public string Distance { get; set; } = "-";
     public string Snr { get; set; } = "-";
+    public string Rssi { get; set; } = "-";
     public string Battery { get; set; } = "-";
     public string LastSeen { get; set; } = "-";
     public uint NodeId { get; set; }
     public double? Latitude { get; set; }
     public double? Longitude { get; set; }
     public int? Altitude { get; set; }
+    public string ColorHex { get; set; } = string.Empty;  // Empty = no color, otherwise #RRGGBB
+    public string Note { get; set; } = string.Empty;      // User note
 }

@@ -59,6 +59,7 @@ message MeshPacket {
   bool want_ack = 11;
   Priority priority = 12;
   int32 hop_start = 13;
+  bool via_mqtt = 14;
 }
 
 message NodeInfo {

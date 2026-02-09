@@ -48,7 +48,7 @@ public partial class DirectMessagesWindow : Window
                 conversation.Messages.Add(message);
 
                 // Log die Nachricht
-                Services.MessageLogger.LogDirectMessage(partnerId, conversation.NodeName, message.From, message.Message);
+                Services.MessageLogger.LogDirectMessage(partnerId, conversation.NodeName, message.From, message.Message, message.IsViaMqtt);
 
                 // Markiere als ungelesen wenn Tab nicht aktiv
                 var tab = _tabByNodeId[partnerId];
@@ -192,7 +192,7 @@ public partial class DirectMessagesWindow : Window
                 conversation.Messages.Add(sentMessage);
 
                 // Log die Nachricht
-                Services.MessageLogger.LogDirectMessage(toNodeId, conversation.NodeName, "Ich", messageText);
+                Services.MessageLogger.LogDirectMessage(toNodeId, conversation.NodeName, "Ich", messageText, false);
             }
         }
         catch (Exception ex)

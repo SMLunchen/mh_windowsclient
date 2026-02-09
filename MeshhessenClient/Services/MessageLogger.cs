@@ -24,20 +24,24 @@ public static class MessageLogger
         }
     }
 
-    public static void LogChannelMessage(int channelIndex, string channelName, string from, string message)
+    public static void LogChannelMessage(int channelIndex, string channelName, string from, string message, bool isViaMqtt = false, string senderNote = "")
     {
         var fileName = SanitizeFileName($"Channel_{channelIndex}_{channelName}.log");
         var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-        var logEntry = $"[{timestamp}] {from}: {message}";
+        var mqttPrefix = isViaMqtt ? "[MQTT] " : "";
+        var fromWithNote = string.IsNullOrEmpty(senderNote) ? from : $"{from} ({senderNote})";
+        var logEntry = $"[{timestamp}] {mqttPrefix}{fromWithNote}: {message}";
 
         WriteToLog(fileName, logEntry);
     }
 
-    public static void LogDirectMessage(uint nodeId, string nodeName, string from, string message)
+    public static void LogDirectMessage(uint nodeId, string nodeName, string from, string message, bool isViaMqtt = false, string senderNote = "")
     {
         var fileName = SanitizeFileName($"DM_{nodeId:X8}_{nodeName}.log");
         var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-        var logEntry = $"[{timestamp}] {from}: {message}";
+        var mqttPrefix = isViaMqtt ? "[MQTT] " : "";
+        var fromWithNote = string.IsNullOrEmpty(senderNote) ? from : $"{from} ({senderNote})";
+        var logEntry = $"[{timestamp}] {mqttPrefix}{fromWithNote}: {message}";
 
         WriteToLog(fileName, logEntry);
     }
