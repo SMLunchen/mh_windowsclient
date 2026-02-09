@@ -55,7 +55,7 @@ public partial class MainWindow : Window
     private readonly List<IFeature> _nodeFeatures = new();
     private readonly List<IFeature> _myPosFeatures = new();
     private readonly Dictionary<uint, MPoint> _nodePinPositions = new();
-    private AppSettings _currentSettings = new(false, string.Empty, true, 50.9, 9.5, string.Empty, new Dictionary<uint, string>(), new Dictionary<uint, string>(), false, false);
+    private AppSettings _currentSettings = new(false, string.Empty, true, 50.9, 9.5, string.Empty, new Dictionary<uint, string>(), new Dictionary<uint, string>(), false, false, false);
     private NodeInfo? _mapContextMenuNode;
 
     public MainWindow()
@@ -78,7 +78,6 @@ public partial class MainWindow : Window
         _protocolService.DeviceInfoReceived += OnDeviceInfoReceived;
         _protocolService.PacketCountChanged += OnPacketCountChanged;
 
-        RefreshPorts();
         LoadRegions();
         LoadModemPresets();
 
@@ -96,8 +95,9 @@ public partial class MainWindow : Window
         ShowEncryptedMessagesCheckBox.Checked += (s, e) => _showEncryptedMessages = true;
         ShowEncryptedMessagesCheckBox.Unchecked += (s, e) => _showEncryptedMessages = false;
 
-        // Einstellungen laden
+        // Einstellungen laden (VOR RefreshPorts, damit LastComPort bekannt ist)
         LoadSettings();
+        RefreshPorts();
 
         // Karte initialisieren
         InitializeMap();
@@ -115,9 +115,11 @@ public partial class MainWindow : Window
             _showEncryptedMessages = settings.ShowEncryptedMessages;
             DebugMessagesCheckBox.IsChecked = settings.DebugMessages;
             DebugSerialCheckBox.IsChecked = settings.DebugSerial;
+            DebugDeviceCheckBox.IsChecked = settings.DebugDevice;
 
             _currentSettings = settings;
             _protocolService.SetDebugSerial(settings.DebugSerial);
+            _protocolService.SetDebugDevice(settings.DebugDevice);
 
             if (settings.DarkMode)
                 ModernWpf.ThemeManager.Current.ApplicationTheme = ModernWpf.ApplicationTheme.Dark;
@@ -763,13 +765,15 @@ public partial class MainWindow : Window
                 NodeColors: _currentSettings.NodeColors,
                 NodeNotes: _currentSettings.NodeNotes,
                 DebugMessages: DebugMessagesCheckBox.IsChecked == true,
-                DebugSerial: DebugSerialCheckBox.IsChecked == true
+                DebugSerial: DebugSerialCheckBox.IsChecked == true,
+                DebugDevice: DebugDeviceCheckBox.IsChecked == true
             );
             _currentSettings = settings;
             SettingsService.Save(settings);
             StationNameLabel.Text = settings.StationName;
             _showEncryptedMessages = settings.ShowEncryptedMessages;
             _protocolService.SetDebugSerial(settings.DebugSerial);
+            _protocolService.SetDebugDevice(settings.DebugDevice);
             MessageBox.Show("Einstellungen gespeichert.", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
         }
         catch (Exception ex)
@@ -980,7 +984,16 @@ public partial class MainWindow : Window
                 {
                     _channels.Remove(existing);
                 }
-                _channels.Add(channel);
+                // Sortiert einfügen nach Channel-Index
+                int insertAt = 0;
+                for (int i = 0; i < _channels.Count; i++)
+                {
+                    if (_channels[i].Index < channel.Index)
+                        insertAt = i + 1;
+                    else
+                        break;
+                }
+                _channels.Insert(insertAt, channel);
 
                 // Aktiviere Kanal-Auswahl wenn Kanäle vorhanden sind
                 if (_channels.Count > 0 && !ActiveChannelComboBox.IsEnabled)

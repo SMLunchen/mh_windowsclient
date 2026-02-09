@@ -13,7 +13,8 @@ public record AppSettings(
     Dictionary<uint, string> NodeColors,     // NodeId -> Color (hex)
     Dictionary<uint, string> NodeNotes,      // NodeId -> Note text
     bool DebugMessages,                      // Enable message debug logging
-    bool DebugSerial);                       // Enable serial data hex dump
+    bool DebugSerial,                        // Enable serial data hex dump
+    bool DebugDevice);                       // Enable device serial debug output logging
 
 public static class SettingsService
 {
@@ -21,7 +22,7 @@ public static class SettingsService
 
     public static AppSettings Load()
     {
-        var defaults = new AppSettings(false, string.Empty, true, 50.9, 9.5, string.Empty, new Dictionary<uint, string>(), new Dictionary<uint, string>(), false, false);
+        var defaults = new AppSettings(false, string.Empty, true, 50.9, 9.5, string.Empty, new Dictionary<uint, string>(), new Dictionary<uint, string>(), false, false, false);
 
         try
         {
@@ -80,7 +81,8 @@ public static class SettingsService
                 NodeColors: nodeColors,
                 NodeNotes: nodeNotes,
                 DebugMessages: values.TryGetValue("DebugMessages", out var dbg) && bool.TryParse(dbg, out var dbgBool) && dbgBool,
-                DebugSerial: values.TryGetValue("DebugSerial", out var dbs) && bool.TryParse(dbs, out var dbsBool) && dbsBool
+                DebugSerial: values.TryGetValue("DebugSerial", out var dbs) && bool.TryParse(dbs, out var dbsBool) && dbsBool,
+                DebugDevice: values.TryGetValue("DebugDevice", out var dbd) && bool.TryParse(dbd, out var dbdBool) && dbdBool
             );
         }
         catch (Exception ex)
@@ -105,7 +107,8 @@ public static class SettingsService
                 $"MyLongitude={settings.MyLongitude.ToString("F7", ci)}",
                 $"LastComPort={settings.LastComPort}",
                 $"DebugMessages={settings.DebugMessages}",
-                $"DebugSerial={settings.DebugSerial}"
+                $"DebugSerial={settings.DebugSerial}",
+                $"DebugDevice={settings.DebugDevice}"
             };
 
             // Save node colors

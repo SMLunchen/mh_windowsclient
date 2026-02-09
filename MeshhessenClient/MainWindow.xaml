@@ -479,6 +479,14 @@
                                 <TextBlock Text="Zeigt empfangene und gesendete Protobuf-Pakete als Hex-Dump im Log an. Sehr ausführlich!"
                                           TextWrapping="Wrap"
                                           FontSize="11"
+                                          Foreground="Gray"
+                                          Margin="0,0,0,15"/>
+                                <CheckBox x:Name="DebugDeviceCheckBox"
+                                         Content="Device-Log aktivieren (Serielle Debug-Ausgabe)"
+                                         Margin="0,0,0,10"/>
+                                <TextBlock Text="Zeigt die Debug-Ausgabe des Meshtastic-Geräts im Log an (DEBUG/INFO Zeilen). Kritische Fehler werden immer angezeigt."
+                                          TextWrapping="Wrap"
+                                          FontSize="11"
                                           Foreground="Gray"/>
                             </StackPanel>
                         </GroupBox>

@@ -23,6 +23,14 @@ public class MeshtasticProtocolService
     private int _packetCount = 0;
     private DateTime _lastPacketTime = DateTime.MinValue;
     private bool _debugSerial = false;
+    private bool _debugDevice = false;
+    private readonly HashSet<int> _receivedChannelResponses = new(); // Tracks which channel indices we got via GetChannelResponse
+    private DateTime _lastValidPacketTime = DateTime.MinValue;
+    private int _consecutiveTextChunks = 0;
+    private bool _recoveryInProgress = false;
+    private readonly StringBuilder _textLineBuffer = new(); // Sammelt unvollständige Textzeilen
+    private DateTime _bufferWaitingSince = DateTime.MinValue; // Tracks when we started waiting for a partial packet
+    private const int MAX_PACKET_LENGTH = 512; // Per Meshtastic spec: >512 = corrupted
 
     public event EventHandler<MessageItem>? MessageReceived;
     public event EventHandler<ModelNodeInfo>? NodeInfoReceived;
@@ -57,29 +65,30 @@ public class MeshtasticProtocolService
             return;
         }
 
-        // Sende Wakeup-Sequenz
-        byte[] wakeup = new byte[32];
-        for (int i = 0; i < 32; i++)
+        // Sende Wakeup-Sequenz (64 bytes für T-Deck Kompatibilität)
+        byte[] wakeup = new byte[64];
+        for (int i = 0; i < 64; i++)
         {
             wakeup[i] = PACKET_START_BYTE_2; // 0xC3
         }
+        Logger.WriteLine("Sending wakeup sequence...");
         if (_debugSerial)
         {
             Logger.WriteLine($"[SERIAL TX] Wakeup {wakeup.Length} bytes:\n    {ToHexString(wakeup)}");
         }
         await _serialPort.WriteAsync(wakeup);
-        await Task.Delay(100);
+        await Task.Delay(500);
 
-        if (_isDisconnecting)
-        {
-            return;
-        }
+        if (_isDisconnecting) return;
 
         // Fordere Config an
+        Logger.WriteLine("Requesting config...");
         await RequestConfigAsync();
 
-        // Warte auf config_complete
-        for (int i = 0; i < 100; i++)
+        // Warte auf config_complete (max 15 Sekunden)
+        Logger.WriteLine("Waiting for config_complete (max 15s)...");
+        bool configReceivedInTime = false;
+        for (int i = 0; i < 150; i++)
         {
             bool isComplete;
             lock (_dataLock)
@@ -89,13 +98,49 @@ public class MeshtasticProtocolService
 
             if (isComplete)
             {
+                Logger.WriteLine($"Config_complete received after {i * 100}ms");
+                configReceivedInTime = true;
                 break;
             }
             await Task.Delay(100);
         }
 
-        // Warte auf weitere Daten
-        await Task.Delay(2000);
+        if (!configReceivedInTime)
+        {
+            Logger.WriteLine("WARNING: config_complete NOT received within 15 seconds!");
+        }
+
+        // Dynamisch warten: Warte bis 3 Sekunden lang keine neuen Nodes mehr kommen
+        // (T-Deck sendet 250+ Nodes, das kann dauern)
+        Logger.WriteLine("Waiting for data stream to finish...");
+        int lastNodeCount = 0;
+        int stableCount = 0;
+        for (int i = 0; i < 60; i++) // max 30 Sekunden
+        {
+            if (_isDisconnecting) break;
+            await Task.Delay(500);
+
+            int currentNodeCount;
+            lock (_dataLock)
+            {
+                currentNodeCount = _knownNodes.Count;
+            }
+
+            if (currentNodeCount == lastNodeCount)
+            {
+                stableCount++;
+                if (stableCount >= 6) // 3 Sekunden keine neuen Daten
+                {
+                    Logger.WriteLine($"Data stream stable for 3s ({currentNodeCount} nodes)");
+                    break;
+                }
+            }
+            else
+            {
+                stableCount = 0;
+                lastNodeCount = currentNodeCount;
+            }
+        }
 
         if (_isDisconnecting) return;
 
@@ -117,6 +162,14 @@ public class MeshtasticProtocolService
         }
 
         Logger.WriteLine($"Init complete: {nodeCount} nodes, {channelCount} channels");
+        if (channelCount > 0)
+        {
+            Logger.WriteLine($"  Received channels during init: {string.Join(", ", channelsToFire.Select(c => $"[{c.Index}]{c.Role}"))}");
+        }
+        else
+        {
+            Logger.WriteLine("  WARNING: NO channels received during init!");
+        }
 
         // Events erlauben
         lock (_dataLock)
@@ -148,10 +201,12 @@ public class MeshtasticProtocolService
         foreach (var channel in channelsToFire)
         {
             if (_isDisconnecting) break;
+            if (channel.Role == ChannelRole.Disabled) continue;
+
             var channelInfo = new ChannelInfo
             {
                 Index = channel.Index,
-                Name = channel.Settings?.Name ?? $"Channel {channel.Index}",
+                Name = ExtractChannelName(channel),
                 Role = channel.Role.ToString(),
                 Psk = channel.Settings?.Psk != null ? Convert.ToBase64String(channel.Settings.Psk.ToByteArray()) : "",
                 Uplink = channel.Settings?.UplinkEnabled ?? 0,
@@ -166,16 +221,78 @@ public class MeshtasticProtocolService
             LoRaConfigReceived?.Invoke(this, loraConfigToFire);
         }
 
-        // Device sendet keine Channels automatisch - fordere sie manuell an
-        if (channelCount == 0 && _myNodeId != 0)
+        // T-Deck/Plus sendet Channels NICHT in der Config-Sequenz
+        // Fordere IMMER alle Channels einzeln per AdminMessage an
+        // Retry-Logik: T-Deck antwortet inkonsistent, bis zu 3 Runden
+        if (_myNodeId != 0 && channelCount < 8)
         {
-            Logger.WriteLine("Requesting channels manually...");
-            for (int i = 0; i < 8; i++)
+            lock (_dataLock)
+            {
+                _receivedChannelResponses.Clear();
+            }
+
+            const int maxRetries = 3;
+            for (int round = 1; round <= maxRetries; round++)
             {
                 if (_isDisconnecting) break;
-                await RequestChannelAsync(i);
-                await Task.Delay(300);
+
+                // Bestimme welche Channels noch fehlen
+                List<int> missingChannels;
+                lock (_dataLock)
+                {
+                    missingChannels = Enumerable.Range(0, 8)
+                        .Where(i => !_receivedChannelResponses.Contains(i))
+                        .ToList();
+                }
+
+                if (missingChannels.Count == 0)
+                {
+                    Logger.WriteLine($"All 8 channels received after {round - 1} round(s)");
+                    break;
+                }
+
+                Logger.WriteLine($"Channel request round {round}/{maxRetries}: requesting {missingChannels.Count} missing channels [{string.Join(",", missingChannels)}]...");
+
+                foreach (int ch in missingChannels)
+                {
+                    if (_isDisconnecting) break;
+                    await RequestChannelAsync(ch);
+                    await Task.Delay(1500); // Großzügige Pause für T-Deck
+                }
+
+                // Warte auf Antworten (5s pro Runde)
+                Logger.WriteLine($"Waiting for channel responses (5s)...");
+                await Task.Delay(5000);
+
+                // Status loggen
+                int receivedCount;
+                lock (_dataLock)
+                {
+                    receivedCount = _receivedChannelResponses.Count;
+                    var received = string.Join(",", _receivedChannelResponses.OrderBy(x => x));
+                    Logger.WriteLine($"  After round {round}: received channels [{received}] ({receivedCount}/8)");
+                }
             }
+
+            // Finale Zusammenfassung
+            int finalChannelCount;
+            lock (_dataLock)
+            {
+                finalChannelCount = _receivedChannelResponses.Count;
+            }
+
+            if (finalChannelCount > 0)
+            {
+                Logger.WriteLine($"Channel loading complete: {finalChannelCount}/8 channels received");
+            }
+            else
+            {
+                Logger.WriteLine($"WARNING: No channels received after {maxRetries} retry rounds!");
+            }
+        }
+        else if (channelCount >= 8)
+        {
+            Logger.WriteLine($"All {channelCount} channels received during init.");
         }
     }
 
@@ -222,20 +339,37 @@ public class MeshtasticProtocolService
             {
                 Logger.WriteLine($"WARNING: Receive buffer exceeded 100KB, clearing buffer");
                 _receiveBuffer.Clear();
+                _bufferWaitingSince = DateTime.MinValue;
                 return;
             }
 
             while (_receiveBuffer.Count >= 4)
             {
                 int startIndex = FindPacketStart();
+
                 if (startIndex == -1)
                 {
-                    _receiveBuffer.Clear();
+                    // Kein Protobuf-Paket gefunden - prüfe ob es ASCII-Text ist
+                    // Letztes Byte behalten falls es 0x94 ist (könnte Start eines Headers sein)
+                    int bytesToProcess = _receiveBuffer.Count;
+                    if (_receiveBuffer[^1] == PACKET_START_BYTE_1)
+                    {
+                        bytesToProcess = _receiveBuffer.Count - 1;
+                    }
+
+                    if (bytesToProcess > 0)
+                    {
+                        ExtractAndLogAsciiText(bytesToProcess);
+                        _receiveBuffer.RemoveRange(0, bytesToProcess);
+                    }
+                    _bufferWaitingSince = DateTime.MinValue;
                     break;
                 }
 
                 if (startIndex > 0)
                 {
+                    // Bytes VOR dem Paket-Start - könnten ASCII-Debug-Ausgaben sein
+                    ExtractAndLogAsciiText(startIndex);
                     _receiveBuffer.RemoveRange(0, startIndex);
                 }
 
@@ -246,21 +380,51 @@ public class MeshtasticProtocolService
 
                 int packetLength = (_receiveBuffer[2] << 8) | _receiveBuffer[3];
 
-                // Sanity check on packet length
-                if (packetLength < 0 || packetLength > 10000)
+                // Per Meshtastic spec: length > 512 = corrupted packet, skip this false start
+                if (packetLength > MAX_PACKET_LENGTH)
                 {
-                    Logger.WriteLine($"WARNING: Invalid packet length {packetLength}, skipping");
-                    _receiveBuffer.RemoveRange(0, Math.Min(4, _receiveBuffer.Count));
+                    Logger.WriteLine($"WARNING: Packet length {packetLength} exceeds max {MAX_PACKET_LENGTH}, skipping false start");
+                    // Nur die 2 Start-Bytes überspringen, danach weiter suchen
+                    _receiveBuffer.RemoveRange(0, 2);
+                    _bufferWaitingSince = DateTime.MinValue;
+                    continue;
+                }
+
+                if (packetLength == 0)
+                {
+                    // Leeres Paket - überspringen
+                    _receiveBuffer.RemoveRange(0, 4);
+                    _bufferWaitingSince = DateTime.MinValue;
                     continue;
                 }
 
                 if (_receiveBuffer.Count < 4 + packetLength)
                 {
+                    // Warten auf restliche Bytes - aber mit Timeout
+                    if (_bufferWaitingSince == DateTime.MinValue)
+                    {
+                        _bufferWaitingSince = DateTime.Now;
+                    }
+                    else if ((DateTime.Now - _bufferWaitingSince).TotalSeconds > 5)
+                    {
+                        // 5 Sekunden gewartet - Paket wird nie komplett, ist wohl ein falscher Start
+                        Logger.WriteLine($"WARNING: Incomplete packet (need {4 + packetLength}, have {_receiveBuffer.Count}) timed out after 5s, skipping false start");
+                        _receiveBuffer.RemoveRange(0, 2); // Skip false start bytes
+                        _bufferWaitingSince = DateTime.MinValue;
+                        continue;
+                    }
                     break;
                 }
 
+                // Paket komplett - Timer zurücksetzen
+                _bufferWaitingSince = DateTime.MinValue;
+
                 byte[] packet = _receiveBuffer.GetRange(4, packetLength).ToArray();
                 _receiveBuffer.RemoveRange(0, 4 + packetLength);
+
+                // Gültiges Protobuf-Paket empfangen - Text-Modus-Zähler zurücksetzen
+                _consecutiveTextChunks = 0;
+                _lastValidPacketTime = DateTime.Now;
 
                 try
                 {
@@ -278,6 +442,142 @@ public class MeshtasticProtocolService
             Logger.WriteLine($"FATAL: ProcessBuffer crashed: {ex.Message}");
             Logger.WriteLine($"  Stack trace: {ex.StackTrace}");
             _receiveBuffer.Clear();
+            _bufferWaitingSince = DateTime.MinValue;
+        }
+    }
+
+    /// <summary>
+    /// Prüft ob Bytes im Buffer ASCII-Text sind (Device-Debug-Ausgabe) und loggt sie.
+    /// Erkennt Zeilen wie "DEBUG | ...", "INFO | ..." etc.
+    /// Wenn zu viel Text ohne Protobuf kommt, wird Recovery ausgelöst.
+    /// </summary>
+    private void ExtractAndLogAsciiText(int count)
+    {
+        if (count <= 0) return;
+
+        // Prüfe ob die Bytes überwiegend druckbares ASCII sind
+        // 0x1B = ESC (ANSI color codes vom Device-Debug-Output)
+        int printableCount = 0;
+        for (int i = 0; i < count; i++)
+        {
+            byte b = _receiveBuffer[i];
+            if ((b >= 0x20 && b <= 0x7E) || b == 0x0A || b == 0x0D || b == 0x09 || b == 0x1B)
+            {
+                printableCount++;
+            }
+        }
+
+        // Mindestens 80% druckbar = wahrscheinlich ASCII-Text
+        if (printableCount < count * 0.8)
+        {
+            // Nicht-druckbare Bytes - normaler Datenmüll, nur bei Debug loggen
+            if (_debugSerial)
+            {
+                Logger.WriteLine($"[SERIAL] Discarding {count} non-protobuf bytes");
+            }
+            return;
+        }
+
+        // ASCII-Text extrahieren und loggen
+        byte[] textBytes = _receiveBuffer.GetRange(0, count).ToArray();
+        string text = Encoding.UTF8.GetString(textBytes);
+
+        // In Zeilen aufteilen und loggen
+        _textLineBuffer.Append(text);
+        string bufferedText = _textLineBuffer.ToString();
+
+        // Nur vollständige Zeilen verarbeiten
+        int lastNewline = bufferedText.LastIndexOf('\n');
+        if (lastNewline >= 0)
+        {
+            string completeLines = bufferedText.Substring(0, lastNewline + 1);
+            _textLineBuffer.Clear();
+            if (lastNewline + 1 < bufferedText.Length)
+            {
+                _textLineBuffer.Append(bufferedText.Substring(lastNewline + 1));
+            }
+
+            foreach (string line in completeLines.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+            {
+                string trimmed = line.Trim('\r', ' ');
+                if (!string.IsNullOrEmpty(trimmed))
+                {
+                    // ANSI color codes entfernen (z.B. \x1B[34m, \x1B[0m)
+                    string clean = StripAnsiCodes(trimmed);
+                    if (!string.IsNullOrEmpty(clean))
+                    {
+                        // Kritische Fehler IMMER loggen, auch wenn DebugDevice aus
+                        CheckForCriticalErrors(clean);
+
+                        if (_debugDevice)
+                        {
+                            Logger.WriteLine($"[DEVICE] {clean}");
+                        }
+                    }
+                }
+            }
+        }
+
+        // Text-Modus Erkennung: Nur wenn LANGE kein Protobuf-Paket mehr kam
+        // (Device sendet normalerweise Debug-Text NEBEN Protobuf - das ist normal)
+        _consecutiveTextChunks++;
+        if (!_recoveryInProgress && !_isInitializing
+            && _lastValidPacketTime != DateTime.MinValue  // Mindestens 1 Paket empfangen
+            && (DateTime.Now - _lastValidPacketTime).TotalSeconds > 60) // 60s ohne Protobuf
+        {
+            Logger.WriteLine($"WARNING: No protobuf packets for {(DateTime.Now - _lastValidPacketTime).TotalSeconds:F0}s while receiving text. Attempting recovery...");
+            _recoveryInProgress = true;
+            Task.Run(async () => await RecoverProtobufModeAsync());
+        }
+    }
+
+    /// <summary>
+    /// Sendet Wakeup-Sequenz und WantConfigId um das Device zurück in den Protobuf-Modus zu bringen.
+    /// </summary>
+    private async Task RecoverProtobufModeAsync()
+    {
+        try
+        {
+            Logger.WriteLine("[RECOVERY] Sending wakeup sequence...");
+
+            // Wakeup-Sequenz senden
+            byte[] wakeup = new byte[32];
+            for (int i = 0; i < 32; i++)
+            {
+                wakeup[i] = PACKET_START_BYTE_2; // 0xC3
+            }
+            await _serialPort.WriteAsync(wakeup);
+            await Task.Delay(500);
+
+            if (_isDisconnecting) return;
+
+            // WantConfigId senden um Protobuf-Modus zu erzwingen
+            Logger.WriteLine("[RECOVERY] Sending WantConfigId to force protobuf mode...");
+            var toRadio = new ToRadio
+            {
+                WantConfigId = (uint)Random.Shared.Next()
+            };
+            await SendToRadioAsync(toRadio);
+
+            // Warte und prüfe ob Recovery erfolgreich war
+            await Task.Delay(3000);
+
+            if (_consecutiveTextChunks == 0)
+            {
+                Logger.WriteLine("[RECOVERY] Success - protobuf mode restored");
+            }
+            else
+            {
+                Logger.WriteLine("[RECOVERY] WARNING - still receiving text after recovery attempt");
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.WriteLine($"[RECOVERY] ERROR: {ex.Message}");
+        }
+        finally
+        {
+            _recoveryInProgress = false;
         }
     }
 
@@ -298,7 +598,11 @@ public class MeshtasticProtocolService
         try
         {
             var fromRadio = FromRadio.Parser.ParseFrom(packet);
-            Logger.WriteLine($"Received FromRadio packet, type: {fromRadio.PayloadVariantCase}");
+            // Nur nicht-NodeInfo Pakete loggen (NodeInfo kommt zu häufig)
+            if (fromRadio.PayloadVariantCase != FromRadio.PayloadVariantOneofCase.NodeInfo)
+            {
+                Logger.WriteLine($"Received FromRadio packet, type: {fromRadio.PayloadVariantCase}");
+            }
 
             // Update packet counter
             _packetCount++;
@@ -342,7 +646,7 @@ public class MeshtasticProtocolService
                 break;
 
             case FromRadio.PayloadVariantOneofCase.Channel:
-                Logger.WriteLine($"Channel packet received: Index={fromRadio.Channel.Index}");
+                Logger.WriteLine($"Channel packet received: Index={fromRadio.Channel.Index}, Role={fromRadio.Channel.Role}");
                 HandleChannel(fromRadio.Channel);
                 break;
 
@@ -688,33 +992,46 @@ public class MeshtasticProtocolService
                 shouldFireEvent = !_isInitializing;
             }
 
-            if (shouldFireEvent && channel.Role != ChannelRole.Disabled)
+            if (shouldFireEvent)
             {
-                var channelName = channel.Settings?.Name ?? "";
-
-                // Fallback: Use ModemPreset name for PRIMARY channel without name
-                if (string.IsNullOrWhiteSpace(channelName) && channel.Role == ChannelRole.Primary && _currentLoRaConfig != null)
+                if (channel.Role == ChannelRole.Disabled)
                 {
-                    channelName = _currentLoRaConfig.ModemPreset.ToString().Replace("_", " ");
-                    Logger.WriteLine($"  Using preset name for primary channel: '{channelName}'");
+                    Logger.WriteLine($"  Channel {channel.Index} is DISABLED, not firing event");
                 }
-                else if (string.IsNullOrWhiteSpace(channelName))
+                else
                 {
-                    channelName = $"Channel {channel.Index}";
-                }
+                    var channelName = channel.Settings?.Name ?? "";
 
-                var channelInfo = new ChannelInfo
-                {
-                    Index = channel.Index,
-                    Name = channelName,
-                    Role = channel.Role.ToString(),
-                    Psk = channel.Settings?.Psk != null && channel.Settings.Psk.Length > 0
-                        ? Convert.ToBase64String(channel.Settings.Psk.ToByteArray())
-                        : "",
-                    Uplink = channel.Settings?.UplinkEnabled ?? 0,
-                    Downlink = channel.Settings?.DownlinkEnabled ?? 0
-                };
-                ChannelInfoReceived?.Invoke(this, channelInfo);
+                    // Fallback: Use ModemPreset name for PRIMARY channel without name
+                    if (string.IsNullOrWhiteSpace(channelName) && channel.Role == ChannelRole.Primary && _currentLoRaConfig != null)
+                    {
+                        channelName = _currentLoRaConfig.ModemPreset.ToString().Replace("_", " ");
+                        Logger.WriteLine($"  Using preset name for primary channel: '{channelName}'");
+                    }
+                    else if (string.IsNullOrWhiteSpace(channelName))
+                    {
+                        channelName = $"Channel {channel.Index}";
+                    }
+
+                    Logger.WriteLine($"  Firing ChannelInfoReceived event: Index={channel.Index}, Name='{channelName}', Role={channel.Role}");
+
+                    var channelInfo = new ChannelInfo
+                    {
+                        Index = channel.Index,
+                        Name = channelName,
+                        Role = channel.Role.ToString(),
+                        Psk = channel.Settings?.Psk != null && channel.Settings.Psk.Length > 0
+                            ? Convert.ToBase64String(channel.Settings.Psk.ToByteArray())
+                            : "",
+                        Uplink = channel.Settings?.UplinkEnabled ?? 0,
+                        Downlink = channel.Settings?.DownlinkEnabled ?? 0
+                    };
+                    ChannelInfoReceived?.Invoke(this, channelInfo);
+                }
+            }
+            else
+            {
+                Logger.WriteLine($"  Channel {channel.Index} stored during init, event will fire later");
             }
         }
         catch (Exception ex)
@@ -778,12 +1095,16 @@ public class MeshtasticProtocolService
 
     private async Task RequestConfigAsync()
     {
+        var configId = (uint)Random.Shared.Next();
+        Logger.WriteLine($"Sending WantConfigId request (ID={configId})...");
+
         var toRadio = new ToRadio
         {
-            WantConfigId = (uint)Random.Shared.Next()
+            WantConfigId = configId
         };
 
         await SendToRadioAsync(toRadio);
+        Logger.WriteLine("WantConfigId sent successfully");
     }
 
     private async Task RequestChannelAsync(int channelIndex)
@@ -811,6 +1132,7 @@ public class MeshtasticProtocolService
             Packet = meshPacket
         };
 
+        Logger.WriteLine($"  Requesting channel {channelIndex}...");
         await SendToRadioAsync(toRadio);
     }
 
@@ -863,74 +1185,9 @@ public class MeshtasticProtocolService
             switch (adminMsg.PayloadVariantCase)
             {
                 case AdminMessage.PayloadVariantOneofCase.GetChannelResponse:
-                    // get_channel_response ist direkt ein Channel
                     var channel = adminMsg.GetChannelResponse;
-
-                    // WORKAROUND: Parse Name manuell aus den RAW Bytes
-                    // Das Device sendet den Namen bei Tag 3 als String (nicht bei Tag 2!)
-                    string channelName = "";
-                    try
-                    {
-                        if (channel.Settings != null)
-                        {
-                            var settingsBytes = channel.Settings.ToByteArray();
-
-                            // Suche nach Tag 3 mit wire type 2 (length-delimited string)
-                            // Tag 3 = (3 << 3) | 2 = 26 = 0x1A
-                            for (int i = 0; i < settingsBytes.Length - 2; i++)
-                            {
-                                if (settingsBytes[i] == 0x1A) // Tag 3, wire type 2
-                                {
-                                    int nameLength = settingsBytes[i + 1];
-                                    if (i + 2 + nameLength <= settingsBytes.Length)
-                                    {
-                                        byte[] nameBytes = new byte[nameLength];
-                                        Array.Copy(settingsBytes, i + 2, nameBytes, 0, nameLength);
-                                        channelName = System.Text.Encoding.UTF8.GetString(nameBytes).Trim();
-                                        Logger.WriteLine($"  DEBUG Channel {channel.Index}: Found name at tag 3: '{channelName}'");
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-
-                        // Fallback: Versuche channel.Settings.Name (kann korrupt sein)
-                        if (string.IsNullOrEmpty(channelName) && channel.Settings != null && !string.IsNullOrEmpty(channel.Settings.Name))
-                        {
-                            var rawName = channel.Settings.Name;
-
-                            // Validierung
-                            bool isValid = true;
-                            foreach (char c in rawName)
-                            {
-                                if (c < 32 && c != '\n' && c != '\r' && c != '\t')
-                                {
-                                    isValid = false;
-                                    break;
-                                }
-                            }
-
-                            if (isValid && !rawName.Contains('\uFFFD'))
-                            {
-                                channelName = rawName.Trim();
-                                Logger.WriteLine($"  DEBUG Channel {channel.Index}: Using tag 2 name: '{channelName}'");
-                            }
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Logger.WriteLine($"  ERROR parsing channel name: {ex.Message}");
-                    }
-
-                    // Fallback: Verwende Preset-Name für PRIMARY Channel ohne Namen
-                    if (string.IsNullOrEmpty(channelName) && channel.Role == ChannelRole.Primary && _currentLoRaConfig != null)
-                    {
-                        channelName = _currentLoRaConfig.ModemPreset.ToString().Replace("_", " ");
-                        Logger.WriteLine($"  DEBUG Channel {channel.Index}: Using preset name '{channelName}'");
-                    }
-
-                    string debugName = string.IsNullOrEmpty(channelName) ? "empty" : channelName;
-                    Logger.WriteLine($"  Channel response: Index={channel.Index}, Role={channel.Role}, Name='{debugName}'");
+                    var channelName = ExtractChannelName(channel);
+                    Logger.WriteLine($"  Channel response: Index={channel.Index}, Role={channel.Role}, Name='{channelName}'");
 
                     bool shouldFireChannelEvent;
                     lock (_dataLock)
@@ -941,25 +1198,22 @@ public class MeshtasticProtocolService
                             _tempChannels.Remove(existing);
                         }
                         _tempChannels.Add(channel);
+                        _receivedChannelResponses.Add(channel.Index);
                         shouldFireChannelEvent = !_isInitializing;
                     }
 
-                    if (shouldFireChannelEvent)
+                    if (shouldFireChannelEvent && channel.Role != ChannelRole.Disabled)
                     {
-                        // Erstelle ChannelInfo nur für gültige Channels (nicht DISABLED)
-                        if (channel.Role != ChannelRole.Disabled)
+                        var channelInfo = new ChannelInfo
                         {
-                            var channelInfo = new ChannelInfo
-                            {
-                                Index = channel.Index,
-                                Name = string.IsNullOrEmpty(channelName) ? $"Channel {channel.Index}" : channelName,
-                                Role = channel.Role.ToString(),
-                                Psk = channel.Settings?.Psk != null && channel.Settings.Psk.Length > 0
-                                    ? Convert.ToBase64String(channel.Settings.Psk.ToByteArray())
-                                    : ""
-                            };
-                            ChannelInfoReceived?.Invoke(this, channelInfo);
-                        }
+                            Index = channel.Index,
+                            Name = channelName,
+                            Role = channel.Role.ToString(),
+                            Psk = channel.Settings?.Psk != null && channel.Settings.Psk.Length > 0
+                                ? Convert.ToBase64String(channel.Settings.Psk.ToByteArray())
+                                : ""
+                        };
+                        ChannelInfoReceived?.Invoke(this, channelInfo);
                     }
                     break;
 
@@ -995,6 +1249,152 @@ public class MeshtasticProtocolService
     {
         _debugSerial = enabled;
         Logger.WriteLine($"Serial debug {(enabled ? "enabled" : "disabled")}");
+    }
+
+    public void SetDebugDevice(bool enabled)
+    {
+        _debugDevice = enabled;
+        Logger.WriteLine($"Device debug logging {(enabled ? "enabled" : "disabled")}");
+    }
+
+    // Meshtastic Critical Error Codes (from protobufs CriticalErrorCode enum)
+    private static readonly Dictionary<string, string> CriticalErrors = new()
+    {
+        { "TxWatchdog", "Software-Bug beim LoRa-Senden erkannt" },
+        { "SleepEnterWait", "Software-Bug beim Einschlafen erkannt" },
+        { "NoRadio", "Kein LoRa-Radio gefunden" },
+        { "UBloxInitFailed", "UBlox GPS Initialisierung fehlgeschlagen" },
+        { "NoAXP192", "Power-Management-Chip fehlt oder defekt" },
+        { "InvalidRadioSetting", "Ungültige Radio-Einstellung, Kommunikation undefiniert" },
+        { "TransmitFailed", "Radio-Sendehardware-Fehler" },
+        { "Brownout", "CPU-Spannung unter Minimum gefallen" },
+        { "SX1262Failure", "SX1262 Radio Selbsttest fehlgeschlagen" },
+        { "RadioSpiBug", "SPI-Fehler beim Senden" },
+        { "FlashCorruptionRecoverable", "Flash-Korruption erkannt (repariert)" },
+        { "FlashCorruptionUnrecoverable", "Flash-Korruption erkannt (NICHT reparierbar, Neukonfiguration nötig)" },
+    };
+
+    /// <summary>
+    /// Prüft Device-Debug-Zeilen auf kritische Fehlermeldungen und loggt sie immer.
+    /// </summary>
+    private void CheckForCriticalErrors(string line)
+    {
+        // Device meldet kritische Fehler als z.B. "CRITICAL ERROR" oder "fault" Zeilen
+        bool isCritical = line.Contains("CRITICAL", StringComparison.OrdinalIgnoreCase)
+                       || line.Contains("FAULT", StringComparison.OrdinalIgnoreCase)
+                       || line.Contains("ASSERT", StringComparison.OrdinalIgnoreCase)
+                       || line.Contains("PANIC", StringComparison.OrdinalIgnoreCase)
+                       || line.Contains("Brownout", StringComparison.OrdinalIgnoreCase)
+                       || line.Contains("reboot", StringComparison.OrdinalIgnoreCase);
+
+        if (isCritical)
+        {
+            Logger.WriteLine($"[DEVICE CRITICAL] {line}");
+
+            // Bekannte Error Codes prüfen
+            foreach (var kvp in CriticalErrors)
+            {
+                if (line.Contains(kvp.Key, StringComparison.OrdinalIgnoreCase))
+                {
+                    Logger.WriteLine($"  >> Meshtastic Error: {kvp.Value}");
+                    break;
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Extrahiert den Channel-Namen sicher aus einem Channel-Objekt.
+    /// Verwendet manuelles Tag-3-Parsing als Workaround für korrupte Protobuf-Namen.
+    /// </summary>
+    private string ExtractChannelName(Channel channel)
+    {
+        string channelName = "";
+
+        try
+        {
+            if (channel.Settings != null)
+            {
+                var settingsBytes = channel.Settings.ToByteArray();
+
+                // Suche nach Tag 3 mit wire type 2 (length-delimited string)
+                // Tag 3 = (3 << 3) | 2 = 26 = 0x1A
+                for (int i = 0; i < settingsBytes.Length - 2; i++)
+                {
+                    if (settingsBytes[i] == 0x1A) // Tag 3, wire type 2
+                    {
+                        int nameLength = settingsBytes[i + 1];
+                        if (i + 2 + nameLength <= settingsBytes.Length)
+                        {
+                            byte[] nameBytes = new byte[nameLength];
+                            Array.Copy(settingsBytes, i + 2, nameBytes, 0, nameLength);
+                            channelName = Encoding.UTF8.GetString(nameBytes).Trim();
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // Fallback: Versuche channel.Settings.Name (kann korrupt sein)
+            if (string.IsNullOrEmpty(channelName) && channel.Settings != null && !string.IsNullOrEmpty(channel.Settings.Name))
+            {
+                var rawName = channel.Settings.Name;
+                bool isValid = true;
+                foreach (char c in rawName)
+                {
+                    if (c < 32 && c != '\n' && c != '\r' && c != '\t')
+                    {
+                        isValid = false;
+                        break;
+                    }
+                }
+                if (isValid && !rawName.Contains('\uFFFD'))
+                {
+                    channelName = rawName.Trim();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.WriteLine($"  ERROR parsing channel name: {ex.Message}");
+        }
+
+        // Fallback: Verwende Preset-Name für PRIMARY Channel ohne Namen
+        if (string.IsNullOrEmpty(channelName) && channel.Role == ChannelRole.Primary && _currentLoRaConfig != null)
+        {
+            channelName = _currentLoRaConfig.ModemPreset.ToString().Replace("_", " ");
+        }
+
+        if (string.IsNullOrEmpty(channelName))
+        {
+            channelName = $"Channel {channel.Index}";
+        }
+
+        return channelName;
+    }
+
+    /// <summary>
+    /// Entfernt ANSI escape sequences (z.B. \x1B[34m, \x1B[0m) aus einem String.
+    /// </summary>
+    private static string StripAnsiCodes(string input)
+    {
+        var sb = new StringBuilder(input.Length);
+        for (int i = 0; i < input.Length; i++)
+        {
+            if (input[i] == '\x1B' && i + 1 < input.Length && input[i + 1] == '[')
+            {
+                // Skip bis zum Terminierungszeichen (Buchstabe)
+                i += 2;
+                while (i < input.Length && !char.IsLetter(input[i]))
+                {
+                    i++;
+                }
+                // Das Terminierungszeichen selbst wird auch übersprungen
+                continue;
+            }
+            sb.Append(input[i]);
+        }
+        return sb.ToString().Trim();
     }
 
     private static string ToHexString(byte[] data)
