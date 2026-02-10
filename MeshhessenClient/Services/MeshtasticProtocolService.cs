@@ -9,7 +9,7 @@ namespace MeshhessenClient.Services;
 
 public class MeshtasticProtocolService
 {
-    private readonly SerialPortService _serialPort;
+    private readonly IConnectionService _connectionService;
     private readonly List<byte> _receiveBuffer = new();
     private uint _myNodeId;
     private DeviceInfo? _myDeviceInfo;
@@ -42,10 +42,10 @@ public class MeshtasticProtocolService
     private const byte PACKET_START_BYTE_1 = 0x94;
     private const byte PACKET_START_BYTE_2 = 0xC3;
 
-    public MeshtasticProtocolService(SerialPortService serialPort)
+    public MeshtasticProtocolService(IConnectionService connectionService)
     {
-        _serialPort = serialPort;
-        _serialPort.DataReceived += OnDataReceived;
+        _connectionService = connectionService;
+        _connectionService.DataReceived += OnDataReceived;
     }
 
     public async Task InitializeAsync()
@@ -83,21 +83,28 @@ public class MeshtasticProtocolService
             return;
         }
 
-        // Sende Wakeup-Sequenz (64 bytes für T-Deck Kompatibilität)
-        byte[] wakeup = new byte[64];
-        for (int i = 0; i < 64; i++)
+        // Sende Wakeup-Sequenz (nur für Serial, nicht für BLE!)
+        if (_connectionService.Type != ConnectionType.Bluetooth)
         {
-            wakeup[i] = PACKET_START_BYTE_2; // 0xC3
-        }
-        Logger.WriteLine("Sending wakeup sequence...");
-        if (_debugSerial)
-        {
-            Logger.WriteLine($"[SERIAL TX] Wakeup {wakeup.Length} bytes:\n    {ToHexString(wakeup)}");
-        }
-        await _serialPort.WriteAsync(wakeup);
-        await Task.Delay(500);
+            byte[] wakeup = new byte[64];
+            for (int i = 0; i < 64; i++)
+            {
+                wakeup[i] = PACKET_START_BYTE_2; // 0xC3
+            }
+            Logger.WriteLine("Sending wakeup sequence...");
+            if (_debugSerial)
+            {
+                Logger.WriteLine($"[SERIAL TX] Wakeup {wakeup.Length} bytes:\n    {ToHexString(wakeup)}");
+            }
+            await _connectionService.WriteAsync(wakeup);
+            await Task.Delay(500);
 
-        if (_isDisconnecting) return;
+            if (_isDisconnecting) return;
+        }
+        else
+        {
+            Logger.WriteLine("[BLE] Skipping wakeup sequence (not needed for BLE)");
+        }
 
         // Fordere Config an
         Logger.WriteLine("Requesting config...");
@@ -336,10 +343,22 @@ public class MeshtasticProtocolService
                 Logger.WriteLine($"[SERIAL RX] {data.Length} bytes:\n    {ToHexString(data)}");
             }
 
-            lock (_receiveBuffer)
+            // BLE sends raw protobuf without framing - parse directly
+            if (_connectionService.Type == ConnectionType.Bluetooth)
             {
-                _receiveBuffer.AddRange(data);
-                ProcessBuffer();
+                if (data.Length > 0)
+                {
+                    ProcessPacket(data);
+                }
+            }
+            else
+            {
+                // Serial/TCP use framing - buffer and process
+                lock (_receiveBuffer)
+                {
+                    _receiveBuffer.AddRange(data);
+                    ProcessBuffer();
+                }
             }
         }
         catch (Exception ex)
@@ -577,7 +596,7 @@ public class MeshtasticProtocolService
             {
                 wakeup[i] = PACKET_START_BYTE_2; // 0xC3
             }
-            await _serialPort.WriteAsync(wakeup);
+            await _connectionService.WriteAsync(wakeup);
             await Task.Delay(500);
 
             if (_isDisconnecting) return;
@@ -1136,19 +1155,35 @@ public class MeshtasticProtocolService
     {
         byte[] protoData = toRadio.ToByteArray();
 
-        byte[] frame = new byte[4 + protoData.Length];
-        frame[0] = PACKET_START_BYTE_1;
-        frame[1] = PACKET_START_BYTE_2;
-        frame[2] = (byte)(protoData.Length >> 8);
-        frame[3] = (byte)(protoData.Length & 0xFF);
-        Array.Copy(protoData, 0, frame, 4, protoData.Length);
-
-        if (_debugSerial)
+        // BLE sends raw protobufs, Serial needs framing
+        byte[] dataToSend;
+        if (_connectionService.Type == ConnectionType.Bluetooth)
         {
-            Logger.WriteLine($"[SERIAL TX] ToRadio {frame.Length} bytes (payload {protoData.Length}):\n    {ToHexString(frame)}");
+            // BLE: Send raw protobuf directly
+            dataToSend = protoData;
+            if (_debugSerial)
+            {
+                Logger.WriteLine($"[BLE TX] ToRadio {dataToSend.Length} bytes (raw protobuf):\n    {ToHexString(dataToSend)}");
+            }
+        }
+        else
+        {
+            // Serial/TCP: Add framing
+            byte[] frame = new byte[4 + protoData.Length];
+            frame[0] = PACKET_START_BYTE_1;
+            frame[1] = PACKET_START_BYTE_2;
+            frame[2] = (byte)(protoData.Length >> 8);
+            frame[3] = (byte)(protoData.Length & 0xFF);
+            Array.Copy(protoData, 0, frame, 4, protoData.Length);
+            dataToSend = frame;
+
+            if (_debugSerial)
+            {
+                Logger.WriteLine($"[SERIAL TX] ToRadio {frame.Length} bytes (payload {protoData.Length}):\n    {ToHexString(frame)}");
+            }
         }
 
-        await _serialPort.WriteAsync(frame);
+        await _connectionService.WriteAsync(dataToSend);
     }
 
     private async Task RequestConfigAsync()

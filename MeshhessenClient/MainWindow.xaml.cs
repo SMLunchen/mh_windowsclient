@@ -32,14 +32,16 @@ public enum ConnectionStatus
 
 public partial class MainWindow : Window
 {
-    private readonly SerialPortService _serialPortService;
-    private readonly MeshtasticProtocolService _protocolService;
+    private IConnectionService? _connectionService;
+    private MeshtasticProtocolService _protocolService;
+    private Services.ConnectionType _currentConnectionType = Services.ConnectionType.Serial;
 
     private ObservableCollection<MessageItem> _messages = new();
     private List<MessageItem> _allMessages = new(); // Ungefilterte Liste aller Nachrichten
     private ObservableCollection<Models.NodeInfo> _nodes = new();
     private List<Models.NodeInfo> _allNodes = new(); // Ungefilterte Liste aller Nodes
     private ObservableCollection<ChannelInfo> _channels = new();
+    private ObservableCollection<Models.BluetoothDeviceInfo> _bluetoothDevices = new();
     private int _activeChannelIndex = 0;
     private bool _showEncryptedMessages = true;
     private ChannelInfo? _messageChannelFilter = null;
@@ -55,22 +57,24 @@ public partial class MainWindow : Window
     private readonly List<IFeature> _nodeFeatures = new();
     private readonly List<IFeature> _myPosFeatures = new();
     private readonly Dictionary<uint, MPoint> _nodePinPositions = new();
-    private AppSettings _currentSettings = new(false, string.Empty, true, 50.9, 9.5, string.Empty, new Dictionary<uint, string>(), new Dictionary<uint, string>(), false, false, false);
+    private AppSettings _currentSettings = new(false, string.Empty, true, 50.9, 9.5, string.Empty, new Dictionary<uint, string>(), new Dictionary<uint, string>(), false, false, false, false);
     private NodeInfo? _mapContextMenuNode;
 
     public MainWindow()
     {
         InitializeComponent();
 
-        _serialPortService = new SerialPortService();
-        _protocolService = new MeshtasticProtocolService(_serialPortService);
+        // Initialize with Serial connection (default)
+        _connectionService = new SerialConnectionService();
+        _protocolService = new MeshtasticProtocolService(_connectionService);
 
         MessageListView.ItemsSource = _messages;
         NodesListView.ItemsSource = _nodes;
         ChannelsListView.ItemsSource = _channels;
         ActiveChannelComboBox.ItemsSource = _channels;
+        BluetoothDeviceComboBox.ItemsSource = _bluetoothDevices;
 
-        _serialPortService.ConnectionStateChanged += OnConnectionStateChanged;
+        _connectionService.ConnectionStateChanged += OnConnectionStateChanged;
         _protocolService.MessageReceived += OnMessageReceived;
         _protocolService.NodeInfoReceived += OnNodeInfoReceived;
         _protocolService.ChannelInfoReceived += OnChannelInfoReceived;
@@ -116,10 +120,12 @@ public partial class MainWindow : Window
             DebugMessagesCheckBox.IsChecked = settings.DebugMessages;
             DebugSerialCheckBox.IsChecked = settings.DebugSerial;
             DebugDeviceCheckBox.IsChecked = settings.DebugDevice;
+            DebugBluetoothCheckBox.IsChecked = settings.DebugBluetooth;
 
             _currentSettings = settings;
             _protocolService.SetDebugSerial(settings.DebugSerial);
             _protocolService.SetDebugDevice(settings.DebugDevice);
+            BluetoothConnectionService.SetDebugEnabled(settings.DebugBluetooth);
 
             if (settings.DarkMode)
                 ModernWpf.ThemeManager.Current.ApplicationTheme = ModernWpf.ApplicationTheme.Dark;
@@ -572,9 +578,137 @@ public partial class MainWindow : Window
         UpdateStatusBar("Ports aktualisiert");
     }
 
+    private void ConnectionTypeTab_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (ConnectionTypeTabControl.SelectedItem is not TabItem selectedTab) return;
+
+        // Hide all connection panels
+        SerialConnectionPanel.Visibility = Visibility.Collapsed;
+        BluetoothConnectionPanel.Visibility = Visibility.Collapsed;
+        TcpConnectionPanel.Visibility = Visibility.Collapsed;
+
+        // Show selected panel and update connection type
+        switch (selectedTab.Tag as string)
+        {
+            case "Serial":
+                SerialConnectionPanel.Visibility = Visibility.Visible;
+                _currentConnectionType = Services.ConnectionType.Serial;
+                break;
+            case "Bluetooth":
+                BluetoothConnectionPanel.Visibility = Visibility.Visible;
+                _currentConnectionType = Services.ConnectionType.Bluetooth;
+                break;
+            case "Tcp":
+                TcpConnectionPanel.Visibility = Visibility.Visible;
+                _currentConnectionType = Services.ConnectionType.Tcp;
+                break;
+        }
+    }
+
+    private async void ScanBluetooth_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            ScanBluetoothButton.IsEnabled = false;
+            UpdateStatusBar("Suche Bluetooth-Geräte...");
+
+            _bluetoothDevices.Clear();
+
+            // Search for both paired and unpaired BLE devices
+            Services.Logger.WriteLine("[BLE] Starting device discovery...");
+
+            // First, get paired devices
+            Services.Logger.WriteLine("[BLE] Searching for paired devices...");
+            var pairedSelector = Windows.Devices.Bluetooth.BluetoothLEDevice.GetDeviceSelectorFromPairingState(true);
+            var pairedDevices = await Windows.Devices.Enumeration.DeviceInformation.FindAllAsync(pairedSelector);
+            Services.Logger.WriteLine($"[BLE] Found {pairedDevices.Count} paired devices");
+
+            foreach (var deviceInfo in pairedDevices)
+            {
+                Services.Logger.WriteLine($"[BLE] Paired device: {deviceInfo.Name} (ID: {deviceInfo.Id})");
+                await TryAddBluetoothDevice(deviceInfo);
+            }
+
+            // Then, search for nearby unpaired devices
+            Services.Logger.WriteLine("[BLE] Searching for unpaired devices...");
+            var unpairedSelector = Windows.Devices.Bluetooth.BluetoothLEDevice.GetDeviceSelectorFromPairingState(false);
+            var unpairedDevices = await Windows.Devices.Enumeration.DeviceInformation.FindAllAsync(unpairedSelector);
+            Services.Logger.WriteLine($"[BLE] Found {unpairedDevices.Count} unpaired devices");
+
+            foreach (var deviceInfo in unpairedDevices)
+            {
+                Services.Logger.WriteLine($"[BLE] Unpaired device: {deviceInfo.Name} (ID: {deviceInfo.Id})");
+                await TryAddBluetoothDevice(deviceInfo);
+            }
+
+            Services.Logger.WriteLine($"[BLE] Total devices added to list: {_bluetoothDevices.Count}");
+            UpdateStatusBar($"{_bluetoothDevices.Count} Bluetooth-Geräte gefunden");
+
+            if (_bluetoothDevices.Count == 0)
+            {
+                MessageBox.Show("Keine Bluetooth-Geräte gefunden.\n\nStellen Sie sicher, dass:\n- Bluetooth aktiviert ist\n- Das Gerät eingeschaltet ist\n- Das Gerät im BLE-Modus ist", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }
+        catch (Exception ex)
+        {
+            Services.Logger.WriteLine($"[BLE] ERROR scanning Bluetooth: {ex.Message}");
+            Services.Logger.WriteLine($"[BLE] Stack trace: {ex.StackTrace}");
+            MessageBox.Show($"Bluetooth-Scan fehlgeschlagen: {ex.Message}", "Fehler", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+        finally
+        {
+            ScanBluetoothButton.IsEnabled = true;
+        }
+    }
+
+    private async Task TryAddBluetoothDevice(Windows.Devices.Enumeration.DeviceInformation deviceInfo)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(deviceInfo.Name))
+            {
+                Services.Logger.WriteLine($"[BLE] Skipping device with empty name (ID: {deviceInfo.Id})");
+                return;
+            }
+
+            // Try to get the actual BLE device to extract the Bluetooth address
+            var bleDevice = await Windows.Devices.Bluetooth.BluetoothLEDevice.FromIdAsync(deviceInfo.Id);
+            if (bleDevice != null)
+            {
+                var address = bleDevice.BluetoothAddress;
+                Services.Logger.WriteLine($"[BLE] Device '{deviceInfo.Name}' has address: {address:X}");
+
+                // Check if already in list (avoid duplicates)
+                if (!_bluetoothDevices.Any(d => d.Address == address))
+                {
+                    _bluetoothDevices.Add(new Models.BluetoothDeviceInfo
+                    {
+                        Name = deviceInfo.Name,
+                        Address = address
+                    });
+                    Services.Logger.WriteLine($"[BLE] Added device '{deviceInfo.Name}' to list");
+                }
+                else
+                {
+                    Services.Logger.WriteLine($"[BLE] Device '{deviceInfo.Name}' already in list, skipping");
+                }
+
+                bleDevice.Dispose();
+            }
+            else
+            {
+                Services.Logger.WriteLine($"[BLE] Could not get BluetoothLEDevice for {deviceInfo.Name}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Services.Logger.WriteLine($"[BLE] Error adding device {deviceInfo.Name}: {ex.Message}");
+        }
+    }
+
     private async void Connect_Click(object sender, RoutedEventArgs e)
     {
-        if (_serialPortService.IsConnected)
+        if (_connectionService?.IsConnected == true)
         {
             try
             {
@@ -587,7 +721,7 @@ public partial class MainWindow : Window
                 {
                     _protocolService.Disconnect();
                     System.Threading.Thread.Sleep(200);
-                    _serialPortService.Disconnect();
+                    _connectionService?.Disconnect();
                 });
 
                 ConnectButton.Content = "Verbinden";
@@ -607,29 +741,105 @@ public partial class MainWindow : Window
         }
         else
         {
-            var selectedPort = PortComboBox.SelectedItem as string;
-            if (string.IsNullOrEmpty(selectedPort))
+            // Create connection parameters based on selected connection type
+            ConnectionParameters? connectionParams = null;
+            string displayName = string.Empty;
+
+            switch (_currentConnectionType)
             {
-                MessageBox.Show("Bitte wählen Sie einen COM Port aus.", "Fehler", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
+                case Services.ConnectionType.Serial:
+                    var selectedPort = PortComboBox.SelectedItem as string;
+                    if (string.IsNullOrEmpty(selectedPort))
+                    {
+                        MessageBox.Show("Bitte wählen Sie einen COM Port aus.", "Fehler", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        return;
+                    }
+                    connectionParams = new SerialConnectionParameters
+                    {
+                        PortName = selectedPort,
+                        BaudRate = 115200
+                    };
+                    displayName = selectedPort;
+                    break;
+
+                case Services.ConnectionType.Bluetooth:
+                    var selectedDevice = BluetoothDeviceComboBox.SelectedItem as Models.BluetoothDeviceInfo;
+                    if (selectedDevice == null)
+                    {
+                        MessageBox.Show("Bitte wählen Sie ein Bluetooth-Gerät aus.", "Fehler", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        return;
+                    }
+                    connectionParams = new BluetoothConnectionParameters
+                    {
+                        DeviceAddress = selectedDevice.Address,
+                        DeviceName = selectedDevice.Name
+                    };
+                    displayName = selectedDevice.Name;
+                    break;
+
+                case Services.ConnectionType.Tcp:
+                    var host = TcpHostTextBox.Text.Trim();
+                    if (string.IsNullOrEmpty(host))
+                    {
+                        MessageBox.Show("Bitte geben Sie einen Hostnamen oder IP-Adresse ein.", "Fehler", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        return;
+                    }
+                    if (!int.TryParse(TcpPortTextBox.Text, out var port) || port <= 0 || port > 65535)
+                    {
+                        MessageBox.Show("Bitte geben Sie einen gültigen Port (1-65535) ein.", "Fehler", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        return;
+                    }
+                    connectionParams = new TcpConnectionParameters
+                    {
+                        Hostname = host,
+                        Port = port
+                    };
+                    displayName = $"{host}:{port}";
+                    break;
             }
+
+            if (connectionParams == null) return;
 
             try
             {
                 ConnectButton.IsEnabled = false;
-                UpdateStatusBar($"Verbinde mit {selectedPort}...");
+                UpdateStatusBar($"Verbinde mit {displayName}...");
                 SetConnectionStatus(ConnectionStatus.Connecting);
 
-                await _serialPortService.ConnectAsync(selectedPort);
+                // Create new connection service based on type
+                _connectionService?.Dispose();
+                _connectionService = _currentConnectionType switch
+                {
+                    Services.ConnectionType.Serial => new SerialConnectionService(),
+                    Services.ConnectionType.Bluetooth => new BluetoothConnectionService(),
+                    Services.ConnectionType.Tcp => new TcpConnectionService(),
+                    _ => throw new InvalidOperationException($"Unknown connection type: {_currentConnectionType}")
+                };
 
-                // Save last used port
-                _currentSettings = _currentSettings with { LastComPort = selectedPort };
+                // Create new protocol service with the new connection
+                // (Protocol service subscribes to DataReceived in its constructor)
+                _protocolService = new MeshtasticProtocolService(_connectionService);
+                _protocolService.MessageReceived += OnMessageReceived;
+                _protocolService.NodeInfoReceived += OnNodeInfoReceived;
+                _protocolService.ChannelInfoReceived += OnChannelInfoReceived;
+                _protocolService.LoRaConfigReceived += OnLoRaConfigReceived;
+                _protocolService.DeviceInfoReceived += OnDeviceInfoReceived;
+                _protocolService.PacketCountChanged += OnPacketCountChanged;
+
+                // Wire up connection state changed
+                _connectionService.ConnectionStateChanged += OnConnectionStateChanged;
+
+                // Connect
+                await _connectionService.ConnectAsync(connectionParams);
+
+                // Save last used connection settings
+                _currentSettings = _currentSettings with { LastComPort = displayName };
                 SettingsService.Save(_currentSettings);
 
                 // GUI sofort als "Verbunden" anzeigen
                 ConnectButton.Content = "Trennen";
                 ConnectButton.IsEnabled = true;
-                UpdateStatusBar($"Verbunden mit {selectedPort} - Initialisiere...");
+                UpdateStatusBar($"Verbunden mit {displayName} - Initialisiere...");
                 SetConnectionStatus(ConnectionStatus.Initializing);
 
                 // Initialisierung im Hintergrund starten (nicht blockieren!)
@@ -640,7 +850,7 @@ public partial class MainWindow : Window
                         await _protocolService.InitializeAsync();
                         Dispatcher.BeginInvoke(() =>
                         {
-                            UpdateStatusBar($"Verbunden mit {selectedPort} - Bereit");
+                            UpdateStatusBar($"Verbunden mit {displayName} - Bereit");
                             SetConnectionStatus(ConnectionStatus.Ready);
                         });
                     }
@@ -649,7 +859,7 @@ public partial class MainWindow : Window
                         Services.Logger.WriteLine($"Initialization error: {initEx.Message}");
                         Dispatcher.BeginInvoke(() =>
                         {
-                            UpdateStatusBar($"Verbunden mit {selectedPort} - Init-Fehler");
+                            UpdateStatusBar($"Verbunden mit {displayName} - Init-Fehler");
                             SetConnectionStatus(ConnectionStatus.Error);
                         });
                     }
@@ -690,7 +900,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        if (!_serialPortService.IsConnected)
+        if (!_connectionService.IsConnected)
         {
             MessageBox.Show("Nicht verbunden. Bitte zuerst mit einem Gerät verbinden.", "Fehler", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
@@ -766,7 +976,8 @@ public partial class MainWindow : Window
                 NodeNotes: _currentSettings.NodeNotes,
                 DebugMessages: DebugMessagesCheckBox.IsChecked == true,
                 DebugSerial: DebugSerialCheckBox.IsChecked == true,
-                DebugDevice: DebugDeviceCheckBox.IsChecked == true
+                DebugDevice: DebugDeviceCheckBox.IsChecked == true,
+                DebugBluetooth: DebugBluetoothCheckBox.IsChecked == true
             );
             _currentSettings = settings;
             SettingsService.Save(settings);
@@ -774,6 +985,7 @@ public partial class MainWindow : Window
             _showEncryptedMessages = settings.ShowEncryptedMessages;
             _protocolService.SetDebugSerial(settings.DebugSerial);
             _protocolService.SetDebugDevice(settings.DebugDevice);
+            BluetoothConnectionService.SetDebugEnabled(settings.DebugBluetooth);
             MessageBox.Show("Einstellungen gespeichert.", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
         }
         catch (Exception ex)
@@ -1423,7 +1635,7 @@ public partial class MainWindow : Window
     protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
     {
         // Disconnect asynchron im Hintergrund - nicht auf UI Thread blockieren
-        if (_serialPortService.IsConnected)
+        if (_connectionService.IsConnected)
         {
             Task.Run(() =>
             {
@@ -1432,7 +1644,7 @@ public partial class MainWindow : Window
                     Services.Logger.WriteLine("Application closing...");
                     _protocolService.Disconnect();
                     System.Threading.Thread.Sleep(100);
-                    _serialPortService.Disconnect();
+                    _connectionService.Disconnect();
                     Services.Logger.WriteLine("Disconnected");
                     Services.Logger.Close();
                 }

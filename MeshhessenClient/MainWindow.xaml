@@ -43,17 +43,61 @@
 
                 <!-- Connection Controls -->
                 <StackPanel Grid.Column="0" Orientation="Horizontal">
-                    <TextBlock Text="COM Port:" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                    <ComboBox x:Name="PortComboBox"
-                             Width="120"
-                             VerticalAlignment="Center"
-                             SelectionChanged="PortComboBox_SelectionChanged"/>
-                    <Button x:Name="RefreshPortsButton"
-                           Content="🔄"
-                           Margin="5,0,0,0"
-                           Width="45"
-                           ToolTip="Ports aktualisieren"
-                           Click="RefreshPorts_Click"/>
+                    <!-- Connection Type Tabs -->
+                    <TabControl x:Name="ConnectionTypeTabControl"
+                                Width="Auto"
+                                Height="32"
+                                SelectionChanged="ConnectionTypeTab_Changed"
+                                Margin="0,0,10,0">
+                        <TabItem Header="📟 Serial" Tag="Serial"/>
+                        <TabItem Header="📡 Bluetooth" Tag="Bluetooth"/>
+                        <TabItem Header="🌐 WiFi" Tag="Tcp"/>
+                    </TabControl>
+
+                    <!-- Serial Connection UI -->
+                    <StackPanel x:Name="SerialConnectionPanel" Orientation="Horizontal" Visibility="Visible">
+                        <TextBlock Text="Port:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                        <ComboBox x:Name="PortComboBox"
+                                 Width="120"
+                                 VerticalAlignment="Center"
+                                 SelectionChanged="PortComboBox_SelectionChanged"/>
+                        <Button x:Name="RefreshPortsButton"
+                               Content="🔄"
+                               Margin="5,0,0,0"
+                               Width="45"
+                               ToolTip="Ports aktualisieren"
+                               Click="RefreshPorts_Click"/>
+                    </StackPanel>
+
+                    <!-- Bluetooth Connection UI -->
+                    <StackPanel x:Name="BluetoothConnectionPanel" Orientation="Horizontal" Visibility="Collapsed">
+                        <TextBlock Text="Gerät:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                        <ComboBox x:Name="BluetoothDeviceComboBox"
+                                 Width="200"
+                                 VerticalAlignment="Center"
+                                 DisplayMemberPath="DisplayName"/>
+                        <Button x:Name="ScanBluetoothButton"
+                               Content="🔍"
+                               Margin="5,0,0,0"
+                               Width="45"
+                               ToolTip="Geräte suchen"
+                               Click="ScanBluetooth_Click"/>
+                    </StackPanel>
+
+                    <!-- TCP Connection UI -->
+                    <StackPanel x:Name="TcpConnectionPanel" Orientation="Horizontal" Visibility="Collapsed">
+                        <TextBlock Text="Host:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                        <TextBox x:Name="TcpHostTextBox"
+                                Width="150"
+                                VerticalAlignment="Center"
+                                Text="192.168.1.1"/>
+                        <TextBlock Text="Port:" VerticalAlignment="Center" Margin="10,0,5,0"/>
+                        <TextBox x:Name="TcpPortTextBox"
+                                Width="60"
+                                VerticalAlignment="Center"
+                                Text="4403"/>
+                    </StackPanel>
+
                     <Button x:Name="ConnectButton"
                            Content="Verbinden"
                            Margin="10,0,0,0"
@@ -485,6 +529,14 @@
                                          Content="Device-Log aktivieren (Serielle Debug-Ausgabe)"
                                          Margin="0,0,0,10"/>
                                 <TextBlock Text="Zeigt die Debug-Ausgabe des Meshtastic-Geräts im Log an (DEBUG/INFO Zeilen). Kritische Fehler werden immer angezeigt."
+                                          TextWrapping="Wrap"
+                                          FontSize="11"
+                                          Foreground="Gray"
+                                          Margin="0,0,0,15"/>
+                                <CheckBox x:Name="DebugBluetoothCheckBox"
+                                         Content="Bluetooth-Debug aktivieren (BLE-Kommunikation)"
+                                         Margin="0,0,0,10"/>
+                                <TextBlock Text="Zeigt detaillierte BLE-Kommunikation (GATT-Operationen, Reads/Writes) im Log an. Sehr ausführlich!"
                                           TextWrapping="Wrap"
                                           FontSize="11"
                                           Foreground="Gray"/>
