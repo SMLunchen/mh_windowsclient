@@ -10,11 +10,14 @@ public record AppSettings(
     double MyLatitude,
     double MyLongitude,
     string LastComPort,
+    string LastTcpHost,                      // Last TCP/WiFi hostname or IP
+    int LastTcpPort,                         // Last TCP/WiFi port
     Dictionary<uint, string> NodeColors,     // NodeId -> Color (hex)
     Dictionary<uint, string> NodeNotes,      // NodeId -> Note text
     bool DebugMessages,                      // Enable message debug logging
     bool DebugSerial,                        // Enable serial data hex dump
-    bool DebugDevice);                       // Enable device serial debug output logging
+    bool DebugDevice,                        // Enable device serial debug output logging
+    bool DebugBluetooth);                    // Enable BLE debug logging
 
 public static class SettingsService
 {
@@ -22,7 +25,7 @@ public static class SettingsService
 
     public static AppSettings Load()
     {
-        var defaults = new AppSettings(false, string.Empty, true, 50.9, 9.5, string.Empty, new Dictionary<uint, string>(), new Dictionary<uint, string>(), false, false, false);
+        var defaults = new AppSettings(false, string.Empty, true, 50.9, 9.5, string.Empty, "192.168.1.1", 4403, new Dictionary<uint, string>(), new Dictionary<uint, string>(), false, false, false, false);
 
         try
         {
@@ -78,11 +81,14 @@ public static class SettingsService
                 MyLatitude: values.TryGetValue("MyLatitude", out var lat) && double.TryParse(lat, NumberStyles.Float, CultureInfo.InvariantCulture, out var latVal) ? latVal : defaults.MyLatitude,
                 MyLongitude: values.TryGetValue("MyLongitude", out var lon) && double.TryParse(lon, NumberStyles.Float, CultureInfo.InvariantCulture, out var lonVal) ? lonVal : defaults.MyLongitude,
                 LastComPort: lastComPort,
+                LastTcpHost: values.TryGetValue("LastTcpHost", out var tcpHost) ? tcpHost : defaults.LastTcpHost,
+                LastTcpPort: values.TryGetValue("LastTcpPort", out var tcpPort) && int.TryParse(tcpPort, out var tcpPortInt) ? tcpPortInt : defaults.LastTcpPort,
                 NodeColors: nodeColors,
                 NodeNotes: nodeNotes,
                 DebugMessages: values.TryGetValue("DebugMessages", out var dbg) && bool.TryParse(dbg, out var dbgBool) && dbgBool,
                 DebugSerial: values.TryGetValue("DebugSerial", out var dbs) && bool.TryParse(dbs, out var dbsBool) && dbsBool,
-                DebugDevice: values.TryGetValue("DebugDevice", out var dbd) && bool.TryParse(dbd, out var dbdBool) && dbdBool
+                DebugDevice: values.TryGetValue("DebugDevice", out var dbd) && bool.TryParse(dbd, out var dbdBool) && dbdBool,
+                DebugBluetooth: values.TryGetValue("DebugBluetooth", out var dbb) && bool.TryParse(dbb, out var dbbBool) && dbbBool
             );
         }
         catch (Exception ex)
@@ -106,9 +112,12 @@ public static class SettingsService
                 $"MyLatitude={settings.MyLatitude.ToString("F7", ci)}",
                 $"MyLongitude={settings.MyLongitude.ToString("F7", ci)}",
                 $"LastComPort={settings.LastComPort}",
+                $"LastTcpHost={settings.LastTcpHost}",
+                $"LastTcpPort={settings.LastTcpPort}",
                 $"DebugMessages={settings.DebugMessages}",
                 $"DebugSerial={settings.DebugSerial}",
-                $"DebugDevice={settings.DebugDevice}"
+                $"DebugDevice={settings.DebugDevice}",
+                $"DebugBluetooth={settings.DebugBluetooth}"
             };
 
             // Save node colors
