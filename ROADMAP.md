@@ -25,5 +25,6 @@
 * Export/Import von Nachrichten
 * Unterschiedliche Kartentypen
 * Alarmklingelzeichen für Kanal / DM
+* Kartenmaterial nach Bundesland auswählbar
 
 
