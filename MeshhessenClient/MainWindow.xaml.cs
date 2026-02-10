@@ -57,7 +57,7 @@ public partial class MainWindow : Window
     private readonly List<IFeature> _nodeFeatures = new();
     private readonly List<IFeature> _myPosFeatures = new();
     private readonly Dictionary<uint, MPoint> _nodePinPositions = new();
-    private AppSettings _currentSettings = new(false, string.Empty, true, 50.9, 9.5, string.Empty, new Dictionary<uint, string>(), new Dictionary<uint, string>(), false, false, false, false);
+    private AppSettings _currentSettings = new(false, string.Empty, true, 50.9, 9.5, string.Empty, "192.168.1.1", 4403, new Dictionary<uint, string>(), new Dictionary<uint, string>(), false, false, false, false);
     private NodeInfo? _mapContextMenuNode;
 
     public MainWindow()
@@ -126,6 +126,10 @@ public partial class MainWindow : Window
             _protocolService.SetDebugSerial(settings.DebugSerial);
             _protocolService.SetDebugDevice(settings.DebugDevice);
             BluetoothConnectionService.SetDebugEnabled(settings.DebugBluetooth);
+
+            // Load TCP settings
+            TcpHostTextBox.Text = settings.LastTcpHost;
+            TcpPortTextBox.Text = settings.LastTcpPort.ToString();
 
             if (settings.DarkMode)
                 ModernWpf.ThemeManager.Current.ApplicationTheme = ModernWpf.ApplicationTheme.Dark;
@@ -578,9 +582,13 @@ public partial class MainWindow : Window
         UpdateStatusBar("Ports aktualisiert");
     }
 
-    private void ConnectionTypeTab_Changed(object sender, SelectionChangedEventArgs e)
+    private void ConnectionTypeRadio_Changed(object sender, RoutedEventArgs e)
     {
-        if (ConnectionTypeTabControl.SelectedItem is not TabItem selectedTab) return;
+        if (sender is not RadioButton radioButton) return;
+
+        // Panels might not be initialized yet during startup
+        if (SerialConnectionPanel == null || BluetoothConnectionPanel == null || TcpConnectionPanel == null)
+            return;
 
         // Hide all connection panels
         SerialConnectionPanel.Visibility = Visibility.Collapsed;
@@ -588,7 +596,7 @@ public partial class MainWindow : Window
         TcpConnectionPanel.Visibility = Visibility.Collapsed;
 
         // Show selected panel and update connection type
-        switch (selectedTab.Tag as string)
+        switch (radioButton.Tag as string)
         {
             case "Serial":
                 SerialConnectionPanel.Visibility = Visibility.Visible;
@@ -833,7 +841,19 @@ public partial class MainWindow : Window
                 await _connectionService.ConnectAsync(connectionParams);
 
                 // Save last used connection settings
-                _currentSettings = _currentSettings with { LastComPort = displayName };
+                if (_currentConnectionType == Services.ConnectionType.Serial)
+                {
+                    _currentSettings = _currentSettings with { LastComPort = displayName };
+                }
+                else if (_currentConnectionType == Services.ConnectionType.Tcp)
+                {
+                    var tcpParams = (TcpConnectionParameters)connectionParams;
+                    _currentSettings = _currentSettings with
+                    {
+                        LastTcpHost = tcpParams.Hostname,
+                        LastTcpPort = tcpParams.Port
+                    };
+                }
                 SettingsService.Save(_currentSettings);
 
                 // GUI sofort als "Verbunden" anzeigen
@@ -972,6 +992,8 @@ public partial class MainWindow : Window
                 MyLatitude: _currentSettings.MyLatitude,
                 MyLongitude: _currentSettings.MyLongitude,
                 LastComPort: _currentSettings.LastComPort,
+                LastTcpHost: _currentSettings.LastTcpHost,
+                LastTcpPort: _currentSettings.LastTcpPort,
                 NodeColors: _currentSettings.NodeColors,
                 NodeNotes: _currentSettings.NodeNotes,
                 DebugMessages: DebugMessagesCheckBox.IsChecked == true,

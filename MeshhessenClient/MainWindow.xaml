@@ -10,10 +10,10 @@
         ui:WindowHelper.UseModernWindowStyle="True"
         Icon="pack://application:,,,/Resources/app.ico"
         Title="Meshhessen Client"
-        Height="600"
-        Width="900"
-        MinHeight="400"
-        MinWidth="600">
+        Height="650"
+        Width="1000"
+        MinHeight="450"
+        MinWidth="700">
     <Window.Resources>
         <converters:MqttIconConverter x:Key="MqttIconConverter"/>
         <converters:MqttTooltipConverter x:Key="MqttTooltipConverter"/>
@@ -43,16 +43,40 @@
 
                 <!-- Connection Controls -->
                 <StackPanel Grid.Column="0" Orientation="Horizontal">
-                    <!-- Connection Type Tabs -->
-                    <TabControl x:Name="ConnectionTypeTabControl"
-                                Width="Auto"
-                                Height="32"
-                                SelectionChanged="ConnectionTypeTab_Changed"
-                                Margin="0,0,10,0">
-                        <TabItem Header="📟 Serial" Tag="Serial"/>
-                        <TabItem Header="📡 Bluetooth" Tag="Bluetooth"/>
-                        <TabItem Header="🌐 WiFi" Tag="Tcp"/>
-                    </TabControl>
+                    <!-- Connection Type Radio Buttons -->
+                    <StackPanel Orientation="Horizontal" Margin="0,0,8,0">
+                        <RadioButton x:Name="SerialRadioButton"
+                                    Content="📟 Serial"
+                                    GroupName="ConnectionType"
+                                    IsChecked="True"
+                                    Checked="ConnectionTypeRadio_Changed"
+                                    Tag="Serial"
+                                    VerticalAlignment="Center"
+                                    HorizontalAlignment="Left"
+                                    Margin="0,0,5,0"
+                                    FontSize="12"
+                                    MinWidth="0"/>
+                        <RadioButton x:Name="BluetoothRadioButton"
+                                    Content="📡 Bluetooth"
+                                    GroupName="ConnectionType"
+                                    Checked="ConnectionTypeRadio_Changed"
+                                    Tag="Bluetooth"
+                                    VerticalAlignment="Center"
+                                    HorizontalAlignment="Left"
+                                    Margin="0,0,5,0"
+                                    FontSize="12"
+                                    MinWidth="0"/>
+                        <RadioButton x:Name="WifiRadioButton"
+                                    Content="🌐 WiFi"
+                                    GroupName="ConnectionType"
+                                    Checked="ConnectionTypeRadio_Changed"
+                                    Tag="Tcp"
+                                    VerticalAlignment="Center"
+                                    HorizontalAlignment="Left"
+                                    Margin="0,0,5,0"
+                                    FontSize="12"
+                                    MinWidth="0"/>
+                    </StackPanel>
 
                     <!-- Serial Connection UI -->
                     <StackPanel x:Name="SerialConnectionPanel" Orientation="Horizontal" Visibility="Visible">
@@ -73,13 +97,13 @@
                     <StackPanel x:Name="BluetoothConnectionPanel" Orientation="Horizontal" Visibility="Collapsed">
                         <TextBlock Text="Gerät:" VerticalAlignment="Center" Margin="0,0,5,0"/>
                         <ComboBox x:Name="BluetoothDeviceComboBox"
-                                 Width="200"
+                                 Width="170"
                                  VerticalAlignment="Center"
                                  DisplayMemberPath="DisplayName"/>
                         <Button x:Name="ScanBluetoothButton"
                                Content="🔍"
                                Margin="5,0,0,0"
-                               Width="45"
+                               Width="40"
                                ToolTip="Geräte suchen"
                                Click="ScanBluetooth_Click"/>
                     </StackPanel>
@@ -88,27 +112,27 @@
                     <StackPanel x:Name="TcpConnectionPanel" Orientation="Horizontal" Visibility="Collapsed">
                         <TextBlock Text="Host:" VerticalAlignment="Center" Margin="0,0,5,0"/>
                         <TextBox x:Name="TcpHostTextBox"
-                                Width="150"
+                                Width="120"
                                 VerticalAlignment="Center"
                                 Text="192.168.1.1"/>
-                        <TextBlock Text="Port:" VerticalAlignment="Center" Margin="10,0,5,0"/>
+                        <TextBlock Text="Port:" VerticalAlignment="Center" Margin="8,0,5,0"/>
                         <TextBox x:Name="TcpPortTextBox"
-                                Width="60"
+                                Width="50"
                                 VerticalAlignment="Center"
                                 Text="4403"/>
                     </StackPanel>
 
                     <Button x:Name="ConnectButton"
                            Content="Verbinden"
-                           Margin="10,0,0,0"
+                           Margin="8,0,0,0"
                            Click="Connect_Click"/>
                     <TextBlock x:Name="StationNameLabel"
                                Text=""
-                               FontSize="16"
+                               FontSize="14"
                                FontWeight="Bold"
                                Foreground="Red"
                                VerticalAlignment="Center"
-                               Margin="15,0,0,0"/>
+                               Margin="10,0,0,0"/>
                 </StackPanel>
 
                 <!-- Connection Status -->
