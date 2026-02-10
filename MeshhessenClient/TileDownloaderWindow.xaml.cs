@@ -76,7 +76,7 @@ public partial class TileDownloaderWindow : Window
         var progress = new Progress<(int done, int total, string status)>(p =>
         {
             DownloadProgress.Value = p.done;
-            StatusText.Text = $"{p.done} / {p.total} — {p.status}";
+            StatusText.Text = $"{p.done} von {p.total} heruntergeladen — {p.status}";
         });
 
         try

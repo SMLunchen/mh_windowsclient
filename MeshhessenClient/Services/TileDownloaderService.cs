@@ -71,12 +71,12 @@ public static class TileDownloaderService
                         }
                         catch (Exception ex) when (!ct.IsCancellationRequested)
                         {
-                            Logger.WriteLine($"Tile download failed {z}/{x}/{y}: {ex.Message}");
+                            Logger.WriteLine($"Tile download failed Z{z} X:{x} Y:{y}: {ex.Message}");
                         }
                     }
 
                     done++;
-                    progress.Report((done, total, $"Z{z} {x}/{y}"));
+                    progress.Report((done, total, $"Z{z} X:{x} Y:{y}"));
                 }
             }
         }

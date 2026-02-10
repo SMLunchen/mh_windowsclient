@@ -56,6 +56,24 @@ public class MeshtasticProtocolService
         {
             _isInitializing = true;
             _isDisconnecting = false;
+
+            // Clear all data from previous device
+            _tempChannels.Clear();
+            _knownNodes.Clear();
+            _myNodeId = 0;
+            _myDeviceInfo = null;
+            _currentLoRaConfig = null;
+            _configComplete = false;
+            _packetCount = 0;
+            _receivedChannelResponses.Clear();
+            Logger.WriteLine("Cleared all data from previous session");
+        }
+
+        // Clear receive buffer
+        lock (_receiveBuffer)
+        {
+            _receiveBuffer.Clear();
+            Logger.WriteLine("Cleared receive buffer");
         }
 
         await Task.Delay(1000);
@@ -162,6 +180,11 @@ public class MeshtasticProtocolService
         }
 
         Logger.WriteLine($"Init complete: {nodeCount} nodes, {channelCount} channels");
+
+        if (_debugSerial)
+        {
+            Logger.WriteLine($"[DEBUG] About to fire {nodesToFire.Count} node events");
+        }
         if (channelCount > 0)
         {
             Logger.WriteLine($"  Received channels during init: {string.Join(", ", channelsToFire.Select(c => $"[{c.Index}]{c.Role}"))}");
@@ -300,6 +323,14 @@ public class MeshtasticProtocolService
     {
         try
         {
+            // Ignore data if disconnecting
+            if (_isDisconnecting)
+            {
+                if (_debugSerial)
+                    Logger.WriteLine($"[DEBUG RX] Ignoring {data.Length} bytes (disconnecting)");
+                return;
+            }
+
             if (_debugSerial && data.Length > 0)
             {
                 Logger.WriteLine($"[SERIAL RX] {data.Length} bytes:\n    {ToHexString(data)}");
@@ -598,10 +629,10 @@ public class MeshtasticProtocolService
         try
         {
             var fromRadio = FromRadio.Parser.ParseFrom(packet);
-            // Nur nicht-NodeInfo Pakete loggen (NodeInfo kommt zu häufig)
-            if (fromRadio.PayloadVariantCase != FromRadio.PayloadVariantOneofCase.NodeInfo)
+
+            if (_debugSerial)
             {
-                Logger.WriteLine($"Received FromRadio packet, type: {fromRadio.PayloadVariantCase}");
+                Logger.WriteLine($"[DEBUG] Received FromRadio packet, type: {fromRadio.PayloadVariantCase}, isInit={_isInitializing}, isDisc={_isDisconnecting}");
             }
 
             // Update packet counter
@@ -726,11 +757,28 @@ public class MeshtasticProtocolService
                 FromId = packet.From,
                 ToId = packet.To,
                 Message = "[Verschlüsselte Nachricht - PSK erforderlich]",
-                Channel = packet.Channel.ToString(),
+                Channel = FormatChannelDisplay(packet.Channel),
                 IsEncrypted = true,
                 IsViaMqtt = packet.ViaMqtt
             };
             MessageReceived?.Invoke(this, messageItem);
+        }
+    }
+
+    private string FormatChannelDisplay(uint channelValue)
+    {
+        // In Meshtastic: Channel 0-7 are valid indices
+        // Higher values (>7) are channel hashes
+        if (channelValue <= 7)
+        {
+            return channelValue.ToString();
+        }
+        else
+        {
+            // This is a channel hash - the message was sent on a different channel
+            // where we don't have the matching PSK to decrypt it
+            // This is normal when nodes in the network use additional channels
+            return $"Anderer Kanal ({channelValue & 0xFF})";
         }
     }
 
@@ -756,7 +804,7 @@ public class MeshtasticProtocolService
                 FromId = packet.From,
                 ToId = packet.To,
                 Message = messageText,
-                Channel = packet.Channel.ToString(),
+                Channel = FormatChannelDisplay(packet.Channel),
                 IsViaMqtt = packet.ViaMqtt
             };
 
@@ -816,6 +864,11 @@ public class MeshtasticProtocolService
                 shouldFireEvent = !_isInitializing;
             }
 
+            if (_debugSerial)
+            {
+                Logger.WriteLine($"[DEBUG] HandleNodeInfo: Node {nodeInfo.Id} stored, total nodes={_knownNodes.Count}, shouldFireEvent={shouldFireEvent}");
+            }
+
             // Nur Events feuern wenn NICHT initialisierend (außerhalb des Locks!)
             if (shouldFireEvent)
             {
@@ -863,6 +916,11 @@ public class MeshtasticProtocolService
             {
                 _knownNodes[packet.From] = nodeInfo;
                 shouldFireEvent = !_isInitializing;
+            }
+
+            if (_debugSerial)
+            {
+                Logger.WriteLine($"[DEBUG] HandleNodeInfoPacket: Node {nodeInfo.Id} stored, total nodes={_knownNodes.Count}, shouldFireEvent={shouldFireEvent}");
             }
 
             // Nur Events feuern wenn NICHT initialisierend (außerhalb des Locks!)
@@ -1138,14 +1196,16 @@ public class MeshtasticProtocolService
 
     public void Disconnect()
     {
+        Logger.WriteLine("MeshtasticProtocolService: Disconnecting...");
+
         lock (_dataLock)
         {
             _isDisconnecting = true;
             _isInitializing = false;
         }
 
-        // Unsubscribe vom Serial Port Event
-        _serialPort.DataReceived -= OnDataReceived;
+        // Event-Handler bleibt registriert - _isDisconnecting verhindert Verarbeitung
+        Logger.WriteLine("MeshtasticProtocolService: Disconnect complete");
     }
 
     private void HandleConfig(Config config)

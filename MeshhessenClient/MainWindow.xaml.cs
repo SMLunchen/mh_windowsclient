@@ -789,11 +789,12 @@ public partial class MainWindow : Window
         {
             try
             {
-                StatusIndicator.Fill = isConnected ? Brushes.Green : Brushes.Gray;
-                StatusText.Text = isConnected ? "Verbunden" : "Nicht verbunden";
-
+                // Only handle disconnection here - connection status is managed by Connect_Click
                 if (!isConnected)
                 {
+                    StatusIndicator.Fill = Brushes.Gray;
+                    StatusText.Text = "Nicht verbunden";
+
                     ActiveChannelComboBox.IsEnabled = false;
                     _messages.Clear();
                     _allMessages.Clear();
@@ -1516,14 +1517,26 @@ public partial class MainWindow : Window
                     ? filtered.OrderBy(n => n.Id)
                     : filtered.OrderByDescending(n => n.Id),
                 "Distance" => _nodeSortAscending
-                    ? filtered.OrderBy(n => ParseDistanceForSorting(n.Distance))
-                    : filtered.OrderByDescending(n => ParseDistanceForSorting(n.Distance)),
+                    ? filtered.OrderBy(n => HasValidDistance(n.Distance) ? 0 : 1)
+                             .ThenBy(n => ParseDistanceForSorting(n.Distance))
+                             .ThenBy(n => n.ShortName)
+                    : filtered.OrderBy(n => HasValidDistance(n.Distance) ? 0 : 1)
+                             .ThenByDescending(n => ParseDistanceForSorting(n.Distance))
+                             .ThenBy(n => n.ShortName),
                 "Snr" => _nodeSortAscending
-                    ? filtered.OrderBy(n => ParseNumericForSorting(n.Snr))
-                    : filtered.OrderByDescending(n => ParseNumericForSorting(n.Snr)),
+                    ? filtered.OrderBy(n => HasValidNumeric(n.Snr) ? 0 : 1)
+                             .ThenBy(n => ParseNumericForSorting(n.Snr))
+                             .ThenBy(n => n.ShortName)
+                    : filtered.OrderBy(n => HasValidNumeric(n.Snr) ? 0 : 1)
+                             .ThenByDescending(n => ParseNumericForSorting(n.Snr))
+                             .ThenBy(n => n.ShortName),
                 "Rssi" => _nodeSortAscending
-                    ? filtered.OrderBy(n => ParseNumericForSorting(n.Rssi))
-                    : filtered.OrderByDescending(n => ParseNumericForSorting(n.Rssi)),
+                    ? filtered.OrderBy(n => HasValidNumeric(n.Rssi) ? 0 : 1)
+                             .ThenBy(n => ParseNumericForSorting(n.Rssi))
+                             .ThenBy(n => n.ShortName)
+                    : filtered.OrderBy(n => HasValidNumeric(n.Rssi) ? 0 : 1)
+                             .ThenByDescending(n => ParseNumericForSorting(n.Rssi))
+                             .ThenBy(n => n.ShortName),
                 "Battery" => _nodeSortAscending
                     ? filtered.OrderBy(n => ParseNumericForSorting(n.Battery))
                     : filtered.OrderByDescending(n => ParseNumericForSorting(n.Battery)),
@@ -1542,36 +1555,58 @@ public partial class MainWindow : Window
         }
     }
 
+    private bool HasValidDistance(string distance)
+    {
+        if (string.IsNullOrEmpty(distance) || distance == "-")
+            return false;
+        var cleaned = distance.Replace("km", "").Replace("m", "").Trim();
+        // Use CurrentCulture to handle comma decimal separator
+        return double.TryParse(cleaned, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.CurrentCulture, out _);
+    }
+
+    private bool HasValidNumeric(string value)
+    {
+        if (string.IsNullOrEmpty(value) || value == "-")
+            return false;
+        var cleaned = value.Replace("%", "").Replace("dB", "").Trim();
+        // Use CurrentCulture to handle comma decimal separator
+        if (double.TryParse(cleaned, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.CurrentCulture, out var result))
+        {
+            // 0.0 is considered "no value" for RSSI/SNR
+            return Math.Abs(result) >= 0.01;
+        }
+        return false;
+    }
+
     private double ParseDistanceForSorting(string distance)
     {
         if (string.IsNullOrEmpty(distance) || distance == "-")
-            return double.MaxValue;
+            return 0;
 
         var cleaned = distance.Replace("km", "").Replace("m", "").Trim();
-        if (double.TryParse(cleaned, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var value))
+        // Use CurrentCulture to handle comma decimal separator (DE: "160,2")
+        if (double.TryParse(cleaned, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.CurrentCulture, out var value))
         {
             // Convert meters to km if needed
             if (distance.EndsWith("m") && !distance.EndsWith("km"))
                 return value / 1000.0;
             return value;
         }
-        return double.MaxValue;
+        return 0;
     }
 
     private double ParseNumericForSorting(string value)
     {
         if (string.IsNullOrEmpty(value) || value == "-")
-            return double.MinValue;
+            return 0;
 
         var cleaned = value.Replace("%", "").Replace("dB", "").Trim();
-        if (double.TryParse(cleaned, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var result))
+        // Use CurrentCulture to handle comma decimal separator (DE: "-10,8")
+        if (double.TryParse(cleaned, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.CurrentCulture, out var result))
         {
-            // Treat 0.0 as "no value" for SNR/RSSI (sort to bottom when ascending)
-            if (Math.Abs(result) < 0.01)
-                return double.MinValue;
             return result;
         }
-        return double.MinValue;
+        return 0;
     }
 
     private double CalculateDistance(double lat1, double lon1, double lat2, double lon2)
