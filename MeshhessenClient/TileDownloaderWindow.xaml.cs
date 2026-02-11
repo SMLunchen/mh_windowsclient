@@ -9,9 +9,24 @@ public partial class TileDownloaderWindow : Window
     private CancellationTokenSource? _cts;
     private static readonly string TileDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "maptiles");
 
-    public TileDownloaderWindow()
+    public TileDownloaderWindow(string? defaultMapSource = null)
     {
         InitializeComponent();
+
+        // Map Source vorauswählen
+        var sourceToSelect = defaultMapSource ?? "osm";
+        foreach (System.Windows.Controls.ComboBoxItem item in MapSourceComboBox.Items)
+        {
+            if ((item.Tag as string) == sourceToSelect)
+            {
+                MapSourceComboBox.SelectedItem = item;
+                break;
+            }
+        }
+
+        // Hessen als Standard vorauswählen
+        BundeslandComboBox.SelectedIndex = 0;  // (Manuelle Eingabe)
+
         UpdateEstimate();
     }
 
@@ -20,6 +35,27 @@ public partial class TileDownloaderWindow : Window
         // Nur ausführen wenn alle UI-Elemente bereit sind
         if (EstimateText == null) return;
         UpdateEstimate();
+    }
+
+    private void BundeslandComboBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    {
+        if (BundeslandComboBox.SelectedItem is not System.Windows.Controls.ComboBoxItem item)
+            return;
+
+        var tag = item.Tag as string;
+        if (string.IsNullOrEmpty(tag))
+            return;  // (Manuelle Eingabe) selected
+
+        // Tag Format: "north,south,east,west"
+        var parts = tag.Split(',');
+        if (parts.Length == 4)
+        {
+            NorthBox.Text = parts[0];
+            SouthBox.Text = parts[1];
+            EastBox.Text = parts[2];
+            WestBox.Text = parts[3];
+            UpdateEstimate();
+        }
     }
 
     private void UpdateEstimate()
@@ -65,10 +101,20 @@ public partial class TileDownloaderWindow : Window
             return;
         }
 
+        // Map Source auslesen
+        var selectedItem = MapSourceComboBox.SelectedItem as System.Windows.Controls.ComboBoxItem;
+        var sourceTag = selectedItem?.Tag as string ?? "osm";
+        var mapSource = sourceTag switch
+        {
+            "osmtopo" => Services.MapSource.OSMTopo,
+            "osmdark" => Services.MapSource.OSMDark,
+            _ => Services.MapSource.OSM
+        };
+
         StartButton.IsEnabled = false;
         CancelButton.IsEnabled = true;
         _cts = new CancellationTokenSource();
-        Services.Logger.WriteLine($"Tile-Download gestartet: N={n:F4} S={s:F4} E={east:F4} W={w:F4} Zoom {minZ}-{maxZ}");
+        Services.Logger.WriteLine($"Tile-Download gestartet [{sourceTag}]: N={n:F4} S={s:F4} E={east:F4} W={w:F4} Zoom {minZ}-{maxZ}");
 
         var total = TileDownloaderService.EstimateTileCount(n, s, east, w, minZ, maxZ);
         DownloadProgress.Maximum = total;
@@ -81,7 +127,7 @@ public partial class TileDownloaderWindow : Window
 
         try
         {
-            await TileDownloaderService.DownloadTilesAsync(n, s, east, w, minZ, maxZ, TileDir, progress, _cts.Token);
+            await TileDownloaderService.DownloadTilesAsync(mapSource, n, s, east, w, minZ, maxZ, TileDir, progress, _cts.Token);
             var msg = _cts.Token.IsCancellationRequested ? "Abgebrochen." : "Download abgeschlossen!";
             StatusText.Text = msg;
             Services.Logger.WriteLine($"Tile-Download: {msg}");

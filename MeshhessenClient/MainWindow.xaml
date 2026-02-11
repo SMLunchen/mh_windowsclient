@@ -524,10 +524,29 @@
                                           Foreground="Gray"
                                           TextWrapping="Wrap"
                                           Margin="0,0,0,10"/>
+
+                                <!-- Kartenquelle Auswahl -->
+                                <TextBlock Text="Kartenquelle:" Margin="0,0,0,4"/>
+                                <ComboBox x:Name="MapSourceComboBox"
+                                         Width="250"
+                                         HorizontalAlignment="Left"
+                                         Margin="0,0,0,10"
+                                         SelectionChanged="MapSourceComboBox_SelectionChanged">
+                                    <ComboBoxItem Content="OpenStreetMap Standard" Tag="osm"/>
+                                    <ComboBoxItem Content="OpenTopoMap" Tag="osmtopo"/>
+                                    <ComboBoxItem Content="OpenStreetMap Dark" Tag="osmdark"/>
+                                </ComboBox>
+
                                 <Button Content="Tiles herunterladen..."
                                        Width="200"
                                        HorizontalAlignment="Left"
+                                       Margin="0,0,0,6"
                                        Click="DownloadTiles_Click"/>
+
+                                <Button Content="Maptiles aus Zip laden..."
+                                       Width="200"
+                                       HorizontalAlignment="Left"
+                                       Click="ImportTilesFromZip_Click"/>
                             </StackPanel>
                         </GroupBox>
 

@@ -57,7 +57,7 @@ public partial class MainWindow : Window
     private readonly List<IFeature> _nodeFeatures = new();
     private readonly List<IFeature> _myPosFeatures = new();
     private readonly Dictionary<uint, MPoint> _nodePinPositions = new();
-    private AppSettings _currentSettings = new(false, string.Empty, true, 50.9, 9.5, string.Empty, "192.168.1.1", 4403, new Dictionary<uint, string>(), new Dictionary<uint, string>(), false, false, false, false);
+    private AppSettings _currentSettings = new(false, string.Empty, true, 50.9, 9.5, string.Empty, "192.168.1.1", 4403, "osm", new Dictionary<uint, string>(), new Dictionary<uint, string>(), false, false, false, false);
     private NodeInfo? _mapContextMenuNode;
 
     public MainWindow()
@@ -101,10 +101,35 @@ public partial class MainWindow : Window
 
         // Einstellungen laden (VOR RefreshPorts, damit LastComPort bekannt ist)
         LoadSettings();
+
         RefreshPorts();
 
         // Karte initialisieren
         InitializeMap();
+
+        // Tile-Migration nach dem Laden des Fensters prüfen
+        this.Loaded += async (s, e) => await CheckAndRunTileMigration();
+    }
+
+    private async Task CheckAndRunTileMigration()
+    {
+        var tileDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "maptiles");
+
+        if (Services.TileMigrationService.IsMigrationNeeded(tileDir))
+        {
+            var count = Services.TileMigrationService.CountTilesToMigrate(tileDir);
+            Services.Logger.WriteLine($"[Startup] Tile migration needed: {count} files");
+
+            var migrationWin = new MigrationProgressWindow { Owner = this };
+            migrationWin.Show();
+
+            await migrationWin.RunMigrationAsync(tileDir);
+
+            // Karte neu laden nach Migration
+            Services.Logger.WriteLine("[Startup] Reloading map after migration");
+            InitializeMap();
+            UpdateMapTileStatus();
+        }
     }
 
     private void LoadSettings()
@@ -131,6 +156,23 @@ public partial class MainWindow : Window
             TcpHostTextBox.Text = settings.LastTcpHost;
             TcpPortTextBox.Text = settings.LastTcpPort.ToString();
 
+            // Load Map Source
+            bool foundMapSource = false;
+            foreach (System.Windows.Controls.ComboBoxItem item in MapSourceComboBox.Items)
+            {
+                if ((item.Tag as string) == settings.MapSource)
+                {
+                    MapSourceComboBox.SelectedItem = item;
+                    foundMapSource = true;
+                    break;
+                }
+            }
+            // Fallback to first item (OSM Standard) if not found
+            if (!foundMapSource && MapSourceComboBox.Items.Count > 0)
+            {
+                MapSourceComboBox.SelectedIndex = 0;
+            }
+
             if (settings.DarkMode)
                 ModernWpf.ThemeManager.Current.ApplicationTheme = ModernWpf.ApplicationTheme.Dark;
         }
@@ -148,10 +190,11 @@ public partial class MainWindow : Window
         {
             _map = new Mapsui.Map();
 
-            // Lokale Tile-Layer
+            // Lokale Tile-Layer mit ausgewählter Kartenquelle
             var tileDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "maptiles");
+            var sourceFolder = _currentSettings.MapSource;  // "osm", "osmtopo", oder "osmdark"
             var schema = new GlobalSphericalMercator(YAxis.TMS, 0, 18, "OSM");
-            var tileSource = new TileSource(new LocalFileTileProvider(tileDir), schema);
+            var tileSource = new TileSource(new LocalFileTileProvider(tileDir, sourceFolder), schema);
             _map.Layers.Add(new TileLayer(tileSource) { Name = "OSM" });
 
             // Node-Layer
@@ -173,7 +216,8 @@ public partial class MainWindow : Window
 
             UpdateMyPositionPin();
 
-            MapStatusText.Text = Directory.Exists(tileDir) && Directory.EnumerateFiles(tileDir, "*.png", SearchOption.AllDirectories).Any()
+            var sourceTileDir = Path.Combine(tileDir, sourceFolder);
+            MapStatusText.Text = Directory.Exists(sourceTileDir) && Directory.EnumerateFiles(sourceTileDir, "*.png", SearchOption.AllDirectories).Any()
                 ? "" : "Keine Tiles – bitte herunterladen";
         }
         catch (Exception ex)
@@ -461,12 +505,60 @@ public partial class MainWindow : Window
 
     private void DownloadTiles_Click(object sender, RoutedEventArgs e)
     {
-        var win = new TileDownloaderWindow { Owner = this };
+        var win = new TileDownloaderWindow(_currentSettings.MapSource) { Owner = this };
         win.ShowDialog();
         // Nach Download: Map-Status aktualisieren
+        UpdateMapTileStatus();
+    }
+
+    private void UpdateMapTileStatus()
+    {
         var tileDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "maptiles");
-        MapStatusText.Text = Directory.Exists(tileDir) && Directory.EnumerateFiles(tileDir, "*.png", SearchOption.AllDirectories).Any()
+        var sourceFolder = _currentSettings.MapSource;
+        var sourceTileDir = Path.Combine(tileDir, sourceFolder);
+        MapStatusText.Text = Directory.Exists(sourceTileDir) && Directory.EnumerateFiles(sourceTileDir, "*.png", SearchOption.AllDirectories).Any()
             ? "" : "Keine Tiles – bitte herunterladen";
+    }
+
+    private void MapSourceComboBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    {
+        if (MapSourceComboBox.SelectedItem is not System.Windows.Controls.ComboBoxItem item)
+            return;
+
+        var newSource = item.Tag as string ?? "osm";
+        if (newSource == _currentSettings.MapSource)
+            return;  // Keine Änderung
+
+        // Settings aktualisieren
+        _currentSettings = _currentSettings with { MapSource = newSource };
+        Services.SettingsService.Save(_currentSettings);
+        Services.Logger.WriteLine($"Map source changed to: {newSource}");
+
+        // Karte neu laden mit neuer Quelle
+        InitializeMap();
+        UpdateMapTileStatus();
+    }
+
+    private async void ImportTilesFromZip_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new Microsoft.Win32.OpenFileDialog
+        {
+            Title = "Zip-Datei mit Tiles auswählen",
+            Filter = "Zip-Dateien (*.zip)|*.zip|Alle Dateien (*.*)|*.*",
+            CheckFileExists = true
+        };
+
+        if (dialog.ShowDialog() != true)
+            return;
+
+        var tileDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "maptiles");
+        var win = new ZipImportWindow { Owner = this };
+        win.Show();
+
+        await win.ImportFromZipAsync(dialog.FileName, tileDir);
+
+        // Map-Status aktualisieren
+        UpdateMapTileStatus();
     }
 
     private void MapZoomIn_Click(object sender, RoutedEventArgs e)
@@ -502,7 +594,13 @@ public partial class MainWindow : Window
     private class LocalFileTileProvider : ITileProvider
     {
         private readonly string _baseDir;
-        public LocalFileTileProvider(string baseDir) => _baseDir = baseDir;
+        private readonly string _sourceFolder;
+
+        public LocalFileTileProvider(string baseDir, string sourceFolder)
+        {
+            _baseDir = baseDir;
+            _sourceFolder = sourceFolder;
+        }
 
         public Task<byte[]?> GetTileAsync(TileInfo tileInfo)
         {
@@ -510,7 +608,8 @@ public partial class MainWindow : Window
             var x = tileInfo.Index.Col;
             // BruTile TMS hat Row 0 im Süden, OSM-Dateien haben Y=0 im Norden → konvertieren
             var yOsm = (1 << z) - 1 - tileInfo.Index.Row;
-            var path = Path.Combine(_baseDir, z.ToString(), x.ToString(), $"{yOsm}.png");
+            // Neuer Pfad: maptiles/{source}/{z}/{x}/{y}.png
+            var path = Path.Combine(_baseDir, _sourceFolder, z.ToString(), x.ToString(), $"{yOsm}.png");
             if (File.Exists(path))
             {
                 try { return Task.FromResult<byte[]?>(File.ReadAllBytes(path)); } catch { }
@@ -994,6 +1093,7 @@ public partial class MainWindow : Window
                 LastComPort: _currentSettings.LastComPort,
                 LastTcpHost: _currentSettings.LastTcpHost,
                 LastTcpPort: _currentSettings.LastTcpPort,
+                MapSource: _currentSettings.MapSource,
                 NodeColors: _currentSettings.NodeColors,
                 NodeNotes: _currentSettings.NodeNotes,
                 DebugMessages: DebugMessagesCheckBox.IsChecked == true,
