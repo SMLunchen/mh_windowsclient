@@ -5,26 +5,36 @@ namespace MeshhessenClient.Services;
 
 public enum MapSource
 {
-    OSM,          // tile.openstreetmap.org
-    OSMTopo,      // tile.opentopomap.org
-    OSMDark       // basemaps.cartocdn.com/dark_all
+    OSM,          // /osm/
+    OSMTopo,      // /opentopo/
+    OSMDark       // /dark/
 }
 
 public static class TileDownloaderService
 {
     private static readonly HttpClient _httpClient = new()
     {
-        DefaultRequestHeaders = { { "User-Agent", "MeshhessenClient/1.0 (https://meshhessen.de)" } }
+        DefaultRequestHeaders = { { "User-Agent", "MeshhessenClient/1.5.1" } }
     };
 
-    private static readonly Random _random = new();
+    // Konfigurierbarer Tile-Server (nur Hostname, ohne https://)
+    public static string TileServerUrl { get; set; } = "tile.schwarzes-seelenreich.de";
 
-    // Gibt den Ordnernamen für die Kartenquelle zurück
+    // Gibt den Ordnernamen für die lokale Tile-Speicherung zurück
     public static string GetSourceFolderName(MapSource source) => source switch
     {
         MapSource.OSM => "osm",
         MapSource.OSMTopo => "osmtopo",
         MapSource.OSMDark => "osmdark",
+        _ => throw new ArgumentException($"Unknown map source: {source}")
+    };
+
+    // Gibt den Server-Pfad für die Kartenquelle zurück
+    private static string GetServerPath(MapSource source) => source switch
+    {
+        MapSource.OSM => "osm",
+        MapSource.OSMTopo => "opentopo",
+        MapSource.OSMDark => "dark",
         _ => throw new ArgumentException($"Unknown map source: {source}")
     };
 
@@ -83,15 +93,8 @@ public static class TileDownloaderService
                     {
                         try
                         {
-                            // URL je nach Kartenquelle
-                            var subdomain = new[] { "a", "b", "c", "d" }[_random.Next(4)];
-                            var url = source switch
-                            {
-                                MapSource.OSM => $"https://tile.openstreetmap.org/{z}/{x}/{y}.png",
-                                MapSource.OSMTopo => $"https://tile.opentopomap.org/{z}/{x}/{y}.png",
-                                MapSource.OSMDark => $"https://{subdomain}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
-                                _ => throw new ArgumentException($"Unknown map source: {source}")
-                            };
+                            var serverPath = GetServerPath(source);
+                            var url = $"https://{TileServerUrl}/{serverPath}/{z}/{x}/{y}.png";
 
                             var data = await _httpClient.GetByteArrayAsync(url, ct);
                             await File.WriteAllBytesAsync(filePath, data, ct);

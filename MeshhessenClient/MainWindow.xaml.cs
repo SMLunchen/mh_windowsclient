@@ -57,7 +57,7 @@ public partial class MainWindow : Window
     private readonly List<IFeature> _nodeFeatures = new();
     private readonly List<IFeature> _myPosFeatures = new();
     private readonly Dictionary<uint, MPoint> _nodePinPositions = new();
-    private AppSettings _currentSettings = new(false, string.Empty, true, 50.9, 9.5, string.Empty, "192.168.1.1", 4403, "osm", new Dictionary<uint, string>(), new Dictionary<uint, string>(), false, false, false, false);
+    private AppSettings _currentSettings = new(false, string.Empty, true, 50.9, 9.5, string.Empty, "192.168.1.1", 4403, "osm", "tile.schwarzes-seelenreich.de", new Dictionary<uint, string>(), new Dictionary<uint, string>(), false, false, false, false);
     private NodeInfo? _mapContextMenuNode;
 
     public MainWindow()
@@ -155,6 +155,10 @@ public partial class MainWindow : Window
             // Load TCP settings
             TcpHostTextBox.Text = settings.LastTcpHost;
             TcpPortTextBox.Text = settings.LastTcpPort.ToString();
+
+            // Load Tile Server URL
+            TileServerUrlTextBox.Text = settings.TileServerUrl;
+            TileDownloaderService.TileServerUrl = settings.TileServerUrl;
 
             // Load Map Source
             bool foundMapSource = false;
@@ -505,6 +509,12 @@ public partial class MainWindow : Window
 
     private void DownloadTiles_Click(object sender, RoutedEventArgs e)
     {
+        // Tile-Server URL direkt aus TextBox übernehmen (auch ohne vorheriges Speichern)
+        var tileServer = string.IsNullOrWhiteSpace(TileServerUrlTextBox.Text)
+            ? "tile.schwarzes-seelenreich.de"
+            : TileServerUrlTextBox.Text.Trim();
+        TileDownloaderService.TileServerUrl = tileServer;
+
         var win = new TileDownloaderWindow(_currentSettings.MapSource) { Owner = this };
         win.ShowDialog();
         // Nach Download: Map-Status aktualisieren
@@ -1094,6 +1104,7 @@ public partial class MainWindow : Window
                 LastTcpHost: _currentSettings.LastTcpHost,
                 LastTcpPort: _currentSettings.LastTcpPort,
                 MapSource: _currentSettings.MapSource,
+                TileServerUrl: string.IsNullOrWhiteSpace(TileServerUrlTextBox.Text) ? "tile.schwarzes-seelenreich.de" : TileServerUrlTextBox.Text.Trim(),
                 NodeColors: _currentSettings.NodeColors,
                 NodeNotes: _currentSettings.NodeNotes,
                 DebugMessages: DebugMessagesCheckBox.IsChecked == true,
@@ -1105,6 +1116,7 @@ public partial class MainWindow : Window
             SettingsService.Save(settings);
             StationNameLabel.Text = settings.StationName;
             _showEncryptedMessages = settings.ShowEncryptedMessages;
+            TileDownloaderService.TileServerUrl = settings.TileServerUrl;
             _protocolService.SetDebugSerial(settings.DebugSerial);
             _protocolService.SetDebugDevice(settings.DebugDevice);
             BluetoothConnectionService.SetDebugEnabled(settings.DebugBluetooth);

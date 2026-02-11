@@ -13,6 +13,7 @@ public record AppSettings(
     string LastTcpHost,                      // Last TCP/WiFi hostname or IP
     int LastTcpPort,                         // Last TCP/WiFi port
     string MapSource,                        // Map tile source: "osm", "osmtopo", "osmdark"
+    string TileServerUrl,                    // Tile server hostname (without https://)
     Dictionary<uint, string> NodeColors,     // NodeId -> Color (hex)
     Dictionary<uint, string> NodeNotes,      // NodeId -> Note text
     bool DebugMessages,                      // Enable message debug logging
@@ -26,7 +27,7 @@ public static class SettingsService
 
     public static AppSettings Load()
     {
-        var defaults = new AppSettings(false, string.Empty, true, 50.9, 9.5, string.Empty, "192.168.1.1", 4403, "osm", new Dictionary<uint, string>(), new Dictionary<uint, string>(), false, false, false, false);
+        var defaults = new AppSettings(false, string.Empty, true, 50.9, 9.5, string.Empty, "192.168.1.1", 4403, "osm", "tile.schwarzes-seelenreich.de", new Dictionary<uint, string>(), new Dictionary<uint, string>(), false, false, false, false);
 
         try
         {
@@ -85,6 +86,7 @@ public static class SettingsService
                 LastTcpHost: values.TryGetValue("LastTcpHost", out var tcpHost) ? tcpHost : defaults.LastTcpHost,
                 LastTcpPort: values.TryGetValue("LastTcpPort", out var tcpPort) && int.TryParse(tcpPort, out var tcpPortInt) ? tcpPortInt : defaults.LastTcpPort,
                 MapSource: values.TryGetValue("MapSource", out var mapSrc) ? mapSrc : defaults.MapSource,
+                TileServerUrl: values.TryGetValue("TileServerUrl", out var tsu) && !string.IsNullOrWhiteSpace(tsu) ? tsu : defaults.TileServerUrl,
                 NodeColors: nodeColors,
                 NodeNotes: nodeNotes,
                 DebugMessages: values.TryGetValue("DebugMessages", out var dbg) && bool.TryParse(dbg, out var dbgBool) && dbgBool,
@@ -117,6 +119,7 @@ public static class SettingsService
                 $"LastTcpHost={settings.LastTcpHost}",
                 $"LastTcpPort={settings.LastTcpPort}",
                 $"MapSource={settings.MapSource}",
+                $"TileServerUrl={settings.TileServerUrl}",
                 $"DebugMessages={settings.DebugMessages}",
                 $"DebugSerial={settings.DebugSerial}",
                 $"DebugDevice={settings.DebugDevice}",
