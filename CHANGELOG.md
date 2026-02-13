@@ -7,6 +7,53 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
 
+## [Unreleased]
+
+### ✨ Hinzugefügt
+
+#### Alert Bell Support
+- **🚨 Notruf-Funktion** integriert (Meshtastic Alert Bell Character)
+  - SOS-Button in Hauptchat und DM-Fenstern
+  - Emoji-basiert (🔔) für Kompatibilität mit Android/Web-Apps
+  - **Visuelle Benachrichtigung**: Rote blinkende Umrandung (6 Blinks über 3 Sekunden)
+  - **Akustische Benachrichtigung**: Sirenen-Sound (WAV-generiert, funktioniert auch bei stummen System-Sounds)
+  - **Notification-Bar**: Erscheint oben im Fenster mit Absender-Name
+  - **"Zur Karte springen" Button**: Springt direkt zur Node-Position auf der Karte (Zoom Level 12)
+    - Button wird nur angezeigt wenn Position des Nodes bekannt ist
+    - Wechselt automatisch zum Karten-Tab und zentriert auf Node
+  - Notification verschwindet automatisch nach 30 Sekunden oder manuell schließbar
+  - 🔔 Icon in Nachrichtenlisten für empfangene Alert Bells
+
+#### Karten-Erweiterungen
+- **OSM Dark Mode**: Dunkle Kartenansicht für bessere Sicht bei Nacht
+- **OpenTopoMap**: Topografische Karte mit Höhenlinien
+- **Drei Kartentypen** wählbar in Einstellungen: OSM Standard, OSM Dark, OpenTopoMap
+- **Eigener Tile-Server**: Umstellung auf eigenen Server (tile.schwarzes-seelenreich.de)
+  - OSM-Policy verbietet Offline-Downloads für unsere Nutzung
+  - Eigener Server erlaubt explizit Offline-Downloads
+  - Tile-Server-URL individuell konfigurierbar in Einstellungen
+- **Rate-Limiting** nur für externe Server (nicht für eigene Server)
+- **Copyright-Hinweise** auf der Karte (unten rechts)
+  - Dynamischer Text je nach Kartenquelle (OSM, OpenTopoMap)
+  - Verlinkung zu Datenquellen
+- **Support für weitere Bundesländer**: Offline-Tiles für ganz Deutschland und angrenzende Gebiete
+
+### 🐛 Behoben
+
+- **Zombie-Prozess beim Beenden**: App beendet sich jetzt sauber mit `Application.Current.Shutdown()`
+  - Synchroner Disconnect statt asynchron
+  - Keine hängenden Prozesse mehr nach Fenster-Schließen
+- **Tab-Navigation**: "Zur Karte" Button springt jetzt korrekt zum Karten-Tab (nicht zur Node-Liste)
+
+### 🔄 Geändert
+
+- **Alert Bell Format**: Umstellung von ASCII Control Character (0x07) auf Emoji (🔔)
+  - Kompatibel mit Android und Web-Apps
+  - Emoji wird beim Empfang automatisch aus Nachrichtentext entfernt
+  - Unterstützt beide Varianten beim Empfang (ASCII + Emoji)
+
+---
+
 ## [1.0-Beta] - 2026-02-08
 
 ### ✨ Hinzugefügt

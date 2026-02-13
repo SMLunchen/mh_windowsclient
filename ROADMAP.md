@@ -23,6 +23,4 @@
 * Mehrsprachigkeit (Englisch)
 * Emoji-Picker
 * Export/Import von Nachrichten
-* Alarmklingelzeichen für Kanal / DM
-* Map Copyright besser sichtbar.
 

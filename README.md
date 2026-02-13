@@ -26,11 +26,22 @@ Ein **offline-fähiger, nativer Windows-Client** für Meshtastic-Geräte mit USB
 
 ## ✨ Features
 
-* **Nachrichten** senden und empfangen (Broadcast & Direct Messages)
+### 📨 Nachrichten & Kommunikation
+* **Nachrichten** senden und empfangen (Broadcast & Direct Messages) /DMs in einegem Fenster im tabbed Layout
 * **Multi-Channel** – alle Kanäle deines Geräts automatisch geladen
-* **Multi-Verbindung** – USB/Serial, TCP/WiFi und Bluetooth (BLE)
-* **Offline-Karte** mit OSM-Tiles und Node-Positionen als Pins
 * **Direktnachrichten (DMs)** mit separatem Chat-Fenster
+* **🚨 Alert Bell Support** – Senden und Empfangen von Notrufen
+  - 🚨 SOS Button in Chat und DMs
+  - Visuell: Rote blinkende Umrandung + Notification-Bar mit "Zur Karte springen" Button
+### 🗺️ Offline-Karte
+* **Drei Kartentypen:** OSM Standard, OSM Dark Mode, OpenTopoMap (topografisch)
+* **Eigener Tile-Server** – OSM-Policy verbietet Offline-Downloads, daher nutzen wir einen eigenen Server der das erlaubt
+* **Offline-Tiles** für ganz Deutschland und angrenzende Gebiete
+* **Node-Positionen** als farbige Pins auf der Karte
+* **Copyright-Hinweise** für verwendete Datenquellen (OSM, OpenTopoMap, etc.)
+
+### 🔧 Verbindung & System
+* **Multi-Verbindung** – USB/Serial, TCP/WiFi und Bluetooth (BLE)
 * **Knoten-Übersicht** – alle Nodes im Mesh mit SNR, Batterie, Entfernung
 * **Node-Markierungen** – Nodes farblich markieren und mit Notizen versehen
 * **Dark Mode** & ModernWPF Fluent-Design
@@ -62,20 +73,24 @@ Der Meshhessen Client ist ein Gemeinschaftsprojekt der Meshtastic-Community in H
 
 ## 🗺️ Offline-Karte einrichten
 
+**Kartentypen:** OSM Standard (hell), OSM Dark Mode, OpenTopoMap (topografisch) – wählbar in Einstellungen.
 
+> ⚠️ **Wichtig:** Bitte NICHT auf den offiziellen OSM Tile-Server zurückstellen – Offline-Downloads verstoßen gegen deren Policy. Wir nutzen einen eigenen Server der das explizit erlaubt. Eigenen Tile-Server kannst du in den Einstellungen konfigurieren.
 
-1. Einstellungen öffnen
+**Tiles herunterladen:**
+
+1. Einstellungen öffnen → Kartenquelle wählen (OSM / OSM Dark / OpenTopo)
 2. **„Tiles herunterladen"** klicken
-3. Bereich (Bounding Box) und Zoom-Level eingeben – z.B. Hessen Zoom 1–14
-4. Download starten (OSM Fair-Use: max. \~2 req/s)
-5. Tiles werden unter `maptiles/` gespeichert und sind dauerhaft offline verfügbar, die Tiles sind Portabel und können z.B. per USB von Gerät zu Gerät übertragen werden.
-6. Tab **„🗺️ Karte"** öffnen
+3. Bereich (Bounding Box) und Zoom-Level eingeben – z.B. Hessen: `49.3,7.7,51.7,10.2`, Zoom `1-14`
+4. Download starten (Rate-Limit nur bei externen Servern, nicht bei unserem eigenen)
+5. Tiles werden unter `maptiles/` gespeichert und sind dauerhaft offline verfügbar
+6. Tiles sind portabel – per USB übertragbar
 
-Rechtsklick auf die Karte → eigenen Standort setzen. Node-Pins erscheinen automatisch sobald GPS-Daten empfangen werden.
-
-Klick auf einen Node → Entfernungsanzeige (anhand von eigenem Standort)
-
-Rechtsklick auf einen Node → Fabe setzen oder DM schicken
+**Karte nutzen:**
+- Tab **„🗺️ Karte"** öffnen
+- Rechtsklick auf Karte → eigenen Standort setzen
+- Node-Pins erscheinen automatisch sobald GPS-Daten empfangen werden
+- Rechtsklick auf Node → Farbe setzen, DM senden, Notiz bearbeiten
 
 
 ## 📝 Nachrichten-Logs
