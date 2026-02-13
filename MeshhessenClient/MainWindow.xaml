@@ -30,13 +30,14 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <!-- Alert Bell Overlay (Blinkt bei Notruf) -->
         <Border x:Name="AlertBellOverlay"
-                Grid.RowSpan="3"
+                Grid.RowSpan="4"
                 BorderBrush="Red"
                 BorderThickness="8"
                 Visibility="Collapsed"
@@ -46,8 +47,59 @@
             </Border.Effect>
         </Border>
 
+        <!-- Alert Notification Bar -->
+        <Border x:Name="AlertNotificationBar"
+                Grid.Row="0"
+                Background="#FFCC0000"
+                Padding="10,8"
+                Visibility="Collapsed">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Column="0"
+                          Text="🚨"
+                          FontSize="16"
+                          VerticalAlignment="Center"
+                          Margin="0,0,10,0"/>
+
+                <TextBlock x:Name="AlertNotificationText"
+                          Grid.Column="1"
+                          Text="Notruf empfangen!"
+                          Foreground="White"
+                          FontWeight="Bold"
+                          VerticalAlignment="Center"/>
+
+                <Button x:Name="ShowOnMapButton"
+                       Grid.Column="2"
+                       Content="📍 Zur Karte"
+                       Margin="10,0,10,0"
+                       Padding="10,5"
+                       Background="White"
+                       Foreground="Black"
+                       FontWeight="Bold"
+                       Click="ShowOnMap_Click"
+                       Visibility="Collapsed"/>
+
+                <Button Grid.Column="3"
+                       Content="✖"
+                       Padding="8,2"
+                       Background="Transparent"
+                       Foreground="White"
+                       BorderThickness="0"
+                       FontWeight="Bold"
+                       FontSize="14"
+                       Click="CloseAlertNotification_Click"
+                       Cursor="Hand"/>
+            </Grid>
+        </Border>
+
         <!-- Toolbar -->
-        <Border Grid.Row="0" Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}" Padding="10">
+        <Border Grid.Row="1" Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}" Padding="10">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -168,7 +220,7 @@
         </Border>
 
         <!-- Main Content Area -->
-        <TabControl Grid.Row="1" Margin="0">
+        <TabControl x:Name="MainTabs" Grid.Row="2" Margin="0">
 
             <!-- Messages Tab -->
             <TabItem Header="📨 Nachrichten">
@@ -836,7 +888,7 @@
         </TabControl>
 
         <!-- Status Bar -->
-        <Border Grid.Row="2" Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}" Padding="10,5">
+        <Border Grid.Row="3" Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}" Padding="10,5">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>

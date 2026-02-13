@@ -78,6 +78,7 @@ public partial class MainWindow : Window
         false,
         true);
     private NodeInfo? _mapContextMenuNode;
+    private uint? _alertNodeId;  // Stores the node ID for "Show on Map" button
 
     public MainWindow()
     {
@@ -1362,6 +1363,9 @@ public partial class MainWindow : Window
 
                     // Show visual alert animation
                     ShowAlertBellAnimation();
+
+                    // Show alert notification with "Show on Map" button
+                    ShowAlertNotification(message.From, message.FromId);
                 }
 
                 // Prüfe ob es eine Direktnachricht ist (nicht Broadcast)
@@ -2327,7 +2331,24 @@ public partial class MainWindow : Window
     {
         try
         {
-            System.Media.SystemSounds.Beep.Play();
+            // Play multiple beeps for alert (works even if system sounds are muted)
+            Task.Run(() =>
+            {
+                try
+                {
+                    // Three short beeps (frequency, duration)
+                    Console.Beep(1000, 200);
+                    Thread.Sleep(100);
+                    Console.Beep(1000, 200);
+                    Thread.Sleep(100);
+                    Console.Beep(1000, 400);
+                }
+                catch
+                {
+                    // Fallback to system sound if Console.Beep doesn't work
+                    System.Media.SystemSounds.Exclamation.Play();
+                }
+            });
         }
         catch (Exception ex)
         {
@@ -2382,4 +2403,86 @@ public partial class MainWindow : Window
 
     [System.Runtime.InteropServices.DllImport("user32.dll")]
     private static extern bool FlashWindow(IntPtr hwnd, bool bInvert);
+
+    private void ShowAlertNotification(string nodeName, uint nodeId)
+    {
+        try
+        {
+            Dispatcher.BeginInvoke(() =>
+            {
+                _alertNodeId = nodeId;
+
+                // Update notification text
+                AlertNotificationText.Text = $"🚨 Notruf von {nodeName}!";
+
+                // Check if we have position for this node
+                var node = _nodes.FirstOrDefault(n => n.NodeId == nodeId);
+                bool hasPosition = node != null && node.Latitude.HasValue && node.Longitude.HasValue;
+
+                // Show "Show on Map" button only if we have the node's position
+                ShowOnMapButton.Visibility = hasPosition ? Visibility.Visible : Visibility.Collapsed;
+
+                // Show notification bar
+                AlertNotificationBar.Visibility = Visibility.Visible;
+
+                // Auto-hide after 30 seconds
+                Task.Delay(30000).ContinueWith(_ =>
+                {
+                    Dispatcher.BeginInvoke(() =>
+                    {
+                        if (AlertNotificationBar.Visibility == Visibility.Visible)
+                        {
+                            AlertNotificationBar.Visibility = Visibility.Collapsed;
+                        }
+                    });
+                });
+            });
+        }
+        catch (Exception ex)
+        {
+            Services.Logger.WriteLine($"Error showing alert notification: {ex.Message}");
+        }
+    }
+
+    private void CloseAlertNotification_Click(object sender, RoutedEventArgs e)
+    {
+        AlertNotificationBar.Visibility = Visibility.Collapsed;
+    }
+
+    private void ShowOnMap_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            if (_alertNodeId == null)
+                return;
+
+            var node = _nodes.FirstOrDefault(n => n.NodeId == _alertNodeId);
+            if (node == null || !node.Latitude.HasValue || !node.Longitude.HasValue)
+            {
+                MessageBox.Show("Position für diesen Node ist nicht bekannt.", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            // Switch to Map tab
+            MainTabs.SelectedIndex = 1; // Map is tab index 1
+
+            // Center map on node position
+            var nodePos = SphericalMercator.FromLonLat(node.Longitude.Value, node.Latitude.Value);
+            if (_map != null)
+            {
+                _map.Navigator.CenterOnAndZoomTo(new MPoint(nodePos.x, nodePos.y), 305.0); // Zoom level 9
+                MapControl.Refresh();
+            }
+
+            // Close notification
+            AlertNotificationBar.Visibility = Visibility.Collapsed;
+
+            Services.Logger.WriteLine($"Jumped to map position of node {node.Name} (Lat: {node.Latitude}, Lon: {node.Longitude})");
+        }
+        catch (Exception ex)
+        {
+            Services.Logger.WriteLine($"Error showing node on map: {ex.Message}");
+            MessageBox.Show($"Fehler beim Anzeigen der Node-Position: {ex.Message}", "Fehler", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
 }
