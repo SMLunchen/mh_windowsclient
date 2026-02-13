@@ -4,7 +4,7 @@ Ein **offline-fähiger, nativer Windows-Client** für Meshtastic-Geräte mit USB
 
  ![Windows](https://img.shields.io/badge/Windows-10%2F11-blue)
  ![.NET](https://img.shields.io/badge/.NET-8.0-purple)
- ![Status](https://img.shields.io/badge/Status-v1.0--Beta-yellow)
+ ![Status](https://img.shields.io/badge/Status-v1.5--Beta-yellow)
 
 
 ## 🚀 Schnellstart
