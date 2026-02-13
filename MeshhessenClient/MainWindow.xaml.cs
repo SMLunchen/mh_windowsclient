@@ -542,7 +542,7 @@ public partial class MainWindow : Window
             _dmWindow = new DirectMessagesWindow(_protocolService, _myNodeId);
             _dmWindow.Show();
         }
-        _dmWindow.OpenChatWithNode(node.NodeId, node.Name);
+        _dmWindow.OpenChatWithNode(node.NodeId, node.Name, node.ColorHex);
     }
 
     private void ShowNodeInfoDialog(NodeInfo node)
@@ -1419,6 +1419,7 @@ public partial class MainWindow : Window
                 var senderNode = _allNodes.FirstOrDefault(n => n.NodeId == message.FromId);
                 if (senderNode != null)
                 {
+                    message.SenderShortName = senderNode.ShortName;
                     message.SenderColorHex = senderNode.ColorHex;
                     message.SenderNote = senderNode.Note;
                 }
@@ -2010,6 +2011,29 @@ public partial class MainWindow : Window
         }
     }
 
+    private void NodeContextMenu_NodeInfo_Click(object sender, RoutedEventArgs e)
+    {
+        if (NodesListView.SelectedItem is NodeInfo node)
+            ShowNodeInfoDialog(node);
+    }
+
+    private void NodeContextMenu_ShowOnMap_Click(object sender, RoutedEventArgs e)
+    {
+        if (NodesListView.SelectedItem is not NodeInfo node || !node.Latitude.HasValue || !node.Longitude.HasValue)
+        {
+            MessageBox.Show("Position für diesen Node ist nicht bekannt.", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        MainTabs.SelectedIndex = 4;
+        var nodePos = SphericalMercator.FromLonLat(node.Longitude.Value, node.Latitude.Value);
+        if (_map != null)
+        {
+            _map.Navigator.CenterOnAndZoomTo(new MPoint(nodePos.x, nodePos.y), 76.0);
+            MapControl.Refresh();
+        }
+    }
+
     private void NodeFilterTextBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
     {
         ApplyNodeSortAndFilter();
@@ -2168,6 +2192,68 @@ public partial class MainWindow : Window
             return $"{distanceKm:F2}km";
         else
             return $"{distanceKm:F1}km";
+    }
+
+    // ========== Message Context Menu Handlers ==========
+
+    private NodeInfo? GetNodeFromSelectedMessage()
+    {
+        if (MessageListView.SelectedItem is not MessageItem msg) return null;
+        return _allNodes.FirstOrDefault(n => n.NodeId == msg.FromId);
+    }
+
+    private void MessageContextMenu_SendDm_Click(object sender, RoutedEventArgs e)
+    {
+        var node = GetNodeFromSelectedMessage();
+        if (node == null) { MessageBox.Show("Node nicht gefunden.", "Hinweis", MessageBoxButton.OK, MessageBoxImage.Information); return; }
+        if (node.NodeId == _myNodeId) { MessageBox.Show("Sie können keine DM an sich selbst senden.", "Hinweis", MessageBoxButton.OK, MessageBoxImage.Information); return; }
+        OpenDmToNode(node);
+    }
+
+    private void MessageContextMenu_NodeInfo_Click(object sender, RoutedEventArgs e)
+    {
+        var node = GetNodeFromSelectedMessage();
+        if (node == null) { MessageBox.Show("Node nicht gefunden.", "Hinweis", MessageBoxButton.OK, MessageBoxImage.Information); return; }
+        ShowNodeInfoDialog(node);
+    }
+
+    private void MessageContextMenu_ShowOnMap_Click(object sender, RoutedEventArgs e)
+    {
+        var node = GetNodeFromSelectedMessage();
+        if (node == null || !node.Latitude.HasValue || !node.Longitude.HasValue)
+        {
+            MessageBox.Show("Position für diesen Node ist nicht bekannt.", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        MainTabs.SelectedIndex = 4;
+        var nodePos = SphericalMercator.FromLonLat(node.Longitude.Value, node.Latitude.Value);
+        if (_map != null)
+        {
+            _map.Navigator.CenterOnAndZoomTo(new MPoint(nodePos.x, nodePos.y), 76.0);
+            MapControl.Refresh();
+        }
+    }
+
+    private void MessageContextMenu_SetColor_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem menuItem && menuItem.Tag is string color)
+        {
+            var node = GetNodeFromSelectedMessage();
+            if (node != null) SetNodeColorInternal(node, color);
+        }
+    }
+
+    private void MessageContextMenu_RemoveColor_Click(object sender, RoutedEventArgs e)
+    {
+        var node = GetNodeFromSelectedMessage();
+        if (node != null) RemoveNodeColorInternal(node);
+    }
+
+    private void MessageContextMenu_EditNote_Click(object sender, RoutedEventArgs e)
+    {
+        var node = GetNodeFromSelectedMessage();
+        if (node != null) EditNodeNoteInternal(node);
     }
 
     // ========== Node Color and Note Management ==========

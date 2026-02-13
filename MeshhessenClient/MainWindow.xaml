@@ -290,6 +290,7 @@
                                 </GridViewColumn>
                                 <GridViewColumn Header="Zeit" Width="120" DisplayMemberBinding="{Binding Time}"/>
                                 <GridViewColumn Header="Von" Width="120" DisplayMemberBinding="{Binding From}"/>
+                                <GridViewColumn Header="Kurz" Width="60" DisplayMemberBinding="{Binding SenderShortName}"/>
                                 <GridViewColumn Header="Notiz" Width="100">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate>
@@ -297,10 +298,69 @@
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
-                                <GridViewColumn Header="Nachricht" Width="300" DisplayMemberBinding="{Binding Message}"/>
+                                <GridViewColumn Header="Nachricht" Width="350">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding Message}" TextWrapping="Wrap"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
                                 <GridViewColumn Header="Kanal" Width="80" DisplayMemberBinding="{Binding ChannelName}"/>
                             </GridView>
                         </ListView.View>
+                        <ListView.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="💬 DM senden" Click="MessageContextMenu_SendDm_Click"/>
+                                <MenuItem Header="ℹ️ Node-Info" Click="MessageContextMenu_NodeInfo_Click"/>
+                                <MenuItem Header="🗺️ Auf Karte zeigen" Click="MessageContextMenu_ShowOnMap_Click"/>
+                                <Separator/>
+                                <MenuItem Header="🎨 Farbe setzen">
+                                    <MenuItem Tag="#00FF00" Click="MessageContextMenu_SetColor_Click">
+                                        <MenuItem.Header>
+                                            <TextBlock Text="■ Grün" Foreground="#00FF00" FontWeight="Bold"/>
+                                        </MenuItem.Header>
+                                    </MenuItem>
+                                    <MenuItem Tag="#0080FF" Click="MessageContextMenu_SetColor_Click">
+                                        <MenuItem.Header>
+                                            <TextBlock Text="■ Blau" Foreground="#0080FF" FontWeight="Bold"/>
+                                        </MenuItem.Header>
+                                    </MenuItem>
+                                    <MenuItem Tag="#FFFF00" Click="MessageContextMenu_SetColor_Click">
+                                        <MenuItem.Header>
+                                            <TextBlock Text="■ Gelb" Foreground="#FFFF00" FontWeight="Bold"/>
+                                        </MenuItem.Header>
+                                    </MenuItem>
+                                    <MenuItem Tag="#FF8000" Click="MessageContextMenu_SetColor_Click">
+                                        <MenuItem.Header>
+                                            <TextBlock Text="■ Orange" Foreground="#FF8000" FontWeight="Bold"/>
+                                        </MenuItem.Header>
+                                    </MenuItem>
+                                    <MenuItem Tag="#8000FF" Click="MessageContextMenu_SetColor_Click">
+                                        <MenuItem.Header>
+                                            <TextBlock Text="■ Lila" Foreground="#8000FF" FontWeight="Bold"/>
+                                        </MenuItem.Header>
+                                    </MenuItem>
+                                    <MenuItem Tag="#804000" Click="MessageContextMenu_SetColor_Click">
+                                        <MenuItem.Header>
+                                            <TextBlock Text="■ Braun" Foreground="#804000" FontWeight="Bold"/>
+                                        </MenuItem.Header>
+                                    </MenuItem>
+                                    <MenuItem Tag="#FF00FF" Click="MessageContextMenu_SetColor_Click">
+                                        <MenuItem.Header>
+                                            <TextBlock Text="■ Pink" Foreground="#FF00FF" FontWeight="Bold"/>
+                                        </MenuItem.Header>
+                                    </MenuItem>
+                                    <MenuItem Tag="#00FFFF" Click="MessageContextMenu_SetColor_Click">
+                                        <MenuItem.Header>
+                                            <TextBlock Text="■ Türkis" Foreground="#00FFFF" FontWeight="Bold"/>
+                                        </MenuItem.Header>
+                                    </MenuItem>
+                                    <Separator/>
+                                    <MenuItem Header="❌ Farbe entfernen" Click="MessageContextMenu_RemoveColor_Click"/>
+                                </MenuItem>
+                                <MenuItem Header="📝 Notiz bearbeiten..." Click="MessageContextMenu_EditNote_Click"/>
+                            </ContextMenu>
+                        </ListView.ContextMenu>
                     </ListView>
 
                     <!-- Send Message -->
@@ -452,6 +512,8 @@
                         <ListView.ContextMenu>
                             <ContextMenu>
                                 <MenuItem Header="💬 DM senden" Click="SendDmToNode_Click"/>
+                                <MenuItem Header="ℹ️ Node-Info" Click="NodeContextMenu_NodeInfo_Click"/>
+                                <MenuItem Header="🗺️ Auf Karte zeigen" Click="NodeContextMenu_ShowOnMap_Click"/>
                                 <Separator/>
                                 <MenuItem Header="🎨 Farbe setzen">
                                     <MenuItem Tag="#00FF00" Click="SetNodeColor_Click">

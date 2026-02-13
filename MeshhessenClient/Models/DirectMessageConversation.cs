@@ -8,4 +8,5 @@ public class DirectMessageConversation
     public string NodeName { get; set; } = string.Empty;
     public ObservableCollection<MessageItem> Messages { get; set; } = new();
     public bool HasUnread { get; set; } = false;
+    public string ColorHex { get; set; } = string.Empty;
 }

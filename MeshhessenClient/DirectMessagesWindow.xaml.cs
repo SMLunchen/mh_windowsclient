@@ -38,7 +38,8 @@ public partial class DirectMessagesWindow : Window
                     conversation = new DirectMessageConversation
                     {
                         NodeId = partnerId,
-                        NodeName = message.FromId == _myNodeId ? $"→ {message.From}" : message.From
+                        NodeName = message.FromId == _myNodeId ? $"→ {message.From}" : message.From,
+                        ColorHex = message.SenderColorHex
                     };
                     _conversations.Add(conversation);
                     CreateTabForConversation(conversation);
@@ -231,13 +232,91 @@ public partial class DirectMessagesWindow : Window
 
     private void UpdateTabHeader(TabItem tab, DirectMessageConversation conversation)
     {
+        // Reuse existing header to avoid replacing elements during click events
+        if (tab.Header is StackPanel existingPanel)
+        {
+            var existingText = existingPanel.Children.OfType<TextBlock>().FirstOrDefault();
+            if (existingText != null)
+            {
+                existingText.Text = conversation.NodeName;
+                existingText.FontWeight = conversation.HasUnread ? FontWeights.Bold : FontWeights.Normal;
+                existingText.Foreground = conversation.HasUnread
+                    ? new SolidColorBrush(Colors.Orange)
+                    : (Brush)FindResource("SystemControlForegroundBaseHighBrush");
+                return;
+            }
+        }
+
+        // First-time creation
+        var headerPanel = new StackPanel { Orientation = Orientation.Horizontal };
+
+        // Color indicator
+        if (!string.IsNullOrEmpty(conversation.ColorHex))
+        {
+            try
+            {
+                var color = (Color)ColorConverter.ConvertFromString(conversation.ColorHex);
+                var colorBox = new Border
+                {
+                    Width = 12,
+                    Height = 12,
+                    Background = new SolidColorBrush(color),
+                    BorderBrush = Brushes.Gray,
+                    BorderThickness = new Thickness(1),
+                    VerticalAlignment = VerticalAlignment.Center,
+                    Margin = new Thickness(0, 0, 5, 0)
+                };
+                headerPanel.Children.Add(colorBox);
+            }
+            catch { /* ignore invalid color */ }
+        }
+
         var headerText = new TextBlock
         {
             Text = conversation.NodeName,
+            VerticalAlignment = VerticalAlignment.Center,
             FontWeight = conversation.HasUnread ? FontWeights.Bold : FontWeights.Normal,
-            Foreground = conversation.HasUnread ? new SolidColorBrush(Colors.Orange) : SystemColors.ControlTextBrush
+            Foreground = conversation.HasUnread
+                ? new SolidColorBrush(Colors.Orange)
+                : (Brush)FindResource("SystemControlForegroundBaseHighBrush")
         };
-        tab.Header = headerText;
+        headerPanel.Children.Add(headerText);
+
+        var closeButton = new Button
+        {
+            Content = "\u2715",
+            FontSize = 10,
+            Padding = new Thickness(2),
+            Margin = new Thickness(6, 0, 0, 0),
+            Background = Brushes.Transparent,
+            BorderThickness = new Thickness(0),
+            VerticalAlignment = VerticalAlignment.Center,
+            Cursor = Cursors.Hand,
+            ToolTip = "Tab schließen",
+            Tag = conversation.NodeId
+        };
+        closeButton.Click += CloseTab_Click;
+        headerPanel.Children.Add(closeButton);
+
+        tab.Header = headerPanel;
+    }
+
+    private void CloseTab_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn && btn.Tag is uint nodeId)
+        {
+            if (_tabByNodeId.TryGetValue(nodeId, out var tab))
+            {
+                DmTabControl.Items.Remove(tab);
+                _tabByNodeId.Remove(nodeId);
+
+                var conversation = _conversations.FirstOrDefault(c => c.NodeId == nodeId);
+                if (conversation != null)
+                    _conversations.Remove(conversation);
+
+                UpdateStatusBar();
+            }
+        }
     }
 
     private async void SendDirectMessage(uint toNodeId, string messageText)
@@ -315,7 +394,7 @@ public partial class DirectMessagesWindow : Window
         }
     }
 
-    public void OpenChatWithNode(uint nodeId, string nodeName)
+    public void OpenChatWithNode(uint nodeId, string nodeName, string colorHex = "")
     {
         Dispatcher.BeginInvoke(() =>
         {
@@ -328,7 +407,8 @@ public partial class DirectMessagesWindow : Window
                     conversation = new DirectMessageConversation
                     {
                         NodeId = nodeId,
-                        NodeName = nodeName
+                        NodeName = nodeName,
+                        ColorHex = colorHex
                     };
                     _conversations.Add(conversation);
                     CreateTabForConversation(conversation);
