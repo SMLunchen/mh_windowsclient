@@ -2331,28 +2331,95 @@ public partial class MainWindow : Window
     {
         try
         {
-            // Play multiple beeps for alert (works even if system sounds are muted)
+            // Play alarm sound in background thread
             Task.Run(() =>
             {
                 try
                 {
-                    // Three short beeps (frequency, duration)
-                    Console.Beep(1000, 200);
-                    Thread.Sleep(100);
-                    Console.Beep(1000, 200);
-                    Thread.Sleep(100);
-                    Console.Beep(1000, 400);
+                    // Generate and play alarm WAV sound
+                    var wavData = GenerateAlarmSound();
+                    using (var ms = new MemoryStream(wavData))
+                    {
+                        var player = new System.Media.SoundPlayer(ms);
+                        player.PlaySync();
+                    }
+                    Services.Logger.WriteLine("Alert sound played successfully");
                 }
-                catch
+                catch (Exception ex)
                 {
-                    // Fallback to system sound if Console.Beep doesn't work
-                    System.Media.SystemSounds.Exclamation.Play();
+                    Services.Logger.WriteLine($"WAV playback failed: {ex.Message}, trying Console.Beep");
+                    try
+                    {
+                        // Fallback to Console.Beep
+                        for (int i = 0; i < 3; i++)
+                        {
+                            Console.Beep(1200, 150);
+                            Thread.Sleep(100);
+                        }
+                    }
+                    catch
+                    {
+                        // Last fallback: System sound
+                        for (int i = 0; i < 5; i++)
+                        {
+                            System.Media.SystemSounds.Hand.Play();
+                            Thread.Sleep(200);
+                        }
+                    }
                 }
             });
         }
         catch (Exception ex)
         {
             Services.Logger.WriteLine($"Error playing alert sound: {ex.Message}");
+        }
+    }
+
+    private byte[] GenerateAlarmSound()
+    {
+        // Generate a simple alarm sound (siren effect) as WAV
+        int sampleRate = 8000;
+        int durationMs = 2000; // 2 seconds
+        int numSamples = (sampleRate * durationMs) / 1000;
+
+        using (var ms = new MemoryStream())
+        using (var writer = new BinaryWriter(ms))
+        {
+            // WAV header
+            writer.Write(new[] { 'R', 'I', 'F', 'F' });
+            writer.Write(36 + numSamples); // File size - 8
+            writer.Write(new[] { 'W', 'A', 'V', 'E' });
+            writer.Write(new[] { 'f', 'm', 't', ' ' });
+            writer.Write(16); // Format chunk size
+            writer.Write((short)1); // PCM
+            writer.Write((short)1); // Mono
+            writer.Write(sampleRate);
+            writer.Write(sampleRate); // Byte rate
+            writer.Write((short)1); // Block align
+            writer.Write((short)8); // Bits per sample
+            writer.Write(new[] { 'd', 'a', 't', 'a' });
+            writer.Write(numSamples);
+
+            // Generate siren sound (alternating frequencies)
+            double freq1 = 800.0; // Low frequency
+            double freq2 = 1400.0; // High frequency
+            double cycleDuration = 0.5; // Half second per cycle
+            int cyclesamples = (int)(sampleRate * cycleDuration);
+
+            for (int i = 0; i < numSamples; i++)
+            {
+                // Alternate between two frequencies
+                int cyclePos = i % (cyclesamples * 2);
+                double freq = (cyclePos < cyclesamples) ? freq1 : freq2;
+
+                // Generate sine wave
+                double angle = 2.0 * Math.PI * freq * i / sampleRate;
+                double sample = Math.Sin(angle) * 127 + 128;
+
+                writer.Write((byte)sample);
+            }
+
+            return ms.ToArray();
         }
     }
 
@@ -2464,13 +2531,14 @@ public partial class MainWindow : Window
             }
 
             // Switch to Map tab
-            MainTabs.SelectedIndex = 1; // Map is tab index 1
+            MainTabs.SelectedIndex = 4; // Map is tab index 4 (0=Messages, 1=Nodes, 2=Channels, 3=Settings, 4=Map)
 
-            // Center map on node position
+            // Center map on node position with closer zoom
             var nodePos = SphericalMercator.FromLonLat(node.Longitude.Value, node.Latitude.Value);
             if (_map != null)
             {
-                _map.Navigator.CenterOnAndZoomTo(new MPoint(nodePos.x, nodePos.y), 305.0); // Zoom level 9
+                // Zoom level 12 (resolution ~76)
+                _map.Navigator.CenterOnAndZoomTo(new MPoint(nodePos.x, nodePos.y), 76.0);
                 MapControl.Refresh();
             }
 
