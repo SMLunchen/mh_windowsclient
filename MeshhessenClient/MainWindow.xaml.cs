@@ -57,7 +57,26 @@ public partial class MainWindow : Window
     private readonly List<IFeature> _nodeFeatures = new();
     private readonly List<IFeature> _myPosFeatures = new();
     private readonly Dictionary<uint, MPoint> _nodePinPositions = new();
-    private AppSettings _currentSettings = new(false, string.Empty, true, 50.9, 9.5, string.Empty, "192.168.1.1", 4403, "osm", "tile.schwarzes-seelenreich.de", new Dictionary<uint, string>(), new Dictionary<uint, string>(), false, false, false, false);
+    private AppSettings _currentSettings = new(
+        false,
+        string.Empty,
+        true,
+        50.9,
+        9.5,
+        string.Empty,
+        "192.168.1.1",
+        4403,
+        "osm",
+        "https://tile.schwarzes-seelenreich.de/osm/{z}/{x}/{y}.png",
+        "https://tile.schwarzes-seelenreich.de/opentopo/{z}/{x}/{y}.png",
+        "https://tile.schwarzes-seelenreich.de/dark/{z}/{x}/{y}.png",
+        new Dictionary<uint, string>(),
+        new Dictionary<uint, string>(),
+        false,
+        false,
+        false,
+        false,
+        true);
     private NodeInfo? _mapContextMenuNode;
 
     public MainWindow()
@@ -146,6 +165,7 @@ public partial class MainWindow : Window
             DebugSerialCheckBox.IsChecked = settings.DebugSerial;
             DebugDeviceCheckBox.IsChecked = settings.DebugDevice;
             DebugBluetoothCheckBox.IsChecked = settings.DebugBluetooth;
+            AlertBellSoundCheckBox.IsChecked = settings.AlertBellSound;
 
             _currentSettings = settings;
             _protocolService.SetDebugSerial(settings.DebugSerial);
@@ -156,9 +176,19 @@ public partial class MainWindow : Window
             TcpHostTextBox.Text = settings.LastTcpHost;
             TcpPortTextBox.Text = settings.LastTcpPort.ToString();
 
-            // Load Tile Server URL
-            TileServerUrlTextBox.Text = settings.TileServerUrl;
-            TileDownloaderService.TileServerUrl = settings.TileServerUrl;
+            // Load Tile Server URLs
+            TileDownloaderService.OSMTileUrl = settings.OSMTileUrl;
+            TileDownloaderService.OSMTopoTileUrl = settings.OSMTopoTileUrl;
+            TileDownloaderService.OSMDarkTileUrl = settings.OSMDarkTileUrl;
+
+            // Display URL for current map source
+            TileServerUrlTextBox.Text = settings.MapSource switch
+            {
+                "osm" => settings.OSMTileUrl,
+                "osmtopo" => settings.OSMTopoTileUrl,
+                "osmdark" => settings.OSMDarkTileUrl,
+                _ => settings.OSMTileUrl
+            };
 
             // Load Map Source
             bool foundMapSource = false;
@@ -223,11 +253,24 @@ public partial class MainWindow : Window
             var sourceTileDir = Path.Combine(tileDir, sourceFolder);
             MapStatusText.Text = Directory.Exists(sourceTileDir) && Directory.EnumerateFiles(sourceTileDir, "*.png", SearchOption.AllDirectories).Any()
                 ? "" : "Keine Tiles – bitte herunterladen";
+
+            // Copyright-Hinweis basierend auf Kartenquelle setzen
+            UpdateMapCopyright();
         }
         catch (Exception ex)
         {
             Services.Logger.WriteLine($"ERROR initializing map: {ex.Message}");
         }
+    }
+
+    private void UpdateMapCopyright()
+    {
+        MapCopyrightText.Text = _currentSettings.MapSource switch
+        {
+            "osmtopo" => "© OpenStreetMap contributors, © OpenTopoMap (CC-BY-SA)",
+            "osmdark" => "© OpenStreetMap contributors",
+            _ => "© OpenStreetMap contributors"
+        };
     }
 
     private void UpdateMyPositionPin()
@@ -510,10 +553,23 @@ public partial class MainWindow : Window
     private void DownloadTiles_Click(object sender, RoutedEventArgs e)
     {
         // Tile-Server URL direkt aus TextBox übernehmen (auch ohne vorheriges Speichern)
-        var tileServer = string.IsNullOrWhiteSpace(TileServerUrlTextBox.Text)
-            ? "tile.schwarzes-seelenreich.de"
+        var currentTileUrl = string.IsNullOrWhiteSpace(TileServerUrlTextBox.Text)
+            ? "https://tile.schwarzes-seelenreich.de/osm/{z}/{x}/{y}.png"
             : TileServerUrlTextBox.Text.Trim();
-        TileDownloaderService.TileServerUrl = tileServer;
+
+        // Update the appropriate URL based on current map source
+        switch (_currentSettings.MapSource)
+        {
+            case "osm":
+                TileDownloaderService.OSMTileUrl = currentTileUrl;
+                break;
+            case "osmtopo":
+                TileDownloaderService.OSMTopoTileUrl = currentTileUrl;
+                break;
+            case "osmdark":
+                TileDownloaderService.OSMDarkTileUrl = currentTileUrl;
+                break;
+        }
 
         var win = new TileDownloaderWindow(_currentSettings.MapSource) { Owner = this };
         win.ShowDialog();
@@ -538,6 +594,15 @@ public partial class MainWindow : Window
         var newSource = item.Tag as string ?? "osm";
         if (newSource == _currentSettings.MapSource)
             return;  // Keine Änderung
+
+        // Update URL TextBox to show the URL for the selected map source
+        TileServerUrlTextBox.Text = newSource switch
+        {
+            "osm" => _currentSettings.OSMTileUrl,
+            "osmtopo" => _currentSettings.OSMTopoTileUrl,
+            "osmdark" => _currentSettings.OSMDarkTileUrl,
+            _ => _currentSettings.OSMTileUrl
+        };
 
         // Settings aktualisieren
         _currentSettings = _currentSettings with { MapSource = newSource };
@@ -1013,6 +1078,66 @@ public partial class MainWindow : Window
         await SendMessage();
     }
 
+    private async void AlertBell_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_connectionService.IsConnected)
+        {
+            MessageBox.Show("Nicht verbunden. Bitte zuerst mit einem Gerät verbinden.", "Fehler", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        var result = MessageBox.Show(
+            "Möchten Sie wirklich einen NOTRUF (Alert Bell) senden?\n\nDies wird als wichtige Benachrichtigung an alle Empfänger gesendet!",
+            "Notruf bestätigen",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+
+        if (result != MessageBoxResult.Yes)
+            return;
+
+        try
+        {
+            AlertBellButton.IsEnabled = false;
+
+            // Send Alert Bell - use EMOJI 🔔 (as used by other clients)
+            string alertMessage;
+            var additionalText = MessageTextBox.Text.Trim();
+
+            if (!string.IsNullOrEmpty(additionalText))
+            {
+                // Bell emoji + user text
+                alertMessage = "🔔 " + additionalText;
+                MessageTextBox.Clear();
+            }
+            else
+            {
+                // Bell emoji + standard text (compatible with other Meshtastic clients)
+                alertMessage = "🔔 Alert Bell Character!";
+            }
+
+            // Debug log with hex dump (only if debug messages enabled)
+            if (_currentSettings.DebugMessages)
+            {
+                var bytes = System.Text.Encoding.UTF8.GetBytes(alertMessage);
+                var hexDump = string.Join(" ", bytes.Select(b => $"{b:X2}"));
+                Services.Logger.WriteLine($"[MSG DEBUG] Sending Alert Bell {bytes.Length} bytes: {hexDump}");
+                Services.Logger.WriteLine($"[MSG DEBUG] Text: '{alertMessage}'");
+            }
+
+            await _protocolService.SendTextMessageAsync(alertMessage, 0xFFFFFFFF, (uint)_activeChannelIndex);
+
+            UpdateStatusBar("Notruf gesendet!");
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Fehler beim Senden des Notrufs: {ex.Message}", "Fehler", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+        finally
+        {
+            AlertBellButton.IsEnabled = true;
+        }
+    }
+
     private async void MessageTextBox_KeyDown(object sender, KeyEventArgs e)
     {
         if (e.Key == Key.Enter)
@@ -1094,6 +1219,29 @@ public partial class MainWindow : Window
     {
         try
         {
+            // Get current tile URL from TextBox
+            var currentTileUrl = string.IsNullOrWhiteSpace(TileServerUrlTextBox.Text)
+                ? "https://tile.schwarzes-seelenreich.de/osm/{z}/{x}/{y}.png"
+                : TileServerUrlTextBox.Text.Trim();
+
+            // Update the appropriate URL based on current map source
+            var osmUrl = _currentSettings.OSMTileUrl;
+            var osmTopoUrl = _currentSettings.OSMTopoTileUrl;
+            var osmDarkUrl = _currentSettings.OSMDarkTileUrl;
+
+            switch (_currentSettings.MapSource)
+            {
+                case "osm":
+                    osmUrl = currentTileUrl;
+                    break;
+                case "osmtopo":
+                    osmTopoUrl = currentTileUrl;
+                    break;
+                case "osmdark":
+                    osmDarkUrl = currentTileUrl;
+                    break;
+            }
+
             var settings = new AppSettings(
                 DarkMode: DarkModeCheckBox.IsChecked == true,
                 StationName: StationNameTextBox.Text,
@@ -1104,19 +1252,24 @@ public partial class MainWindow : Window
                 LastTcpHost: _currentSettings.LastTcpHost,
                 LastTcpPort: _currentSettings.LastTcpPort,
                 MapSource: _currentSettings.MapSource,
-                TileServerUrl: string.IsNullOrWhiteSpace(TileServerUrlTextBox.Text) ? "tile.schwarzes-seelenreich.de" : TileServerUrlTextBox.Text.Trim(),
+                OSMTileUrl: osmUrl,
+                OSMTopoTileUrl: osmTopoUrl,
+                OSMDarkTileUrl: osmDarkUrl,
                 NodeColors: _currentSettings.NodeColors,
                 NodeNotes: _currentSettings.NodeNotes,
                 DebugMessages: DebugMessagesCheckBox.IsChecked == true,
                 DebugSerial: DebugSerialCheckBox.IsChecked == true,
                 DebugDevice: DebugDeviceCheckBox.IsChecked == true,
-                DebugBluetooth: DebugBluetoothCheckBox.IsChecked == true
+                DebugBluetooth: DebugBluetoothCheckBox.IsChecked == true,
+                AlertBellSound: AlertBellSoundCheckBox.IsChecked == true
             );
             _currentSettings = settings;
             SettingsService.Save(settings);
             StationNameLabel.Text = settings.StationName;
             _showEncryptedMessages = settings.ShowEncryptedMessages;
-            TileDownloaderService.TileServerUrl = settings.TileServerUrl;
+            TileDownloaderService.OSMTileUrl = settings.OSMTileUrl;
+            TileDownloaderService.OSMTopoTileUrl = settings.OSMTopoTileUrl;
+            TileDownloaderService.OSMDarkTileUrl = settings.OSMDarkTileUrl;
             _protocolService.SetDebugSerial(settings.DebugSerial);
             _protocolService.SetDebugDevice(settings.DebugDevice);
             BluetoothConnectionService.SetDebugEnabled(settings.DebugBluetooth);
@@ -1170,6 +1323,45 @@ public partial class MainWindow : Window
                         ? message.Message.Substring(0, Math.Min(50, message.Message.Length))
                         : "";
                     Services.Logger.WriteLine($"[MSG DEBUG] Received message: From={message.From} (ID=!{message.FromId:x8}), To=!{message.ToId:x8}, Channel={message.Channel}, Encrypted={message.IsEncrypted}, MQTT={message.IsViaMqtt}, Text={msgPreview}...");
+                }
+
+                // Check for Alert Bell - both ASCII (0x07) and Emoji (🔔)
+                bool hasAlertBell = !string.IsNullOrEmpty(message.Message) &&
+                                   (message.Message.Contains('\u0007') || message.Message.Contains("🔔"));
+
+                if (hasAlertBell)
+                {
+                    message.HasAlertBell = true;
+
+                    // Debug log (only if debug messages enabled)
+                    if (_currentSettings.DebugMessages)
+                    {
+                        Services.Logger.WriteLine($"[MSG DEBUG] Detected alert bell from {message.From} (ID: !{message.FromId:x8})");
+                        var bytes = System.Text.Encoding.UTF8.GetBytes(message.Message);
+                        var hexDump = string.Join(" ", bytes.Take(50).Select(b => $"{b:X2}"));
+                        Services.Logger.WriteLine($"[MSG DEBUG] Original raw bytes (first 50): {hexDump}");
+                        Services.Logger.WriteLine($"[MSG DEBUG] Original text length: {message.Message.Length}");
+                        Services.Logger.WriteLine($"[MSG DEBUG] Original text: '{message.Message}'");
+                    }
+
+                    // Remove both ASCII bell character and bell emoji for display
+                    message.Message = message.Message.Replace("\u0007", "").Replace("🔔", "");
+
+                    // Trim whitespace
+                    message.Message = message.Message.Trim();
+
+                    if (_currentSettings.DebugMessages)
+                    {
+                        Services.Logger.WriteLine($"[MSG DEBUG] After removing bell: '{message.Message}' (length: {message.Message.Length})");
+                    }
+
+                    if (_currentSettings.AlertBellSound)
+                    {
+                        PlayAlertSound();
+                    }
+
+                    // Show visual alert animation
+                    ShowAlertBellAnimation();
                 }
 
                 // Prüfe ob es eine Direktnachricht ist (nicht Broadcast)
@@ -1768,34 +1960,27 @@ public partial class MainWindow : Window
 
     protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
     {
-        // Disconnect asynchron im Hintergrund - nicht auf UI Thread blockieren
-        if (_connectionService.IsConnected)
+        try
         {
-            Task.Run(() =>
+            // Disconnect synchronously to ensure clean shutdown
+            if (_connectionService.IsConnected)
             {
-                try
-                {
-                    Services.Logger.WriteLine("Application closing...");
-                    _protocolService.Disconnect();
-                    System.Threading.Thread.Sleep(100);
-                    _connectionService.Disconnect();
-                    Services.Logger.WriteLine("Disconnected");
-                    Services.Logger.Close();
-                }
-                catch (Exception ex)
-                {
-                    Services.Logger.WriteLine($"Error during close: {ex.Message}");
-                    Services.Logger.Close();
-                }
-            });
-
-            // Gib dem Task kurz Zeit (aber nicht blockieren)
-            System.Threading.Thread.Sleep(150);
-        }
-        else
-        {
+                Services.Logger.WriteLine("Application closing...");
+                _protocolService.Disconnect();
+                System.Threading.Thread.Sleep(100);
+                _connectionService.Disconnect();
+                Services.Logger.WriteLine("Disconnected");
+            }
             Services.Logger.Close();
         }
+        catch (Exception ex)
+        {
+            Services.Logger.WriteLine($"Error during close: {ex.Message}");
+            Services.Logger.Close();
+        }
+
+        // Force application shutdown
+        Application.Current.Shutdown();
 
         base.OnClosing(e);
     }
@@ -2137,4 +2322,64 @@ public partial class MainWindow : Window
             Services.Logger.WriteLine($"Error editing node note: {ex.Message}");
         }
     }
+
+    private void PlayAlertSound()
+    {
+        try
+        {
+            System.Media.SystemSounds.Beep.Play();
+        }
+        catch (Exception ex)
+        {
+            Services.Logger.WriteLine($"Error playing alert sound: {ex.Message}");
+        }
+    }
+
+    private void ShowAlertBellAnimation()
+    {
+        try
+        {
+            Dispatcher.BeginInvoke(() =>
+            {
+                // Start blink animation
+                var storyboard = new System.Windows.Media.Animation.Storyboard();
+
+                // Create animation for opacity (blink effect)
+                var opacityAnimation = new System.Windows.Media.Animation.DoubleAnimation
+                {
+                    From = 0.0,
+                    To = 1.0,
+                    Duration = TimeSpan.FromMilliseconds(300),
+                    AutoReverse = true,
+                    RepeatBehavior = new System.Windows.Media.Animation.RepeatBehavior(6) // 6 blinks (3 seconds)
+                };
+
+                System.Windows.Media.Animation.Storyboard.SetTarget(opacityAnimation, AlertBellOverlay);
+                System.Windows.Media.Animation.Storyboard.SetTargetProperty(opacityAnimation, new PropertyPath(Border.OpacityProperty));
+
+                storyboard.Children.Add(opacityAnimation);
+
+                // Show overlay and start animation
+                AlertBellOverlay.Visibility = Visibility.Visible;
+
+                storyboard.Completed += (s, e) =>
+                {
+                    AlertBellOverlay.Visibility = Visibility.Collapsed;
+                };
+
+                storyboard.Begin();
+
+                // Flash window in taskbar
+                var hwnd = new System.Windows.Interop.WindowInteropHelper(this).Handle;
+                FlashWindow(hwnd, true);
+            });
+        }
+        catch (Exception ex)
+        {
+            Services.Logger.WriteLine($"Error showing alert bell animation: {ex.Message}");
+        }
+    }
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern bool FlashWindow(IntPtr hwnd, bool bInvert);
 }

@@ -17,8 +17,19 @@ public static class TileDownloaderService
         DefaultRequestHeaders = { { "User-Agent", "MeshhessenClient/1.5.1" } }
     };
 
-    // Konfigurierbarer Tile-Server (nur Hostname, ohne https://)
-    public static string TileServerUrl { get; set; } = "tile.schwarzes-seelenreich.de";
+    // Tile URL templates für jede Kartenquelle (werden von Settings geladen)
+    public static string OSMTileUrl { get; set; } = "https://tile.schwarzes-seelenreich.de/osm/{z}/{x}/{y}.png";
+    public static string OSMTopoTileUrl { get; set; } = "https://tile.schwarzes-seelenreich.de/opentopo/{z}/{x}/{y}.png";
+    public static string OSMDarkTileUrl { get; set; } = "https://tile.schwarzes-seelenreich.de/dark/{z}/{x}/{y}.png";
+
+    // Gibt die Tile-URL-Template für die angegebene Kartenquelle zurück
+    private static string GetTileUrlTemplate(MapSource source) => source switch
+    {
+        MapSource.OSM => OSMTileUrl,
+        MapSource.OSMTopo => OSMTopoTileUrl,
+        MapSource.OSMDark => OSMDarkTileUrl,
+        _ => throw new ArgumentException($"Unknown map source: {source}")
+    };
 
     // Gibt den Ordnernamen für die lokale Tile-Speicherung zurück
     public static string GetSourceFolderName(MapSource source) => source switch
@@ -29,14 +40,6 @@ public static class TileDownloaderService
         _ => throw new ArgumentException($"Unknown map source: {source}")
     };
 
-    // Gibt den Server-Pfad für die Kartenquelle zurück
-    private static string GetServerPath(MapSource source) => source switch
-    {
-        MapSource.OSM => "osm",
-        MapSource.OSMTopo => "opentopo",
-        MapSource.OSMDark => "dark",
-        _ => throw new ArgumentException($"Unknown map source: {source}")
-    };
 
     // Berechnet Tile-Koordinaten aus Lat/Lon nach Slippy-Map-Schema
     public static (int x, int y) LatLonToTile(double lat, double lon, int zoom)
@@ -93,14 +96,22 @@ public static class TileDownloaderService
                     {
                         try
                         {
-                            var serverPath = GetServerPath(source);
-                            var url = $"https://{TileServerUrl}/{serverPath}/{z}/{x}/{y}.png";
+                            // Get URL template and replace placeholders
+                            var urlTemplate = GetTileUrlTemplate(source);
+                            var url = urlTemplate
+                                .Replace("{z}", z.ToString())
+                                .Replace("{x}", x.ToString())
+                                .Replace("{y}", y.ToString());
 
                             var data = await _httpClient.GetByteArrayAsync(url, ct);
                             await File.WriteAllBytesAsync(filePath, data, ct);
 
-                            // Rate-Limiting: max ~2 req/s
-                            await Task.Delay(500, ct);
+                            // Rate-Limiting nur für externe Server (nicht für eigene Server)
+                            if (!url.Contains("tile.schwarzes-seelenreich.de", StringComparison.OrdinalIgnoreCase) &&
+                                !url.Contains("tile.meshhessen.de", StringComparison.OrdinalIgnoreCase))
+                            {
+                                await Task.Delay(500, ct);
+                            }
                         }
                         catch (Exception ex) when (!ct.IsCancellationRequested)
                         {

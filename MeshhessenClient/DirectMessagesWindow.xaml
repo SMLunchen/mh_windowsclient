@@ -10,7 +10,12 @@
         Height="500"
         Width="700"
         MinHeight="300"
-        MinWidth="500">
+        MinWidth="500"
+        xmlns:converters="clr-namespace:MeshhessenClient.Converters">
+
+    <Window.Resources>
+        <converters:AlertBellIconConverter x:Key="AlertBellIconConverter"/>
+    </Window.Resources>
 
     <Grid>
         <Grid.RowDefinitions>
@@ -22,6 +27,18 @@
         <TabControl x:Name="DmTabControl" Grid.Row="0">
             <!-- Tabs werden dynamisch hinzugefügt -->
         </TabControl>
+
+        <!-- Alert Bell Overlay (Blinkt bei Notruf) -->
+        <Border x:Name="AlertBellOverlay"
+                Grid.RowSpan="2"
+                BorderBrush="Red"
+                BorderThickness="8"
+                Visibility="Collapsed"
+                IsHitTestVisible="False">
+            <Border.Effect>
+                <DropShadowEffect Color="Red" ShadowDepth="0" BlurRadius="20" Opacity="0.8"/>
+            </Border.Effect>
+        </Border>
 
         <!-- Status Bar -->
         <Border Grid.Row="1" Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}" Padding="10,5">

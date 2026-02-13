@@ -13,13 +13,16 @@ public record AppSettings(
     string LastTcpHost,                      // Last TCP/WiFi hostname or IP
     int LastTcpPort,                         // Last TCP/WiFi port
     string MapSource,                        // Map tile source: "osm", "osmtopo", "osmdark"
-    string TileServerUrl,                    // Tile server hostname (without https://)
+    string OSMTileUrl,                       // Tile URL for OSM (including http:// or https://)
+    string OSMTopoTileUrl,                   // Tile URL for OpenTopoMap (including http:// or https://)
+    string OSMDarkTileUrl,                   // Tile URL for OSM Dark (including http:// or https://)
     Dictionary<uint, string> NodeColors,     // NodeId -> Color (hex)
     Dictionary<uint, string> NodeNotes,      // NodeId -> Note text
     bool DebugMessages,                      // Enable message debug logging
     bool DebugSerial,                        // Enable serial data hex dump
     bool DebugDevice,                        // Enable device serial debug output logging
-    bool DebugBluetooth);                    // Enable BLE debug logging
+    bool DebugBluetooth,                     // Enable BLE debug logging
+    bool AlertBellSound);                    // Play sound on alert bell character
 
 public static class SettingsService
 {
@@ -27,7 +30,26 @@ public static class SettingsService
 
     public static AppSettings Load()
     {
-        var defaults = new AppSettings(false, string.Empty, true, 50.9, 9.5, string.Empty, "192.168.1.1", 4403, "osm", "tile.schwarzes-seelenreich.de", new Dictionary<uint, string>(), new Dictionary<uint, string>(), false, false, false, false);
+        var defaults = new AppSettings(
+            false,
+            string.Empty,
+            true,
+            50.9,
+            9.5,
+            string.Empty,
+            "192.168.1.1",
+            4403,
+            "osm",
+            "https://tile.schwarzes-seelenreich.de/osm/{z}/{x}/{y}.png",        // OSM
+            "https://tile.schwarzes-seelenreich.de/opentopo/{z}/{x}/{y}.png",   // OSM Topo
+            "https://tile.schwarzes-seelenreich.de/dark/{z}/{x}/{y}.png",       // OSM Dark
+            new Dictionary<uint, string>(),
+            new Dictionary<uint, string>(),
+            false,
+            false,
+            false,
+            false,
+            true);  // AlertBellSound default enabled
 
         try
         {
@@ -76,6 +98,28 @@ public static class SettingsService
                 }
             }
 
+            // Migration: Convert old TileServerUrl to new format
+            string osmUrl = defaults.OSMTileUrl;
+            string osmTopoUrl = defaults.OSMTopoTileUrl;
+            string osmDarkUrl = defaults.OSMDarkTileUrl;
+
+            if (values.TryGetValue("TileServerUrl", out var oldTileServerUrl) && !string.IsNullOrWhiteSpace(oldTileServerUrl))
+            {
+                // Old format: just hostname without protocol
+                // Convert to new format with https://
+                osmUrl = $"https://{oldTileServerUrl}/osm/{{z}}/{{x}}/{{y}}.png";
+                osmTopoUrl = $"https://{oldTileServerUrl}/opentopo/{{z}}/{{x}}/{{y}}.png";
+                osmDarkUrl = $"https://{oldTileServerUrl}/dark/{{z}}/{{x}}/{{y}}.png";
+            }
+
+            // Load new individual URLs (override migration if present)
+            if (values.TryGetValue("OSMTileUrl", out var osmUrlValue) && !string.IsNullOrWhiteSpace(osmUrlValue))
+                osmUrl = osmUrlValue;
+            if (values.TryGetValue("OSMTopoTileUrl", out var osmTopoUrlValue) && !string.IsNullOrWhiteSpace(osmTopoUrlValue))
+                osmTopoUrl = osmTopoUrlValue;
+            if (values.TryGetValue("OSMDarkTileUrl", out var osmDarkUrlValue) && !string.IsNullOrWhiteSpace(osmDarkUrlValue))
+                osmDarkUrl = osmDarkUrlValue;
+
             return new AppSettings(
                 DarkMode: values.TryGetValue("DarkMode", out var dm) && bool.TryParse(dm, out var dmBool) ? dmBool : defaults.DarkMode,
                 StationName: values.TryGetValue("StationName", out var sn) ? sn : defaults.StationName,
@@ -86,13 +130,16 @@ public static class SettingsService
                 LastTcpHost: values.TryGetValue("LastTcpHost", out var tcpHost) ? tcpHost : defaults.LastTcpHost,
                 LastTcpPort: values.TryGetValue("LastTcpPort", out var tcpPort) && int.TryParse(tcpPort, out var tcpPortInt) ? tcpPortInt : defaults.LastTcpPort,
                 MapSource: values.TryGetValue("MapSource", out var mapSrc) ? mapSrc : defaults.MapSource,
-                TileServerUrl: values.TryGetValue("TileServerUrl", out var tsu) && !string.IsNullOrWhiteSpace(tsu) ? tsu : defaults.TileServerUrl,
+                OSMTileUrl: osmUrl,
+                OSMTopoTileUrl: osmTopoUrl,
+                OSMDarkTileUrl: osmDarkUrl,
                 NodeColors: nodeColors,
                 NodeNotes: nodeNotes,
                 DebugMessages: values.TryGetValue("DebugMessages", out var dbg) && bool.TryParse(dbg, out var dbgBool) && dbgBool,
                 DebugSerial: values.TryGetValue("DebugSerial", out var dbs) && bool.TryParse(dbs, out var dbsBool) && dbsBool,
                 DebugDevice: values.TryGetValue("DebugDevice", out var dbd) && bool.TryParse(dbd, out var dbdBool) && dbdBool,
-                DebugBluetooth: values.TryGetValue("DebugBluetooth", out var dbb) && bool.TryParse(dbb, out var dbbBool) && dbbBool
+                DebugBluetooth: values.TryGetValue("DebugBluetooth", out var dbb) && bool.TryParse(dbb, out var dbbBool) && dbbBool,
+                AlertBellSound: !values.TryGetValue("AlertBellSound", out var abs) || !bool.TryParse(abs, out var absBool) || absBool
             );
         }
         catch (Exception ex)
@@ -119,11 +166,14 @@ public static class SettingsService
                 $"LastTcpHost={settings.LastTcpHost}",
                 $"LastTcpPort={settings.LastTcpPort}",
                 $"MapSource={settings.MapSource}",
-                $"TileServerUrl={settings.TileServerUrl}",
+                $"OSMTileUrl={settings.OSMTileUrl}",
+                $"OSMTopoTileUrl={settings.OSMTopoTileUrl}",
+                $"OSMDarkTileUrl={settings.OSMDarkTileUrl}",
                 $"DebugMessages={settings.DebugMessages}",
                 $"DebugSerial={settings.DebugSerial}",
                 $"DebugDevice={settings.DebugDevice}",
-                $"DebugBluetooth={settings.DebugBluetooth}"
+                $"DebugBluetooth={settings.DebugBluetooth}",
+                $"AlertBellSound={settings.AlertBellSound}"
             };
 
             // Save node colors

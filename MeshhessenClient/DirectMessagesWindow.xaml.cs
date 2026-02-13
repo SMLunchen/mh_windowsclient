@@ -62,6 +62,12 @@ public partial class DirectMessagesWindow : Window
                 if (message.FromId != _myNodeId)
                 {
                     MakeWindowProminent();
+
+                    // Show alert animation if message has alert bell
+                    if (message.HasAlertBell)
+                    {
+                        ShowAlertBellAnimation();
+                    }
                 }
 
                 UpdateStatusBar();
@@ -94,9 +100,27 @@ public partial class DirectMessagesWindow : Window
         };
 
         var gridView = new GridView();
+
+        // Alert Bell Column
+        var alertBellColumn = new GridViewColumn { Header = "🔔", Width = 50 };
+        var alertBellTemplate = new DataTemplate();
+        var alertBellFactory = new FrameworkElementFactory(typeof(TextBlock));
+        alertBellFactory.SetBinding(TextBlock.TextProperty, new System.Windows.Data.Binding("HasAlertBell")
+        {
+            Converter = (System.Windows.Data.IValueConverter)this.FindResource("AlertBellIconConverter")
+        });
+        alertBellFactory.SetValue(TextBlock.FontSizeProperty, 18.0);
+        alertBellFactory.SetValue(TextBlock.ForegroundProperty, System.Windows.Media.Brushes.Red);
+        alertBellFactory.SetValue(TextBlock.FontWeightProperty, FontWeights.Bold);
+        alertBellFactory.SetValue(TextBlock.HorizontalAlignmentProperty, HorizontalAlignment.Center);
+        alertBellFactory.SetValue(TextBlock.ToolTipProperty, "Diese Nachricht enthält ein Alert Bell");
+        alertBellTemplate.VisualTree = alertBellFactory;
+        alertBellColumn.CellTemplate = alertBellTemplate;
+        gridView.Columns.Add(alertBellColumn);
+
         gridView.Columns.Add(new GridViewColumn { Header = "Zeit", Width = 100, DisplayMemberBinding = new System.Windows.Data.Binding("Time") });
         gridView.Columns.Add(new GridViewColumn { Header = "Von", Width = 120, DisplayMemberBinding = new System.Windows.Data.Binding("From") });
-        gridView.Columns.Add(new GridViewColumn { Header = "Nachricht", Width = 400, DisplayMemberBinding = new System.Windows.Data.Binding("Message") });
+        gridView.Columns.Add(new GridViewColumn { Header = "Nachricht", Width = 350, DisplayMemberBinding = new System.Windows.Data.Binding("Message") });
         listView.View = gridView;
 
         Grid.SetRow(listView, 0);
@@ -105,6 +129,7 @@ public partial class DirectMessagesWindow : Window
         // Send Message Area
         var sendGrid = new Grid { Margin = new Thickness(10) };
         sendGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        sendGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         sendGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
         var textBox = new TextBox
@@ -125,6 +150,54 @@ public partial class DirectMessagesWindow : Window
         Grid.SetColumn(textBox, 0);
         sendGrid.Children.Add(textBox);
 
+        var alertBellButton = new Button
+        {
+            Content = "🚨 SOS",
+            Width = 80,
+            Margin = new Thickness(10, 0, 0, 0),
+            Background = new SolidColorBrush(Color.FromRgb(204, 0, 0)), // Red
+            Foreground = Brushes.White,
+            FontWeight = FontWeights.Bold,
+            ToolTip = "Notruf senden (Alert Bell)"
+        };
+        alertBellButton.Click += async (s, e) =>
+        {
+            var result = MessageBox.Show(
+                "Möchten Sie wirklich einen NOTRUF (Alert Bell) senden?\n\nDies wird als wichtige Benachrichtigung gesendet!",
+                "Notruf bestätigen",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+
+            if (result != MessageBoxResult.Yes)
+                return;
+
+            // Send Alert Bell - use EMOJI 🔔 (as used by other clients)
+            string alertMessage;
+            var additionalText = textBox.Text.Trim();
+
+            if (!string.IsNullOrEmpty(additionalText))
+            {
+                // Bell emoji + user text
+                alertMessage = "🔔 " + additionalText;
+            }
+            else
+            {
+                // Bell emoji + standard text (compatible with other Meshtastic clients)
+                alertMessage = "🔔 Alert Bell Character!";
+            }
+
+            // Debug log with hex dump (always log for DM alerts as they're critical)
+            var bytes = System.Text.Encoding.UTF8.GetBytes(alertMessage);
+            var hexDump = string.Join(" ", bytes.Select(b => $"{b:X2}"));
+            Services.Logger.WriteLine($"[MSG DEBUG] Sending DM Alert Bell {bytes.Length} bytes to !{conversation.NodeId:X8}: {hexDump}");
+
+            SendDirectMessage(conversation.NodeId, alertMessage);
+            textBox.Clear();
+        };
+
+        Grid.SetColumn(alertBellButton, 1);
+        sendGrid.Children.Add(alertBellButton);
+
         var sendButton = new Button
         {
             Content = "Senden",
@@ -137,7 +210,7 @@ public partial class DirectMessagesWindow : Window
             textBox.Clear();
         };
 
-        Grid.SetColumn(sendButton, 1);
+        Grid.SetColumn(sendButton, 2);
         sendGrid.Children.Add(sendButton);
 
         Grid.SetRow(sendGrid, 1);
@@ -282,6 +355,51 @@ public partial class DirectMessagesWindow : Window
     // Windows API für Taskbar-Blinken
     [System.Runtime.InteropServices.DllImport("user32.dll")]
     private static extern bool FlashWindow(IntPtr hwnd, bool bInvert);
+
+    private void ShowAlertBellAnimation()
+    {
+        try
+        {
+            Dispatcher.BeginInvoke(() =>
+            {
+                // Start blink animation
+                var storyboard = new System.Windows.Media.Animation.Storyboard();
+
+                // Create animation for opacity (blink effect)
+                var opacityAnimation = new System.Windows.Media.Animation.DoubleAnimation
+                {
+                    From = 0.0,
+                    To = 1.0,
+                    Duration = TimeSpan.FromMilliseconds(300),
+                    AutoReverse = true,
+                    RepeatBehavior = new System.Windows.Media.Animation.RepeatBehavior(6) // 6 blinks (3 seconds)
+                };
+
+                System.Windows.Media.Animation.Storyboard.SetTarget(opacityAnimation, AlertBellOverlay);
+                System.Windows.Media.Animation.Storyboard.SetTargetProperty(opacityAnimation, new PropertyPath(Border.OpacityProperty));
+
+                storyboard.Children.Add(opacityAnimation);
+
+                // Show overlay and start animation
+                AlertBellOverlay.Visibility = Visibility.Visible;
+
+                storyboard.Completed += (s, e) =>
+                {
+                    AlertBellOverlay.Visibility = Visibility.Collapsed;
+                };
+
+                storyboard.Begin();
+
+                // Flash window in taskbar
+                var hwnd = new System.Windows.Interop.WindowInteropHelper(this).Handle;
+                FlashWindow(hwnd, true);
+            });
+        }
+        catch (Exception ex)
+        {
+            Services.Logger.WriteLine($"Error showing alert bell animation in DM window: {ex.Message}");
+        }
+    }
 
     protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
     {

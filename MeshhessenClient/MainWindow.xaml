@@ -17,6 +17,7 @@
     <Window.Resources>
         <converters:MqttIconConverter x:Key="MqttIconConverter"/>
         <converters:MqttTooltipConverter x:Key="MqttTooltipConverter"/>
+        <converters:AlertBellIconConverter x:Key="AlertBellIconConverter"/>
         <converters:HexToColorConverter x:Key="HexToColorConverter"/>
         <converters:IsNotEmptyConverter x:Key="IsNotEmptyConverter"/>
         <converters:NoteToParenthesesConverter x:Key="NoteToParenthesesConverter"/>
@@ -32,6 +33,18 @@
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
+
+        <!-- Alert Bell Overlay (Blinkt bei Notruf) -->
+        <Border x:Name="AlertBellOverlay"
+                Grid.RowSpan="3"
+                BorderBrush="Red"
+                BorderThickness="8"
+                Visibility="Collapsed"
+                IsHitTestVisible="False">
+            <Border.Effect>
+                <DropShadowEffect Color="Red" ShadowDepth="0" BlurRadius="20" Opacity="0.8"/>
+            </Border.Effect>
+        </Border>
 
         <!-- Toolbar -->
         <Border Grid.Row="0" Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}" Padding="10">
@@ -200,6 +213,18 @@
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
+                                <GridViewColumn Header="🔔" Width="50">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding HasAlertBell, Converter={StaticResource AlertBellIconConverter}}"
+                                                       ToolTip="Diese Nachricht enthält ein Alert Bell"
+                                                       FontSize="18"
+                                                       Foreground="Red"
+                                                       FontWeight="Bold"
+                                                       HorizontalAlignment="Center"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
                                 <GridViewColumn Header="🎨" Width="50">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate>
@@ -232,6 +257,7 @@
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
                         <!-- Channel Selection -->
@@ -252,8 +278,19 @@
                                 Padding="10"
                                 KeyDown="MessageTextBox_KeyDown"/>
 
-                        <Button x:Name="SendButton"
+                        <Button x:Name="AlertBellButton"
                                Grid.Column="2"
+                               Content="🚨 SOS"
+                               Width="80"
+                               Margin="10,0,0,0"
+                               Background="#FFCC0000"
+                               Foreground="White"
+                               FontWeight="Bold"
+                               ToolTip="Notruf senden (Alert Bell)"
+                               Click="AlertBell_Click"/>
+
+                        <Button x:Name="SendButton"
+                               Grid.Column="3"
                                Content="Senden"
                                Width="100"
                                Margin="10,0,0,0"
@@ -538,12 +575,12 @@
                                 </ComboBox>
 
                                 <!-- Tile-Server URL -->
-                                <TextBlock Text="Tile-Server:" Margin="0,0,0,4"/>
+                                <TextBlock Text="Tile-Server URL:" Margin="0,0,0,4"/>
                                 <TextBox x:Name="TileServerUrlTextBox"
-                                         Width="350"
+                                         Width="550"
                                          HorizontalAlignment="Left"
                                          Margin="0,0,0,4"/>
-                                <TextBlock Text="Hostname des Tile-Servers (ohne https://). Tiles werden von https://server/stil/z/x/y.png geladen."
+                                <TextBlock Text="Vollständige Tile-URL (http:// oder https://) mit Platzhaltern {z}, {x}, {y}. Beispiel: https://tile.server.de/osm/{z}/{x}/{y}.png"
                                           FontStyle="Italic"
                                           Foreground="Gray"
                                           TextWrapping="Wrap"
@@ -560,6 +597,20 @@
                                        Width="200"
                                        HorizontalAlignment="Left"
                                        Click="ImportTilesFromZip_Click"/>
+                            </StackPanel>
+                        </GroupBox>
+
+                        <GroupBox Header="Benachrichtigungen" Margin="0,0,0,20">
+                            <StackPanel Margin="10">
+                                <CheckBox x:Name="AlertBellSoundCheckBox"
+                                         Content="Ton bei Alert Bell abspielen (🔔)"
+                                         Margin="0,0,0,4"/>
+                                <TextBlock Text="Spielt einen Benachrichtigungston ab, wenn eine Nachricht das Meshtastic Alert Bell Character (ASCII 7) enthält."
+                                          FontStyle="Italic"
+                                          Foreground="Gray"
+                                          TextWrapping="Wrap"
+                                          FontSize="11"
+                                          Margin="0,0,0,10"/>
                             </StackPanel>
                         </GroupBox>
 
@@ -627,7 +678,21 @@
                         </StackPanel>
                         <TextBlock x:Name="MapStatusText" Grid.Column="1" VerticalAlignment="Center" Foreground="Gray" FontStyle="Italic"/>
                     </Grid>
-                    <mapsui:MapControl x:Name="MapControl" Grid.Row="1"/>
+                    <Grid Grid.Row="1">
+                        <mapsui:MapControl x:Name="MapControl"/>
+                        <!-- Copyright Hinweis rechts unten -->
+                        <TextBlock x:Name="MapCopyrightText"
+                                   HorizontalAlignment="Right"
+                                   VerticalAlignment="Bottom"
+                                   Margin="0,0,8,4"
+                                   FontSize="10"
+                                   Foreground="Gray"
+                                   Background="#99FFFFFF"
+                                   Padding="4,2"
+                                   TextWrapping="Wrap"
+                                   MaxWidth="400"
+                                   Text="© OpenStreetMap contributors"/>
+                    </Grid>
                 </Grid>
             </TabItem>
 
