@@ -805,7 +805,15 @@ public class MeshtasticProtocolService
     {
         try
         {
-            string messageText = Encoding.UTF8.GetString(data.Payload.ToByteArray());
+            byte[] payloadBytes = data.Payload.ToByteArray();
+            string messageText = Encoding.UTF8.GetString(payloadBytes);
+
+            // Debug: Log raw bytes for alert bell debugging (only log first few bytes to avoid spam)
+            if (payloadBytes.Length > 0 && payloadBytes[0] == 0x07)
+            {
+                var hexDump = string.Join(" ", payloadBytes.Take(Math.Min(20, payloadBytes.Length)).Select(b => $"{b:X2}"));
+                Logger.WriteLine($"[MSG DEBUG] Alert Bell detected! First {Math.Min(20, payloadBytes.Length)} bytes from !{packet.From:x8}: {hexDump}");
+            }
 
             string fromName = "Unknown";
             lock (_dataLock)

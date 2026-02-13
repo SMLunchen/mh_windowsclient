@@ -23,8 +23,6 @@
 * Mehrsprachigkeit (Englisch)
 * Emoji-Picker
 * Export/Import von Nachrichten
-* Unterschiedliche Kartentypen
 * Alarmklingelzeichen für Kanal / DM
-* Kartenmaterial nach Bundesland auswählbar
-
+* Map Copyright besser sichtbar.
 

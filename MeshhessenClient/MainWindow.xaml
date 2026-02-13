@@ -9,7 +9,7 @@
         mc:Ignorable="d"
         ui:WindowHelper.UseModernWindowStyle="True"
         Icon="pack://application:,,,/Resources/app.ico"
-        Title="Meshhessen Client"
+        Title="Meshhessen Client v1.5.1"
         Height="650"
         Width="1000"
         MinHeight="450"
@@ -17,6 +17,7 @@
     <Window.Resources>
         <converters:MqttIconConverter x:Key="MqttIconConverter"/>
         <converters:MqttTooltipConverter x:Key="MqttTooltipConverter"/>
+        <converters:AlertBellIconConverter x:Key="AlertBellIconConverter"/>
         <converters:HexToColorConverter x:Key="HexToColorConverter"/>
         <converters:IsNotEmptyConverter x:Key="IsNotEmptyConverter"/>
         <converters:NoteToParenthesesConverter x:Key="NoteToParenthesesConverter"/>
@@ -29,12 +30,76 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
+        <!-- Alert Bell Overlay (Blinkt bei Notruf) -->
+        <Border x:Name="AlertBellOverlay"
+                Grid.RowSpan="4"
+                BorderBrush="Red"
+                BorderThickness="8"
+                Visibility="Collapsed"
+                IsHitTestVisible="False">
+            <Border.Effect>
+                <DropShadowEffect Color="Red" ShadowDepth="0" BlurRadius="20" Opacity="0.8"/>
+            </Border.Effect>
+        </Border>
+
+        <!-- Alert Notification Bar -->
+        <Border x:Name="AlertNotificationBar"
+                Grid.Row="0"
+                Background="#FFCC0000"
+                Padding="10,8"
+                Visibility="Collapsed">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Column="0"
+                          Text="🚨"
+                          FontSize="16"
+                          VerticalAlignment="Center"
+                          Margin="0,0,10,0"/>
+
+                <TextBlock x:Name="AlertNotificationText"
+                          Grid.Column="1"
+                          Text="Notruf empfangen!"
+                          Foreground="White"
+                          FontWeight="Bold"
+                          VerticalAlignment="Center"/>
+
+                <Button x:Name="ShowOnMapButton"
+                       Grid.Column="2"
+                       Content="📍 Zur Karte"
+                       Margin="10,0,10,0"
+                       Padding="10,5"
+                       Background="White"
+                       Foreground="Black"
+                       FontWeight="Bold"
+                       Click="ShowOnMap_Click"
+                       Visibility="Collapsed"/>
+
+                <Button Grid.Column="3"
+                       Content="✖"
+                       Padding="8,2"
+                       Background="Transparent"
+                       Foreground="White"
+                       BorderThickness="0"
+                       FontWeight="Bold"
+                       FontSize="14"
+                       Click="CloseAlertNotification_Click"
+                       Cursor="Hand"/>
+            </Grid>
+        </Border>
+
         <!-- Toolbar -->
-        <Border Grid.Row="0" Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}" Padding="10">
+        <Border Grid.Row="1" Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}" Padding="10">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -155,7 +220,7 @@
         </Border>
 
         <!-- Main Content Area -->
-        <TabControl Grid.Row="1" Margin="0">
+        <TabControl x:Name="MainTabs" Grid.Row="2" Margin="0">
 
             <!-- Messages Tab -->
             <TabItem Header="📨 Nachrichten">
@@ -200,6 +265,18 @@
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
+                                <GridViewColumn Header="🔔" Width="50">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding HasAlertBell, Converter={StaticResource AlertBellIconConverter}}"
+                                                       ToolTip="Diese Nachricht enthält ein Alert Bell"
+                                                       FontSize="18"
+                                                       Foreground="Red"
+                                                       FontWeight="Bold"
+                                                       HorizontalAlignment="Center"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
                                 <GridViewColumn Header="🎨" Width="50">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate>
@@ -232,6 +309,7 @@
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
                         <!-- Channel Selection -->
@@ -252,8 +330,19 @@
                                 Padding="10"
                                 KeyDown="MessageTextBox_KeyDown"/>
 
-                        <Button x:Name="SendButton"
+                        <Button x:Name="AlertBellButton"
                                Grid.Column="2"
+                               Content="🚨 SOS"
+                               Width="80"
+                               Margin="10,0,0,0"
+                               Background="#FFCC0000"
+                               Foreground="White"
+                               FontWeight="Bold"
+                               ToolTip="Notruf senden (Alert Bell)"
+                               Click="AlertBell_Click"/>
+
+                        <Button x:Name="SendButton"
+                               Grid.Column="3"
                                Content="Senden"
                                Width="100"
                                Margin="10,0,0,0"
@@ -524,10 +613,56 @@
                                           Foreground="Gray"
                                           TextWrapping="Wrap"
                                           Margin="0,0,0,10"/>
+
+                                <!-- Kartenquelle Auswahl -->
+                                <TextBlock Text="Kartenquelle:" Margin="0,0,0,4"/>
+                                <ComboBox x:Name="MapSourceComboBox"
+                                         Width="250"
+                                         HorizontalAlignment="Left"
+                                         Margin="0,0,0,10"
+                                         SelectionChanged="MapSourceComboBox_SelectionChanged">
+                                    <ComboBoxItem Content="OpenStreetMap Standard" Tag="osm"/>
+                                    <ComboBoxItem Content="OpenTopoMap" Tag="osmtopo"/>
+                                    <ComboBoxItem Content="OpenStreetMap Dark" Tag="osmdark"/>
+                                </ComboBox>
+
+                                <!-- Tile-Server URL -->
+                                <TextBlock Text="Tile-Server URL:" Margin="0,0,0,4"/>
+                                <TextBox x:Name="TileServerUrlTextBox"
+                                         Width="550"
+                                         HorizontalAlignment="Left"
+                                         Margin="0,0,0,4"/>
+                                <TextBlock Text="Vollständige Tile-URL (http:// oder https://) mit Platzhaltern {z}, {x}, {y}. Beispiel: https://tile.server.de/osm/{z}/{x}/{y}.png"
+                                          FontStyle="Italic"
+                                          Foreground="Gray"
+                                          TextWrapping="Wrap"
+                                          FontSize="11"
+                                          Margin="0,0,0,10"/>
+
                                 <Button Content="Tiles herunterladen..."
                                        Width="200"
                                        HorizontalAlignment="Left"
+                                       Margin="0,0,0,6"
                                        Click="DownloadTiles_Click"/>
+
+                                <Button Content="Maptiles aus Zip laden..."
+                                       Width="200"
+                                       HorizontalAlignment="Left"
+                                       Click="ImportTilesFromZip_Click"/>
+                            </StackPanel>
+                        </GroupBox>
+
+                        <GroupBox Header="Benachrichtigungen" Margin="0,0,0,20">
+                            <StackPanel Margin="10">
+                                <CheckBox x:Name="AlertBellSoundCheckBox"
+                                         Content="Ton bei Alert Bell abspielen (🔔)"
+                                         Margin="0,0,0,4"/>
+                                <TextBlock Text="Spielt einen Benachrichtigungston ab, wenn eine Nachricht das Meshtastic Alert Bell Character (ASCII 7) enthält."
+                                          FontStyle="Italic"
+                                          Foreground="Gray"
+                                          TextWrapping="Wrap"
+                                          FontSize="11"
+                                          Margin="0,0,0,10"/>
                             </StackPanel>
                         </GroupBox>
 
@@ -595,8 +730,123 @@
                         </StackPanel>
                         <TextBlock x:Name="MapStatusText" Grid.Column="1" VerticalAlignment="Center" Foreground="Gray" FontStyle="Italic"/>
                     </Grid>
-                    <mapsui:MapControl x:Name="MapControl" Grid.Row="1"/>
+                    <Grid Grid.Row="1">
+                        <mapsui:MapControl x:Name="MapControl"/>
+                        <!-- Copyright Hinweis rechts unten -->
+                        <TextBlock x:Name="MapCopyrightText"
+                                   HorizontalAlignment="Right"
+                                   VerticalAlignment="Bottom"
+                                   Margin="0,0,8,4"
+                                   FontSize="10"
+                                   Foreground="Gray"
+                                   Background="#99FFFFFF"
+                                   Padding="4,2"
+                                   TextWrapping="Wrap"
+                                   MaxWidth="400"
+                                   Text="© OpenStreetMap contributors"/>
+                    </Grid>
                 </Grid>
+            </TabItem>
+
+            <!-- Info Tab -->
+            <TabItem Header="ℹ️ Info">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="20">
+                        <TextBlock Text="Meshhessen Client" FontSize="24" FontWeight="Bold" Margin="0,0,0,4"/>
+                        <TextBlock Text="v1.5.1" FontSize="16" Foreground="Gray" Margin="0,0,0,16"/>
+                        <TextBlock Text="Offline-fähiger Windows-Client für Meshtastic-Geräte mit Kartenansicht, Kanalverwaltung und Multi-Verbindungsunterstützung (Serial, TCP/WiFi, Bluetooth)."
+                                  TextWrapping="Wrap" Margin="0,0,0,20"/>
+
+                        <TextBlock Text="Lizenzen &amp; Danksagungen" FontSize="18" FontWeight="Bold" Margin="0,0,0,12"/>
+
+                        <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}" BorderThickness="0,0,0,1" Padding="0,0,0,10" Margin="0,0,0,10">
+                            <StackPanel>
+                                <TextBlock Text="OpenStreetMap" FontWeight="Bold"/>
+                                <TextBlock Text="Kartendaten © OpenStreetMap-Mitwirkende" TextWrapping="Wrap"/>
+                                <TextBlock Text="Lizenz: Open Data Commons Open Database License (ODbL)" Foreground="Gray" FontSize="11"/>
+                                <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray">
+                                    <Hyperlink NavigateUri="https://www.openstreetmap.org/copyright" RequestNavigate="Hyperlink_RequestNavigate">
+                                        <Run Text="openstreetmap.org/copyright"/>
+                                    </Hyperlink>
+                                </TextBlock>
+                            </StackPanel>
+                        </Border>
+
+                        <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}" BorderThickness="0,0,0,1" Padding="0,0,0,10" Margin="0,0,0,10">
+                            <StackPanel>
+                                <TextBlock Text="OpenTopoMap" FontWeight="Bold"/>
+                                <TextBlock Text="Kartendarstellung © OpenTopoMap" TextWrapping="Wrap"/>
+                                <TextBlock Text="Lizenz: CC-BY-SA" Foreground="Gray" FontSize="11"/>
+                                <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray">
+                                    <Hyperlink NavigateUri="https://opentopomap.org/about" RequestNavigate="Hyperlink_RequestNavigate">
+                                        <Run Text="opentopomap.org/about"/>
+                                    </Hyperlink>
+                                </TextBlock>
+                            </StackPanel>
+                        </Border>
+
+                        <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}" BorderThickness="0,0,0,1" Padding="0,0,0,10" Margin="0,0,0,10">
+                            <StackPanel>
+                                <TextBlock Text="Meshtastic" FontWeight="Bold"/>
+                                <TextBlock Text="Firmware und Protokoll für LoRa-Mesh-Netzwerke" TextWrapping="Wrap"/>
+                                <TextBlock Text="Lizenz: GPL-3.0" Foreground="Gray" FontSize="11"/>
+                                <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray">
+                                    <Hyperlink NavigateUri="https://meshtastic.org" RequestNavigate="Hyperlink_RequestNavigate">
+                                        <Run Text="meshtastic.org"/>
+                                    </Hyperlink>
+                                </TextBlock>
+                            </StackPanel>
+                        </Border>
+
+                        <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}" BorderThickness="0,0,0,1" Padding="0,0,0,10" Margin="0,0,0,10">
+                            <StackPanel>
+                                <TextBlock Text="Mapsui" FontWeight="Bold"/>
+                                <TextBlock Text="Offline-Kartendarstellung für .NET" TextWrapping="Wrap"/>
+                                <TextBlock Text="Lizenz: LGPL-3.0" Foreground="Gray" FontSize="11"/>
+                                <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray">
+                                    <Hyperlink NavigateUri="https://mapsui.com" RequestNavigate="Hyperlink_RequestNavigate">
+                                        <Run Text="mapsui.com"/>
+                                    </Hyperlink>
+                                </TextBlock>
+                            </StackPanel>
+                        </Border>
+
+                        <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}" BorderThickness="0,0,0,1" Padding="0,0,0,10" Margin="0,0,0,10">
+                            <StackPanel>
+                                <TextBlock Text="BruTile" FontWeight="Bold"/>
+                                <TextBlock Text="Tile-Schema und -Handling" TextWrapping="Wrap"/>
+                                <TextBlock Text="Lizenz: Apache 2.0" Foreground="Gray" FontSize="11"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}" BorderThickness="0,0,0,1" Padding="0,0,0,10" Margin="0,0,0,10">
+                            <StackPanel>
+                                <TextBlock Text="ModernWPF" FontWeight="Bold"/>
+                                <TextBlock Text="Fluent Design UI-Theming für WPF" TextWrapping="Wrap"/>
+                                <TextBlock Text="Lizenz: MIT" Foreground="Gray" FontSize="11"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}" BorderThickness="0,0,0,1" Padding="0,0,0,10" Margin="0,0,0,10">
+                            <StackPanel>
+                                <TextBlock Text="Google Protobuf" FontWeight="Bold"/>
+                                <TextBlock Text="Protokoll-Serialisierung für Meshtastic-Kommunikation" TextWrapping="Wrap"/>
+                                <TextBlock Text="Lizenz: BSD-3-Clause" Foreground="Gray" FontSize="11"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Padding="0,10,0,0">
+                            <StackPanel>
+                                <TextBlock Text="Projekt" FontSize="18" FontWeight="Bold" Margin="0,0,0,8"/>
+                                <TextBlock TextWrapping="Wrap" FontSize="11">
+                                    <Hyperlink NavigateUri="https://www.meshhessen.de" RequestNavigate="Hyperlink_RequestNavigate">
+                                        <Run Text="www.meshhessen.de"/>
+                                    </Hyperlink>
+                                </TextBlock>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
             </TabItem>
 
             <!-- Debug Tab -->
@@ -638,7 +888,7 @@
         </TabControl>
 
         <!-- Status Bar -->
-        <Border Grid.Row="2" Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}" Padding="10,5">
+        <Border Grid.Row="3" Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}" Padding="10,5">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -657,6 +907,7 @@
                           VerticalAlignment="Center"/>
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="v1.5.1" VerticalAlignment="Center" Foreground="Gray" Margin="0,0,12,0" FontSize="11"/>
                     <Image Source="pack://application:,,,/Resources/app.ico" Width="16" Height="16" Margin="0,0,6,0" VerticalAlignment="Center"/>
                     <TextBlock VerticalAlignment="Center">
                         <Hyperlink NavigateUri="https://www.meshhessen.de" RequestNavigate="Hyperlink_RequestNavigate">

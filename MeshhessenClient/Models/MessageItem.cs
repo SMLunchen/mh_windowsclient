@@ -13,4 +13,5 @@ public class MessageItem
     public bool IsViaMqtt { get; set; } = false;
     public string SenderColorHex { get; set; } = string.Empty;
     public string SenderNote { get; set; } = string.Empty;
+    public bool HasAlertBell { get; set; } = false;
 }

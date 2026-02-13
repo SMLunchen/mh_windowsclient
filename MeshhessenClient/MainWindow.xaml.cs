@@ -57,8 +57,28 @@ public partial class MainWindow : Window
     private readonly List<IFeature> _nodeFeatures = new();
     private readonly List<IFeature> _myPosFeatures = new();
     private readonly Dictionary<uint, MPoint> _nodePinPositions = new();
-    private AppSettings _currentSettings = new(false, string.Empty, true, 50.9, 9.5, string.Empty, "192.168.1.1", 4403, new Dictionary<uint, string>(), new Dictionary<uint, string>(), false, false, false, false);
+    private AppSettings _currentSettings = new(
+        false,
+        string.Empty,
+        true,
+        50.9,
+        9.5,
+        string.Empty,
+        "192.168.1.1",
+        4403,
+        "osm",
+        "https://tile.schwarzes-seelenreich.de/osm/{z}/{x}/{y}.png",
+        "https://tile.schwarzes-seelenreich.de/opentopo/{z}/{x}/{y}.png",
+        "https://tile.schwarzes-seelenreich.de/dark/{z}/{x}/{y}.png",
+        new Dictionary<uint, string>(),
+        new Dictionary<uint, string>(),
+        false,
+        false,
+        false,
+        false,
+        true);
     private NodeInfo? _mapContextMenuNode;
+    private uint? _alertNodeId;  // Stores the node ID for "Show on Map" button
 
     public MainWindow()
     {
@@ -101,10 +121,35 @@ public partial class MainWindow : Window
 
         // Einstellungen laden (VOR RefreshPorts, damit LastComPort bekannt ist)
         LoadSettings();
+
         RefreshPorts();
 
         // Karte initialisieren
         InitializeMap();
+
+        // Tile-Migration nach dem Laden des Fensters prüfen
+        this.Loaded += async (s, e) => await CheckAndRunTileMigration();
+    }
+
+    private async Task CheckAndRunTileMigration()
+    {
+        var tileDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "maptiles");
+
+        if (Services.TileMigrationService.IsMigrationNeeded(tileDir))
+        {
+            var count = Services.TileMigrationService.CountTilesToMigrate(tileDir);
+            Services.Logger.WriteLine($"[Startup] Tile migration needed: {count} files");
+
+            var migrationWin = new MigrationProgressWindow { Owner = this };
+            migrationWin.Show();
+
+            await migrationWin.RunMigrationAsync(tileDir);
+
+            // Karte neu laden nach Migration
+            Services.Logger.WriteLine("[Startup] Reloading map after migration");
+            InitializeMap();
+            UpdateMapTileStatus();
+        }
     }
 
     private void LoadSettings()
@@ -121,6 +166,7 @@ public partial class MainWindow : Window
             DebugSerialCheckBox.IsChecked = settings.DebugSerial;
             DebugDeviceCheckBox.IsChecked = settings.DebugDevice;
             DebugBluetoothCheckBox.IsChecked = settings.DebugBluetooth;
+            AlertBellSoundCheckBox.IsChecked = settings.AlertBellSound;
 
             _currentSettings = settings;
             _protocolService.SetDebugSerial(settings.DebugSerial);
@@ -130,6 +176,37 @@ public partial class MainWindow : Window
             // Load TCP settings
             TcpHostTextBox.Text = settings.LastTcpHost;
             TcpPortTextBox.Text = settings.LastTcpPort.ToString();
+
+            // Load Tile Server URLs
+            TileDownloaderService.OSMTileUrl = settings.OSMTileUrl;
+            TileDownloaderService.OSMTopoTileUrl = settings.OSMTopoTileUrl;
+            TileDownloaderService.OSMDarkTileUrl = settings.OSMDarkTileUrl;
+
+            // Display URL for current map source
+            TileServerUrlTextBox.Text = settings.MapSource switch
+            {
+                "osm" => settings.OSMTileUrl,
+                "osmtopo" => settings.OSMTopoTileUrl,
+                "osmdark" => settings.OSMDarkTileUrl,
+                _ => settings.OSMTileUrl
+            };
+
+            // Load Map Source
+            bool foundMapSource = false;
+            foreach (System.Windows.Controls.ComboBoxItem item in MapSourceComboBox.Items)
+            {
+                if ((item.Tag as string) == settings.MapSource)
+                {
+                    MapSourceComboBox.SelectedItem = item;
+                    foundMapSource = true;
+                    break;
+                }
+            }
+            // Fallback to first item (OSM Standard) if not found
+            if (!foundMapSource && MapSourceComboBox.Items.Count > 0)
+            {
+                MapSourceComboBox.SelectedIndex = 0;
+            }
 
             if (settings.DarkMode)
                 ModernWpf.ThemeManager.Current.ApplicationTheme = ModernWpf.ApplicationTheme.Dark;
@@ -148,10 +225,11 @@ public partial class MainWindow : Window
         {
             _map = new Mapsui.Map();
 
-            // Lokale Tile-Layer
+            // Lokale Tile-Layer mit ausgewählter Kartenquelle
             var tileDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "maptiles");
+            var sourceFolder = _currentSettings.MapSource;  // "osm", "osmtopo", oder "osmdark"
             var schema = new GlobalSphericalMercator(YAxis.TMS, 0, 18, "OSM");
-            var tileSource = new TileSource(new LocalFileTileProvider(tileDir), schema);
+            var tileSource = new TileSource(new LocalFileTileProvider(tileDir, sourceFolder), schema);
             _map.Layers.Add(new TileLayer(tileSource) { Name = "OSM" });
 
             // Node-Layer
@@ -173,13 +251,27 @@ public partial class MainWindow : Window
 
             UpdateMyPositionPin();
 
-            MapStatusText.Text = Directory.Exists(tileDir) && Directory.EnumerateFiles(tileDir, "*.png", SearchOption.AllDirectories).Any()
+            var sourceTileDir = Path.Combine(tileDir, sourceFolder);
+            MapStatusText.Text = Directory.Exists(sourceTileDir) && Directory.EnumerateFiles(sourceTileDir, "*.png", SearchOption.AllDirectories).Any()
                 ? "" : "Keine Tiles – bitte herunterladen";
+
+            // Copyright-Hinweis basierend auf Kartenquelle setzen
+            UpdateMapCopyright();
         }
         catch (Exception ex)
         {
             Services.Logger.WriteLine($"ERROR initializing map: {ex.Message}");
         }
+    }
+
+    private void UpdateMapCopyright()
+    {
+        MapCopyrightText.Text = _currentSettings.MapSource switch
+        {
+            "osmtopo" => "© OpenStreetMap contributors, © OpenTopoMap (CC-BY-SA)",
+            "osmdark" => "© OpenStreetMap contributors",
+            _ => "© OpenStreetMap contributors"
+        };
     }
 
     private void UpdateMyPositionPin()
@@ -461,12 +553,88 @@ public partial class MainWindow : Window
 
     private void DownloadTiles_Click(object sender, RoutedEventArgs e)
     {
-        var win = new TileDownloaderWindow { Owner = this };
+        // Tile-Server URL direkt aus TextBox übernehmen (auch ohne vorheriges Speichern)
+        var currentTileUrl = string.IsNullOrWhiteSpace(TileServerUrlTextBox.Text)
+            ? "https://tile.schwarzes-seelenreich.de/osm/{z}/{x}/{y}.png"
+            : TileServerUrlTextBox.Text.Trim();
+
+        // Update the appropriate URL based on current map source
+        switch (_currentSettings.MapSource)
+        {
+            case "osm":
+                TileDownloaderService.OSMTileUrl = currentTileUrl;
+                break;
+            case "osmtopo":
+                TileDownloaderService.OSMTopoTileUrl = currentTileUrl;
+                break;
+            case "osmdark":
+                TileDownloaderService.OSMDarkTileUrl = currentTileUrl;
+                break;
+        }
+
+        var win = new TileDownloaderWindow(_currentSettings.MapSource) { Owner = this };
         win.ShowDialog();
         // Nach Download: Map-Status aktualisieren
+        UpdateMapTileStatus();
+    }
+
+    private void UpdateMapTileStatus()
+    {
         var tileDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "maptiles");
-        MapStatusText.Text = Directory.Exists(tileDir) && Directory.EnumerateFiles(tileDir, "*.png", SearchOption.AllDirectories).Any()
+        var sourceFolder = _currentSettings.MapSource;
+        var sourceTileDir = Path.Combine(tileDir, sourceFolder);
+        MapStatusText.Text = Directory.Exists(sourceTileDir) && Directory.EnumerateFiles(sourceTileDir, "*.png", SearchOption.AllDirectories).Any()
             ? "" : "Keine Tiles – bitte herunterladen";
+    }
+
+    private void MapSourceComboBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    {
+        if (MapSourceComboBox.SelectedItem is not System.Windows.Controls.ComboBoxItem item)
+            return;
+
+        var newSource = item.Tag as string ?? "osm";
+        if (newSource == _currentSettings.MapSource)
+            return;  // Keine Änderung
+
+        // Update URL TextBox to show the URL for the selected map source
+        TileServerUrlTextBox.Text = newSource switch
+        {
+            "osm" => _currentSettings.OSMTileUrl,
+            "osmtopo" => _currentSettings.OSMTopoTileUrl,
+            "osmdark" => _currentSettings.OSMDarkTileUrl,
+            _ => _currentSettings.OSMTileUrl
+        };
+
+        // Settings aktualisieren
+        _currentSettings = _currentSettings with { MapSource = newSource };
+        Services.SettingsService.Save(_currentSettings);
+        Services.Logger.WriteLine($"Map source changed to: {newSource}");
+
+        // Karte neu laden mit neuer Quelle
+        InitializeMap();
+        UpdateMapTileStatus();
+    }
+
+    private async void ImportTilesFromZip_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new Microsoft.Win32.OpenFileDialog
+        {
+            Title = "Zip-Datei mit Tiles auswählen",
+            Filter = "Zip-Dateien (*.zip)|*.zip|Alle Dateien (*.*)|*.*",
+            CheckFileExists = true
+        };
+
+        if (dialog.ShowDialog() != true)
+            return;
+
+        var tileDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "maptiles");
+        var win = new ZipImportWindow { Owner = this };
+        win.Show();
+
+        await win.ImportFromZipAsync(dialog.FileName, tileDir);
+
+        // Map-Status aktualisieren
+        UpdateMapTileStatus();
     }
 
     private void MapZoomIn_Click(object sender, RoutedEventArgs e)
@@ -502,7 +670,13 @@ public partial class MainWindow : Window
     private class LocalFileTileProvider : ITileProvider
     {
         private readonly string _baseDir;
-        public LocalFileTileProvider(string baseDir) => _baseDir = baseDir;
+        private readonly string _sourceFolder;
+
+        public LocalFileTileProvider(string baseDir, string sourceFolder)
+        {
+            _baseDir = baseDir;
+            _sourceFolder = sourceFolder;
+        }
 
         public Task<byte[]?> GetTileAsync(TileInfo tileInfo)
         {
@@ -510,7 +684,8 @@ public partial class MainWindow : Window
             var x = tileInfo.Index.Col;
             // BruTile TMS hat Row 0 im Süden, OSM-Dateien haben Y=0 im Norden → konvertieren
             var yOsm = (1 << z) - 1 - tileInfo.Index.Row;
-            var path = Path.Combine(_baseDir, z.ToString(), x.ToString(), $"{yOsm}.png");
+            // Neuer Pfad: maptiles/{source}/{z}/{x}/{y}.png
+            var path = Path.Combine(_baseDir, _sourceFolder, z.ToString(), x.ToString(), $"{yOsm}.png");
             if (File.Exists(path))
             {
                 try { return Task.FromResult<byte[]?>(File.ReadAllBytes(path)); } catch { }
@@ -904,6 +1079,66 @@ public partial class MainWindow : Window
         await SendMessage();
     }
 
+    private async void AlertBell_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_connectionService.IsConnected)
+        {
+            MessageBox.Show("Nicht verbunden. Bitte zuerst mit einem Gerät verbinden.", "Fehler", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        var result = MessageBox.Show(
+            "Möchten Sie wirklich einen NOTRUF (Alert Bell) senden?\n\nDies wird als wichtige Benachrichtigung an alle Empfänger gesendet!",
+            "Notruf bestätigen",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+
+        if (result != MessageBoxResult.Yes)
+            return;
+
+        try
+        {
+            AlertBellButton.IsEnabled = false;
+
+            // Send Alert Bell - use EMOJI 🔔 (as used by other clients)
+            string alertMessage;
+            var additionalText = MessageTextBox.Text.Trim();
+
+            if (!string.IsNullOrEmpty(additionalText))
+            {
+                // Bell emoji + user text
+                alertMessage = "🔔 " + additionalText;
+                MessageTextBox.Clear();
+            }
+            else
+            {
+                // Bell emoji + standard text (compatible with other Meshtastic clients)
+                alertMessage = "🔔 Alert Bell Character!";
+            }
+
+            // Debug log with hex dump (only if debug messages enabled)
+            if (_currentSettings.DebugMessages)
+            {
+                var bytes = System.Text.Encoding.UTF8.GetBytes(alertMessage);
+                var hexDump = string.Join(" ", bytes.Select(b => $"{b:X2}"));
+                Services.Logger.WriteLine($"[MSG DEBUG] Sending Alert Bell {bytes.Length} bytes: {hexDump}");
+                Services.Logger.WriteLine($"[MSG DEBUG] Text: '{alertMessage}'");
+            }
+
+            await _protocolService.SendTextMessageAsync(alertMessage, 0xFFFFFFFF, (uint)_activeChannelIndex);
+
+            UpdateStatusBar("Notruf gesendet!");
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Fehler beim Senden des Notrufs: {ex.Message}", "Fehler", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+        finally
+        {
+            AlertBellButton.IsEnabled = true;
+        }
+    }
+
     private async void MessageTextBox_KeyDown(object sender, KeyEventArgs e)
     {
         if (e.Key == Key.Enter)
@@ -985,6 +1220,29 @@ public partial class MainWindow : Window
     {
         try
         {
+            // Get current tile URL from TextBox
+            var currentTileUrl = string.IsNullOrWhiteSpace(TileServerUrlTextBox.Text)
+                ? "https://tile.schwarzes-seelenreich.de/osm/{z}/{x}/{y}.png"
+                : TileServerUrlTextBox.Text.Trim();
+
+            // Update the appropriate URL based on current map source
+            var osmUrl = _currentSettings.OSMTileUrl;
+            var osmTopoUrl = _currentSettings.OSMTopoTileUrl;
+            var osmDarkUrl = _currentSettings.OSMDarkTileUrl;
+
+            switch (_currentSettings.MapSource)
+            {
+                case "osm":
+                    osmUrl = currentTileUrl;
+                    break;
+                case "osmtopo":
+                    osmTopoUrl = currentTileUrl;
+                    break;
+                case "osmdark":
+                    osmDarkUrl = currentTileUrl;
+                    break;
+            }
+
             var settings = new AppSettings(
                 DarkMode: DarkModeCheckBox.IsChecked == true,
                 StationName: StationNameTextBox.Text,
@@ -994,17 +1252,25 @@ public partial class MainWindow : Window
                 LastComPort: _currentSettings.LastComPort,
                 LastTcpHost: _currentSettings.LastTcpHost,
                 LastTcpPort: _currentSettings.LastTcpPort,
+                MapSource: _currentSettings.MapSource,
+                OSMTileUrl: osmUrl,
+                OSMTopoTileUrl: osmTopoUrl,
+                OSMDarkTileUrl: osmDarkUrl,
                 NodeColors: _currentSettings.NodeColors,
                 NodeNotes: _currentSettings.NodeNotes,
                 DebugMessages: DebugMessagesCheckBox.IsChecked == true,
                 DebugSerial: DebugSerialCheckBox.IsChecked == true,
                 DebugDevice: DebugDeviceCheckBox.IsChecked == true,
-                DebugBluetooth: DebugBluetoothCheckBox.IsChecked == true
+                DebugBluetooth: DebugBluetoothCheckBox.IsChecked == true,
+                AlertBellSound: AlertBellSoundCheckBox.IsChecked == true
             );
             _currentSettings = settings;
             SettingsService.Save(settings);
             StationNameLabel.Text = settings.StationName;
             _showEncryptedMessages = settings.ShowEncryptedMessages;
+            TileDownloaderService.OSMTileUrl = settings.OSMTileUrl;
+            TileDownloaderService.OSMTopoTileUrl = settings.OSMTopoTileUrl;
+            TileDownloaderService.OSMDarkTileUrl = settings.OSMDarkTileUrl;
             _protocolService.SetDebugSerial(settings.DebugSerial);
             _protocolService.SetDebugDevice(settings.DebugDevice);
             BluetoothConnectionService.SetDebugEnabled(settings.DebugBluetooth);
@@ -1058,6 +1324,48 @@ public partial class MainWindow : Window
                         ? message.Message.Substring(0, Math.Min(50, message.Message.Length))
                         : "";
                     Services.Logger.WriteLine($"[MSG DEBUG] Received message: From={message.From} (ID=!{message.FromId:x8}), To=!{message.ToId:x8}, Channel={message.Channel}, Encrypted={message.IsEncrypted}, MQTT={message.IsViaMqtt}, Text={msgPreview}...");
+                }
+
+                // Check for Alert Bell - both ASCII (0x07) and Emoji (🔔)
+                bool hasAlertBell = !string.IsNullOrEmpty(message.Message) &&
+                                   (message.Message.Contains('\u0007') || message.Message.Contains("🔔"));
+
+                if (hasAlertBell)
+                {
+                    message.HasAlertBell = true;
+
+                    // Debug log (only if debug messages enabled)
+                    if (_currentSettings.DebugMessages)
+                    {
+                        Services.Logger.WriteLine($"[MSG DEBUG] Detected alert bell from {message.From} (ID: !{message.FromId:x8})");
+                        var bytes = System.Text.Encoding.UTF8.GetBytes(message.Message);
+                        var hexDump = string.Join(" ", bytes.Take(50).Select(b => $"{b:X2}"));
+                        Services.Logger.WriteLine($"[MSG DEBUG] Original raw bytes (first 50): {hexDump}");
+                        Services.Logger.WriteLine($"[MSG DEBUG] Original text length: {message.Message.Length}");
+                        Services.Logger.WriteLine($"[MSG DEBUG] Original text: '{message.Message}'");
+                    }
+
+                    // Remove both ASCII bell character and bell emoji for display
+                    message.Message = message.Message.Replace("\u0007", "").Replace("🔔", "");
+
+                    // Trim whitespace
+                    message.Message = message.Message.Trim();
+
+                    if (_currentSettings.DebugMessages)
+                    {
+                        Services.Logger.WriteLine($"[MSG DEBUG] After removing bell: '{message.Message}' (length: {message.Message.Length})");
+                    }
+
+                    if (_currentSettings.AlertBellSound)
+                    {
+                        PlayAlertSound();
+                    }
+
+                    // Show visual alert animation
+                    ShowAlertBellAnimation();
+
+                    // Show alert notification with "Show on Map" button
+                    ShowAlertNotification(message.From, message.FromId);
                 }
 
                 // Prüfe ob es eine Direktnachricht ist (nicht Broadcast)
@@ -1656,34 +1964,27 @@ public partial class MainWindow : Window
 
     protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
     {
-        // Disconnect asynchron im Hintergrund - nicht auf UI Thread blockieren
-        if (_connectionService.IsConnected)
+        try
         {
-            Task.Run(() =>
+            // Disconnect synchronously to ensure clean shutdown
+            if (_connectionService.IsConnected)
             {
-                try
-                {
-                    Services.Logger.WriteLine("Application closing...");
-                    _protocolService.Disconnect();
-                    System.Threading.Thread.Sleep(100);
-                    _connectionService.Disconnect();
-                    Services.Logger.WriteLine("Disconnected");
-                    Services.Logger.Close();
-                }
-                catch (Exception ex)
-                {
-                    Services.Logger.WriteLine($"Error during close: {ex.Message}");
-                    Services.Logger.Close();
-                }
-            });
-
-            // Gib dem Task kurz Zeit (aber nicht blockieren)
-            System.Threading.Thread.Sleep(150);
-        }
-        else
-        {
+                Services.Logger.WriteLine("Application closing...");
+                _protocolService.Disconnect();
+                System.Threading.Thread.Sleep(100);
+                _connectionService.Disconnect();
+                Services.Logger.WriteLine("Disconnected");
+            }
             Services.Logger.Close();
         }
+        catch (Exception ex)
+        {
+            Services.Logger.WriteLine($"Error during close: {ex.Message}");
+            Services.Logger.Close();
+        }
+
+        // Force application shutdown
+        Application.Current.Shutdown();
 
         base.OnClosing(e);
     }
@@ -2023,6 +2324,233 @@ public partial class MainWindow : Window
         catch (Exception ex)
         {
             Services.Logger.WriteLine($"Error editing node note: {ex.Message}");
+        }
+    }
+
+    private void PlayAlertSound()
+    {
+        try
+        {
+            // Play alarm sound in background thread
+            Task.Run(() =>
+            {
+                try
+                {
+                    // Generate and play alarm WAV sound
+                    var wavData = GenerateAlarmSound();
+                    using (var ms = new MemoryStream(wavData))
+                    {
+                        var player = new System.Media.SoundPlayer(ms);
+                        player.PlaySync();
+                    }
+                    Services.Logger.WriteLine("Alert sound played successfully");
+                }
+                catch (Exception ex)
+                {
+                    Services.Logger.WriteLine($"WAV playback failed: {ex.Message}, trying Console.Beep");
+                    try
+                    {
+                        // Fallback to Console.Beep
+                        for (int i = 0; i < 3; i++)
+                        {
+                            Console.Beep(1200, 150);
+                            Thread.Sleep(100);
+                        }
+                    }
+                    catch
+                    {
+                        // Last fallback: System sound
+                        for (int i = 0; i < 5; i++)
+                        {
+                            System.Media.SystemSounds.Hand.Play();
+                            Thread.Sleep(200);
+                        }
+                    }
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            Services.Logger.WriteLine($"Error playing alert sound: {ex.Message}");
+        }
+    }
+
+    private byte[] GenerateAlarmSound()
+    {
+        // Generate a simple alarm sound (siren effect) as WAV
+        int sampleRate = 8000;
+        int durationMs = 2000; // 2 seconds
+        int numSamples = (sampleRate * durationMs) / 1000;
+
+        using (var ms = new MemoryStream())
+        using (var writer = new BinaryWriter(ms))
+        {
+            // WAV header
+            writer.Write(new[] { 'R', 'I', 'F', 'F' });
+            writer.Write(36 + numSamples); // File size - 8
+            writer.Write(new[] { 'W', 'A', 'V', 'E' });
+            writer.Write(new[] { 'f', 'm', 't', ' ' });
+            writer.Write(16); // Format chunk size
+            writer.Write((short)1); // PCM
+            writer.Write((short)1); // Mono
+            writer.Write(sampleRate);
+            writer.Write(sampleRate); // Byte rate
+            writer.Write((short)1); // Block align
+            writer.Write((short)8); // Bits per sample
+            writer.Write(new[] { 'd', 'a', 't', 'a' });
+            writer.Write(numSamples);
+
+            // Generate siren sound (alternating frequencies)
+            double freq1 = 800.0; // Low frequency
+            double freq2 = 1400.0; // High frequency
+            double cycleDuration = 0.5; // Half second per cycle
+            int cyclesamples = (int)(sampleRate * cycleDuration);
+
+            for (int i = 0; i < numSamples; i++)
+            {
+                // Alternate between two frequencies
+                int cyclePos = i % (cyclesamples * 2);
+                double freq = (cyclePos < cyclesamples) ? freq1 : freq2;
+
+                // Generate sine wave
+                double angle = 2.0 * Math.PI * freq * i / sampleRate;
+                double sample = Math.Sin(angle) * 127 + 128;
+
+                writer.Write((byte)sample);
+            }
+
+            return ms.ToArray();
+        }
+    }
+
+    private void ShowAlertBellAnimation()
+    {
+        try
+        {
+            Dispatcher.BeginInvoke(() =>
+            {
+                // Start blink animation
+                var storyboard = new System.Windows.Media.Animation.Storyboard();
+
+                // Create animation for opacity (blink effect)
+                var opacityAnimation = new System.Windows.Media.Animation.DoubleAnimation
+                {
+                    From = 0.0,
+                    To = 1.0,
+                    Duration = TimeSpan.FromMilliseconds(300),
+                    AutoReverse = true,
+                    RepeatBehavior = new System.Windows.Media.Animation.RepeatBehavior(6) // 6 blinks (3 seconds)
+                };
+
+                System.Windows.Media.Animation.Storyboard.SetTarget(opacityAnimation, AlertBellOverlay);
+                System.Windows.Media.Animation.Storyboard.SetTargetProperty(opacityAnimation, new PropertyPath(Border.OpacityProperty));
+
+                storyboard.Children.Add(opacityAnimation);
+
+                // Show overlay and start animation
+                AlertBellOverlay.Visibility = Visibility.Visible;
+
+                storyboard.Completed += (s, e) =>
+                {
+                    AlertBellOverlay.Visibility = Visibility.Collapsed;
+                };
+
+                storyboard.Begin();
+
+                // Flash window in taskbar
+                var hwnd = new System.Windows.Interop.WindowInteropHelper(this).Handle;
+                FlashWindow(hwnd, true);
+            });
+        }
+        catch (Exception ex)
+        {
+            Services.Logger.WriteLine($"Error showing alert bell animation: {ex.Message}");
+        }
+    }
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern bool FlashWindow(IntPtr hwnd, bool bInvert);
+
+    private void ShowAlertNotification(string nodeName, uint nodeId)
+    {
+        try
+        {
+            Dispatcher.BeginInvoke(() =>
+            {
+                _alertNodeId = nodeId;
+
+                // Update notification text
+                AlertNotificationText.Text = $"🚨 Notruf von {nodeName}!";
+
+                // Check if we have position for this node
+                var node = _nodes.FirstOrDefault(n => n.NodeId == nodeId);
+                bool hasPosition = node != null && node.Latitude.HasValue && node.Longitude.HasValue;
+
+                // Show "Show on Map" button only if we have the node's position
+                ShowOnMapButton.Visibility = hasPosition ? Visibility.Visible : Visibility.Collapsed;
+
+                // Show notification bar
+                AlertNotificationBar.Visibility = Visibility.Visible;
+
+                // Auto-hide after 30 seconds
+                Task.Delay(30000).ContinueWith(_ =>
+                {
+                    Dispatcher.BeginInvoke(() =>
+                    {
+                        if (AlertNotificationBar.Visibility == Visibility.Visible)
+                        {
+                            AlertNotificationBar.Visibility = Visibility.Collapsed;
+                        }
+                    });
+                });
+            });
+        }
+        catch (Exception ex)
+        {
+            Services.Logger.WriteLine($"Error showing alert notification: {ex.Message}");
+        }
+    }
+
+    private void CloseAlertNotification_Click(object sender, RoutedEventArgs e)
+    {
+        AlertNotificationBar.Visibility = Visibility.Collapsed;
+    }
+
+    private void ShowOnMap_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            if (_alertNodeId == null)
+                return;
+
+            var node = _nodes.FirstOrDefault(n => n.NodeId == _alertNodeId);
+            if (node == null || !node.Latitude.HasValue || !node.Longitude.HasValue)
+            {
+                MessageBox.Show("Position für diesen Node ist nicht bekannt.", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            // Switch to Map tab
+            MainTabs.SelectedIndex = 4; // Map is tab index 4 (0=Messages, 1=Nodes, 2=Channels, 3=Settings, 4=Map)
+
+            // Center map on node position with closer zoom
+            var nodePos = SphericalMercator.FromLonLat(node.Longitude.Value, node.Latitude.Value);
+            if (_map != null)
+            {
+                // Zoom level 12 (resolution ~76)
+                _map.Navigator.CenterOnAndZoomTo(new MPoint(nodePos.x, nodePos.y), 76.0);
+                MapControl.Refresh();
+            }
+
+            // Close notification
+            AlertNotificationBar.Visibility = Visibility.Collapsed;
+
+            Services.Logger.WriteLine($"Jumped to map position of node {node.Name} (Lat: {node.Latitude}, Lon: {node.Longitude})");
+        }
+        catch (Exception ex)
+        {
+            Services.Logger.WriteLine($"Error showing node on map: {ex.Message}");
+            MessageBox.Show($"Fehler beim Anzeigen der Node-Position: {ex.Message}", "Fehler", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 }

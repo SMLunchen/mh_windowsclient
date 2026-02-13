@@ -3,12 +3,43 @@ using System.Net.Http;
 
 namespace MeshhessenClient.Services;
 
+public enum MapSource
+{
+    OSM,          // /osm/
+    OSMTopo,      // /opentopo/
+    OSMDark       // /dark/
+}
+
 public static class TileDownloaderService
 {
     private static readonly HttpClient _httpClient = new()
     {
-        DefaultRequestHeaders = { { "User-Agent", "MeshhessenClient/1.0 (https://meshhessen.de)" } }
+        DefaultRequestHeaders = { { "User-Agent", "MeshhessenClient/1.5.1" } }
     };
+
+    // Tile URL templates für jede Kartenquelle (werden von Settings geladen)
+    public static string OSMTileUrl { get; set; } = "https://tile.schwarzes-seelenreich.de/osm/{z}/{x}/{y}.png";
+    public static string OSMTopoTileUrl { get; set; } = "https://tile.schwarzes-seelenreich.de/opentopo/{z}/{x}/{y}.png";
+    public static string OSMDarkTileUrl { get; set; } = "https://tile.schwarzes-seelenreich.de/dark/{z}/{x}/{y}.png";
+
+    // Gibt die Tile-URL-Template für die angegebene Kartenquelle zurück
+    private static string GetTileUrlTemplate(MapSource source) => source switch
+    {
+        MapSource.OSM => OSMTileUrl,
+        MapSource.OSMTopo => OSMTopoTileUrl,
+        MapSource.OSMDark => OSMDarkTileUrl,
+        _ => throw new ArgumentException($"Unknown map source: {source}")
+    };
+
+    // Gibt den Ordnernamen für die lokale Tile-Speicherung zurück
+    public static string GetSourceFolderName(MapSource source) => source switch
+    {
+        MapSource.OSM => "osm",
+        MapSource.OSMTopo => "osmtopo",
+        MapSource.OSMDark => "osmdark",
+        _ => throw new ArgumentException($"Unknown map source: {source}")
+    };
+
 
     // Berechnet Tile-Koordinaten aus Lat/Lon nach Slippy-Map-Schema
     public static (int x, int y) LatLonToTile(double lat, double lon, int zoom)
@@ -34,6 +65,7 @@ public static class TileDownloaderService
     }
 
     public static async Task DownloadTilesAsync(
+        MapSource source,
         double north, double south, double east, double west,
         int minZoom, int maxZoom,
         string tileDir,
@@ -55,23 +87,35 @@ public static class TileDownloaderService
             {
                 for (int y = yMin; y <= yMax && !ct.IsCancellationRequested; y++)
                 {
-                    var filePath = Path.Combine(tileDir, z.ToString(), x.ToString(), $"{y}.png");
+                    // Neuer Pfad: maptiles/{source}/{z}/{x}/{y}.png
+                    var sourceFolderName = GetSourceFolderName(source);
+                    var filePath = Path.Combine(tileDir, sourceFolderName, z.ToString(), x.ToString(), $"{y}.png");
                     Directory.CreateDirectory(Path.GetDirectoryName(filePath)!);
 
                     if (!File.Exists(filePath))
                     {
                         try
                         {
-                            var url = $"https://tile.openstreetmap.org/{z}/{x}/{y}.png";
+                            // Get URL template and replace placeholders
+                            var urlTemplate = GetTileUrlTemplate(source);
+                            var url = urlTemplate
+                                .Replace("{z}", z.ToString())
+                                .Replace("{x}", x.ToString())
+                                .Replace("{y}", y.ToString());
+
                             var data = await _httpClient.GetByteArrayAsync(url, ct);
                             await File.WriteAllBytesAsync(filePath, data, ct);
 
-                            // Rate-Limiting: max ~2 req/s
-                            await Task.Delay(500, ct);
+                            // Rate-Limiting nur für externe Server (nicht für eigene Server)
+                            if (!url.Contains("tile.schwarzes-seelenreich.de", StringComparison.OrdinalIgnoreCase) &&
+                                !url.Contains("tile.meshhessen.de", StringComparison.OrdinalIgnoreCase))
+                            {
+                                await Task.Delay(500, ct);
+                            }
                         }
                         catch (Exception ex) when (!ct.IsCancellationRequested)
                         {
-                            Logger.WriteLine($"Tile download failed Z{z} X:{x} Y:{y}: {ex.Message}");
+                            Logger.WriteLine($"Tile download failed [{sourceFolderName}] Z{z} X:{x} Y:{y}: {ex.Message}");
                         }
                     }
 
