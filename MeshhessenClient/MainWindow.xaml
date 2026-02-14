@@ -9,7 +9,7 @@
         mc:Ignorable="d"
         ui:WindowHelper.UseModernWindowStyle="True"
         Icon="pack://application:,,,/Resources/app.ico"
-        Title="Meshhessen Client v1.5.1"
+        Title="Meshhessen Client"
         Height="650"
         Width="1000"
         MinHeight="450"
@@ -823,7 +823,7 @@
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="20">
                         <TextBlock Text="Meshhessen Client" FontSize="24" FontWeight="Bold" Margin="0,0,0,4"/>
-                        <TextBlock Text="v1.5.1" FontSize="16" Foreground="Gray" Margin="0,0,0,16"/>
+                        <TextBlock x:Name="AboutVersionText" FontSize="16" Foreground="Gray" Margin="0,0,0,16"/>
                         <TextBlock Text="Offline-fähiger Windows-Client für Meshtastic-Geräte mit Kartenansicht, Kanalverwaltung und Multi-Verbindungsunterstützung (Serial, TCP/WiFi, Bluetooth)."
                                   TextWrapping="Wrap" Margin="0,0,0,20"/>
 
@@ -977,7 +977,7 @@
                           VerticalAlignment="Center"/>
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="v1.5.1" VerticalAlignment="Center" Foreground="Gray" Margin="0,0,12,0" FontSize="11"/>
+                    <TextBlock x:Name="FooterVersionText" VerticalAlignment="Center" Foreground="Gray" Margin="0,0,12,0" FontSize="11"/>
                     <Image Source="pack://application:,,,/Resources/app.ico" Width="16" Height="16" Margin="0,0,6,0" VerticalAlignment="Center"/>
                     <TextBlock VerticalAlignment="Center">
                         <Hyperlink NavigateUri="https://www.meshhessen.de" RequestNavigate="Hyperlink_RequestNavigate">

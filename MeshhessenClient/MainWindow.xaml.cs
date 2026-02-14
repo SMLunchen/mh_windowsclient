@@ -84,6 +84,13 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
 
+        // Set version from assembly
+        var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+        var versionStr = version != null ? $"v{version.Major}.{version.Minor}.{version.Build}" : "";
+        Title = $"Meshhessen Client {versionStr}";
+        AboutVersionText.Text = versionStr;
+        FooterVersionText.Text = versionStr;
+
         // Initialize with Serial connection (default)
         _connectionService = new SerialConnectionService();
         _protocolService = new MeshtasticProtocolService(_connectionService);
