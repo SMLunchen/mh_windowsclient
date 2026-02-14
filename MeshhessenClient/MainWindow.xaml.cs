@@ -1204,6 +1204,14 @@ public partial class MainWindow : Window
     private const string MeshHessenPsk = "+uTMEaOR7hkqaXv+DROOEd5BhvAIQY/CZ/Hr4soZcOU=";
     private const string MeshHessenName = "Mesh Hessen";
 
+    private void ChannelContextMenu_CopyPsk_Click(object sender, RoutedEventArgs e)
+    {
+        if (ChannelsListView.SelectedItem is Models.ChannelInfo channel && !string.IsNullOrEmpty(channel.Psk))
+        {
+            Clipboard.SetText(channel.Psk);
+        }
+    }
+
     private async void AddChannel_Click(object sender, RoutedEventArgs e)
     {
         var dialog = new AddChannelWindow { Owner = this };

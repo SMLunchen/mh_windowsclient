@@ -575,6 +575,11 @@
                     </Grid.RowDefinitions>
 
                     <ListView x:Name="ChannelsListView" Grid.Row="0">
+                        <ListView.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="PSK kopieren" Click="ChannelContextMenu_CopyPsk_Click"/>
+                            </ContextMenu>
+                        </ListView.ContextMenu>
                         <ListView.View>
                             <GridView>
                                 <GridViewColumn Header="Index" Width="60" DisplayMemberBinding="{Binding Index}"/>
