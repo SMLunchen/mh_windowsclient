@@ -25,6 +25,7 @@ public class MeshtasticProtocolService
     private bool _debugSerial = false;
     private bool _debugDevice = false;
     private readonly HashSet<int> _receivedChannelResponses = new(); // Tracks which channel indices we got via GetChannelResponse
+    private byte[] _sessionPasskey = Array.Empty<byte>(); // Session key from admin responses (required for write operations)
     private DateTime _lastValidPacketTime = DateTime.MinValue;
     private int _consecutiveTextChunks = 0;
     private bool _recoveryInProgress = false;
@@ -66,6 +67,7 @@ public class MeshtasticProtocolService
             _configComplete = false;
             _packetCount = 0;
             _receivedChannelResponses.Clear();
+            _sessionPasskey = Array.Empty<byte>();
             Logger.WriteLine("Cleared all data from previous session");
         }
 
@@ -238,9 +240,11 @@ public class MeshtasticProtocolService
                 Index = channel.Index,
                 Name = ExtractChannelName(channel),
                 Role = channel.Role.ToString(),
-                Psk = channel.Settings?.Psk != null ? Convert.ToBase64String(channel.Settings.Psk.ToByteArray()) : "",
-                Uplink = channel.Settings?.UplinkEnabled ?? 0,
-                Downlink = channel.Settings?.DownlinkEnabled ?? 0
+                Psk = channel.Settings?.Psk != null && channel.Settings.Psk.Length > 0
+                    ? Convert.ToBase64String(channel.Settings.Psk.ToByteArray())
+                    : "",
+                Uplink = channel.Settings?.UplinkEnabled ?? false,
+                Downlink = channel.Settings?.DownlinkEnabled ?? false
             };
             ChannelInfoReceived?.Invoke(this, channelInfo);
             await Task.Delay(50);
@@ -1108,8 +1112,8 @@ public class MeshtasticProtocolService
                         Psk = channel.Settings?.Psk != null && channel.Settings.Psk.Length > 0
                             ? Convert.ToBase64String(channel.Settings.Psk.ToByteArray())
                             : "",
-                        Uplink = channel.Settings?.UplinkEnabled ?? 0,
-                        Downlink = channel.Settings?.DownlinkEnabled ?? 0
+                        Uplink = channel.Settings?.UplinkEnabled ?? false,
+                        Downlink = channel.Settings?.DownlinkEnabled ?? false
                     };
                     ChannelInfoReceived?.Invoke(this, channelInfo);
                 }
@@ -1157,6 +1161,154 @@ public class MeshtasticProtocolService
             Logger.WriteLine($"Error sending text message: {ex.Message}");
             throw;
         }
+    }
+
+    private async Task EnsureSessionKeyAsync()
+    {
+        if (_sessionPasskey.Length > 0) return;
+
+        // Request session key via SESSIONKEY_CONFIG (value 8)
+        Logger.WriteLine("Requesting session key...");
+        var adminMsg = new AdminMessage { GetConfigRequest = 8 };
+        await SendAdminMessageAsync(adminMsg);
+
+        // Wait for session key response
+        for (int i = 0; i < 20; i++)
+        {
+            await Task.Delay(200);
+            if (_sessionPasskey.Length > 0)
+            {
+                Logger.WriteLine("Session key received");
+                return;
+            }
+        }
+        Logger.WriteLine("Warning: No session key received after timeout, proceeding anyway");
+    }
+
+    public async Task SetChannelAsync(int channelIndex, string name, byte[] psk, bool secondary = true, bool uplinkEnabled = false, bool downlinkEnabled = false)
+    {
+        try
+        {
+            await EnsureSessionKeyAsync();
+            var channel = new Channel
+            {
+                Index = channelIndex,
+                Settings = new ChannelSettings
+                {
+                    Name = name,
+                    Psk = ByteString.CopyFrom(psk),
+                    UplinkEnabled = uplinkEnabled,
+                    DownlinkEnabled = downlinkEnabled
+                },
+                Role = secondary ? ChannelRole.Secondary : ChannelRole.Primary
+            };
+            var setChannel = new AdminMessage { SetChannel = channel };
+            await SendAdminMessageAsync(setChannel);
+
+            Logger.WriteLine($"Channel {channelIndex} ('{name}') set successfully");
+        }
+        catch (Exception ex)
+        {
+            Logger.WriteLine($"Error setting channel: {ex.Message}");
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Deletes a channel by shifting subsequent channels up and disabling the last slot.
+    /// This matches the Meshtastic Python reference implementation.
+    /// </summary>
+    public async Task DeleteChannelAsync(int channelIndex)
+    {
+        try
+        {
+            await EnsureSessionKeyAsync();
+            // Get current channels sorted by index
+            List<Channel> channels;
+            lock (_dataLock)
+            {
+                channels = _tempChannels.OrderBy(c => c.Index).ToList();
+            }
+
+            // Find the highest used index
+            int maxUsedIndex = channels.Where(c => c.Role != ChannelRole.Disabled).Max(c => c.Index);
+
+            // Shift channels: move each subsequent channel one index down
+            for (int i = channelIndex; i < maxUsedIndex; i++)
+            {
+                var nextChannel = channels.FirstOrDefault(c => c.Index == i + 1);
+                if (nextChannel != null && nextChannel.Role != ChannelRole.Disabled)
+                {
+                    var shifted = new Channel
+                    {
+                        Index = i,
+                        Settings = nextChannel.Settings?.Clone() ?? new ChannelSettings(),
+                        Role = nextChannel.Role
+                    };
+                    var msg = new AdminMessage { SetChannel = shifted };
+                    await SendAdminMessageAsync(msg);
+                    await Task.Delay(300);
+                    Logger.WriteLine($"  Shifted channel {i + 1} -> {i} ('{shifted.Settings.Name}')");
+                }
+            }
+
+            // Disable the last slot
+            var disabledChannel = new Channel
+            {
+                Index = maxUsedIndex,
+                Settings = new ChannelSettings(),
+                Role = ChannelRole.Disabled
+            };
+            var disableMsg = new AdminMessage { SetChannel = disabledChannel };
+            await SendAdminMessageAsync(disableMsg);
+            Logger.WriteLine($"  Disabled channel slot {maxUsedIndex}");
+
+            Logger.WriteLine($"Channel {channelIndex} deleted successfully (shifted {maxUsedIndex - channelIndex} channels)");
+        }
+        catch (Exception ex)
+        {
+            Logger.WriteLine($"Error deleting channel: {ex.Message}");
+            throw;
+        }
+    }
+
+    public async Task RefreshChannelAsync(int channelIndex)
+    {
+        await RequestChannelAsync(channelIndex);
+    }
+
+    public async Task RefreshAllChannelsAsync()
+    {
+        for (int i = 0; i < 8; i++)
+        {
+            await RequestChannelAsync(i);
+            await Task.Delay(300);
+        }
+    }
+
+    private async Task SendAdminMessageAsync(AdminMessage adminMsg)
+    {
+        // Include session passkey for write operations (required by firmware)
+        if (_sessionPasskey.Length > 0)
+        {
+            adminMsg.SessionPasskey = ByteString.CopyFrom(_sessionPasskey);
+        }
+
+        var meshPacket = new MeshPacket
+        {
+            From = _myNodeId,
+            To = _myNodeId,
+            Decoded = new Data
+            {
+                Portnum = 6, // ADMIN_APP
+                Payload = adminMsg.ToByteString(),
+                WantResponse = true
+            },
+            Id = (uint)Random.Shared.Next()
+        };
+
+        var toRadio = new ToRadio { Packet = meshPacket };
+        await SendToRadioAsync(toRadio);
     }
 
     private async Task SendToRadioAsync(ToRadio toRadio)
@@ -1284,6 +1436,13 @@ public class MeshtasticProtocolService
 
             var adminMsg = AdminMessage.Parser.ParseFrom(data.Payload);
             Logger.WriteLine($"Admin message: {adminMsg.PayloadVariantCase}");
+
+            // Store session passkey from every admin response (required for write operations)
+            if (adminMsg.SessionPasskey != null && adminMsg.SessionPasskey.Length > 0)
+            {
+                _sessionPasskey = adminMsg.SessionPasskey.ToByteArray();
+                Logger.WriteLine($"  Session passkey updated ({_sessionPasskey.Length} bytes)");
+            }
 
             switch (adminMsg.PayloadVariantCase)
             {

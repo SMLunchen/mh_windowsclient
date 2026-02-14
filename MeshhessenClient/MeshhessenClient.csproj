@@ -60,4 +60,8 @@
     <Resource Include="Resources\app.ico" />
   </ItemGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="..\CHANNELS.csv" />
+  </ItemGroup>
+
 </Project>
