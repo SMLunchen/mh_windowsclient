@@ -6,6 +6,6 @@ public class ChannelInfo
     public string Name { get; set; } = string.Empty;
     public string Psk { get; set; } = string.Empty;
     public string Role { get; set; } = string.Empty;
-    public uint Downlink { get; set; }
-    public uint Uplink { get; set; }
+    public bool Downlink { get; set; }
+    public bool Uplink { get; set; }
 }

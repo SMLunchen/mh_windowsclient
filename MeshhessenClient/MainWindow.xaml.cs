@@ -84,6 +84,13 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
 
+        // Set version from assembly
+        var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+        var versionStr = version != null ? $"v{version.Major}.{version.Minor}.{version.Build}" : "";
+        Title = $"Meshhessen Client {versionStr}";
+        AboutVersionText.Text = versionStr;
+        FooterVersionText.Text = versionStr;
+
         // Initialize with Serial connection (default)
         _connectionService = new SerialConnectionService();
         _protocolService = new MeshtasticProtocolService(_connectionService);
@@ -1201,19 +1208,187 @@ public partial class MainWindow : Window
         }
     }
 
-    private void AddChannel_Click(object sender, RoutedEventArgs e)
+    private const string MeshHessenPsk = "+uTMEaOR7hkqaXv+DROOEd5BhvAIQY/CZ/Hr4soZcOU=";
+    private const string MeshHessenName = "Mesh Hessen";
+
+    private void ChannelContextMenu_CopyPsk_Click(object sender, RoutedEventArgs e)
     {
-        MessageBox.Show("Kanal hinzufügen - wird in Kürze implementiert", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
+        if (ChannelsListView.SelectedItem is Models.ChannelInfo channel && !string.IsNullOrEmpty(channel.Psk))
+        {
+            Clipboard.SetText(channel.Psk);
+        }
     }
 
-    private void EditChannel_Click(object sender, RoutedEventArgs e)
+    private async void AddChannel_Click(object sender, RoutedEventArgs e)
     {
-        MessageBox.Show("Kanal bearbeiten - wird in Kürze implementiert", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
+        var dialog = new AddChannelWindow { Owner = this };
+        if (dialog.ShowDialog() == true)
+        {
+            try
+            {
+                var pskBytes = Convert.FromBase64String(dialog.PskBase64);
+                int freeIndex = FindFirstFreeChannelIndex();
+                if (freeIndex < 0)
+                {
+                    MessageBox.Show("Kein freier Kanal-Slot verfügbar (max. 8 Kanäle).", "Fehler",
+                        MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                await _protocolService.SetChannelAsync(freeIndex, dialog.ChannelName, pskBytes, secondary: true);
+
+                await Task.Delay(1000);
+                await _protocolService.RefreshChannelAsync(freeIndex);
+
+                UpdateMeshHessenButtonState();
+                Services.Logger.WriteLine($"Channel '{dialog.ChannelName}' added at index {freeIndex}");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Fehler beim Hinzufügen des Kanals: {ex.Message}", "Fehler",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
     }
 
-    private void DeleteChannel_Click(object sender, RoutedEventArgs e)
+    private async void DeleteChannel_Click(object sender, RoutedEventArgs e)
     {
-        MessageBox.Show("Kanal löschen - wird in Kürze implementiert", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
+        if (ChannelsListView.SelectedItem is not ChannelInfo selectedChannel)
+        {
+            MessageBox.Show("Bitte einen Kanal auswählen.", "Hinweis",
+                MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        if (selectedChannel.Index == 0)
+        {
+            MessageBox.Show("Der primäre Kanal (Index 0) kann nicht gelöscht werden.", "Hinweis",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        var result = MessageBox.Show(
+            $"Kanal '{selectedChannel.Name}' (Index {selectedChannel.Index}) wirklich löschen?",
+            "Kanal löschen", MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+        if (result != MessageBoxResult.Yes) return;
+
+        try
+        {
+            await _protocolService.DeleteChannelAsync(selectedChannel.Index);
+
+            // Refresh all channels from device (indices shifted)
+            _channels.Clear();
+            await Task.Delay(500);
+            await _protocolService.RefreshAllChannelsAsync();
+
+            UpdateMeshHessenButtonState();
+            Services.Logger.WriteLine($"Channel '{selectedChannel.Name}' (Index {selectedChannel.Index}) deleted");
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Fehler beim Löschen des Kanals: {ex.Message}", "Fehler",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private async void BrowseChannels_Click(object sender, RoutedEventArgs e)
+    {
+        var browser = new ChannelBrowserWindow { Owner = this };
+        if (browser.ShowDialog() == true && browser.SelectedChannel != null)
+        {
+            try
+            {
+                var entry = browser.SelectedChannel;
+                var pskBytes = Convert.FromBase64String(entry.Psk);
+
+                if (_channels.Any(c => c.Psk == entry.Psk))
+                {
+                    MessageBox.Show($"Ein Kanal mit diesem PSK existiert bereits.", "Hinweis",
+                        MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
+
+                int freeIndex = FindFirstFreeChannelIndex();
+                if (freeIndex < 0)
+                {
+                    MessageBox.Show("Kein freier Kanal-Slot verfügbar (max. 8 Kanäle).", "Fehler",
+                        MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                bool mqttEnabled = entry.MqttEnabled.Equals("true", StringComparison.OrdinalIgnoreCase);
+
+                await _protocolService.SetChannelAsync(freeIndex, entry.Name, pskBytes,
+                    secondary: true, uplinkEnabled: mqttEnabled, downlinkEnabled: mqttEnabled);
+
+                await Task.Delay(1000);
+                await _protocolService.RefreshChannelAsync(freeIndex);
+
+                UpdateMeshHessenButtonState();
+                Services.Logger.WriteLine($"Channel '{entry.Name}' from list added at index {freeIndex}");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Fehler beim Hinzufügen des Kanals: {ex.Message}", "Fehler",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+    }
+
+    private async void AddMeshHessenChannel_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            if (_channels.Any(c => c.Psk == MeshHessenPsk))
+            {
+                MessageBox.Show("Mesh-Hessen Kanal ist bereits vorhanden.", "Hinweis",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            int freeIndex = FindFirstFreeChannelIndex();
+            if (freeIndex < 0)
+            {
+                MessageBox.Show("Kein freier Kanal-Slot verfügbar (max. 8 Kanäle).", "Fehler",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            var pskBytes = Convert.FromBase64String(MeshHessenPsk);
+            await _protocolService.SetChannelAsync(freeIndex, MeshHessenName, pskBytes,
+                secondary: true, uplinkEnabled: true, downlinkEnabled: true);
+
+            await Task.Delay(1000);
+            await _protocolService.RefreshChannelAsync(freeIndex);
+
+            UpdateMeshHessenButtonState();
+            Services.Logger.WriteLine($"Mesh-Hessen channel added at index {freeIndex}");
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Fehler beim Hinzufügen des Mesh-Hessen Kanals: {ex.Message}", "Fehler",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private int FindFirstFreeChannelIndex()
+    {
+        var usedIndices = _channels.Select(c => c.Index).ToHashSet();
+        for (int i = 1; i < 8; i++)
+        {
+            if (!usedIndices.Contains(i))
+                return i;
+        }
+        return -1;
+    }
+
+    private void UpdateMeshHessenButtonState()
+    {
+        if (MeshHessenButton != null)
+        {
+            MeshHessenButton.IsEnabled = !_channels.Any(c => c.Psk == MeshHessenPsk);
+        }
     }
 
     private void SaveSettings_Click(object sender, RoutedEventArgs e)
@@ -1301,6 +1476,7 @@ public partial class MainWindow : Window
                     _nodes.Clear();
                     _allNodes.Clear();
                     _channels.Clear();
+                    UpdateMeshHessenButtonState();
                     PacketCountText.Text = "Pakete: 0";
                 }
             }
@@ -1560,6 +1736,7 @@ public partial class MainWindow : Window
                 UpdateMessageFilterComboBox();
 
                 UpdateStatusBar($"Kanal {channel.Index} empfangen: {channel.Name}");
+                UpdateMeshHessenButtonState();
             }
             catch (Exception ex)
             {
