@@ -12,9 +12,10 @@ public enum MapSource
 
 public static class TileDownloaderService
 {
+    private static readonly string _version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "0.0.0";
     private static readonly HttpClient _httpClient = new()
     {
-        DefaultRequestHeaders = { { "User-Agent", "MeshhessenClient/1.5.1" } }
+        DefaultRequestHeaders = { { "User-Agent", $"MeshhessenClient/{_version}" } }
     };
 
     // Tile URL templates für jede Kartenquelle (werden von Settings geladen)

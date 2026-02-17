@@ -122,11 +122,12 @@ message Channel {
 }
 
 message ChannelSettings {
-  bytes psk = 1;
-  string name = 2;
-  uint32 id = 3;
-  uint32 uplink_enabled = 4;
-  uint32 downlink_enabled = 5;
+  uint32 channel_num = 1;
+  bytes psk = 2;
+  string name = 3;
+  fixed32 id = 4;
+  bool uplink_enabled = 5;
+  bool downlink_enabled = 6;
 }
 
 message Config {
