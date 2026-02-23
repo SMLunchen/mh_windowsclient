@@ -18,9 +18,9 @@
     <PublishDir>..\public\</PublishDir>
 
     <AssemblyName>MeshhessenClient</AssemblyName>
-    <Version>1.5.2</Version>
-    <AssemblyVersion>1.5.2.0</AssemblyVersion>
-    <FileVersion>1.5.2.0</FileVersion>
+    <Version>1.5.3</Version>
+    <AssemblyVersion>1.5.3.0</AssemblyVersion>
+    <FileVersion>1.5.3.0</FileVersion>
     <Company>Meshtastic Community</Company>
     <Product>Meshhessen Client</Product>
     <Description>Offline-fähiger Windows Client für Meshtastic Geräte</Description>
@@ -29,6 +29,7 @@
 
   <ItemGroup>
     <!-- Serial Port Communication -->
+    <PackageReference Include="Mapsui.Nts" Version="4.1.7" />
     <PackageReference Include="System.IO.Ports" Version="8.0.0" />
 
     <!-- Protobuf for Meshtastic Protocol -->
@@ -58,6 +59,8 @@
   <ItemGroup>
     <Resource Include="logo_mh_wide.jpg" />
     <Resource Include="Resources\app.ico" />
+    <Resource Include="Resources\Strings.de.xaml" />
+    <Resource Include="Resources\Strings.en.xaml" />
   </ItemGroup>
 
   <ItemGroup>

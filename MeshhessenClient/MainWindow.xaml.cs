@@ -16,6 +16,8 @@ using Mapsui.Tiling.Layers;
 using Mapsui.Extensions;
 using BruTile;
 using BruTile.Predefined;
+using NetTopologySuite.Geometries;
+using Mapsui.Nts;
 using LoRaConfig = Meshtastic.Protobufs.LoRaConfig;
 
 namespace MeshhessenClient;
@@ -49,6 +51,7 @@ public partial class MainWindow : Window
     private uint _myNodeId = 0;
     private string? _nodeSortColumn = null;
     private bool _nodeSortAscending = true;
+    private Meshtastic.Protobufs.LoRaConfig? _currentLoRaConfig;
 
     // Karte
     private Mapsui.Map? _map;
@@ -57,6 +60,7 @@ public partial class MainWindow : Window
     private readonly List<IFeature> _nodeFeatures = new();
     private readonly List<IFeature> _myPosFeatures = new();
     private readonly Dictionary<uint, MPoint> _nodePinPositions = new();
+    private readonly Dictionary<uint, MemoryLayer> _pathLayers = new();
     private AppSettings _currentSettings = new(
         false,
         string.Empty,
@@ -76,7 +80,10 @@ public partial class MainWindow : Window
         false,
         false,
         false,
-        true);
+        true,
+        "de",
+        false,
+        new Dictionary<uint, bool>());
     private NodeInfo? _mapContextMenuNode;
     private uint? _alertNodeId;  // Stores the node ID for "Show on Map" button
 
@@ -109,8 +116,10 @@ public partial class MainWindow : Window
         _protocolService.DeviceInfoReceived += OnDeviceInfoReceived;
         _protocolService.PacketCountChanged += OnPacketCountChanged;
 
-        LoadRegions();
-        LoadModemPresets();
+        // LoadRegions / LoadModemPresets removed — now displayed as read-only TextBlocks in Settings right column
+
+        // Context menu opening for dynamic pin label
+        NodesListView.ContextMenuOpening += NodesListView_ContextMenuOpening;
 
         // Logger Event abonnieren für Debug-Fenster
         Services.Logger.LogMessageReceived += OnLogMessageReceived;
@@ -174,6 +183,18 @@ public partial class MainWindow : Window
             DebugDeviceCheckBox.IsChecked = settings.DebugDevice;
             DebugBluetoothCheckBox.IsChecked = settings.DebugBluetooth;
             AlertBellSoundCheckBox.IsChecked = settings.AlertBellSound;
+            EnableLocationLoggingCheckBox.IsChecked = settings.EnableLocationLogging;
+
+            // Language ComboBox
+            foreach (System.Windows.Controls.ComboBoxItem item in LanguageComboBox.Items)
+            {
+                if ((item.Tag as string) == settings.Language)
+                {
+                    LanguageComboBox.SelectedItem = item;
+                    break;
+                }
+            }
+            ApplyLanguage(settings.Language);
 
             _currentSettings = settings;
             _protocolService.SetDebugSerial(settings.DebugSerial);
@@ -463,6 +484,35 @@ public partial class MainWindow : Window
                         EditNodeNoteInternal(_mapContextMenuNode);
                 };
                 menu.Items.Add(noteItem);
+
+                menu.Items.Add(new Separator());
+
+                // Path show/hide
+                bool pathActive = hitNode != null && _pathLayers.ContainsKey(hitNode.NodeId);
+                if (pathActive)
+                {
+                    var hidePathItem = new MenuItem { Header = "🛤️ Pfad ausblenden" };
+                    hidePathItem.Click += (s, ev) =>
+                    {
+                        if (_mapContextMenuNode != null && _pathLayers.TryGetValue(_mapContextMenuNode.NodeId, out var layer))
+                        {
+                            _map?.Layers.Remove(layer);
+                            _pathLayers.Remove(_mapContextMenuNode.NodeId);
+                            MapControl.Refresh();
+                        }
+                    };
+                    menu.Items.Add(hidePathItem);
+                }
+                else
+                {
+                    var showPathItem = new MenuItem { Header = "🛤️ Bewegungspfad anzeigen" };
+                    showPathItem.Click += (s, ev) =>
+                    {
+                        if (_mapContextMenuNode != null)
+                            ShowPathForNode(_mapContextMenuNode);
+                    };
+                    menu.Items.Add(showPathItem);
+                }
             }
             else
             {
@@ -744,18 +794,6 @@ public partial class MainWindow : Window
                 PortComboBox.SelectedIndex = 0;
             }
         }
-    }
-
-    private void LoadRegions()
-    {
-        RegionComboBox.ItemsSource = new[] { "Unset", "US", "EU_868", "CN", "JP", "ANZ", "KR", "TW", "RU", "IN", "NZ_865", "TH", "LORA_24", "UA_868", "MY_919", "MY_433", "SG_923", "WLAN" };
-        RegionComboBox.SelectedIndex = 0;
-    }
-
-    private void LoadModemPresets()
-    {
-        ModemPresetComboBox.ItemsSource = new[] { "LONG_FAST", "LONG_SLOW", "VERY_LONG_SLOW", "MEDIUM_FAST", "MEDIUM_SLOW", "SHORT_FAST", "SHORT_SLOW", "LONG_MODERATE" };
-        ModemPresetComboBox.SelectedIndex = 0;
     }
 
     private void RefreshPorts_Click(object sender, RoutedEventArgs e)
@@ -1054,6 +1092,7 @@ public partial class MainWindow : Window
                         {
                             UpdateStatusBar($"Verbunden mit {displayName} - Bereit");
                             SetConnectionStatus(ConnectionStatus.Ready);
+                            NodeConfigButton.IsEnabled = true;
                         });
                     }
                     catch (Exception initEx)
@@ -1347,6 +1386,43 @@ public partial class MainWindow : Window
                 return;
             }
 
+            // LoRa-Check: Mesh-Hessen benötigt SHORT_SLOW, EU_868, Hop 7
+            if (_currentLoRaConfig != null)
+            {
+                bool needsPreset = _currentLoRaConfig.ModemPreset != Meshtastic.Protobufs.ModemPreset.ShortSlow;
+                bool needsRegion = (int)_currentLoRaConfig.Region == 0; // Unset = enum value 0
+                bool needsHop   = _currentLoRaConfig.HopLimit != 7;
+
+                if (needsPreset || needsRegion || needsHop)
+                {
+                    var changes = new System.Text.StringBuilder();
+                    changes.AppendLine("Für Mesh-Hessen werden folgende Einstellungen empfohlen:\n");
+                    if (needsPreset) changes.AppendLine($"  • Modem-Preset: {_currentLoRaConfig.ModemPreset} → SHORT_SLOW");
+                    if (needsRegion) changes.AppendLine("  • Region: Unset → EU_868");
+                    if (needsHop)   changes.AppendLine($"  • Hop-Limit: {_currentLoRaConfig.HopLimit} → 7");
+                    changes.AppendLine("\nJetzt ändern?");
+
+                    var result = MessageBox.Show(
+                        changes.ToString(),
+                        "LoRa-Einstellungen für Mesh-Hessen",
+                        MessageBoxButton.YesNoCancel,
+                        MessageBoxImage.Question);
+
+                    if (result == MessageBoxResult.Cancel)
+                        return;
+
+                    if (result == MessageBoxResult.Yes)
+                    {
+                        var newLora = _currentLoRaConfig.Clone();
+                        if (needsPreset) { newLora.ModemPreset = Meshtastic.Protobufs.ModemPreset.ShortSlow; newLora.UsePreset = true; }
+                        if (needsRegion) { newLora.Region = Meshtastic.Protobufs.Region.Eu868; }
+                        if (needsHop)    { newLora.HopLimit = 7; }
+                        await _protocolService.SetLoRaConfigAsync(newLora);
+                        Services.Logger.WriteLine("LoRa config updated for Mesh-Hessen (preset/region/hop)");
+                    }
+                }
+            }
+
             int freeIndex = FindFirstFreeChannelIndex();
             if (freeIndex < 0)
             {
@@ -1437,7 +1513,10 @@ public partial class MainWindow : Window
                 DebugSerial: DebugSerialCheckBox.IsChecked == true,
                 DebugDevice: DebugDeviceCheckBox.IsChecked == true,
                 DebugBluetooth: DebugBluetoothCheckBox.IsChecked == true,
-                AlertBellSound: AlertBellSoundCheckBox.IsChecked == true
+                AlertBellSound: AlertBellSoundCheckBox.IsChecked == true,
+                Language: (LanguageComboBox.SelectedItem as System.Windows.Controls.ComboBoxItem)?.Tag as string ?? "de",
+                EnableLocationLogging: EnableLocationLoggingCheckBox.IsChecked == true,
+                PinnedNodes: _currentSettings.PinnedNodes
             );
             _currentSettings = settings;
             SettingsService.Save(settings);
@@ -1476,6 +1555,8 @@ public partial class MainWindow : Window
                     _nodes.Clear();
                     _allNodes.Clear();
                     _channels.Clear();
+                    _currentLoRaConfig = null;
+                    NodeConfigButton.IsEnabled = false;
                     UpdateMeshHessenButtonState();
                     PacketCountText.Text = "Pakete: 0";
                 }
@@ -1671,6 +1752,15 @@ public partial class MainWindow : Window
                     node.Note = note;
                 }
 
+                // Apply pinned state
+                node.IsPinned = _currentSettings.PinnedNodes.ContainsKey(node.NodeId);
+
+                // Log location if enabled
+                if (_currentSettings.EnableLocationLogging)
+                {
+                    LocationLogger.Log(node);
+                }
+
                 // Update in _allNodes
                 var existingInAll = _allNodes.FirstOrDefault(n => n.Id == node.Id);
                 if (existingInAll != null)
@@ -1767,7 +1857,8 @@ public partial class MainWindow : Window
                 var myNode = _nodes.FirstOrDefault(n => n.NodeId == deviceInfo.NodeId);
                 if (myNode != null)
                 {
-                    DeviceNameTextBox.Text = myNode.Name;
+                    NodeInfoLongNameText.Text = myNode.Name;
+                    NodeInfoShortNameText.Text = myNode.ShortName ?? "";
                     Services.Logger.WriteLine($"  Set device name: {myNode.Name}");
                 }
                 else
@@ -1781,7 +1872,8 @@ public partial class MainWindow : Window
                             var node = _nodes.FirstOrDefault(n => n.NodeId == deviceInfo.NodeId);
                             if (node != null)
                             {
-                                DeviceNameTextBox.Text = node.Name;
+                                NodeInfoLongNameText.Text = node.Name;
+                                NodeInfoShortNameText.Text = node.ShortName ?? "";
                                 Services.Logger.WriteLine($"  Set device name (delayed): {node.Name}");
                             }
                         });
@@ -1804,54 +1896,14 @@ public partial class MainWindow : Window
         {
             try
             {
+                _currentLoRaConfig = loraConfig;
                 Services.Logger.WriteLine($"OnLoRaConfigReceived: Region={loraConfig.Region}, Preset={loraConfig.ModemPreset}");
 
-                // Region setzen (Case-insensitive, Unterstriche ignorieren)
+                // Display in Settings right column (read-only)
                 var regionName = loraConfig.Region.ToString();
-                var regionNormalized = regionName.Replace("_", "").ToUpperInvariant();
-                bool regionSet = false;
-
-                for (int i = 0; i < RegionComboBox.Items.Count; i++)
-                {
-                    var item = RegionComboBox.Items[i].ToString();
-                    var itemNormalized = item?.Replace("_", "").ToUpperInvariant();
-
-                    if (itemNormalized == regionNormalized)
-                    {
-                        RegionComboBox.SelectedIndex = i;
-                        regionSet = true;
-                        Services.Logger.WriteLine($"  Set Region to index {i}: {item}");
-                        break;
-                    }
-                }
-                if (!regionSet)
-                {
-                    Services.Logger.WriteLine($"  WARNING: Region '{regionName}' not found in ComboBox");
-                }
-
-                // Modem Preset setzen (Case-insensitive, Unterstriche ignorieren)
                 var presetName = loraConfig.ModemPreset.ToString();
-                var presetNormalized = presetName.Replace("_", "").ToUpperInvariant();
-                bool presetSet = false;
-
-                for (int i = 0; i < ModemPresetComboBox.Items.Count; i++)
-                {
-                    var item = ModemPresetComboBox.Items[i].ToString();
-                    var itemNormalized = item?.Replace("_", "").ToUpperInvariant();
-
-                    if (itemNormalized == presetNormalized)
-                    {
-                        ModemPresetComboBox.SelectedIndex = i;
-                        presetSet = true;
-                        Services.Logger.WriteLine($"  Set Preset to index {i}: {item}");
-                        break;
-                    }
-                }
-                if (!presetSet)
-                {
-                    Services.Logger.WriteLine($"  WARNING: Preset '{presetName}' not found in ComboBox");
-                }
-
+                NodeInfoRegionText.Text = regionName;
+                NodeInfoPresetText.Text = presetName;
                 UpdateStatusBar($"LoRa Config: {regionName}, {presetName}");
             }
             catch (Exception ex)
@@ -2282,6 +2334,9 @@ public partial class MainWindow : Window
                 _ => filtered
             };
         }
+
+        // Pinned nodes always first (stable sort preserves column order within groups)
+        filtered = filtered.OrderBy(n => n.IsPinned ? 0 : 1);
 
         // Update UI
         _nodes.Clear();
@@ -2733,6 +2788,223 @@ public partial class MainWindow : Window
 
     [System.Runtime.InteropServices.DllImport("user32.dll")]
     private static extern bool FlashWindow(IntPtr hwnd, bool bInvert);
+
+    // ========== Language ==========
+
+    private void ApplyLanguage(string lang)
+    {
+        try
+        {
+            var source = $"Resources/Strings.{lang}.xaml";
+            var dict = new ResourceDictionary
+            {
+                Source = new Uri(source, UriKind.Relative)
+            };
+
+            var dicts = Application.Current.Resources.MergedDictionaries;
+            // Find existing Strings.*.xaml and replace it, or insert at 0
+            var existing = dicts.FirstOrDefault(d => d.Source?.OriginalString?.Contains("Strings.") == true);
+            if (existing != null)
+            {
+                var idx = dicts.IndexOf(existing);
+                dicts[idx] = dict;
+            }
+            else
+            {
+                dicts.Insert(0, dict);
+            }
+        }
+        catch (Exception ex)
+        {
+            Services.Logger.WriteLine($"ApplyLanguage error ({lang}): {ex.Message}");
+        }
+    }
+
+    private void LanguageComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (LanguageComboBox.SelectedItem is not System.Windows.Controls.ComboBoxItem item) return;
+        var lang = item.Tag as string ?? "de";
+        ApplyLanguage(lang);
+        // Save immediately so language persists without hitting "Speichern"
+        _currentSettings = _currentSettings with { Language = lang };
+        SettingsService.Save(_currentSettings);
+    }
+
+    // ========== Node Config Window ==========
+
+    private void NodeConfig_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var win = new NodeConfigWindow(_protocolService) { Owner = this };
+            win.Show();
+        }
+        catch (Exception ex)
+        {
+            Services.Logger.WriteLine($"ERROR opening NodeConfigWindow: {ex.Message}");
+            MessageBox.Show($"Fehler beim Öffnen der Node-Konfiguration: {ex.Message}", "Fehler", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    // ========== Node Pinning ==========
+
+    private void NodesListView_ContextMenuOpening(object sender, ContextMenuEventArgs e)
+    {
+        if (NodesListView.SelectedItem is NodeInfo node)
+        {
+            PinNodeMenuItem.Header = node.IsPinned ? "📌 Loslösen" : "📌 Anheften";
+        }
+    }
+
+    private void NodeContextMenu_Pin_Click(object sender, RoutedEventArgs e)
+    {
+        if (NodesListView.SelectedItem is not NodeInfo node) return;
+
+        node.IsPinned = !node.IsPinned;
+
+        // Update in _allNodes
+        var existing = _allNodes.FirstOrDefault(n => n.NodeId == node.NodeId);
+        if (existing != null) existing.IsPinned = node.IsPinned;
+
+        // Save to settings
+        if (node.IsPinned)
+            _currentSettings.PinnedNodes[node.NodeId] = true;
+        else
+            _currentSettings.PinnedNodes.Remove(node.NodeId);
+        SettingsService.Save(_currentSettings);
+
+        ApplyNodeSortAndFilter();
+        Services.Logger.WriteLine($"Node {node.Name} ({node.Id}) {(node.IsPinned ? "pinned" : "unpinned")}");
+    }
+
+    // ========== Path Display ==========
+
+    private void NodeContextMenu_ShowPath_Click(object sender, RoutedEventArgs e)
+    {
+        if (NodesListView.SelectedItem is not NodeInfo node) return;
+        ShowPathForNode(node);
+    }
+
+    private void NodeContextMenu_HidePath_Click(object sender, RoutedEventArgs e)
+    {
+        if (NodesListView.SelectedItem is not NodeInfo node) return;
+        HidePathForNode(node);
+        HidePathMenuItem.Visibility = Visibility.Collapsed;
+    }
+
+    private void ShowPathForNode(NodeInfo node)
+    {
+        if (!LocationLogger.HasLog(node.NodeId))
+        {
+            MessageBox.Show($"Kein Standort-Log für {node.Name} vorhanden.\n\nBitte Standort-Logging in den Einstellungen aktivieren.", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        var entries = LocationLogger.ReadLog(node.NodeId);
+        if (entries.Count < 2)
+        {
+            MessageBox.Show("Nicht genug Einträge für einen Pfad (mindestens 2 Punkte benötigt).", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        try
+        {
+            // Remove existing path layer for this node
+            if (_pathLayers.TryGetValue(node.NodeId, out var oldLayer))
+            {
+                _map?.Layers.Remove(oldLayer);
+                _pathLayers.Remove(node.NodeId);
+            }
+
+            // Determine color — same default as node pin (Red)
+            Mapsui.Styles.Color lineColor = Mapsui.Styles.Color.Red;
+            if (!string.IsNullOrEmpty(node.ColorHex))
+            {
+                try
+                {
+                    var wpfColor = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(node.ColorHex);
+                    lineColor = new Mapsui.Styles.Color(wpfColor.R, wpfColor.G, wpfColor.B, wpfColor.A);
+                }
+                catch { }
+            }
+
+            var features = new List<IFeature>();
+
+            // Convert to world coordinates
+            var coords = entries
+                .Select(p => SphericalMercator.FromLonLat(p.Longitude, p.Latitude))
+                .Select(c => new MPoint(c.x, c.y))
+                .ToList();
+
+            // LineString via NetTopologySuite (Mapsui.Nts) → draws the connecting line
+            var ntsCoords = coords.Select(c => new Coordinate(c.X, c.Y)).ToArray();
+            var lineGeometry = new NetTopologySuite.Geometries.LineString(ntsCoords);
+            var lineFeature = new GeometryFeature(lineGeometry);
+            lineFeature.Styles.Add(new VectorStyle
+            {
+                Line = new Mapsui.Styles.Pen(lineColor, 3),
+                Fill = null
+            });
+            features.Add(lineFeature);
+
+            // Point + label features for each entry
+            for (int i = 0; i < entries.Count; i++)
+            {
+                var f = new PointFeature(coords[i]);
+                f.Styles.Add(new SymbolStyle
+                {
+                    SymbolType = SymbolType.Ellipse,
+                    Fill = new Mapsui.Styles.Brush(lineColor),
+                    Outline = new Mapsui.Styles.Pen(Mapsui.Styles.Color.White, 1),
+                    SymbolScale = 0.25
+                });
+                f.Styles.Add(new LabelStyle
+                {
+                    Text = $"{entries[i].Name} {entries[i].Timestamp:HH:mm}",
+                    ForeColor = lineColor,
+                    BackColor = new Mapsui.Styles.Brush(new Mapsui.Styles.Color(255, 255, 255, 160)),
+                    HorizontalAlignment = LabelStyle.HorizontalAlignmentEnum.Left,
+                    VerticalAlignment = LabelStyle.VerticalAlignmentEnum.Center,
+                    Offset = new Offset(8, 0),
+                    Font = new Font { Size = 9 }
+                });
+                features.Add(f);
+            }
+
+            var pathLayer = new MemoryLayer($"Path_{node.NodeId}")
+            {
+                Features = features,
+                Style = null
+            };
+            _pathLayers[node.NodeId] = pathLayer;
+            _map?.Layers.Add(pathLayer);
+
+            // Switch to map tab and center on path
+            MainTabs.SelectedIndex = 4;
+            var center = coords[coords.Count / 2];
+            _map?.Navigator.CenterOnAndZoomTo(center, 153.0);
+            MapControl.Refresh();
+
+            HidePathMenuItem.Visibility = Visibility.Visible;
+            Services.Logger.WriteLine($"Path layer added for {node.Name}: {entries.Count} points");
+        }
+        catch (Exception ex)
+        {
+            Services.Logger.WriteLine($"ERROR showing path: {ex.Message}");
+            MessageBox.Show($"Fehler beim Anzeigen des Pfads: {ex.Message}", "Fehler", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private void HidePathForNode(NodeInfo node)
+    {
+        if (_pathLayers.TryGetValue(node.NodeId, out var layer))
+        {
+            _map?.Layers.Remove(layer);
+            _pathLayers.Remove(node.NodeId);
+            MapControl.Refresh();
+            Services.Logger.WriteLine($"Path layer removed for {node.Name}");
+        }
+    }
 
     private void ShowAlertNotification(string nodeName, uint nodeId)
     {

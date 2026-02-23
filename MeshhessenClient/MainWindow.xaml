@@ -560,6 +560,10 @@
                                     <MenuItem Header="❌ Farbe entfernen" Click="RemoveNodeColor_Click"/>
                                 </MenuItem>
                                 <MenuItem Header="📝 Notiz bearbeiten..." Click="EditNodeNote_Click"/>
+                                <Separator/>
+                                <MenuItem x:Name="PinNodeMenuItem" Header="📌 Anheften" Click="NodeContextMenu_Pin_Click"/>
+                                <MenuItem Header="🛤️ Bewegungspfad anzeigen" Click="NodeContextMenu_ShowPath_Click"/>
+                                <MenuItem x:Name="HidePathMenuItem" Header="🛤️ Pfad ausblenden" Click="NodeContextMenu_HidePath_Click" Visibility="Collapsed"/>
                             </ContextMenu>
                         </ListView.ContextMenu>
                     </ListView>
@@ -603,181 +607,166 @@
 
             <!-- Settings Tab -->
             <TabItem Header="⚙️ Einstellungen">
-                <ScrollViewer VerticalScrollBarVisibility="Auto">
-                    <StackPanel Margin="20">
-                        <TextBlock Text="Geräteeinstellungen" FontSize="18" FontWeight="Bold" Margin="0,0,0,20"/>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="290"/>
+                    </Grid.ColumnDefinitions>
 
-                        <GroupBox Header="Radio Einstellungen" Margin="0,0,0,20">
-                            <StackPanel Margin="10">
-                                <StackPanel Orientation="Horizontal" Margin="0,10,0,10">
-                                    <TextBlock Text="Region:" Width="150" VerticalAlignment="Center"/>
-                                    <ComboBox x:Name="RegionComboBox" Width="200"/>
+                    <!-- ===== Linke Spalte: Einstellungen ===== -->
+                    <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
+                        <StackPanel Margin="20,20,10,20">
+
+                            <!-- a) Sprache -->
+                            <GroupBox Header="Sprache / Language" Margin="0,0,0,16">
+                                <StackPanel Margin="10">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Sprache:" Width="120" VerticalAlignment="Center"/>
+                                        <ComboBox x:Name="LanguageComboBox" Width="150" SelectionChanged="LanguageComboBox_SelectionChanged">
+                                            <ComboBoxItem Content="Deutsch" Tag="de"/>
+                                            <ComboBoxItem Content="English" Tag="en"/>
+                                        </ComboBox>
+                                    </StackPanel>
                                 </StackPanel>
-                                <StackPanel Orientation="Horizontal" Margin="0,10,0,10">
-                                    <TextBlock Text="Modem Preset:" Width="150" VerticalAlignment="Center"/>
-                                    <ComboBox x:Name="ModemPresetComboBox" Width="200"/>
+                            </GroupBox>
+
+                            <!-- b) Darstellung -->
+                            <GroupBox Header="Darstellung" Margin="0,0,0,16">
+                                <StackPanel Margin="10">
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                        <TextBlock Text="Stationsname:" Width="120" VerticalAlignment="Center"/>
+                                        <TextBox x:Name="StationNameTextBox" Width="200"/>
+                                    </StackPanel>
+                                    <TextBlock Text="Wird neben dem Verbinden-Button angezeigt."
+                                              FontStyle="Italic" Foreground="Gray" FontSize="11" Margin="0,0,0,10"/>
+                                    <CheckBox x:Name="DarkModeCheckBox"
+                                             Content="Dark Mode"
+                                             IsChecked="False"
+                                             Checked="DarkMode_Changed"
+                                             Unchecked="DarkMode_Changed"/>
                                 </StackPanel>
-                            </StackPanel>
-                        </GroupBox>
+                            </GroupBox>
 
-                        <GroupBox Header="Geräteinfo" Margin="0,0,0,20">
-                            <StackPanel Margin="10">
-                                <StackPanel Orientation="Horizontal" Margin="0,10,0,10">
-                                    <TextBlock Text="Name:" Width="150" VerticalAlignment="Center"/>
-                                    <TextBox x:Name="DeviceNameTextBox" Width="200"/>
+                            <!-- c) Alert Bell -->
+                            <GroupBox Header="Benachrichtigungen" Margin="0,0,0,16">
+                                <StackPanel Margin="10">
+                                    <CheckBox x:Name="AlertBellSoundCheckBox"
+                                             Content="Ton bei Alert Bell abspielen (🔔)"
+                                             Margin="0,0,0,4"/>
+                                    <TextBlock Text="Spielt einen Benachrichtigungston ab, wenn eine Nachricht das Alert Bell Character (ASCII 7) enthält."
+                                              FontStyle="Italic" Foreground="Gray" TextWrapping="Wrap" FontSize="11"/>
                                 </StackPanel>
-                                <StackPanel Orientation="Horizontal" Margin="0,10,0,10">
-                                    <TextBlock Text="Hardware Model:" Width="150" VerticalAlignment="Center"/>
-                                    <TextBlock x:Name="HardwareModelText" Width="200"/>
+                            </GroupBox>
+
+                            <!-- d) Karte / Tiles -->
+                            <GroupBox Header="Karte / Offline Tiles" Margin="0,0,0,16">
+                                <StackPanel Margin="10">
+                                    <TextBlock Text="Kartenquelle:" Margin="0,0,0,4"/>
+                                    <ComboBox x:Name="MapSourceComboBox"
+                                             Width="250" HorizontalAlignment="Left" Margin="0,0,0,10"
+                                             SelectionChanged="MapSourceComboBox_SelectionChanged">
+                                        <ComboBoxItem Content="OpenStreetMap Standard" Tag="osm"/>
+                                        <ComboBoxItem Content="OpenTopoMap" Tag="osmtopo"/>
+                                        <ComboBoxItem Content="OpenStreetMap Dark" Tag="osmdark"/>
+                                    </ComboBox>
+                                    <TextBlock Text="Tile-Server URL:" Margin="0,0,0,4"/>
+                                    <TextBox x:Name="TileServerUrlTextBox" HorizontalAlignment="Stretch" Margin="0,0,0,4"/>
+                                    <TextBlock Text="Vollständige URL mit Platzhaltern {z}/{x}/{y}."
+                                              FontStyle="Italic" Foreground="Gray" FontSize="11" Margin="0,0,0,10"/>
+                                    <Button Content="Tiles herunterladen..." Width="200" HorizontalAlignment="Left"
+                                           Margin="0,0,0,6" Click="DownloadTiles_Click"/>
+                                    <Button Content="Maptiles aus Zip laden..." Width="200" HorizontalAlignment="Left"
+                                           Click="ImportTilesFromZip_Click"/>
                                 </StackPanel>
-                                <StackPanel Orientation="Horizontal" Margin="0,10,0,10">
-                                    <TextBlock Text="Firmware Version:" Width="150" VerticalAlignment="Center"/>
-                                    <TextBlock x:Name="FirmwareVersionText" Width="200"/>
+                            </GroupBox>
+
+                            <!-- e) Standort-Logging -->
+                            <GroupBox Header="Standort-Logging" Margin="0,0,0,16">
+                                <StackPanel Margin="10">
+                                    <CheckBox x:Name="EnableLocationLoggingCheckBox"
+                                             Content="Standort-Logging aktivieren"
+                                             Margin="0,0,0,4"/>
+                                    <TextBlock Text="GPS-Positionen von Nodes werden in 'locationlogs/' gespeichert. Ermöglicht Bewegungspfade auf der Karte."
+                                              FontStyle="Italic" Foreground="Gray" TextWrapping="Wrap" FontSize="11"/>
                                 </StackPanel>
+                            </GroupBox>
+
+                            <!-- f) Verschlüsselte Nachrichten -->
+                            <GroupBox Header="Nachrichten" Margin="0,0,0,16">
+                                <StackPanel Margin="10">
+                                    <CheckBox x:Name="ShowEncryptedMessagesCheckBox"
+                                             Content="Verschlüsselte Nachrichten anzeigen (ohne PSK)"
+                                             IsChecked="True"/>
+                                    <TextBlock Text="Wenn deaktiviert, werden verschlüsselte Nachrichten ausgeblendet."
+                                              FontStyle="Italic" Foreground="Gray" TextWrapping="Wrap" FontSize="11" Margin="0,4,0,0"/>
+                                </StackPanel>
+                            </GroupBox>
+
+                            <!-- g) Debug -->
+                            <GroupBox Header="Debug" Margin="0,0,0,16">
+                                <StackPanel Margin="10">
+                                    <CheckBox x:Name="DebugMessagesCheckBox"
+                                             Content="Nachrichten-Debug (Details im Log)" Margin="0,0,0,8"/>
+                                    <CheckBox x:Name="DebugSerialCheckBox"
+                                             Content="Serielle Daten-Debug (Hex-Dump)" Margin="0,0,0,8"/>
+                                    <CheckBox x:Name="DebugDeviceCheckBox"
+                                             Content="Device-Log (serielle Debug-Ausgabe)" Margin="0,0,0,8"/>
+                                    <CheckBox x:Name="DebugBluetoothCheckBox"
+                                             Content="Bluetooth-Debug (BLE-Kommunikation)"/>
+                                </StackPanel>
+                            </GroupBox>
+
+                            <Button Content="Einstellungen speichern"
+                                   Width="200" HorizontalAlignment="Left"
+                                   Click="SaveSettings_Click"/>
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <!-- ===== Rechte Spalte: Node-Konfig + Geräteinfo ===== -->
+                    <Border Grid.Column="1"
+                            BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}"
+                            BorderThickness="1,0,0,0">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <StackPanel Margin="16,20,16,20">
+
+                                <!-- Node-Konfiguration -->
+                                <GroupBox Header="Node-Konfiguration" Margin="0,0,0,16">
+                                    <StackPanel Margin="10">
+                                        <TextBlock Text="Erweiterte Gerätekonfiguration (LoRa, Position, MQTT, Telemetrie u.a.)"
+                                                  FontStyle="Italic" Foreground="Gray" TextWrapping="Wrap"
+                                                  FontSize="11" Margin="0,0,0,10"/>
+                                        <Button x:Name="NodeConfigButton" Content="Node konfigurieren..."
+                                               IsEnabled="False" Click="NodeConfig_Click"/>
+                                    </StackPanel>
+                                </GroupBox>
+
+                                <!-- Geräteinfo (nur Anzeige) -->
+                                <GroupBox Header="Geräteinfo">
+                                    <StackPanel Margin="10">
+                                        <TextBlock Text="Name" FontSize="11" Foreground="Gray" Margin="0,4,0,1"/>
+                                        <TextBlock x:Name="NodeInfoLongNameText" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,0,0,6"/>
+
+                                        <TextBlock Text="Kurzname" FontSize="11" Foreground="Gray" Margin="0,0,0,1"/>
+                                        <TextBlock x:Name="NodeInfoShortNameText" FontWeight="SemiBold" Margin="0,0,0,6"/>
+
+                                        <TextBlock Text="Hardware" FontSize="11" Foreground="Gray" Margin="0,0,0,1"/>
+                                        <TextBlock x:Name="HardwareModelText" TextWrapping="Wrap" Margin="0,0,0,6"/>
+
+                                        <TextBlock Text="Firmware" FontSize="11" Foreground="Gray" Margin="0,0,0,1"/>
+                                        <TextBlock x:Name="FirmwareVersionText" Margin="0,0,0,6"/>
+
+                                        <TextBlock Text="Region" FontSize="11" Foreground="Gray" Margin="0,0,0,1"/>
+                                        <TextBlock x:Name="NodeInfoRegionText" Margin="0,0,0,6"/>
+
+                                        <TextBlock Text="Modem-Preset" FontSize="11" Foreground="Gray" Margin="0,0,0,1"/>
+                                        <TextBlock x:Name="NodeInfoPresetText"/>
+                                    </StackPanel>
+                                </GroupBox>
+
                             </StackPanel>
-                        </GroupBox>
-
-                        <GroupBox Header="Darstellung" Margin="0,0,0,20">
-                            <StackPanel Margin="10">
-                                <StackPanel Orientation="Horizontal" Margin="0,10,0,10">
-                                <TextBlock Text="Stationsname:" Width="150" VerticalAlignment="Center"/>
-                                <TextBox x:Name="StationNameTextBox" Width="200"/>
-                            </StackPanel>
-                            <TextBlock Text="Wird rechts neben dem Verbinden-Button angezeigt."
-                                      FontStyle="Italic"
-                                      Foreground="Gray"
-                                      TextWrapping="Wrap"
-                                      Margin="20,0,0,10"/>
-                        <CheckBox x:Name="DarkModeCheckBox"
-                                         Content="Dark Mode"
-                                         Margin="0,10,0,10"
-                                         IsChecked="False"
-                                         Checked="DarkMode_Changed"
-                                         Unchecked="DarkMode_Changed"/>
-                                <TextBlock Text="Dunkles Farbschema für die Anwendung."
-                                          FontStyle="Italic"
-                                          Foreground="Gray"
-                                          TextWrapping="Wrap"
-                                          Margin="20,0,0,10"/>
-                            </StackPanel>
-                        </GroupBox>
-
-                        <GroupBox Header="Nachrichten Anzeige" Margin="0,0,0,20">
-                            <StackPanel Margin="10">
-                                <CheckBox x:Name="ShowEncryptedMessagesCheckBox"
-                                         Content="Verschlüsselte Nachrichten anzeigen (ohne PSK)"
-                                         Margin="0,10,0,10"
-                                         IsChecked="True"/>
-                                <TextBlock Text="Wenn deaktiviert, werden verschlüsselte Nachrichten ausgeblendet."
-                                          FontStyle="Italic"
-                                          Foreground="Gray"
-                                          TextWrapping="Wrap"
-                                          Margin="20,0,0,10"/>
-                            </StackPanel>
-                        </GroupBox>
-
-                        <GroupBox Header="Karte / Offline Tiles" Margin="0,0,0,20">
-                            <StackPanel Margin="10">
-                                <TextBlock Text="OSM Tiles herunterladen und im Ordner 'maptiles' speichern."
-                                          FontStyle="Italic"
-                                          Foreground="Gray"
-                                          TextWrapping="Wrap"
-                                          Margin="0,0,0,10"/>
-
-                                <!-- Kartenquelle Auswahl -->
-                                <TextBlock Text="Kartenquelle:" Margin="0,0,0,4"/>
-                                <ComboBox x:Name="MapSourceComboBox"
-                                         Width="250"
-                                         HorizontalAlignment="Left"
-                                         Margin="0,0,0,10"
-                                         SelectionChanged="MapSourceComboBox_SelectionChanged">
-                                    <ComboBoxItem Content="OpenStreetMap Standard" Tag="osm"/>
-                                    <ComboBoxItem Content="OpenTopoMap" Tag="osmtopo"/>
-                                    <ComboBoxItem Content="OpenStreetMap Dark" Tag="osmdark"/>
-                                </ComboBox>
-
-                                <!-- Tile-Server URL -->
-                                <TextBlock Text="Tile-Server URL:" Margin="0,0,0,4"/>
-                                <TextBox x:Name="TileServerUrlTextBox"
-                                         Width="550"
-                                         HorizontalAlignment="Left"
-                                         Margin="0,0,0,4"/>
-                                <TextBlock Text="Vollständige Tile-URL (http:// oder https://) mit Platzhaltern {z}, {x}, {y}. Beispiel: https://tile.server.de/osm/{z}/{x}/{y}.png"
-                                          FontStyle="Italic"
-                                          Foreground="Gray"
-                                          TextWrapping="Wrap"
-                                          FontSize="11"
-                                          Margin="0,0,0,10"/>
-
-                                <Button Content="Tiles herunterladen..."
-                                       Width="200"
-                                       HorizontalAlignment="Left"
-                                       Margin="0,0,0,6"
-                                       Click="DownloadTiles_Click"/>
-
-                                <Button Content="Maptiles aus Zip laden..."
-                                       Width="200"
-                                       HorizontalAlignment="Left"
-                                       Click="ImportTilesFromZip_Click"/>
-                            </StackPanel>
-                        </GroupBox>
-
-                        <GroupBox Header="Benachrichtigungen" Margin="0,0,0,20">
-                            <StackPanel Margin="10">
-                                <CheckBox x:Name="AlertBellSoundCheckBox"
-                                         Content="Ton bei Alert Bell abspielen (🔔)"
-                                         Margin="0,0,0,4"/>
-                                <TextBlock Text="Spielt einen Benachrichtigungston ab, wenn eine Nachricht das Meshtastic Alert Bell Character (ASCII 7) enthält."
-                                          FontStyle="Italic"
-                                          Foreground="Gray"
-                                          TextWrapping="Wrap"
-                                          FontSize="11"
-                                          Margin="0,0,0,10"/>
-                            </StackPanel>
-                        </GroupBox>
-
-                        <GroupBox Header="Debug" Margin="0,0,0,20">
-                            <StackPanel>
-                                <CheckBox x:Name="DebugMessagesCheckBox"
-                                         Content="Nachrichten-Debug aktivieren (Details im Log)"
-                                         Margin="0,0,0,10"/>
-                                <TextBlock Text="Zeigt detaillierte Informationen über empfangene und gefilterte Nachrichten im Log an."
-                                          TextWrapping="Wrap"
-                                          FontSize="11"
-                                          Foreground="Gray"
-                                          Margin="0,0,0,15"/>
-                                <CheckBox x:Name="DebugSerialCheckBox"
-                                         Content="Serielle Daten-Debug aktivieren (Hex-Dump)"
-                                         Margin="0,0,0,10"/>
-                                <TextBlock Text="Zeigt empfangene und gesendete Protobuf-Pakete als Hex-Dump im Log an. Sehr ausführlich!"
-                                          TextWrapping="Wrap"
-                                          FontSize="11"
-                                          Foreground="Gray"
-                                          Margin="0,0,0,15"/>
-                                <CheckBox x:Name="DebugDeviceCheckBox"
-                                         Content="Device-Log aktivieren (Serielle Debug-Ausgabe)"
-                                         Margin="0,0,0,10"/>
-                                <TextBlock Text="Zeigt die Debug-Ausgabe des Meshtastic-Geräts im Log an (DEBUG/INFO Zeilen). Kritische Fehler werden immer angezeigt."
-                                          TextWrapping="Wrap"
-                                          FontSize="11"
-                                          Foreground="Gray"
-                                          Margin="0,0,0,15"/>
-                                <CheckBox x:Name="DebugBluetoothCheckBox"
-                                         Content="Bluetooth-Debug aktivieren (BLE-Kommunikation)"
-                                         Margin="0,0,0,10"/>
-                                <TextBlock Text="Zeigt detaillierte BLE-Kommunikation (GATT-Operationen, Reads/Writes) im Log an. Sehr ausführlich!"
-                                          TextWrapping="Wrap"
-                                          FontSize="11"
-                                          Foreground="Gray"/>
-                            </StackPanel>
-                        </GroupBox>
-
-                        <Button Content="Einstellungen speichern"
-                               Width="200"
-                               HorizontalAlignment="Left"
-                               Click="SaveSettings_Click"/>
-                    </StackPanel>
-                </ScrollViewer>
+                        </ScrollViewer>
+                    </Border>
+                </Grid>
             </TabItem>
 
             <!-- Karte Tab -->

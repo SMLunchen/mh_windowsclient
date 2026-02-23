@@ -1,0 +1,200 @@
+<Window x:Class="MeshhessenClient.NodeConfigWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="http://schemas.modernwpf.com/2019"
+        ui:WindowHelper.UseModernWindowStyle="True"
+        Title="Node konfigurieren"
+        Width="520"
+        Height="560"
+        WindowStartupLocation="CenterOwner">
+
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" x:Name="StatusText" Text="Lade Konfiguration..." Margin="0,0,0,8" Foreground="Gray" FontStyle="Italic"/>
+
+        <TabControl Grid.Row="1" x:Name="ConfigTabs">
+
+            <!-- Tab: Benutzer -->
+            <TabItem Header="Benutzer">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="10">
+                        <TextBlock Text="Anzeigename (LongName)" Margin="0,8,0,2"/>
+                        <TextBox x:Name="LongNameTextBox" MaxLength="39"/>
+                        <TextBlock Text="Kurzname (ShortName, max. 4 Zeichen)" Margin="0,10,0,2"/>
+                        <TextBox x:Name="ShortNameTextBox" MaxLength="4"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- Tab: Gerät -->
+            <TabItem Header="Gerät">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="10">
+                        <TextBlock Text="Rolle" Margin="0,8,0,2"/>
+                        <ComboBox x:Name="RoleComboBox" Width="200" HorizontalAlignment="Left">
+                            <ComboBoxItem Content="CLIENT" Tag="0"/>
+                            <ComboBoxItem Content="CLIENT_MUTE" Tag="1"/>
+                            <ComboBoxItem Content="ROUTER" Tag="2"/>
+                            <ComboBoxItem Content="ROUTER_CLIENT" Tag="3"/>
+                            <ComboBoxItem Content="REPEATER" Tag="4"/>
+                            <ComboBoxItem Content="TRACKER" Tag="5"/>
+                            <ComboBoxItem Content="SENSOR" Tag="6"/>
+                            <ComboBoxItem Content="TAK" Tag="7"/>
+                            <ComboBoxItem Content="CLIENT_HIDDEN" Tag="8"/>
+                        </ComboBox>
+                        <TextBlock Text="Rebroadcast-Modus" Margin="0,10,0,2"/>
+                        <ComboBox x:Name="RebroadcastComboBox" Width="200" HorizontalAlignment="Left">
+                            <ComboBoxItem Content="ALL" Tag="0"/>
+                            <ComboBoxItem Content="ALL_SKIP_DECODING" Tag="1"/>
+                            <ComboBoxItem Content="LOCAL_ONLY" Tag="2"/>
+                            <ComboBoxItem Content="KNOWN_ONLY" Tag="3"/>
+                            <ComboBoxItem Content="NONE" Tag="4"/>
+                            <ComboBoxItem Content="CORE_PORTNUMS_ONLY" Tag="5"/>
+                        </ComboBox>
+                        <TextBlock Text="NodeInfo Broadcast-Intervall (z.B. 3h, 1h 30m, 0=Auto)" Margin="0,10,0,2"/>
+                        <TextBox x:Name="NodeInfoIntervalTextBox" Width="150" HorizontalAlignment="Left"/>
+                        <TextBlock Text="Zeitzone (POSIX-Format, z.B. CET-1CEST,M3.5.0,M10.5.0/3)" Margin="0,10,0,2"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBox x:Name="TzdefTextBox" Grid.Column="0" Margin="0,0,6,0"/>
+                            <Button Grid.Column="1" Content="Von Windows" ToolTip="Zeitzone des lokalen Windows-PCs übernehmen" Click="TzFromWindows_Click" Padding="8,4"/>
+                        </Grid>
+                        <CheckBox x:Name="LedHeartbeatCheckBox" Content="LED-Heartbeat deaktivieren" Margin="0,12,0,0"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- Tab: LoRa -->
+            <TabItem Header="LoRa">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="10">
+                        <TextBlock Text="Region" Margin="0,8,0,2"/>
+                        <ComboBox x:Name="LoraRegionComboBox" Width="150" HorizontalAlignment="Left">
+                            <ComboBoxItem Content="Unset" Tag="0"/>
+                            <ComboBoxItem Content="US" Tag="1"/>
+                            <ComboBoxItem Content="EU_433" Tag="2"/>
+                            <ComboBoxItem Content="EU_868" Tag="3"/>
+                            <ComboBoxItem Content="CN" Tag="4"/>
+                            <ComboBoxItem Content="JP" Tag="5"/>
+                            <ComboBoxItem Content="ANZ" Tag="6"/>
+                            <ComboBoxItem Content="KR" Tag="7"/>
+                            <ComboBoxItem Content="TW" Tag="8"/>
+                            <ComboBoxItem Content="RU" Tag="9"/>
+                            <ComboBoxItem Content="IN" Tag="10"/>
+                            <ComboBoxItem Content="NZ_865" Tag="11"/>
+                            <ComboBoxItem Content="TH" Tag="12"/>
+                            <ComboBoxItem Content="LORA_24" Tag="13"/>
+                            <ComboBoxItem Content="UA_868" Tag="14"/>
+                            <ComboBoxItem Content="MY_919" Tag="15"/>
+                            <ComboBoxItem Content="MY_433" Tag="16"/>
+                            <ComboBoxItem Content="SG_923" Tag="17"/>
+                            <ComboBoxItem Content="WLAN" Tag="18"/>
+                        </ComboBox>
+                        <CheckBox x:Name="LoraUsePresetCheckBox" Content="Modem-Preset verwenden" Margin="0,10,0,0" Checked="LoraUsePresetCheckBox_Changed" Unchecked="LoraUsePresetCheckBox_Changed"/>
+                        <TextBlock Text="Modem-Preset" Margin="0,8,0,2"/>
+                        <ComboBox x:Name="LoraPresetComboBox" Width="180" HorizontalAlignment="Left" IsEnabled="False">
+                            <ComboBoxItem Content="LONG_FAST" Tag="0"/>
+                            <ComboBoxItem Content="LONG_SLOW" Tag="1"/>
+                            <ComboBoxItem Content="VERY_LONG_SLOW" Tag="2"/>
+                            <ComboBoxItem Content="MEDIUM_SLOW" Tag="3"/>
+                            <ComboBoxItem Content="MEDIUM_FAST" Tag="4"/>
+                            <ComboBoxItem Content="SHORT_SLOW" Tag="5"/>
+                            <ComboBoxItem Content="SHORT_FAST" Tag="6"/>
+                            <ComboBoxItem Content="LONG_MODERATE" Tag="7"/>
+                        </ComboBox>
+                        <TextBlock Text="Hop-Limit (1-7)" Margin="0,10,0,2"/>
+                        <TextBox x:Name="HopLimitTextBox" Width="60" HorizontalAlignment="Left"/>
+                        <CheckBox x:Name="TxEnabledCheckBox" Content="Senden aktiv (TX)" Margin="0,10,0,0"/>
+                        <TextBlock Text="TX-Leistung (dBm, 0=Maximum)" Margin="0,8,0,2"/>
+                        <TextBox x:Name="TxPowerTextBox" Width="80" HorizontalAlignment="Left"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- Tab: Position -->
+            <TabItem Header="Position">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="10">
+                        <TextBlock Text="GPS-Modus" Margin="0,8,0,2"/>
+                        <ComboBox x:Name="GpsModeComboBox" Width="160" HorizontalAlignment="Left">
+                            <ComboBoxItem Content="Deaktiviert" Tag="0"/>
+                            <ComboBoxItem Content="Aktiv" Tag="1"/>
+                            <ComboBoxItem Content="Nicht vorhanden" Tag="2"/>
+                        </ComboBox>
+                        <TextBlock Text="Broadcast-Intervall (z.B. 15m, 1h, 0=Smart)" Margin="0,10,0,2"/>
+                        <TextBox x:Name="PosBroadcastSecsTextBox" Width="150" HorizontalAlignment="Left"/>
+                        <CheckBox x:Name="SmartBroadcastCheckBox" Content="Smart-Broadcast aktivieren" Margin="0,10,0,0"/>
+                        <TextBlock Text="Min. Abstand für Smart-Broadcast (Meter)" Margin="0,8,0,2"/>
+                        <TextBox x:Name="MinDistanceTextBox" Width="120" HorizontalAlignment="Left"/>
+                        <TextBlock Text="Min. Geschwindigkeit für Smart-Broadcast (m/s)" Margin="0,8,0,2"/>
+                        <TextBox x:Name="MinSpeedTextBox" Width="120" HorizontalAlignment="Left"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- Tab: MQTT -->
+            <TabItem Header="MQTT">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="10">
+                        <CheckBox x:Name="MqttEnabledCheckBox" Content="MQTT aktivieren" Margin="0,8,0,8"/>
+                        <TextBlock Text="Server (Hostname oder IP)" Margin="0,4,0,2"/>
+                        <TextBox x:Name="MqttAddressTextBox"/>
+                        <TextBlock Text="Benutzername" Margin="0,8,0,2"/>
+                        <TextBox x:Name="MqttUsernameTextBox"/>
+                        <TextBlock Text="Passwort" Margin="0,8,0,2"/>
+                        <PasswordBox x:Name="MqttPasswordBox"/>
+                        <CheckBox x:Name="MqttEncryptionCheckBox" Content="Verschlüsselung" Margin="0,10,0,0"/>
+                        <CheckBox x:Name="MqttJsonCheckBox" Content="JSON-Modus" Margin="0,4,0,0"/>
+                        <CheckBox x:Name="MqttTlsCheckBox" Content="TLS (verschlüsselte Verbindung)" Margin="0,4,0,0"/>
+                        <TextBlock Text="Root-Topic" Margin="0,8,0,2"/>
+                        <TextBox x:Name="MqttRootTextBox"/>
+                        <CheckBox x:Name="MqttProxyCheckBox" Content="Proxy to Client" Margin="0,10,0,0"/>
+                        <CheckBox x:Name="MqttMapReportingCheckBox" Content="Kartenreporting" Margin="0,4,0,0"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- Tab: Telemetrie -->
+            <TabItem Header="Telemetrie">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="10">
+                        <TextBlock Text="Geräte-Update-Intervall (z.B. 30m, 1h, 0=Aus)" Margin="0,8,0,2"/>
+                        <TextBox x:Name="DeviceTelemetryIntervalTextBox" Width="150" HorizontalAlignment="Left"/>
+                        <TextBlock Text="Umgebungs-Update-Intervall (z.B. 5m, 1h, 0=Aus)" Margin="0,8,0,2"/>
+                        <TextBox x:Name="EnvironmentIntervalTextBox" Width="150" HorizontalAlignment="Left"/>
+                        <CheckBox x:Name="FahrenheitCheckBox" Content="Temperatur in Fahrenheit anzeigen" Margin="0,10,0,0"/>
+                        <CheckBox x:Name="EnvironmentMeasurementCheckBox" Content="Umgebungsmessung aktivieren" Margin="0,4,0,0"/>
+                        <TextBlock Text="Luftqualitäts-Intervall (z.B. 5m, 1h, 0=Aus)" Margin="0,8,0,2"/>
+                        <TextBox x:Name="AirQualityIntervalTextBox" Width="150" HorizontalAlignment="Left"/>
+                        <TextBlock Text="Energie-Update-Intervall (z.B. 5m, 1h, 0=Aus)" Margin="0,8,0,2"/>
+                        <TextBox x:Name="PowerIntervalTextBox" Width="150" HorizontalAlignment="Left"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+        </TabControl>
+
+        <!-- Buttons -->
+        <Grid Grid.Row="2" Margin="0,10,0,0">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                <Button Content="NodeDB zurücksetzen..." Width="180"
+                        ToolTip="Löscht die bekannten Nodes auf dem Gerät (kein Factory Reset)"
+                        Click="NodeDbReset_Click"
+                        Foreground="OrangeRed"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button x:Name="SaveButton" Content="Speichern" Width="100" Margin="0,0,10,0"
+                        IsEnabled="False" Click="Save_Click"/>
+                <Button Content="Schließen" Width="100" Click="Close_Click" IsCancel="True"/>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Window>

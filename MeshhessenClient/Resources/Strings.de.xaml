@@ -1,0 +1,54 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <!-- App-wide strings (Deutsch) -->
+    <sys:String x:Key="StrConnect">Verbinden</sys:String>
+    <sys:String x:Key="StrDisconnect">Trennen</sys:String>
+    <sys:String x:Key="StrSend">Senden</sys:String>
+    <sys:String x:Key="StrSave">Speichern</sys:String>
+    <sys:String x:Key="StrCancel">Abbrechen</sys:String>
+    <sys:String x:Key="StrClose">Schließen</sys:String>
+
+    <!-- Tab headers -->
+    <sys:String x:Key="StrTabMessages">Nachrichten</sys:String>
+    <sys:String x:Key="StrTabNodes">Knoten</sys:String>
+    <sys:String x:Key="StrTabChannels">Kanäle</sys:String>
+    <sys:String x:Key="StrTabSettings">Einstellungen</sys:String>
+    <sys:String x:Key="StrTabMap">Karte</sys:String>
+    <sys:String x:Key="StrTabInfo">Info</sys:String>
+
+    <!-- Node context menu -->
+    <sys:String x:Key="StrPin">📌 Anheften</sys:String>
+    <sys:String x:Key="StrUnpin">📌 Loslösen</sys:String>
+    <sys:String x:Key="StrShowPath">🛤️ Bewegungspfad anzeigen</sys:String>
+    <sys:String x:Key="StrHidePath">🛤️ Pfad ausblenden</sys:String>
+    <sys:String x:Key="StrShowOnMap">🗺️ Auf Karte anzeigen</sys:String>
+    <sys:String x:Key="StrNodeInfo">ℹ️ Node Info</sys:String>
+    <sys:String x:Key="StrSendDm">💬 DM senden</sys:String>
+    <sys:String x:Key="StrEditNote">📝 Notiz bearbeiten...</sys:String>
+    <sys:String x:Key="StrSetColor">🎨 Farbe setzen</sys:String>
+    <sys:String x:Key="StrRemoveColor">❌ Farbe entfernen</sys:String>
+
+    <!-- Status texts -->
+    <sys:String x:Key="StrConnected">Verbunden</sys:String>
+    <sys:String x:Key="StrDisconnected">Nicht verbunden</sys:String>
+    <sys:String x:Key="StrConnecting">Verbinde...</sys:String>
+    <sys:String x:Key="StrInitializing">Initialisiere...</sys:String>
+
+    <!-- Settings -->
+    <sys:String x:Key="StrDarkMode">Dark Mode</sys:String>
+    <sys:String x:Key="StrStationName">Stationsname</sys:String>
+    <sys:String x:Key="StrLanguage">Sprache</sys:String>
+    <sys:String x:Key="StrLocationLogging">Standort-Logging aktivieren</sys:String>
+    <sys:String x:Key="StrNodeConfig">Node konfigurieren...</sys:String>
+
+    <!-- Node config window -->
+    <sys:String x:Key="StrLoadingConfig">Lade Konfiguration...</sys:String>
+    <sys:String x:Key="StrConfigSaved">Gespeichert!</sys:String>
+
+    <!-- Messages -->
+    <sys:String x:Key="StrNotConnected">Nicht verbunden. Bitte zuerst mit einem Gerät verbinden.</sys:String>
+    <sys:String x:Key="StrNoPathLog">Kein Standort-Log vorhanden.</sys:String>
+
+</ResourceDictionary>

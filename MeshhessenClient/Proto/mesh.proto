@@ -142,18 +142,40 @@ message Config {
   }
 }
 
+enum RebroadcastMode {
+  ALL = 0;
+  ALL_SKIP_DECODING = 1;
+  LOCAL_ONLY = 2;
+  KNOWN_ONLY = 3;
+  NONE = 4;
+  CORE_PORTNUMS_ONLY = 5;
+}
+
+enum GpsMode {
+  GPS_DISABLED = 0;
+  GPS_ENABLED = 1;
+  GPS_NOT_PRESENT = 2;
+}
+
 message DeviceConfig {
   Role role = 1;
-  bool serial_enabled = 2;
-  uint32 rebroadcast_mode = 3;
-  uint32 node_info_broadcast_secs = 4;
-  bool double_tap_as_button_press = 5;
+  // serial_enabled = 2 deprecated
+  // button_gpio = 4, buzzer_gpio = 5 (GPIO - skipped)
+  RebroadcastMode rebroadcast_mode = 6;
+  uint32 node_info_broadcast_secs = 7;
+  bool double_tap_as_button_press = 8;
+  // is_managed = 9 deprecated, disable_triple_click = 10
+  string tzdef = 11;
+  bool led_heartbeat_disabled = 12;
 }
 
 message PositionConfig {
   uint32 position_broadcast_secs = 1;
   bool position_broadcast_smart_enabled = 2;
   uint32 gps_update_interval = 3;
+  uint32 position_broadcast_smart_minimum_distance = 4;
+  uint32 position_broadcast_smart_minimum_speed = 5;
+  GpsMode gps_mode = 6;
 }
 
 message PowerConfig {
@@ -226,6 +248,10 @@ message MQTTConfig {
   string password = 4;
   bool encryption_enabled = 5;
   bool json_enabled = 6;
+  bool tls_enabled = 7;
+  string root = 8;
+  bool proxy_to_client_enabled = 9;
+  bool map_reporting_enabled = 10;
 }
 
 message SerialConfig {
@@ -265,6 +291,10 @@ message TelemetryConfig {
   uint32 device_update_interval = 1;
   uint32 environment_update_interval = 2;
   bool environment_display_fahrenheit = 3;
+  bool environment_measurement_enabled = 4;
+  uint32 air_quality_interval = 5;
+  uint32 power_update_interval = 6;
+  bool power_measurement_enabled = 7;
 }
 
 message CannedMessageConfig {

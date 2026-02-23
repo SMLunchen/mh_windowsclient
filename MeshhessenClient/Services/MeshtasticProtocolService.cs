@@ -37,6 +37,11 @@ public class MeshtasticProtocolService
     public event EventHandler<ModelNodeInfo>? NodeInfoReceived;
     public event EventHandler<ChannelInfo>? ChannelInfoReceived;
     public event EventHandler<LoRaConfig>? LoRaConfigReceived;
+    public event EventHandler<DeviceConfig>? DeviceConfigReceived;
+    public event EventHandler<PositionConfig>? PositionConfigReceived;
+    public event EventHandler<MQTTConfig>? MqttConfigReceived;
+    public event EventHandler<TelemetryConfig>? TelemetryConfigReceived;
+    public event EventHandler<User>? OwnerReceived;
     public event EventHandler<DeviceInfo>? DeviceInfoReceived;
     public event EventHandler<int>? PacketCountChanged;
 
@@ -1389,6 +1394,95 @@ public class MeshtasticProtocolService
         await SendToRadioAsync(toRadio);
     }
 
+    // ========== Config Request Methods ==========
+
+    public async Task RequestOwnerAsync()
+    {
+        var adminMsg = new AdminMessage { GetOwnerRequest = true };
+        await SendAdminMessageAsync(adminMsg);
+    }
+
+    public async Task RequestDeviceConfigAsync()
+    {
+        var adminMsg = new AdminMessage { GetConfigRequest = 0 }; // DEVICE = 0
+        await SendAdminMessageAsync(adminMsg);
+    }
+
+    public async Task RequestPositionConfigAsync()
+    {
+        var adminMsg = new AdminMessage { GetConfigRequest = 1 }; // POSITION = 1
+        await SendAdminMessageAsync(adminMsg);
+    }
+
+    public async Task RequestLoRaConfigAsync()
+    {
+        var adminMsg = new AdminMessage { GetConfigRequest = 5 }; // LORA = 5
+        await SendAdminMessageAsync(adminMsg);
+    }
+
+    public async Task RequestMqttConfigAsync()
+    {
+        var adminMsg = new AdminMessage { GetModuleConfigRequest = 0 }; // MQTT = 0
+        await SendAdminMessageAsync(adminMsg);
+    }
+
+    public async Task RequestTelemetryConfigAsync()
+    {
+        var adminMsg = new AdminMessage { GetModuleConfigRequest = 5 }; // TELEMETRY = 5
+        await SendAdminMessageAsync(adminMsg);
+    }
+
+    // ========== Config Set Methods ==========
+
+    public async Task SetOwnerAsync(User user)
+    {
+        await EnsureSessionKeyAsync();
+        var adminMsg = new AdminMessage { SetOwner = user };
+        await SendAdminMessageAsync(adminMsg);
+    }
+
+    public async Task SetDeviceConfigAsync(DeviceConfig config)
+    {
+        await EnsureSessionKeyAsync();
+        var adminMsg = new AdminMessage { SetConfig = new Config { Device = config } };
+        await SendAdminMessageAsync(adminMsg);
+    }
+
+    public async Task SetPositionConfigAsync(PositionConfig config)
+    {
+        await EnsureSessionKeyAsync();
+        var adminMsg = new AdminMessage { SetConfig = new Config { Position = config } };
+        await SendAdminMessageAsync(adminMsg);
+    }
+
+    public async Task SetLoRaConfigAsync(LoRaConfig config)
+    {
+        await EnsureSessionKeyAsync();
+        var adminMsg = new AdminMessage { SetConfig = new Config { Lora = config } };
+        await SendAdminMessageAsync(adminMsg);
+    }
+
+    public async Task SetMqttConfigAsync(MQTTConfig config)
+    {
+        await EnsureSessionKeyAsync();
+        var adminMsg = new AdminMessage { SetModuleConfig = new ModuleConfig { Mqtt = config } };
+        await SendAdminMessageAsync(adminMsg);
+    }
+
+    public async Task SetTelemetryConfigAsync(TelemetryConfig config)
+    {
+        await EnsureSessionKeyAsync();
+        var adminMsg = new AdminMessage { SetModuleConfig = new ModuleConfig { Telemetry = config } };
+        await SendAdminMessageAsync(adminMsg);
+    }
+
+    public async Task ResetNodeDbAsync()
+    {
+        await EnsureSessionKeyAsync();
+        var adminMsg = new AdminMessage { NodedbReset = true };
+        await SendAdminMessageAsync(adminMsg);
+    }
+
     public void Disconnect()
     {
         Logger.WriteLine("MeshtasticProtocolService: Disconnecting...");
@@ -1479,24 +1573,51 @@ public class MeshtasticProtocolService
                     }
                     break;
 
+                case AdminMessage.PayloadVariantOneofCase.GetOwnerResponse:
+                    Logger.WriteLine($"  Owner response received");
+                    OwnerReceived?.Invoke(this, adminMsg.GetOwnerResponse);
+                    break;
+
                 case AdminMessage.PayloadVariantOneofCase.GetConfigResponse:
                     var config = adminMsg.GetConfigResponse;
+                    Logger.WriteLine($"  Config response type: {config.PayloadVariantCase}");
 
-                    if (config.PayloadVariantCase == Config.PayloadVariantOneofCase.Lora)
+                    switch (config.PayloadVariantCase)
                     {
-                        var loraConfig = config.Lora;
+                        case Config.PayloadVariantOneofCase.Lora:
+                            bool shouldFireLoRaEvent;
+                            lock (_dataLock)
+                            {
+                                _currentLoRaConfig = config.Lora;
+                                shouldFireLoRaEvent = !_isInitializing;
+                            }
+                            if (shouldFireLoRaEvent)
+                                LoRaConfigReceived?.Invoke(this, config.Lora);
+                            break;
 
-                        bool shouldFireLoRaEvent;
-                        lock (_dataLock)
-                        {
-                            _currentLoRaConfig = loraConfig;
-                            shouldFireLoRaEvent = !_isInitializing;
-                        }
+                        case Config.PayloadVariantOneofCase.Device:
+                            DeviceConfigReceived?.Invoke(this, config.Device);
+                            break;
 
-                        if (shouldFireLoRaEvent)
-                        {
-                            LoRaConfigReceived?.Invoke(this, loraConfig);
-                        }
+                        case Config.PayloadVariantOneofCase.Position:
+                            PositionConfigReceived?.Invoke(this, config.Position);
+                            break;
+                    }
+                    break;
+
+                case AdminMessage.PayloadVariantOneofCase.GetModuleConfigResponse:
+                    var moduleConfig = adminMsg.GetModuleConfigResponse;
+                    Logger.WriteLine($"  ModuleConfig response type: {moduleConfig.PayloadVariantCase}");
+
+                    switch (moduleConfig.PayloadVariantCase)
+                    {
+                        case ModuleConfig.PayloadVariantOneofCase.Mqtt:
+                            MqttConfigReceived?.Invoke(this, moduleConfig.Mqtt);
+                            break;
+
+                        case ModuleConfig.PayloadVariantOneofCase.Telemetry:
+                            TelemetryConfigReceived?.Invoke(this, moduleConfig.Telemetry);
+                            break;
                     }
                     break;
             }
