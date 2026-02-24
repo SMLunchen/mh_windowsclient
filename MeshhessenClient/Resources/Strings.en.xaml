@@ -10,13 +10,13 @@
     <sys:String x:Key="StrCancel">Cancel</sys:String>
     <sys:String x:Key="StrClose">Close</sys:String>
 
-    <!-- Tab headers -->
-    <sys:String x:Key="StrTabMessages">Messages</sys:String>
-    <sys:String x:Key="StrTabNodes">Nodes</sys:String>
-    <sys:String x:Key="StrTabChannels">Channels</sys:String>
-    <sys:String x:Key="StrTabSettings">Settings</sys:String>
-    <sys:String x:Key="StrTabMap">Map</sys:String>
-    <sys:String x:Key="StrTabInfo">Info</sys:String>
+    <!-- Tab headers (with icons) -->
+    <sys:String x:Key="StrTabMessages">📨 Messages</sys:String>
+    <sys:String x:Key="StrTabNodes">🌐 Nodes</sys:String>
+    <sys:String x:Key="StrTabChannels">📡 Channels</sys:String>
+    <sys:String x:Key="StrTabSettings">⚙️ Settings</sys:String>
+    <sys:String x:Key="StrTabMap">🗺️ Map</sys:String>
+    <sys:String x:Key="StrTabInfo">ℹ️ Info</sys:String>
 
     <!-- Node context menu -->
     <sys:String x:Key="StrPin">📌 Pin</sys:String>
@@ -35,11 +35,12 @@
     <sys:String x:Key="StrDisconnected">Disconnected</sys:String>
     <sys:String x:Key="StrConnecting">Connecting...</sys:String>
     <sys:String x:Key="StrInitializing">Initializing...</sys:String>
+    <sys:String x:Key="StrReady">Ready</sys:String>
 
     <!-- Settings -->
     <sys:String x:Key="StrDarkMode">Dark Mode</sys:String>
-    <sys:String x:Key="StrStationName">Station Name</sys:String>
-    <sys:String x:Key="StrLanguage">Language</sys:String>
+    <sys:String x:Key="StrStationName">Station name:</sys:String>
+    <sys:String x:Key="StrLanguage">Language:</sys:String>
     <sys:String x:Key="StrLocationLogging">Enable location logging</sys:String>
     <sys:String x:Key="StrNodeConfig">Configure node...</sys:String>
 
@@ -50,5 +51,218 @@
     <!-- Messages -->
     <sys:String x:Key="StrNotConnected">Not connected. Please connect to a device first.</sys:String>
     <sys:String x:Key="StrNoPathLog">No location log available.</sys:String>
+
+    <!-- Toolbar -->
+    <sys:String x:Key="StrRefreshPorts">Refresh ports</sys:String>
+    <sys:String x:Key="StrDevice">Device:</sys:String>
+    <sys:String x:Key="StrScanDevices">Search devices</sys:String>
+    <sys:String x:Key="StrOpenDms">Open direct messages</sys:String>
+
+    <!-- Alert -->
+    <sys:String x:Key="StrAlertReceived">Emergency call received!</sys:String>
+    <sys:String x:Key="StrGoToMap">📍 Go to map</sys:String>
+    <sys:String x:Key="StrSosTooltip">Send SOS (Alert Bell)</sys:String>
+    <sys:String x:Key="StrAlertBellTooltip">This message contains an Alert Bell</sys:String>
+
+    <!-- Message list columns -->
+    <sys:String x:Key="StrFilterChannel">Filter channel:</sys:String>
+    <sys:String x:Key="StrChannelLabel">Channel:</sys:String>
+    <sys:String x:Key="StrMessagePlaceholder">Enter message...</sys:String>
+    <sys:String x:Key="StrColTime">Time</sys:String>
+    <sys:String x:Key="StrColFrom">From</sys:String>
+    <sys:String x:Key="StrColShort">Short</sys:String>
+    <sys:String x:Key="StrColNote">Note</sys:String>
+    <sys:String x:Key="StrColMessage">Message</sys:String>
+    <sys:String x:Key="StrColChannel">Channel</sys:String>
+    <sys:String x:Key="StrColDistance">Distance</sys:String>
+    <sys:String x:Key="StrColBattery">Battery</sys:String>
+    <sys:String x:Key="StrColLastSeen">Last seen</sys:String>
+    <sys:String x:Key="StrNodeFilterPlaceholder">🔍 Filter by name, ID, SNR, battery...</sys:String>
+
+    <!-- Colors -->
+    <sys:String x:Key="StrColorGreen">■ Green</sys:String>
+    <sys:String x:Key="StrColorBlue">■ Blue</sys:String>
+    <sys:String x:Key="StrColorYellow">■ Yellow</sys:String>
+    <sys:String x:Key="StrColorOrange">■ Orange</sys:String>
+    <sys:String x:Key="StrColorPurple">■ Purple</sys:String>
+    <sys:String x:Key="StrColorBrown">■ Brown</sys:String>
+    <sys:String x:Key="StrColorPink">■ Pink</sys:String>
+    <sys:String x:Key="StrColorCyan">■ Cyan</sys:String>
+
+    <!-- Channels tab -->
+    <sys:String x:Key="StrCopyPsk">Copy PSK</sys:String>
+    <sys:String x:Key="StrAddChannel">Add channel</sys:String>
+    <sys:String x:Key="StrDeleteChannel">Delete channel</sys:String>
+    <sys:String x:Key="StrBrowseChannels">From list...</sys:String>
+    <sys:String x:Key="StrMeshHessenChannel">Add Mesh-Hessen channel</sys:String>
+
+    <!-- Settings tab -->
+    <sys:String x:Key="StrAppearance">Appearance</sys:String>
+    <sys:String x:Key="StrStationNameHint">Displayed next to the connect button.</sys:String>
+    <sys:String x:Key="StrNotifications">Notifications</sys:String>
+    <sys:String x:Key="StrAlertBellSound">Play sound on Alert Bell (🔔)</sys:String>
+    <sys:String x:Key="StrAlertBellSoundHint">Plays a notification sound when a message contains the Alert Bell Character (ASCII 7).</sys:String>
+    <sys:String x:Key="StrMapGroup">Map / Offline Tiles</sys:String>
+    <sys:String x:Key="StrMapSource">Map source:</sys:String>
+    <sys:String x:Key="StrTileServerUrl">Tile server URL:</sys:String>
+    <sys:String x:Key="StrTileServerUrlHint">Complete URL with placeholders {z}/{x}/{y}.</sys:String>
+    <sys:String x:Key="StrDownloadTiles">Download tiles...</sys:String>
+    <sys:String x:Key="StrImportTilesZip">Load map tiles from ZIP...</sys:String>
+    <sys:String x:Key="StrLocationLoggingGroup">Location Logging</sys:String>
+    <sys:String x:Key="StrLocationLoggingHint">GPS positions of nodes are saved in 'locationlogs/'. Enables movement paths on the map.</sys:String>
+    <sys:String x:Key="StrMessagesGroup">Messages</sys:String>
+    <sys:String x:Key="StrShowEncrypted">Show encrypted messages (without PSK)</sys:String>
+    <sys:String x:Key="StrShowEncryptedHint">When disabled, encrypted messages will be hidden.</sys:String>
+    <sys:String x:Key="StrDebugMessages">Message debug (details in log)</sys:String>
+    <sys:String x:Key="StrDebugSerial">Serial data debug (hex dump)</sys:String>
+    <sys:String x:Key="StrDebugDevice">Device log (serial debug output)</sys:String>
+    <sys:String x:Key="StrDebugBluetooth">Bluetooth debug (BLE communication)</sys:String>
+    <sys:String x:Key="StrSaveSettings">Save settings</sys:String>
+    <sys:String x:Key="StrNodeConfigGroup">Node Configuration</sys:String>
+    <sys:String x:Key="StrNodeConfigHint">Advanced device configuration (LoRa, position, MQTT, telemetry, etc.)</sys:String>
+    <sys:String x:Key="StrDeviceInfoGroup">Device Info</sys:String>
+    <sys:String x:Key="StrDeviceName">Name</sys:String>
+    <sys:String x:Key="StrDeviceShortName">Short name</sys:String>
+    <sys:String x:Key="StrDeviceHardware">Hardware</sys:String>
+    <sys:String x:Key="StrDeviceFirmware">Firmware</sys:String>
+    <sys:String x:Key="StrDeviceRegion">Region</sys:String>
+    <sys:String x:Key="StrDevicePreset">Modem preset</sys:String>
+
+    <!-- Info tab -->
+    <sys:String x:Key="StrAboutDescription">Offline-capable Windows client for Meshtastic devices with map view, channel management and multi-connection support (Serial, TCP/WiFi, Bluetooth).</sys:String>
+    <sys:String x:Key="StrLicensesTitle">Licenses &amp; Acknowledgements</sys:String>
+    <sys:String x:Key="StrProjectTitle">Project</sys:String>
+
+    <!-- Debug tab -->
+    <sys:String x:Key="StrLogClear">Clear log</sys:String>
+    <sys:String x:Key="StrLogCopy">Copy log</sys:String>
+    <sys:String x:Key="StrLogFile">Open log file</sys:String>
+
+    <!-- NodeConfig window -->
+    <sys:String x:Key="StrNcWindowTitle">Configure node</sys:String>
+    <sys:String x:Key="StrNcTabUser">User</sys:String>
+    <sys:String x:Key="StrNcTabDevice">Device</sys:String>
+    <sys:String x:Key="StrNcTabTelemetry">Telemetry</sys:String>
+    <sys:String x:Key="StrNcLongName">Display name (LongName)</sys:String>
+    <sys:String x:Key="StrNcShortName">Short name (ShortName, max. 4 chars)</sys:String>
+    <sys:String x:Key="StrNcRole">Role</sys:String>
+    <sys:String x:Key="StrNcRebroadcast">Rebroadcast mode</sys:String>
+    <sys:String x:Key="StrNcNodeInfoInterval">NodeInfo broadcast interval (e.g. 3h, 1h 30m, 0=Auto)</sys:String>
+    <sys:String x:Key="StrNcTimezone">Timezone (POSIX format, e.g. CET-1CEST,M3.5.0,M10.5.0/3)</sys:String>
+    <sys:String x:Key="StrNcFromWindows">From Windows</sys:String>
+    <sys:String x:Key="StrNcFromWindowsTip">Use timezone of local Windows PC</sys:String>
+    <sys:String x:Key="StrNcLedHeartbeat">Disable LED heartbeat</sys:String>
+    <sys:String x:Key="StrNcUsePreset">Use modem preset</sys:String>
+    <sys:String x:Key="StrNcModemPreset">Modem preset</sys:String>
+    <sys:String x:Key="StrNcHopLimit">Hop limit (1-7)</sys:String>
+    <sys:String x:Key="StrNcTxEnabled">Transmit active (TX)</sys:String>
+    <sys:String x:Key="StrNcTxPower">TX power (dBm, 0=maximum)</sys:String>
+    <sys:String x:Key="StrNcGpsMode">GPS mode</sys:String>
+    <sys:String x:Key="StrNcGpsDisabled">Disabled</sys:String>
+    <sys:String x:Key="StrNcGpsActive">Active</sys:String>
+    <sys:String x:Key="StrNcGpsNotPresent">Not present</sys:String>
+    <sys:String x:Key="StrNcPosBroadcast">Broadcast interval (e.g. 15m, 1h, 0=Smart)</sys:String>
+    <sys:String x:Key="StrNcSmartBroadcast">Enable smart broadcast</sys:String>
+    <sys:String x:Key="StrNcMinDistance">Min. distance for smart broadcast (meters)</sys:String>
+    <sys:String x:Key="StrNcMinSpeed">Min. speed for smart broadcast (m/s)</sys:String>
+    <sys:String x:Key="StrNcMqttEnabled">Enable MQTT</sys:String>
+    <sys:String x:Key="StrNcMqttServer">Server (hostname or IP)</sys:String>
+    <sys:String x:Key="StrNcMqttUsername">Username</sys:String>
+    <sys:String x:Key="StrNcMqttPassword">Password</sys:String>
+    <sys:String x:Key="StrNcMqttEncryption">Encryption</sys:String>
+    <sys:String x:Key="StrNcMqttJson">JSON mode</sys:String>
+    <sys:String x:Key="StrNcMqttTls">TLS (encrypted connection)</sys:String>
+    <sys:String x:Key="StrNcMqttRootTopic">Root topic</sys:String>
+    <sys:String x:Key="StrNcMqttMapReporting">Map reporting</sys:String>
+    <sys:String x:Key="StrNcDeviceTelemetry">Device update interval (e.g. 30m, 1h, 0=Off)</sys:String>
+    <sys:String x:Key="StrNcEnvironmentInterval">Environment update interval (e.g. 5m, 1h, 0=Off)</sys:String>
+    <sys:String x:Key="StrNcFahrenheit">Show temperature in Fahrenheit</sys:String>
+    <sys:String x:Key="StrNcEnvironmentMeasurement">Enable environment measurement</sys:String>
+    <sys:String x:Key="StrNcAirQualityInterval">Air quality interval (e.g. 5m, 1h, 0=Off)</sys:String>
+    <sys:String x:Key="StrNcPowerInterval">Power update interval (e.g. 5m, 1h, 0=Off)</sys:String>
+    <sys:String x:Key="StrNcBtEnabled">Enable Bluetooth</sys:String>
+    <sys:String x:Key="StrNcBtPairingMode">Pairing mode</sys:String>
+    <sys:String x:Key="StrNcBtRandomPin">Random PIN</sys:String>
+    <sys:String x:Key="StrNcBtFixedPin">Fixed PIN</sys:String>
+    <sys:String x:Key="StrNcBtNoPin">No PIN</sys:String>
+    <sys:String x:Key="StrNcBtFixedPinLabel">Fixed PIN (4–6 digits)</sys:String>
+    <sys:String x:Key="StrNcBtRebootHint">Note: The device will restart after changing Bluetooth settings.</sys:String>
+    <sys:String x:Key="StrNcNodeDbReset">Reset NodeDB...</sys:String>
+    <sys:String x:Key="StrNcNodeDbResetTip">Clears the known nodes on the device (no factory reset)</sys:String>
+
+    <!-- DirectMessages window -->
+    <sys:String x:Key="StrDmWindowTitle">Direct Messages</sys:String>
+    <sys:String x:Key="StrNoActiveChats">No active chats</sys:String>
+
+    <!-- AddChannel window -->
+    <sys:String x:Key="StrAddChannelTitle">Add Channel</sys:String>
+    <sys:String x:Key="StrGeneratePsk">Generate</sys:String>
+
+    <!-- TileDownloader window -->
+    <sys:String x:Key="StrTdWindowTitle">Download Map Tiles</sys:String>
+    <sys:String x:Key="StrTdDocLine1">Tiles are saved locally and work offline.</sys:String>
+    <sys:String x:Key="StrTdDocLine2">You can download multiple regions one after another (e.g. first Hessen, then Bavaria).</sys:String>
+    <sys:String x:Key="StrTdDocLine3">Higher zoom levels (12+) require many tiles. Example: Hessen zoom 1-12 ≈ 25,000 tiles.</sys:String>
+    <sys:String x:Key="StrTdDocLine4">Please respect the OSM terms of use (max ~2 requests/second).</sys:String>
+    <sys:String x:Key="StrTdSelectState">Select state (optional):</sys:String>
+    <sys:String x:Key="StrTdManualEntry">(Manual entry)</sys:String>
+    <sys:String x:Key="StrTdNorth">North (max lat):</sys:String>
+    <sys:String x:Key="StrTdSouth">South (min lat):</sys:String>
+    <sys:String x:Key="StrTdEast">East (max lon):</sys:String>
+    <sys:String x:Key="StrTdWest">West (min lon):</sys:String>
+    <sys:String x:Key="StrTdZoomLevels">Zoom levels</sys:String>
+    <sys:String x:Key="StrTdMinMaxZoom">Min / Max zoom:</sys:String>
+    <sys:String x:Key="StrTdEstimate">Estimated tiles: –</sys:String>
+    <sys:String x:Key="StrTdStartDownload">Start download</sys:String>
+
+    <!-- ZipImport window -->
+    <sys:String x:Key="StrZipWindowTitle">Import tiles from ZIP...</sys:String>
+    <sys:String x:Key="StrZipImporting">Importing tiles...</sys:String>
+    <sys:String x:Key="StrZipHint">Tiles are extracted to the corresponding map folder (osm, osmtopo or osmdark).</sys:String>
+
+    <!-- ChannelBrowser window -->
+    <sys:String x:Key="StrCbWindowTitle">Channels from list</sys:String>
+    <sys:String x:Key="StrCbState">State:</sys:String>
+    <sys:String x:Key="StrCbSearch">Search:</sys:String>
+    <sys:String x:Key="StrCbColState">State</sys:String>
+    <sys:String x:Key="StrCbColNotes">Notes</sys:String>
+    <sys:String x:Key="StrCbAdd">Add</sys:String>
+
+    <!-- NodeInfo window -->
+    <sys:String x:Key="StrNiWindowTitle">Node Info</sys:String>
+
+    <!-- Code-behind status strings -->
+    <sys:String x:Key="StrDisconnecting">Disconnecting...</sys:String>
+    <sys:String x:Key="StrError">Error</sys:String>
+    <sys:String x:Key="StrConnectionLost">Connection lost</sys:String>
+    <sys:String x:Key="StrAllChannels">All channels</sys:String>
+    <sys:String x:Key="StrConnectingTo">Connecting to {0}...</sys:String>
+    <sys:String x:Key="StrConnectedInit">Connected to {0} – Initializing...</sys:String>
+    <sys:String x:Key="StrConnectedReady">Connected to {0} – Ready</sys:String>
+    <sys:String x:Key="StrConnectedInitError">Connected to {0} – Init error</sys:String>
+    <sys:String x:Key="StrConnectionFailed">Connection failed</sys:String>
+    <sys:String x:Key="StrDisconnectError">Error disconnecting</sys:String>
+    <sys:String x:Key="StrDisconnectedMsg">Disconnected</sys:String>
+    <sys:String x:Key="StrReconnectingAttempt">Reconnecting... (attempt {0}/{1})</sys:String>
+    <sys:String x:Key="StrConnectedReadySimple">Connected – Ready</sys:String>
+    <sys:String x:Key="StrConnectedInitSimple">Connected – Initializing...</sys:String>
+    <sys:String x:Key="StrConnectionLostMsg">Connection lost – please reconnect manually</sys:String>
+    <sys:String x:Key="StrPacketCount">Packets: {0}</sys:String>
+    <sys:String x:Key="StrChannelReceived">Channel {0} received: {1}</sys:String>
+    <sys:String x:Key="StrAlertSent">SOS sent!</sys:String>
+    <sys:String x:Key="StrEncryptedMessage">[Encrypted message – PSK required]</sys:String>
+    <sys:String x:Key="StrActiveChats">{0} active chat(s)</sys:String>
+    <sys:String x:Key="StrCloseTab">Close tab</sys:String>
+    <sys:String x:Key="StrSentFrom">Me</sys:String>
+
+    <!-- Info tab library descriptions -->
+    <sys:String x:Key="StrOsmData">Map data © OpenStreetMap contributors</sys:String>
+    <sys:String x:Key="StrOsmTopoData">Map rendering © OpenTopoMap</sys:String>
+    <sys:String x:Key="StrMeshtasticDesc">Firmware and protocol for LoRa mesh networks</sys:String>
+    <sys:String x:Key="StrMapsuiDesc">Offline map rendering for .NET</sys:String>
+    <sys:String x:Key="StrBruTileDesc">Tile schema and handling</sys:String>
+    <sys:String x:Key="StrModernWpfDesc">Fluent Design UI theming for WPF</sys:String>
+    <sys:String x:Key="StrProtobufDesc">Protocol serialization for Meshtastic communication</sys:String>
+    <sys:String x:Key="StrLicense">License</sys:String>
 
 </ResourceDictionary>

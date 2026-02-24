@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ui="http://schemas.modernwpf.com/2019"
         ui:WindowHelper.UseModernWindowStyle="True"
-        Title="Tiles aus Zip importieren..."
+        Title="{DynamicResource StrZipWindowTitle}"
         Width="480"
         Height="200"
         ResizeMode="NoResize"
@@ -11,7 +11,7 @@
         WindowStyle="ToolWindow">
     <StackPanel Margin="20">
         <TextBlock x:Name="FileNameText"
-                   Text="Importiere Tiles..."
+                   Text="{DynamicResource StrZipImporting}"
                    FontWeight="Bold"
                    FontSize="14"
                    Margin="0,0,0,10"/>
@@ -20,7 +20,7 @@
                    Foreground="Gray"
                    FontSize="11"
                    Margin="0,0,0,15">
-            <Run Text="Tiles werden in den entsprechenden Kartenordner extrahiert (osm, osmtopo oder osmdark)."/>
+            <Run Text="{DynamicResource StrZipHint}"/>
         </TextBlock>
 
         <ProgressBar x:Name="ImportProgress"

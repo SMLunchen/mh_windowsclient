@@ -785,7 +785,7 @@ public class MeshtasticProtocolService
                 From = fromName,
                 FromId = packet.From,
                 ToId = packet.To,
-                Message = "[Verschlüsselte Nachricht - PSK erforderlich]",
+                Message = System.Windows.Application.Current?.Resources["StrEncryptedMessage"] as string ?? "[Encrypted message – PSK required]",
                 Channel = FormatChannelDisplay(packet.Channel),
                 IsEncrypted = true,
                 IsViaMqtt = packet.ViaMqtt

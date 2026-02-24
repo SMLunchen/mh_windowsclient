@@ -960,14 +960,14 @@ public partial class MainWindow : Window
                     _connectionService?.Disconnect();
                 });
 
-                ConnectButton.Content = "Verbinden";
-                UpdateStatusBar("Getrennt");
+                ConnectButton.Content = Loc("StrConnect");
+                UpdateStatusBar(Loc("StrDisconnectedMsg"));
                 SetConnectionStatus(ConnectionStatus.Disconnected);
             }
             catch (Exception ex)
             {
                 Services.Logger.WriteLine($"Disconnect error: {ex.Message}");
-                UpdateStatusBar("Fehler beim Trennen");
+                UpdateStatusBar(Loc("StrDisconnectError"));
                 SetConnectionStatus(ConnectionStatus.Error);
             }
             finally
@@ -1044,7 +1044,7 @@ public partial class MainWindow : Window
                 _lastConnectionType = _currentConnectionType;
 
                 ConnectButton.IsEnabled = false;
-                UpdateStatusBar($"Verbinde mit {displayName}...");
+                UpdateStatusBar(string.Format(Loc("StrConnectingTo"), displayName));
                 SetConnectionStatus(ConnectionStatus.Connecting);
 
                 // Create new connection service based on type
@@ -1090,9 +1090,9 @@ public partial class MainWindow : Window
                 SettingsService.Save(_currentSettings);
 
                 // GUI sofort als "Verbunden" anzeigen
-                ConnectButton.Content = "Trennen";
+                ConnectButton.Content = Loc("StrDisconnect");
                 ConnectButton.IsEnabled = true;
-                UpdateStatusBar($"Verbunden mit {displayName} - Initialisiere...");
+                UpdateStatusBar(string.Format(Loc("StrConnectedInit"), displayName));
                 SetConnectionStatus(ConnectionStatus.Initializing);
 
                 // Initialisierung im Hintergrund starten (nicht blockieren!)
@@ -1103,7 +1103,7 @@ public partial class MainWindow : Window
                         await _protocolService.InitializeAsync();
                         Dispatcher.BeginInvoke(() =>
                         {
-                            UpdateStatusBar($"Verbunden mit {displayName} - Bereit");
+                            UpdateStatusBar(string.Format(Loc("StrConnectedReady"), displayName));
                             SetConnectionStatus(ConnectionStatus.Ready);
                             NodeConfigButton.IsEnabled = true;
                         });
@@ -1113,7 +1113,7 @@ public partial class MainWindow : Window
                         Services.Logger.WriteLine($"Initialization error: {initEx.Message}");
                         Dispatcher.BeginInvoke(() =>
                         {
-                            UpdateStatusBar($"Verbunden mit {displayName} - Init-Fehler");
+                            UpdateStatusBar(string.Format(Loc("StrConnectedInitError"), displayName));
                             SetConnectionStatus(ConnectionStatus.Error);
                         });
                     }
@@ -1122,7 +1122,7 @@ public partial class MainWindow : Window
             catch (Exception ex)
             {
                 MessageBox.Show($"Verbindung fehlgeschlagen: {ex.Message}", "Fehler", MessageBoxButton.OK, MessageBoxImage.Error);
-                UpdateStatusBar("Verbindung fehlgeschlagen");
+                UpdateStatusBar(Loc("StrConnectionFailed"));
                 SetConnectionStatus(ConnectionStatus.Error);
                 ConnectButton.IsEnabled = true;
             }
@@ -1186,7 +1186,7 @@ public partial class MainWindow : Window
 
             await _protocolService.SendTextMessageAsync(alertMessage, 0xFFFFFFFF, (uint)_activeChannelIndex);
 
-            UpdateStatusBar("Notruf gesendet!");
+            UpdateStatusBar(Loc("StrAlertSent"));
         }
         catch (Exception ex)
         {
@@ -1568,22 +1568,22 @@ public partial class MainWindow : Window
                     _currentLoRaConfig = null;
                     NodeConfigButton.IsEnabled = false;
                     UpdateMeshHessenButtonState();
-                    PacketCountText.Text = "Pakete: 0";
+                    PacketCountText.Text = string.Format(Loc("StrPacketCount"), 0);
 
                     if (!_intentionalDisconnect && !_isReconnecting && _lastConnectionParams != null)
                     {
                         // Unexpected disconnect (e.g. node reboot) — try to reconnect
                         _isReconnecting = true;
                         StatusIndicator.Fill = Brushes.Orange;
-                        StatusText.Text = "Verbindung verloren";
-                        ConnectButton.Content = "Trennen";
+                        StatusText.Text = Loc("StrConnectionLost");
+                        ConnectButton.Content = Loc("StrDisconnect");
                         _ = TryReconnectAsync();
                     }
                     else if (!_isReconnecting)
                     {
                         StatusIndicator.Fill = Brushes.Gray;
-                        StatusText.Text = "Nicht verbunden";
-                        ConnectButton.Content = "Verbinden";
+                        StatusText.Text = Loc("StrDisconnected");
+                        ConnectButton.Content = Loc("StrConnect");
                         ConnectButton.IsEnabled = true;
                     }
                 }
@@ -1610,7 +1610,7 @@ public partial class MainWindow : Window
             Services.Logger.WriteLine($"[RECONNECT] Attempt {attempt}/{maxAttempts}...");
             Dispatcher.BeginInvoke(() =>
             {
-                UpdateStatusBar($"Verbinde erneut... (Versuch {attempt}/{maxAttempts})");
+                UpdateStatusBar(string.Format(Loc("StrReconnectingAttempt"), attempt, maxAttempts));
                 SetConnectionStatus(ConnectionStatus.Connecting);
             });
 
@@ -1643,9 +1643,9 @@ public partial class MainWindow : Window
 
                 Dispatcher.BeginInvoke(() =>
                 {
-                    ConnectButton.Content = "Trennen";
+                    ConnectButton.Content = Loc("StrDisconnect");
                     ConnectButton.IsEnabled = true;
-                    UpdateStatusBar("Verbunden - Initialisiere...");
+                    UpdateStatusBar(Loc("StrConnectedInitSimple"));
                     SetConnectionStatus(ConnectionStatus.Initializing);
                 });
 
@@ -1656,7 +1656,7 @@ public partial class MainWindow : Window
                         await _protocolService.InitializeAsync();
                         Dispatcher.BeginInvoke(() =>
                         {
-                            UpdateStatusBar("Verbunden - Bereit");
+                            UpdateStatusBar(Loc("StrConnectedReadySimple"));
                             SetConnectionStatus(ConnectionStatus.Ready);
                             NodeConfigButton.IsEnabled = true;
                         });
@@ -1682,10 +1682,10 @@ public partial class MainWindow : Window
         Dispatcher.BeginInvoke(() =>
         {
             StatusIndicator.Fill = Brushes.Gray;
-            StatusText.Text = "Nicht verbunden";
-            ConnectButton.Content = "Verbinden";
+            StatusText.Text = Loc("StrDisconnected");
+            ConnectButton.Content = Loc("StrConnect");
             ConnectButton.IsEnabled = true;
-            UpdateStatusBar("Verbindung verloren – bitte manuell verbinden");
+            UpdateStatusBar(Loc("StrConnectionLostMsg"));
             SetConnectionStatus(ConnectionStatus.Disconnected);
         });
     }
@@ -1947,7 +1947,7 @@ public partial class MainWindow : Window
                 // Update Message Filter ComboBox
                 UpdateMessageFilterComboBox();
 
-                UpdateStatusBar($"Kanal {channel.Index} empfangen: {channel.Name}");
+                UpdateStatusBar(string.Format(Loc("StrChannelReceived"), channel.Index, channel.Name));
                 UpdateMeshHessenButtonState();
             }
             catch (Exception ex)
@@ -2042,7 +2042,7 @@ public partial class MainWindow : Window
         {
             try
             {
-                PacketCountText.Text = $"Pakete: {count}";
+                PacketCountText.Text = string.Format(Loc("StrPacketCount"), count);
             }
             catch (Exception ex)
             {
@@ -2144,27 +2144,27 @@ public partial class MainWindow : Window
         {
             case ConnectionStatus.Disconnected:
                 StatusIndicator.Fill = new SolidColorBrush(Colors.Gray);
-                StatusText.Text = "Nicht verbunden";
+                StatusText.Text = Loc("StrDisconnected");
                 break;
             case ConnectionStatus.Connecting:
                 StatusIndicator.Fill = new SolidColorBrush(Colors.Yellow);
-                StatusText.Text = "Verbinde...";
+                StatusText.Text = Loc("StrConnecting");
                 break;
             case ConnectionStatus.Initializing:
                 StatusIndicator.Fill = new SolidColorBrush(Colors.Orange);
-                StatusText.Text = "Initialisiere...";
+                StatusText.Text = Loc("StrInitializing");
                 break;
             case ConnectionStatus.Ready:
                 StatusIndicator.Fill = new SolidColorBrush(Colors.LimeGreen);
-                StatusText.Text = "Verbunden";
+                StatusText.Text = Loc("StrConnected");
                 break;
             case ConnectionStatus.Disconnecting:
                 StatusIndicator.Fill = new SolidColorBrush(Colors.Orange);
-                StatusText.Text = "Trenne...";
+                StatusText.Text = Loc("StrDisconnecting");
                 break;
             case ConnectionStatus.Error:
                 StatusIndicator.Fill = new SolidColorBrush(Colors.Red);
-                StatusText.Text = "Fehler";
+                StatusText.Text = Loc("StrError");
                 break;
         }
     }
@@ -2176,7 +2176,7 @@ public partial class MainWindow : Window
 
         // Erstelle Liste mit "Alle" Option
         var filterItems = new List<ChannelInfo>();
-        filterItems.Add(new ChannelInfo { Index = 999, Name = "Alle Kanäle", Role = "" });
+        filterItems.Add(new ChannelInfo { Index = 999, Name = Loc("StrAllChannels"), Role = "" });
         filterItems.AddRange(_channels);
 
         MessageChannelFilterComboBox.ItemsSource = filterItems;
@@ -2942,6 +2942,9 @@ public partial class MainWindow : Window
         }
     }
 
+    private static string Loc(string key) =>
+        Application.Current?.Resources[key] as string ?? key;
+
     private void LanguageComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (LanguageComboBox.SelectedItem is not System.Windows.Controls.ComboBoxItem item) return;
@@ -2974,7 +2977,7 @@ public partial class MainWindow : Window
     {
         if (NodesListView.SelectedItem is NodeInfo node)
         {
-            PinNodeMenuItem.Header = node.IsPinned ? "📌 Loslösen" : "📌 Anheften";
+            PinNodeMenuItem.Header = node.IsPinned ? Loc("StrUnpin") : Loc("StrPin");
         }
     }
 

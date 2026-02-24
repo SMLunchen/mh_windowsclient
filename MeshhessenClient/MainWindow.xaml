@@ -1,4 +1,4 @@
-﻿<Window x:Class="MeshhessenClient.MainWindow"
+<Window x:Class="MeshhessenClient.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ui="http://schemas.modernwpf.com/2019"
@@ -69,14 +69,14 @@
 
                 <TextBlock x:Name="AlertNotificationText"
                           Grid.Column="1"
-                          Text="Notruf empfangen!"
+                          Text="{DynamicResource StrAlertReceived}"
                           Foreground="White"
                           FontWeight="Bold"
                           VerticalAlignment="Center"/>
 
                 <Button x:Name="ShowOnMapButton"
                        Grid.Column="2"
-                       Content="📍 Zur Karte"
+                       Content="{DynamicResource StrGoToMap}"
                        Margin="10,0,10,0"
                        Padding="10,5"
                        Background="White"
@@ -154,13 +154,13 @@
                                Content="🔄"
                                Margin="5,0,0,0"
                                Width="45"
-                               ToolTip="Ports aktualisieren"
+                               ToolTip="{DynamicResource StrRefreshPorts}"
                                Click="RefreshPorts_Click"/>
                     </StackPanel>
 
                     <!-- Bluetooth Connection UI -->
                     <StackPanel x:Name="BluetoothConnectionPanel" Orientation="Horizontal" Visibility="Collapsed">
-                        <TextBlock Text="Gerät:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                        <TextBlock Text="{DynamicResource StrDevice}" VerticalAlignment="Center" Margin="0,0,5,0"/>
                         <ComboBox x:Name="BluetoothDeviceComboBox"
                                  Width="170"
                                  VerticalAlignment="Center"
@@ -169,7 +169,7 @@
                                Content="🔍"
                                Margin="5,0,0,0"
                                Width="40"
-                               ToolTip="Geräte suchen"
+                               ToolTip="{DynamicResource StrScanDevices}"
                                Click="ScanBluetooth_Click"/>
                     </StackPanel>
 
@@ -188,7 +188,7 @@
                     </StackPanel>
 
                     <Button x:Name="ConnectButton"
-                           Content="Verbinden"
+                           Content="{DynamicResource StrConnect}"
                            Margin="8,0,0,0"
                            Click="Connect_Click"/>
                     <TextBlock x:Name="StationNameLabel"
@@ -206,14 +206,14 @@
                            Content="💬 DMs"
                            Margin="0,0,10,0"
                            Click="OpenDmWindow_Click"
-                           ToolTip="Direktnachrichten öffnen"/>
+                           ToolTip="{DynamicResource StrOpenDms}"/>
                     <Ellipse x:Name="StatusIndicator"
                             Width="12"
                             Height="12"
                             Fill="Gray"
                             Margin="0,0,8,0"/>
                     <TextBlock x:Name="StatusText"
-                              Text="Nicht verbunden"
+                              Text="{DynamicResource StrDisconnected}"
                               VerticalAlignment="Center"/>
                 </StackPanel>
             </Grid>
@@ -223,7 +223,7 @@
         <TabControl x:Name="MainTabs" Grid.Row="2" Margin="0">
 
             <!-- Messages Tab -->
-            <TabItem Header="📨 Nachrichten">
+            <TabItem Header="{DynamicResource StrTabMessages}">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -238,7 +238,7 @@
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="Kanal filtern:" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <TextBlock Grid.Column="0" Text="{DynamicResource StrFilterChannel}" VerticalAlignment="Center" Margin="0,0,10,0"/>
                         <ComboBox x:Name="MessageChannelFilterComboBox"
                                  Grid.Column="1"
                                  Width="200"
@@ -269,7 +269,7 @@
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate>
                                             <TextBlock Text="{Binding HasAlertBell, Converter={StaticResource AlertBellIconConverter}}"
-                                                       ToolTip="Diese Nachricht enthält ein Alert Bell"
+                                                       ToolTip="{DynamicResource StrAlertBellTooltip}"
                                                        FontSize="18"
                                                        Foreground="Red"
                                                        FontWeight="Bold"
@@ -288,77 +288,77 @@
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
-                                <GridViewColumn Header="Zeit" Width="120" DisplayMemberBinding="{Binding Time}"/>
-                                <GridViewColumn Header="Von" Width="120" DisplayMemberBinding="{Binding From}"/>
-                                <GridViewColumn Header="Kurz" Width="60" DisplayMemberBinding="{Binding SenderShortName}"/>
-                                <GridViewColumn Header="Notiz" Width="100">
+                                <GridViewColumn Header="{DynamicResource StrColTime}" Width="120" DisplayMemberBinding="{Binding Time}"/>
+                                <GridViewColumn Header="{DynamicResource StrColFrom}" Width="120" DisplayMemberBinding="{Binding From}"/>
+                                <GridViewColumn Header="{DynamicResource StrColShort}" Width="60" DisplayMemberBinding="{Binding SenderShortName}"/>
+                                <GridViewColumn Header="{DynamicResource StrColNote}" Width="100">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate>
                                             <TextBlock Text="{Binding SenderNote}" FontStyle="Italic"/>
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
-                                <GridViewColumn Header="Nachricht" Width="350">
+                                <GridViewColumn Header="{DynamicResource StrColMessage}" Width="350">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate>
                                             <TextBlock Text="{Binding Message}" TextWrapping="Wrap"/>
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
-                                <GridViewColumn Header="Kanal" Width="80" DisplayMemberBinding="{Binding ChannelName}"/>
+                                <GridViewColumn Header="{DynamicResource StrColChannel}" Width="80" DisplayMemberBinding="{Binding ChannelName}"/>
                             </GridView>
                         </ListView.View>
                         <ListView.ContextMenu>
                             <ContextMenu>
-                                <MenuItem Header="💬 DM senden" Click="MessageContextMenu_SendDm_Click"/>
-                                <MenuItem Header="ℹ️ Node-Info" Click="MessageContextMenu_NodeInfo_Click"/>
-                                <MenuItem Header="🗺️ Auf Karte zeigen" Click="MessageContextMenu_ShowOnMap_Click"/>
+                                <MenuItem Header="{DynamicResource StrSendDm}" Click="MessageContextMenu_SendDm_Click"/>
+                                <MenuItem Header="{DynamicResource StrNodeInfo}" Click="MessageContextMenu_NodeInfo_Click"/>
+                                <MenuItem Header="{DynamicResource StrShowOnMap}" Click="MessageContextMenu_ShowOnMap_Click"/>
                                 <Separator/>
-                                <MenuItem Header="🎨 Farbe setzen">
+                                <MenuItem Header="{DynamicResource StrSetColor}">
                                     <MenuItem Tag="#00FF00" Click="MessageContextMenu_SetColor_Click">
                                         <MenuItem.Header>
-                                            <TextBlock Text="■ Grün" Foreground="#00FF00" FontWeight="Bold"/>
+                                            <TextBlock Text="{DynamicResource StrColorGreen}" Foreground="#00FF00" FontWeight="Bold"/>
                                         </MenuItem.Header>
                                     </MenuItem>
                                     <MenuItem Tag="#0080FF" Click="MessageContextMenu_SetColor_Click">
                                         <MenuItem.Header>
-                                            <TextBlock Text="■ Blau" Foreground="#0080FF" FontWeight="Bold"/>
+                                            <TextBlock Text="{DynamicResource StrColorBlue}" Foreground="#0080FF" FontWeight="Bold"/>
                                         </MenuItem.Header>
                                     </MenuItem>
                                     <MenuItem Tag="#FFFF00" Click="MessageContextMenu_SetColor_Click">
                                         <MenuItem.Header>
-                                            <TextBlock Text="■ Gelb" Foreground="#FFFF00" FontWeight="Bold"/>
+                                            <TextBlock Text="{DynamicResource StrColorYellow}" Foreground="#FFFF00" FontWeight="Bold"/>
                                         </MenuItem.Header>
                                     </MenuItem>
                                     <MenuItem Tag="#FF8000" Click="MessageContextMenu_SetColor_Click">
                                         <MenuItem.Header>
-                                            <TextBlock Text="■ Orange" Foreground="#FF8000" FontWeight="Bold"/>
+                                            <TextBlock Text="{DynamicResource StrColorOrange}" Foreground="#FF8000" FontWeight="Bold"/>
                                         </MenuItem.Header>
                                     </MenuItem>
                                     <MenuItem Tag="#8000FF" Click="MessageContextMenu_SetColor_Click">
                                         <MenuItem.Header>
-                                            <TextBlock Text="■ Lila" Foreground="#8000FF" FontWeight="Bold"/>
+                                            <TextBlock Text="{DynamicResource StrColorPurple}" Foreground="#8000FF" FontWeight="Bold"/>
                                         </MenuItem.Header>
                                     </MenuItem>
                                     <MenuItem Tag="#804000" Click="MessageContextMenu_SetColor_Click">
                                         <MenuItem.Header>
-                                            <TextBlock Text="■ Braun" Foreground="#804000" FontWeight="Bold"/>
+                                            <TextBlock Text="{DynamicResource StrColorBrown}" Foreground="#804000" FontWeight="Bold"/>
                                         </MenuItem.Header>
                                     </MenuItem>
                                     <MenuItem Tag="#FF00FF" Click="MessageContextMenu_SetColor_Click">
                                         <MenuItem.Header>
-                                            <TextBlock Text="■ Pink" Foreground="#FF00FF" FontWeight="Bold"/>
+                                            <TextBlock Text="{DynamicResource StrColorPink}" Foreground="#FF00FF" FontWeight="Bold"/>
                                         </MenuItem.Header>
                                     </MenuItem>
                                     <MenuItem Tag="#00FFFF" Click="MessageContextMenu_SetColor_Click">
                                         <MenuItem.Header>
-                                            <TextBlock Text="■ Türkis" Foreground="#00FFFF" FontWeight="Bold"/>
+                                            <TextBlock Text="{DynamicResource StrColorCyan}" Foreground="#00FFFF" FontWeight="Bold"/>
                                         </MenuItem.Header>
                                     </MenuItem>
                                     <Separator/>
-                                    <MenuItem Header="❌ Farbe entfernen" Click="MessageContextMenu_RemoveColor_Click"/>
+                                    <MenuItem Header="{DynamicResource StrRemoveColor}" Click="MessageContextMenu_RemoveColor_Click"/>
                                 </MenuItem>
-                                <MenuItem Header="📝 Notiz bearbeiten..." Click="MessageContextMenu_EditNote_Click"/>
+                                <MenuItem Header="{DynamicResource StrEditNote}" Click="MessageContextMenu_EditNote_Click"/>
                             </ContextMenu>
                         </ListView.ContextMenu>
                     </ListView>
@@ -374,7 +374,7 @@
 
                         <!-- Channel Selection -->
                         <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
-                            <TextBlock Text="Kanal:" VerticalAlignment="Center" Margin="0,0,10,0" FontWeight="Bold"/>
+                            <TextBlock Text="{DynamicResource StrChannelLabel}" VerticalAlignment="Center" Margin="0,0,10,0" FontWeight="Bold"/>
                             <ComboBox x:Name="ActiveChannelComboBox"
                                      Width="150"
                                      VerticalAlignment="Center"
@@ -385,7 +385,7 @@
 
                         <TextBox x:Name="MessageTextBox"
                                 Grid.Column="1"
-                                ui:ControlHelper.PlaceholderText="Nachricht eingeben..."
+                                ui:ControlHelper.PlaceholderText="{DynamicResource StrMessagePlaceholder}"
                                 VerticalContentAlignment="Center"
                                 Padding="10"
                                 KeyDown="MessageTextBox_KeyDown"/>
@@ -398,12 +398,12 @@
                                Background="#FFCC0000"
                                Foreground="White"
                                FontWeight="Bold"
-                               ToolTip="Notruf senden (Alert Bell)"
+                               ToolTip="{DynamicResource StrSosTooltip}"
                                Click="AlertBell_Click"/>
 
                         <Button x:Name="SendButton"
                                Grid.Column="3"
-                               Content="Senden"
+                               Content="{DynamicResource StrSend}"
                                Width="100"
                                Margin="10,0,0,0"
                                Click="Send_Click"/>
@@ -412,7 +412,7 @@
             </TabItem>
 
             <!-- Nodes Tab -->
-            <TabItem Header="🌐 Knoten">
+            <TabItem Header="{DynamicResource StrTabNodes}">
                 <Grid Margin="10">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -453,7 +453,7 @@
                                 </GridViewColumn>
                                 <GridViewColumn Width="80">
                                     <GridViewColumn.Header>
-                                        <GridViewColumnHeader Content="Kurz" Click="NodeColumnHeader_Click" Tag="ShortName"/>
+                                        <GridViewColumnHeader Content="{DynamicResource StrColShort}" Click="NodeColumnHeader_Click" Tag="ShortName"/>
                                     </GridViewColumn.Header>
                                     <GridViewColumn.DisplayMemberBinding>
                                         <Binding Path="ShortName"/>
@@ -469,7 +469,7 @@
                                 </GridViewColumn>
                                 <GridViewColumn Width="100">
                                     <GridViewColumn.Header>
-                                        <GridViewColumnHeader Content="Entfernung" Click="NodeColumnHeader_Click" Tag="Distance"/>
+                                        <GridViewColumnHeader Content="{DynamicResource StrColDistance}" Click="NodeColumnHeader_Click" Tag="Distance"/>
                                     </GridViewColumn.Header>
                                     <GridViewColumn.DisplayMemberBinding>
                                         <Binding Path="Distance"/>
@@ -493,7 +493,7 @@
                                 </GridViewColumn>
                                 <GridViewColumn Width="80">
                                     <GridViewColumn.Header>
-                                        <GridViewColumnHeader Content="Batterie" Click="NodeColumnHeader_Click" Tag="Battery"/>
+                                        <GridViewColumnHeader Content="{DynamicResource StrColBattery}" Click="NodeColumnHeader_Click" Tag="Battery"/>
                                     </GridViewColumn.Header>
                                     <GridViewColumn.DisplayMemberBinding>
                                         <Binding Path="Battery"/>
@@ -501,7 +501,7 @@
                                 </GridViewColumn>
                                 <GridViewColumn Width="150">
                                     <GridViewColumn.Header>
-                                        <GridViewColumnHeader Content="Zuletzt gesehen" Click="NodeColumnHeader_Click" Tag="LastSeen"/>
+                                        <GridViewColumnHeader Content="{DynamicResource StrColLastSeen}" Click="NodeColumnHeader_Click" Tag="LastSeen"/>
                                     </GridViewColumn.Header>
                                     <GridViewColumn.DisplayMemberBinding>
                                         <Binding Path="LastSeen"/>
@@ -511,59 +511,59 @@
                         </ListView.View>
                         <ListView.ContextMenu>
                             <ContextMenu>
-                                <MenuItem Header="💬 DM senden" Click="SendDmToNode_Click"/>
-                                <MenuItem Header="ℹ️ Node-Info" Click="NodeContextMenu_NodeInfo_Click"/>
-                                <MenuItem Header="🗺️ Auf Karte zeigen" Click="NodeContextMenu_ShowOnMap_Click"/>
+                                <MenuItem Header="{DynamicResource StrSendDm}" Click="SendDmToNode_Click"/>
+                                <MenuItem Header="{DynamicResource StrNodeInfo}" Click="NodeContextMenu_NodeInfo_Click"/>
+                                <MenuItem Header="{DynamicResource StrShowOnMap}" Click="NodeContextMenu_ShowOnMap_Click"/>
                                 <Separator/>
-                                <MenuItem Header="🎨 Farbe setzen">
+                                <MenuItem Header="{DynamicResource StrSetColor}">
                                     <MenuItem Tag="#00FF00" Click="SetNodeColor_Click">
                                         <MenuItem.Header>
-                                            <TextBlock Text="■ Grün" Foreground="#00FF00" FontWeight="Bold"/>
+                                            <TextBlock Text="{DynamicResource StrColorGreen}" Foreground="#00FF00" FontWeight="Bold"/>
                                         </MenuItem.Header>
                                     </MenuItem>
                                     <MenuItem Tag="#0080FF" Click="SetNodeColor_Click">
                                         <MenuItem.Header>
-                                            <TextBlock Text="■ Blau" Foreground="#0080FF" FontWeight="Bold"/>
+                                            <TextBlock Text="{DynamicResource StrColorBlue}" Foreground="#0080FF" FontWeight="Bold"/>
                                         </MenuItem.Header>
                                     </MenuItem>
                                     <MenuItem Tag="#FFFF00" Click="SetNodeColor_Click">
                                         <MenuItem.Header>
-                                            <TextBlock Text="■ Gelb" Foreground="#FFFF00" FontWeight="Bold"/>
+                                            <TextBlock Text="{DynamicResource StrColorYellow}" Foreground="#FFFF00" FontWeight="Bold"/>
                                         </MenuItem.Header>
                                     </MenuItem>
                                     <MenuItem Tag="#FF8000" Click="SetNodeColor_Click">
                                         <MenuItem.Header>
-                                            <TextBlock Text="■ Orange" Foreground="#FF8000" FontWeight="Bold"/>
+                                            <TextBlock Text="{DynamicResource StrColorOrange}" Foreground="#FF8000" FontWeight="Bold"/>
                                         </MenuItem.Header>
                                     </MenuItem>
                                     <MenuItem Tag="#8000FF" Click="SetNodeColor_Click">
                                         <MenuItem.Header>
-                                            <TextBlock Text="■ Lila" Foreground="#8000FF" FontWeight="Bold"/>
+                                            <TextBlock Text="{DynamicResource StrColorPurple}" Foreground="#8000FF" FontWeight="Bold"/>
                                         </MenuItem.Header>
                                     </MenuItem>
                                     <MenuItem Tag="#804000" Click="SetNodeColor_Click">
                                         <MenuItem.Header>
-                                            <TextBlock Text="■ Braun" Foreground="#804000" FontWeight="Bold"/>
+                                            <TextBlock Text="{DynamicResource StrColorBrown}" Foreground="#804000" FontWeight="Bold"/>
                                         </MenuItem.Header>
                                     </MenuItem>
                                     <MenuItem Tag="#FF00FF" Click="SetNodeColor_Click">
                                         <MenuItem.Header>
-                                            <TextBlock Text="■ Pink" Foreground="#FF00FF" FontWeight="Bold"/>
+                                            <TextBlock Text="{DynamicResource StrColorPink}" Foreground="#FF00FF" FontWeight="Bold"/>
                                         </MenuItem.Header>
                                     </MenuItem>
                                     <MenuItem Tag="#00FFFF" Click="SetNodeColor_Click">
                                         <MenuItem.Header>
-                                            <TextBlock Text="■ Türkis" Foreground="#00FFFF" FontWeight="Bold"/>
+                                            <TextBlock Text="{DynamicResource StrColorCyan}" Foreground="#00FFFF" FontWeight="Bold"/>
                                         </MenuItem.Header>
                                     </MenuItem>
                                     <Separator/>
-                                    <MenuItem Header="❌ Farbe entfernen" Click="RemoveNodeColor_Click"/>
+                                    <MenuItem Header="{DynamicResource StrRemoveColor}" Click="RemoveNodeColor_Click"/>
                                 </MenuItem>
-                                <MenuItem Header="📝 Notiz bearbeiten..." Click="EditNodeNote_Click"/>
+                                <MenuItem Header="{DynamicResource StrEditNote}" Click="EditNodeNote_Click"/>
                                 <Separator/>
-                                <MenuItem x:Name="PinNodeMenuItem" Header="📌 Anheften" Click="NodeContextMenu_Pin_Click"/>
-                                <MenuItem Header="🛤️ Bewegungspfad anzeigen" Click="NodeContextMenu_ShowPath_Click"/>
-                                <MenuItem x:Name="HidePathMenuItem" Header="🛤️ Pfad ausblenden" Click="NodeContextMenu_HidePath_Click" Visibility="Collapsed"/>
+                                <MenuItem x:Name="PinNodeMenuItem" Header="{DynamicResource StrPin}" Click="NodeContextMenu_Pin_Click"/>
+                                <MenuItem Header="{DynamicResource StrShowPath}" Click="NodeContextMenu_ShowPath_Click"/>
+                                <MenuItem x:Name="HidePathMenuItem" Header="{DynamicResource StrHidePath}" Click="NodeContextMenu_HidePath_Click" Visibility="Collapsed"/>
                             </ContextMenu>
                         </ListView.ContextMenu>
                     </ListView>
@@ -571,7 +571,7 @@
             </TabItem>
 
             <!-- Channels Tab -->
-            <TabItem Header="📡 Kanäle">
+            <TabItem Header="{DynamicResource StrTabChannels}">
                 <Grid Margin="10">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*"/>
@@ -581,7 +581,7 @@
                     <ListView x:Name="ChannelsListView" Grid.Row="0">
                         <ListView.ContextMenu>
                             <ContextMenu>
-                                <MenuItem Header="PSK kopieren" Click="ChannelContextMenu_CopyPsk_Click"/>
+                                <MenuItem Header="{DynamicResource StrCopyPsk}" Click="ChannelContextMenu_CopyPsk_Click"/>
                             </ContextMenu>
                         </ListView.ContextMenu>
                         <ListView.View>
@@ -595,10 +595,10 @@
                     </ListView>
 
                     <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,10,0,0">
-                        <Button Content="Kanal hinzufügen" Margin="0,0,10,0" Click="AddChannel_Click"/>
-                        <Button Content="Kanal löschen" Margin="0,0,10,0" Click="DeleteChannel_Click"/>
-                        <Button Content="Aus Liste..." Margin="0,0,10,0" Click="BrowseChannels_Click"/>
-                        <Button x:Name="MeshHessenButton" Content="Mesh-Hessen Kanal hinzufügen"
+                        <Button Content="{DynamicResource StrAddChannel}" Margin="0,0,10,0" Click="AddChannel_Click"/>
+                        <Button Content="{DynamicResource StrDeleteChannel}" Margin="0,0,10,0" Click="DeleteChannel_Click"/>
+                        <Button Content="{DynamicResource StrBrowseChannels}" Margin="0,0,10,0" Click="BrowseChannels_Click"/>
+                        <Button x:Name="MeshHessenButton" Content="{DynamicResource StrMeshHessenChannel}"
                                 Margin="0,0,10,0" Click="AddMeshHessenChannel_Click"
                                 Background="#FF2E7D32" Foreground="White" FontWeight="Bold"/>
                     </StackPanel>
@@ -606,7 +606,7 @@
             </TabItem>
 
             <!-- Settings Tab -->
-            <TabItem Header="⚙️ Einstellungen">
+            <TabItem Header="{DynamicResource StrTabSettings}">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
@@ -621,7 +621,7 @@
                             <GroupBox Header="Sprache / Language" Margin="0,0,0,16">
                                 <StackPanel Margin="10">
                                     <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="Sprache:" Width="120" VerticalAlignment="Center"/>
+                                        <TextBlock Text="{DynamicResource StrLanguage}" Width="120" VerticalAlignment="Center"/>
                                         <ComboBox x:Name="LanguageComboBox" Width="150" SelectionChanged="LanguageComboBox_SelectionChanged">
                                             <ComboBoxItem Content="Deutsch" Tag="de"/>
                                             <ComboBoxItem Content="English" Tag="en"/>
@@ -631,16 +631,16 @@
                             </GroupBox>
 
                             <!-- b) Darstellung -->
-                            <GroupBox Header="Darstellung" Margin="0,0,0,16">
+                            <GroupBox Header="{DynamicResource StrAppearance}" Margin="0,0,0,16">
                                 <StackPanel Margin="10">
                                     <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                                        <TextBlock Text="Stationsname:" Width="120" VerticalAlignment="Center"/>
+                                        <TextBlock Text="{DynamicResource StrStationName}" Width="120" VerticalAlignment="Center"/>
                                         <TextBox x:Name="StationNameTextBox" Width="200"/>
                                     </StackPanel>
-                                    <TextBlock Text="Wird neben dem Verbinden-Button angezeigt."
+                                    <TextBlock Text="{DynamicResource StrStationNameHint}"
                                               FontStyle="Italic" Foreground="Gray" FontSize="11" Margin="0,0,0,10"/>
                                     <CheckBox x:Name="DarkModeCheckBox"
-                                             Content="Dark Mode"
+                                             Content="{DynamicResource StrDarkMode}"
                                              IsChecked="False"
                                              Checked="DarkMode_Changed"
                                              Unchecked="DarkMode_Changed"/>
@@ -648,20 +648,20 @@
                             </GroupBox>
 
                             <!-- c) Alert Bell -->
-                            <GroupBox Header="Benachrichtigungen" Margin="0,0,0,16">
+                            <GroupBox Header="{DynamicResource StrNotifications}" Margin="0,0,0,16">
                                 <StackPanel Margin="10">
                                     <CheckBox x:Name="AlertBellSoundCheckBox"
-                                             Content="Ton bei Alert Bell abspielen (🔔)"
+                                             Content="{DynamicResource StrAlertBellSound}"
                                              Margin="0,0,0,4"/>
-                                    <TextBlock Text="Spielt einen Benachrichtigungston ab, wenn eine Nachricht das Alert Bell Character (ASCII 7) enthält."
+                                    <TextBlock Text="{DynamicResource StrAlertBellSoundHint}"
                                               FontStyle="Italic" Foreground="Gray" TextWrapping="Wrap" FontSize="11"/>
                                 </StackPanel>
                             </GroupBox>
 
                             <!-- d) Karte / Tiles -->
-                            <GroupBox Header="Karte / Offline Tiles" Margin="0,0,0,16">
+                            <GroupBox Header="{DynamicResource StrMapGroup}" Margin="0,0,0,16">
                                 <StackPanel Margin="10">
-                                    <TextBlock Text="Kartenquelle:" Margin="0,0,0,4"/>
+                                    <TextBlock Text="{DynamicResource StrMapSource}" Margin="0,0,0,4"/>
                                     <ComboBox x:Name="MapSourceComboBox"
                                              Width="250" HorizontalAlignment="Left" Margin="0,0,0,10"
                                              SelectionChanged="MapSourceComboBox_SelectionChanged">
@@ -669,35 +669,35 @@
                                         <ComboBoxItem Content="OpenTopoMap" Tag="osmtopo"/>
                                         <ComboBoxItem Content="OpenStreetMap Dark" Tag="osmdark"/>
                                     </ComboBox>
-                                    <TextBlock Text="Tile-Server URL:" Margin="0,0,0,4"/>
+                                    <TextBlock Text="{DynamicResource StrTileServerUrl}" Margin="0,0,0,4"/>
                                     <TextBox x:Name="TileServerUrlTextBox" HorizontalAlignment="Stretch" Margin="0,0,0,4"/>
-                                    <TextBlock Text="Vollständige URL mit Platzhaltern {z}/{x}/{y}."
+                                    <TextBlock Text="{DynamicResource StrTileServerUrlHint}"
                                               FontStyle="Italic" Foreground="Gray" FontSize="11" Margin="0,0,0,10"/>
-                                    <Button Content="Tiles herunterladen..." Width="200" HorizontalAlignment="Left"
+                                    <Button Content="{DynamicResource StrDownloadTiles}" Width="200" HorizontalAlignment="Left"
                                            Margin="0,0,0,6" Click="DownloadTiles_Click"/>
-                                    <Button Content="Maptiles aus Zip laden..." Width="200" HorizontalAlignment="Left"
+                                    <Button Content="{DynamicResource StrImportTilesZip}" Width="200" HorizontalAlignment="Left"
                                            Click="ImportTilesFromZip_Click"/>
                                 </StackPanel>
                             </GroupBox>
 
                             <!-- e) Standort-Logging -->
-                            <GroupBox Header="Standort-Logging" Margin="0,0,0,16">
+                            <GroupBox Header="{DynamicResource StrLocationLoggingGroup}" Margin="0,0,0,16">
                                 <StackPanel Margin="10">
                                     <CheckBox x:Name="EnableLocationLoggingCheckBox"
-                                             Content="Standort-Logging aktivieren"
+                                             Content="{DynamicResource StrLocationLogging}"
                                              Margin="0,0,0,4"/>
-                                    <TextBlock Text="GPS-Positionen von Nodes werden in 'locationlogs/' gespeichert. Ermöglicht Bewegungspfade auf der Karte."
+                                    <TextBlock Text="{DynamicResource StrLocationLoggingHint}"
                                               FontStyle="Italic" Foreground="Gray" TextWrapping="Wrap" FontSize="11"/>
                                 </StackPanel>
                             </GroupBox>
 
                             <!-- f) Verschlüsselte Nachrichten -->
-                            <GroupBox Header="Nachrichten" Margin="0,0,0,16">
+                            <GroupBox Header="{DynamicResource StrMessagesGroup}" Margin="0,0,0,16">
                                 <StackPanel Margin="10">
                                     <CheckBox x:Name="ShowEncryptedMessagesCheckBox"
-                                             Content="Verschlüsselte Nachrichten anzeigen (ohne PSK)"
+                                             Content="{DynamicResource StrShowEncrypted}"
                                              IsChecked="True"/>
-                                    <TextBlock Text="Wenn deaktiviert, werden verschlüsselte Nachrichten ausgeblendet."
+                                    <TextBlock Text="{DynamicResource StrShowEncryptedHint}"
                                               FontStyle="Italic" Foreground="Gray" TextWrapping="Wrap" FontSize="11" Margin="0,4,0,0"/>
                                 </StackPanel>
                             </GroupBox>
@@ -706,17 +706,17 @@
                             <GroupBox Header="Debug" Margin="0,0,0,16">
                                 <StackPanel Margin="10">
                                     <CheckBox x:Name="DebugMessagesCheckBox"
-                                             Content="Nachrichten-Debug (Details im Log)" Margin="0,0,0,8"/>
+                                             Content="{DynamicResource StrDebugMessages}" Margin="0,0,0,8"/>
                                     <CheckBox x:Name="DebugSerialCheckBox"
-                                             Content="Serielle Daten-Debug (Hex-Dump)" Margin="0,0,0,8"/>
+                                             Content="{DynamicResource StrDebugSerial}" Margin="0,0,0,8"/>
                                     <CheckBox x:Name="DebugDeviceCheckBox"
-                                             Content="Device-Log (serielle Debug-Ausgabe)" Margin="0,0,0,8"/>
+                                             Content="{DynamicResource StrDebugDevice}" Margin="0,0,0,8"/>
                                     <CheckBox x:Name="DebugBluetoothCheckBox"
-                                             Content="Bluetooth-Debug (BLE-Kommunikation)"/>
+                                             Content="{DynamicResource StrDebugBluetooth}"/>
                                 </StackPanel>
                             </GroupBox>
 
-                            <Button Content="Einstellungen speichern"
+                            <Button Content="{DynamicResource StrSaveSettings}"
                                    Width="200" HorizontalAlignment="Left"
                                    Click="SaveSettings_Click"/>
                         </StackPanel>
@@ -730,35 +730,35 @@
                             <StackPanel Margin="16,20,16,20">
 
                                 <!-- Node-Konfiguration -->
-                                <GroupBox Header="Node-Konfiguration" Margin="0,0,0,16">
+                                <GroupBox Header="{DynamicResource StrNodeConfigGroup}" Margin="0,0,0,16">
                                     <StackPanel Margin="10">
-                                        <TextBlock Text="Erweiterte Gerätekonfiguration (LoRa, Position, MQTT, Telemetrie u.a.)"
+                                        <TextBlock Text="{DynamicResource StrNodeConfigHint}"
                                                   FontStyle="Italic" Foreground="Gray" TextWrapping="Wrap"
                                                   FontSize="11" Margin="0,0,0,10"/>
-                                        <Button x:Name="NodeConfigButton" Content="Node konfigurieren..."
+                                        <Button x:Name="NodeConfigButton" Content="{DynamicResource StrNodeConfig}"
                                                IsEnabled="False" Click="NodeConfig_Click"/>
                                     </StackPanel>
                                 </GroupBox>
 
                                 <!-- Geräteinfo (nur Anzeige) -->
-                                <GroupBox Header="Geräteinfo">
+                                <GroupBox Header="{DynamicResource StrDeviceInfoGroup}">
                                     <StackPanel Margin="10">
-                                        <TextBlock Text="Name" FontSize="11" Foreground="Gray" Margin="0,4,0,1"/>
+                                        <TextBlock Text="{DynamicResource StrDeviceName}" FontSize="11" Foreground="Gray" Margin="0,4,0,1"/>
                                         <TextBlock x:Name="NodeInfoLongNameText" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,0,0,6"/>
 
-                                        <TextBlock Text="Kurzname" FontSize="11" Foreground="Gray" Margin="0,0,0,1"/>
+                                        <TextBlock Text="{DynamicResource StrDeviceShortName}" FontSize="11" Foreground="Gray" Margin="0,0,0,1"/>
                                         <TextBlock x:Name="NodeInfoShortNameText" FontWeight="SemiBold" Margin="0,0,0,6"/>
 
-                                        <TextBlock Text="Hardware" FontSize="11" Foreground="Gray" Margin="0,0,0,1"/>
+                                        <TextBlock Text="{DynamicResource StrDeviceHardware}" FontSize="11" Foreground="Gray" Margin="0,0,0,1"/>
                                         <TextBlock x:Name="HardwareModelText" TextWrapping="Wrap" Margin="0,0,0,6"/>
 
-                                        <TextBlock Text="Firmware" FontSize="11" Foreground="Gray" Margin="0,0,0,1"/>
+                                        <TextBlock Text="{DynamicResource StrDeviceFirmware}" FontSize="11" Foreground="Gray" Margin="0,0,0,1"/>
                                         <TextBlock x:Name="FirmwareVersionText" Margin="0,0,0,6"/>
 
-                                        <TextBlock Text="Region" FontSize="11" Foreground="Gray" Margin="0,0,0,1"/>
+                                        <TextBlock Text="{DynamicResource StrDeviceRegion}" FontSize="11" Foreground="Gray" Margin="0,0,0,1"/>
                                         <TextBlock x:Name="NodeInfoRegionText" Margin="0,0,0,6"/>
 
-                                        <TextBlock Text="Modem-Preset" FontSize="11" Foreground="Gray" Margin="0,0,0,1"/>
+                                        <TextBlock Text="{DynamicResource StrDevicePreset}" FontSize="11" Foreground="Gray" Margin="0,0,0,1"/>
                                         <TextBlock x:Name="NodeInfoPresetText"/>
                                     </StackPanel>
                                 </GroupBox>
@@ -770,7 +770,7 @@
             </TabItem>
 
             <!-- Karte Tab -->
-            <TabItem Header="🗺️ Karte">
+            <TabItem Header="{DynamicResource StrTabMap}">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -808,21 +808,23 @@
             </TabItem>
 
             <!-- Info Tab -->
-            <TabItem Header="ℹ️ Info">
+            <TabItem Header="{DynamicResource StrTabInfo}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="20">
                         <TextBlock Text="Meshhessen Client" FontSize="24" FontWeight="Bold" Margin="0,0,0,4"/>
                         <TextBlock x:Name="AboutVersionText" FontSize="16" Foreground="Gray" Margin="0,0,0,16"/>
-                        <TextBlock Text="Offline-fähiger Windows-Client für Meshtastic-Geräte mit Kartenansicht, Kanalverwaltung und Multi-Verbindungsunterstützung (Serial, TCP/WiFi, Bluetooth)."
+                        <TextBlock Text="{DynamicResource StrAboutDescription}"
                                   TextWrapping="Wrap" Margin="0,0,0,20"/>
 
-                        <TextBlock Text="Lizenzen &amp; Danksagungen" FontSize="18" FontWeight="Bold" Margin="0,0,0,12"/>
+                        <TextBlock Text="{DynamicResource StrLicensesTitle}" FontSize="18" FontWeight="Bold" Margin="0,0,0,12"/>
 
                         <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}" BorderThickness="0,0,0,1" Padding="0,0,0,10" Margin="0,0,0,10">
                             <StackPanel>
                                 <TextBlock Text="OpenStreetMap" FontWeight="Bold"/>
-                                <TextBlock Text="Kartendaten © OpenStreetMap-Mitwirkende" TextWrapping="Wrap"/>
-                                <TextBlock Text="Lizenz: Open Data Commons Open Database License (ODbL)" Foreground="Gray" FontSize="11"/>
+                                <TextBlock Text="{DynamicResource StrOsmData}" TextWrapping="Wrap"/>
+                                <TextBlock Foreground="Gray" FontSize="11">
+                                    <Run Text="{DynamicResource StrLicense}"/><Run Text=": Open Data Commons Open Database License (ODbL)"/>
+                                </TextBlock>
                                 <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray">
                                     <Hyperlink NavigateUri="https://www.openstreetmap.org/copyright" RequestNavigate="Hyperlink_RequestNavigate">
                                         <Run Text="openstreetmap.org/copyright"/>
@@ -834,8 +836,10 @@
                         <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}" BorderThickness="0,0,0,1" Padding="0,0,0,10" Margin="0,0,0,10">
                             <StackPanel>
                                 <TextBlock Text="OpenTopoMap" FontWeight="Bold"/>
-                                <TextBlock Text="Kartendarstellung © OpenTopoMap" TextWrapping="Wrap"/>
-                                <TextBlock Text="Lizenz: CC-BY-SA" Foreground="Gray" FontSize="11"/>
+                                <TextBlock Text="{DynamicResource StrOsmTopoData}" TextWrapping="Wrap"/>
+                                <TextBlock Foreground="Gray" FontSize="11">
+                                    <Run Text="{DynamicResource StrLicense}"/><Run Text=": CC-BY-SA"/>
+                                </TextBlock>
                                 <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray">
                                     <Hyperlink NavigateUri="https://opentopomap.org/about" RequestNavigate="Hyperlink_RequestNavigate">
                                         <Run Text="opentopomap.org/about"/>
@@ -847,8 +851,10 @@
                         <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}" BorderThickness="0,0,0,1" Padding="0,0,0,10" Margin="0,0,0,10">
                             <StackPanel>
                                 <TextBlock Text="Meshtastic" FontWeight="Bold"/>
-                                <TextBlock Text="Firmware und Protokoll für LoRa-Mesh-Netzwerke" TextWrapping="Wrap"/>
-                                <TextBlock Text="Lizenz: GPL-3.0" Foreground="Gray" FontSize="11"/>
+                                <TextBlock Text="{DynamicResource StrMeshtasticDesc}" TextWrapping="Wrap"/>
+                                <TextBlock Foreground="Gray" FontSize="11">
+                                    <Run Text="{DynamicResource StrLicense}"/><Run Text=": GPL-3.0"/>
+                                </TextBlock>
                                 <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray">
                                     <Hyperlink NavigateUri="https://meshtastic.org" RequestNavigate="Hyperlink_RequestNavigate">
                                         <Run Text="meshtastic.org"/>
@@ -860,8 +866,10 @@
                         <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}" BorderThickness="0,0,0,1" Padding="0,0,0,10" Margin="0,0,0,10">
                             <StackPanel>
                                 <TextBlock Text="Mapsui" FontWeight="Bold"/>
-                                <TextBlock Text="Offline-Kartendarstellung für .NET" TextWrapping="Wrap"/>
-                                <TextBlock Text="Lizenz: LGPL-3.0" Foreground="Gray" FontSize="11"/>
+                                <TextBlock Text="{DynamicResource StrMapsuiDesc}" TextWrapping="Wrap"/>
+                                <TextBlock Foreground="Gray" FontSize="11">
+                                    <Run Text="{DynamicResource StrLicense}"/><Run Text=": LGPL-3.0"/>
+                                </TextBlock>
                                 <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray">
                                     <Hyperlink NavigateUri="https://mapsui.com" RequestNavigate="Hyperlink_RequestNavigate">
                                         <Run Text="mapsui.com"/>
@@ -873,30 +881,36 @@
                         <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}" BorderThickness="0,0,0,1" Padding="0,0,0,10" Margin="0,0,0,10">
                             <StackPanel>
                                 <TextBlock Text="BruTile" FontWeight="Bold"/>
-                                <TextBlock Text="Tile-Schema und -Handling" TextWrapping="Wrap"/>
-                                <TextBlock Text="Lizenz: Apache 2.0" Foreground="Gray" FontSize="11"/>
+                                <TextBlock Text="{DynamicResource StrBruTileDesc}" TextWrapping="Wrap"/>
+                                <TextBlock Foreground="Gray" FontSize="11">
+                                    <Run Text="{DynamicResource StrLicense}"/><Run Text=": Apache 2.0"/>
+                                </TextBlock>
                             </StackPanel>
                         </Border>
 
                         <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}" BorderThickness="0,0,0,1" Padding="0,0,0,10" Margin="0,0,0,10">
                             <StackPanel>
                                 <TextBlock Text="ModernWPF" FontWeight="Bold"/>
-                                <TextBlock Text="Fluent Design UI-Theming für WPF" TextWrapping="Wrap"/>
-                                <TextBlock Text="Lizenz: MIT" Foreground="Gray" FontSize="11"/>
+                                <TextBlock Text="{DynamicResource StrModernWpfDesc}" TextWrapping="Wrap"/>
+                                <TextBlock Foreground="Gray" FontSize="11">
+                                    <Run Text="{DynamicResource StrLicense}"/><Run Text=": MIT"/>
+                                </TextBlock>
                             </StackPanel>
                         </Border>
 
                         <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}" BorderThickness="0,0,0,1" Padding="0,0,0,10" Margin="0,0,0,10">
                             <StackPanel>
                                 <TextBlock Text="Google Protobuf" FontWeight="Bold"/>
-                                <TextBlock Text="Protokoll-Serialisierung für Meshtastic-Kommunikation" TextWrapping="Wrap"/>
-                                <TextBlock Text="Lizenz: BSD-3-Clause" Foreground="Gray" FontSize="11"/>
+                                <TextBlock Text="{DynamicResource StrProtobufDesc}" TextWrapping="Wrap"/>
+                                <TextBlock Foreground="Gray" FontSize="11">
+                                    <Run Text="{DynamicResource StrLicense}"/><Run Text=": BSD-3-Clause"/>
+                                </TextBlock>
                             </StackPanel>
                         </Border>
 
                         <Border Padding="0,10,0,0">
                             <StackPanel>
-                                <TextBlock Text="Projekt" FontSize="18" FontWeight="Bold" Margin="0,0,0,8"/>
+                                <TextBlock Text="{DynamicResource StrProjectTitle}" FontSize="18" FontWeight="Bold" Margin="0,0,0,8"/>
                                 <TextBlock TextWrapping="Wrap" FontSize="11">
                                     <Hyperlink NavigateUri="https://www.meshhessen.de" RequestNavigate="Hyperlink_RequestNavigate">
                                         <Run Text="www.meshhessen.de"/>
@@ -919,15 +933,15 @@
                     <!-- Debug Controls -->
                     <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
                         <Button x:Name="ClearLogButton"
-                               Content="Log löschen"
+                               Content="{DynamicResource StrLogClear}"
                                Click="ClearLog_Click"
                                Margin="0,0,10,0"/>
                         <Button x:Name="CopyLogButton"
-                               Content="Log kopieren"
+                               Content="{DynamicResource StrLogCopy}"
                                Click="CopyLog_Click"
                                Margin="0,0,10,0"/>
                         <Button x:Name="OpenLogFileButton"
-                               Content="Log-Datei öffnen"
+                               Content="{DynamicResource StrLogFile}"
                                Click="OpenLogFile_Click"/>
                     </StackPanel>
 
@@ -956,7 +970,7 @@
                 </Grid.ColumnDefinitions>
 
                 <TextBlock x:Name="StatusBarText"
-                          Text="Bereit"
+                          Text="{DynamicResource StrReady}"
                           VerticalAlignment="Center"/>
 
                 <TextBlock x:Name="PacketCountText"

@@ -15,6 +15,9 @@ public partial class DirectMessagesWindow : Window
     private readonly Dictionary<uint, TabItem> _tabByNodeId = new();
     private uint _myNodeId;
 
+    private static string Loc(string key) =>
+        Application.Current?.Resources[key] as string ?? key;
+
     public DirectMessagesWindow(MeshtasticProtocolService protocolService, uint myNodeId)
     {
         InitializeComponent();
@@ -114,14 +117,14 @@ public partial class DirectMessagesWindow : Window
         alertBellFactory.SetValue(TextBlock.ForegroundProperty, System.Windows.Media.Brushes.Red);
         alertBellFactory.SetValue(TextBlock.FontWeightProperty, FontWeights.Bold);
         alertBellFactory.SetValue(TextBlock.HorizontalAlignmentProperty, HorizontalAlignment.Center);
-        alertBellFactory.SetValue(TextBlock.ToolTipProperty, "Diese Nachricht enthält ein Alert Bell");
+        alertBellFactory.SetValue(TextBlock.ToolTipProperty, Loc("StrAlertBellTooltip"));
         alertBellTemplate.VisualTree = alertBellFactory;
         alertBellColumn.CellTemplate = alertBellTemplate;
         gridView.Columns.Add(alertBellColumn);
 
-        gridView.Columns.Add(new GridViewColumn { Header = "Zeit", Width = 100, DisplayMemberBinding = new System.Windows.Data.Binding("Time") });
-        gridView.Columns.Add(new GridViewColumn { Header = "Von", Width = 120, DisplayMemberBinding = new System.Windows.Data.Binding("From") });
-        gridView.Columns.Add(new GridViewColumn { Header = "Nachricht", Width = 350, DisplayMemberBinding = new System.Windows.Data.Binding("Message") });
+        gridView.Columns.Add(new GridViewColumn { Header = Loc("StrColTime"), Width = 100, DisplayMemberBinding = new System.Windows.Data.Binding("Time") });
+        gridView.Columns.Add(new GridViewColumn { Header = Loc("StrColFrom"), Width = 120, DisplayMemberBinding = new System.Windows.Data.Binding("From") });
+        gridView.Columns.Add(new GridViewColumn { Header = Loc("StrColMessage"), Width = 350, DisplayMemberBinding = new System.Windows.Data.Binding("Message") });
         listView.View = gridView;
 
         Grid.SetRow(listView, 0);
@@ -159,7 +162,7 @@ public partial class DirectMessagesWindow : Window
             Background = new SolidColorBrush(Color.FromRgb(204, 0, 0)), // Red
             Foreground = Brushes.White,
             FontWeight = FontWeights.Bold,
-            ToolTip = "Notruf senden (Alert Bell)"
+            ToolTip = Loc("StrSosTooltip")
         };
         alertBellButton.Click += async (s, e) =>
         {
@@ -201,7 +204,7 @@ public partial class DirectMessagesWindow : Window
 
         var sendButton = new Button
         {
-            Content = "Senden",
+            Content = Loc("StrSend"),
             Width = 100,
             Margin = new Thickness(10, 0, 0, 0)
         };
@@ -292,7 +295,7 @@ public partial class DirectMessagesWindow : Window
             BorderThickness = new Thickness(0),
             VerticalAlignment = VerticalAlignment.Center,
             Cursor = Cursors.Hand,
-            ToolTip = "Tab schließen",
+            ToolTip = Loc("StrCloseTab"),
             Tag = conversation.NodeId
         };
         closeButton.Click += CloseTab_Click;
@@ -336,7 +339,7 @@ public partial class DirectMessagesWindow : Window
                 var sentMessage = new MessageItem
                 {
                     Time = DateTime.Now.ToString("HH:mm:ss"),
-                    From = "Ich",
+                    From = Loc("StrSentFrom"),
                     Message = messageText,
                     FromId = _myNodeId,
                     ToId = toNodeId
@@ -344,7 +347,7 @@ public partial class DirectMessagesWindow : Window
                 conversation.Messages.Add(sentMessage);
 
                 // Log die Nachricht
-                Services.MessageLogger.LogDirectMessage(toNodeId, conversation.NodeName, "Ich", messageText, false);
+                Services.MessageLogger.LogDirectMessage(toNodeId, conversation.NodeName, Loc("StrSentFrom"), messageText, false);
             }
         }
         catch (Exception ex)
@@ -356,7 +359,7 @@ public partial class DirectMessagesWindow : Window
 
     private void UpdateStatusBar()
     {
-        StatusText.Text = $"{_conversations.Count} aktive Chat(s)";
+        StatusText.Text = string.Format(Loc("StrActiveChats"), _conversations.Count);
     }
 
     private void MakeWindowProminent()
