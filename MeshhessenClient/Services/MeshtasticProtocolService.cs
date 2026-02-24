@@ -41,6 +41,7 @@ public class MeshtasticProtocolService
     public event EventHandler<PositionConfig>? PositionConfigReceived;
     public event EventHandler<MQTTConfig>? MqttConfigReceived;
     public event EventHandler<TelemetryConfig>? TelemetryConfigReceived;
+    public event EventHandler<BluetoothConfig>? BluetoothConfigReceived;
     public event EventHandler<User>? OwnerReceived;
     public event EventHandler<DeviceInfo>? DeviceInfoReceived;
     public event EventHandler<int>? PacketCountChanged;
@@ -930,8 +931,8 @@ public class MeshtasticProtocolService
                 Name = user.LongName ?? user.ShortName ?? $"Node-{packet.From:x4}",
                 ShortName = user.ShortName ?? "",
                 LongName = user.LongName ?? "",
-                Snr = packet.RxSnr.ToString("F1"),
-                Rssi = packet.RxRssi.ToString(),
+                Snr = packet.RxSnr != 0f ? packet.RxSnr.ToString("F1") : "-",
+                Rssi = packet.RxRssi != 0 ? packet.RxRssi.ToString() : "-",
                 LastSeen = DateTime.Now.ToString("HH:mm:ss")
             };
 
@@ -998,6 +999,8 @@ public class MeshtasticProtocolService
                         Logger.WriteLine($"  Position ignoriert (LatI=LonI=0, kein GPS-Fix)");
                     }
                     nodeInfo.LastSeen = DateTime.Now.ToString("HH:mm:ss");
+                    if (packet.RxRssi != 0) nodeInfo.Rssi = packet.RxRssi.ToString();
+                    if (packet.RxSnr != 0f) nodeInfo.Snr = packet.RxSnr.ToString("F1");
                     nodeToFire = nodeInfo;
                     shouldFireEvent = !_isInitializing;
                 }
@@ -1032,6 +1035,8 @@ public class MeshtasticProtocolService
                 if (_knownNodes.TryGetValue(packet.From, out var nodeInfo))
                 {
                     nodeInfo.LastSeen = DateTime.Now.ToString("HH:mm:ss");
+                    if (packet.RxRssi != 0) nodeInfo.Rssi = packet.RxRssi.ToString();
+                    if (packet.RxSnr != 0f) nodeInfo.Snr = packet.RxSnr.ToString("F1");
                     nodeToFire = nodeInfo;
                     shouldFireEvent = !_isInitializing;
                 }
@@ -1432,6 +1437,12 @@ public class MeshtasticProtocolService
         await SendAdminMessageAsync(adminMsg);
     }
 
+    public async Task RequestBluetoothConfigAsync()
+    {
+        var adminMsg = new AdminMessage { GetConfigRequest = 6 }; // BLUETOOTH = 6
+        await SendAdminMessageAsync(adminMsg);
+    }
+
     // ========== Config Set Methods ==========
 
     public async Task SetOwnerAsync(User user)
@@ -1473,6 +1484,13 @@ public class MeshtasticProtocolService
     {
         await EnsureSessionKeyAsync();
         var adminMsg = new AdminMessage { SetModuleConfig = new ModuleConfig { Telemetry = config } };
+        await SendAdminMessageAsync(adminMsg);
+    }
+
+    public async Task SetBluetoothConfigAsync(BluetoothConfig config)
+    {
+        await EnsureSessionKeyAsync();
+        var adminMsg = new AdminMessage { SetConfig = new Config { Bluetooth = config } };
         await SendAdminMessageAsync(adminMsg);
     }
 
@@ -1601,6 +1619,10 @@ public class MeshtasticProtocolService
 
                         case Config.PayloadVariantOneofCase.Position:
                             PositionConfigReceived?.Invoke(this, config.Position);
+                            break;
+
+                        case Config.PayloadVariantOneofCase.Bluetooth:
+                            BluetoothConfigReceived?.Invoke(this, config.Bluetooth);
                             break;
                     }
                     break;

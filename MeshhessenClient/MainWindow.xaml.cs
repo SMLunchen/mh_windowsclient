@@ -87,6 +87,12 @@ public partial class MainWindow : Window
     private NodeInfo? _mapContextMenuNode;
     private uint? _alertNodeId;  // Stores the node ID for "Show on Map" button
 
+    // Reconnect state
+    private ConnectionParameters? _lastConnectionParams;
+    private Services.ConnectionType _lastConnectionType;
+    private bool _intentionalDisconnect = false;
+    private bool _isReconnecting = false;
+
     public MainWindow()
     {
         InitializeComponent();
@@ -940,6 +946,8 @@ public partial class MainWindow : Window
         {
             try
             {
+                _intentionalDisconnect = true;
+                _isReconnecting = false;
                 ConnectButton.IsEnabled = false;
                 UpdateStatusBar("Trenne Verbindung...");
                 SetConnectionStatus(ConnectionStatus.Disconnecting);
@@ -1030,6 +1038,11 @@ public partial class MainWindow : Window
 
             try
             {
+                _intentionalDisconnect = false;
+                _isReconnecting = false;
+                _lastConnectionParams = connectionParams;
+                _lastConnectionType = _currentConnectionType;
+
                 ConnectButton.IsEnabled = false;
                 UpdateStatusBar($"Verbinde mit {displayName}...");
                 SetConnectionStatus(ConnectionStatus.Connecting);
@@ -1546,9 +1559,6 @@ public partial class MainWindow : Window
                 // Only handle disconnection here - connection status is managed by Connect_Click
                 if (!isConnected)
                 {
-                    StatusIndicator.Fill = Brushes.Gray;
-                    StatusText.Text = "Nicht verbunden";
-
                     ActiveChannelComboBox.IsEnabled = false;
                     _messages.Clear();
                     _allMessages.Clear();
@@ -1559,12 +1569,124 @@ public partial class MainWindow : Window
                     NodeConfigButton.IsEnabled = false;
                     UpdateMeshHessenButtonState();
                     PacketCountText.Text = "Pakete: 0";
+
+                    if (!_intentionalDisconnect && !_isReconnecting && _lastConnectionParams != null)
+                    {
+                        // Unexpected disconnect (e.g. node reboot) — try to reconnect
+                        _isReconnecting = true;
+                        StatusIndicator.Fill = Brushes.Orange;
+                        StatusText.Text = "Verbindung verloren";
+                        ConnectButton.Content = "Trennen";
+                        _ = TryReconnectAsync();
+                    }
+                    else if (!_isReconnecting)
+                    {
+                        StatusIndicator.Fill = Brushes.Gray;
+                        StatusText.Text = "Nicht verbunden";
+                        ConnectButton.Content = "Verbinden";
+                        ConnectButton.IsEnabled = true;
+                    }
                 }
             }
             catch (Exception ex)
             {
                 Services.Logger.WriteLine($"Error updating connection state in UI: {ex.Message}");
             }
+        });
+    }
+
+    private async Task TryReconnectAsync()
+    {
+        Services.Logger.WriteLine("[RECONNECT] Starting auto-reconnect...");
+        // Wait for device to reboot (ESP32 typically takes ~3-5 seconds)
+        await Task.Delay(5000);
+
+        int attempt = 0;
+        const int maxAttempts = 15;
+
+        while (!_intentionalDisconnect && attempt < maxAttempts)
+        {
+            attempt++;
+            Services.Logger.WriteLine($"[RECONNECT] Attempt {attempt}/{maxAttempts}...");
+            Dispatcher.BeginInvoke(() =>
+            {
+                UpdateStatusBar($"Verbinde erneut... (Versuch {attempt}/{maxAttempts})");
+                SetConnectionStatus(ConnectionStatus.Connecting);
+            });
+
+            try
+            {
+                // Create fresh services
+                _connectionService?.Dispose();
+                _connectionService = _lastConnectionType switch
+                {
+                    Services.ConnectionType.Serial => new SerialConnectionService(),
+                    Services.ConnectionType.Bluetooth => new BluetoothConnectionService(),
+                    Services.ConnectionType.Tcp => new TcpConnectionService(),
+                    _ => throw new InvalidOperationException()
+                };
+
+                _protocolService = new MeshtasticProtocolService(_connectionService);
+                _protocolService.MessageReceived += OnMessageReceived;
+                _protocolService.NodeInfoReceived += OnNodeInfoReceived;
+                _protocolService.ChannelInfoReceived += OnChannelInfoReceived;
+                _protocolService.LoRaConfigReceived += OnLoRaConfigReceived;
+                _protocolService.DeviceInfoReceived += OnDeviceInfoReceived;
+                _protocolService.PacketCountChanged += OnPacketCountChanged;
+                _connectionService.ConnectionStateChanged += OnConnectionStateChanged;
+
+                await _connectionService.ConnectAsync(_lastConnectionParams!);
+
+                // Reconnect successful
+                _isReconnecting = false;
+                Services.Logger.WriteLine("[RECONNECT] Reconnected successfully.");
+
+                Dispatcher.BeginInvoke(() =>
+                {
+                    ConnectButton.Content = "Trennen";
+                    ConnectButton.IsEnabled = true;
+                    UpdateStatusBar("Verbunden - Initialisiere...");
+                    SetConnectionStatus(ConnectionStatus.Initializing);
+                });
+
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await _protocolService.InitializeAsync();
+                        Dispatcher.BeginInvoke(() =>
+                        {
+                            UpdateStatusBar("Verbunden - Bereit");
+                            SetConnectionStatus(ConnectionStatus.Ready);
+                            NodeConfigButton.IsEnabled = true;
+                        });
+                    }
+                    catch (Exception initEx)
+                    {
+                        Services.Logger.WriteLine($"[RECONNECT] Init error: {initEx.Message}");
+                    }
+                });
+                return;
+            }
+            catch (Exception ex)
+            {
+                Services.Logger.WriteLine($"[RECONNECT] Attempt {attempt} failed: {ex.Message}");
+                if (attempt < maxAttempts)
+                    await Task.Delay(3000);
+            }
+        }
+
+        // All attempts exhausted
+        _isReconnecting = false;
+        Services.Logger.WriteLine("[RECONNECT] All reconnect attempts failed.");
+        Dispatcher.BeginInvoke(() =>
+        {
+            StatusIndicator.Fill = Brushes.Gray;
+            StatusText.Text = "Nicht verbunden";
+            ConnectButton.Content = "Verbinden";
+            ConnectButton.IsEnabled = true;
+            UpdateStatusBar("Verbindung verloren – bitte manuell verbinden");
+            SetConnectionStatus(ConnectionStatus.Disconnected);
         });
     }
 
@@ -2961,8 +3083,8 @@ public partial class MainWindow : Window
                 f.Styles.Add(new LabelStyle
                 {
                     Text = $"{entries[i].Name} {entries[i].Timestamp:HH:mm}",
-                    ForeColor = lineColor,
-                    BackColor = new Mapsui.Styles.Brush(new Mapsui.Styles.Color(255, 255, 255, 160)),
+                    ForeColor = Mapsui.Styles.Color.Black,
+                    BackColor = new Mapsui.Styles.Brush(Mapsui.Styles.Color.White),
                     HorizontalAlignment = LabelStyle.HorizontalAlignmentEnum.Left,
                     VerticalAlignment = LabelStyle.VerticalAlignmentEnum.Center,
                     Offset = new Offset(8, 0),
@@ -2979,10 +3101,19 @@ public partial class MainWindow : Window
             _pathLayers[node.NodeId] = pathLayer;
             _map?.Layers.Add(pathLayer);
 
-            // Switch to map tab and center on path
+            // Switch to map tab and zoom to fit the full path extent
             MainTabs.SelectedIndex = 4;
-            var center = coords[coords.Count / 2];
-            _map?.Navigator.CenterOnAndZoomTo(center, 153.0);
+            var minX = coords.Min(c => c.X);
+            var maxX = coords.Max(c => c.X);
+            var minY = coords.Min(c => c.Y);
+            var maxY = coords.Max(c => c.Y);
+            var pathCenter = new MPoint((minX + maxX) / 2, (minY + maxY) / 2);
+            var extentSize = Math.Max(maxX - minX, maxY - minY);
+            // Add 30% padding; fall back to ~500m radius if all points are clustered
+            var paddedSize = Math.Max(extentSize * 1.3, 1000.0);
+            // resolution = meters-per-pixel; assume ~800px viewport width
+            var resolution = Math.Max(paddedSize / 800.0, 10.0);
+            _map?.Navigator.CenterOnAndZoomTo(pathCenter, resolution);
             MapControl.Refresh();
 
             HidePathMenuItem.Visibility = Visibility.Visible;

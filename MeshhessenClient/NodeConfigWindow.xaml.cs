@@ -17,6 +17,7 @@ public partial class NodeConfigWindow : Window
     private LoRaConfig? _loadedLora;
     private MQTTConfig? _loadedMqtt;
     private TelemetryConfig? _loadedTelemetry;
+    private BluetoothConfig? _loadedBluetooth;
     private int _pendingRequests = 0;
 
     public NodeConfigWindow(MeshtasticProtocolService protocolService)
@@ -30,6 +31,7 @@ public partial class NodeConfigWindow : Window
         _protocolService.LoRaConfigReceived += OnLoRaConfigReceived;
         _protocolService.MqttConfigReceived += OnMqttConfigReceived;
         _protocolService.TelemetryConfigReceived += OnTelemetryConfigReceived;
+        _protocolService.BluetoothConfigReceived += OnBluetoothConfigReceived;
 
         Closed += (s, e) =>
         {
@@ -39,6 +41,7 @@ public partial class NodeConfigWindow : Window
             _protocolService.LoRaConfigReceived -= OnLoRaConfigReceived;
             _protocolService.MqttConfigReceived -= OnMqttConfigReceived;
             _protocolService.TelemetryConfigReceived -= OnTelemetryConfigReceived;
+            _protocolService.BluetoothConfigReceived -= OnBluetoothConfigReceived;
         };
 
         Loaded += async (s, e) => await RequestAllConfigsAsync();
@@ -48,7 +51,7 @@ public partial class NodeConfigWindow : Window
     {
         try
         {
-            _pendingRequests = 6;
+            _pendingRequests = 7;
             UpdateStatus("Lade Konfiguration...");
             SaveButton.IsEnabled = false;
 
@@ -63,6 +66,8 @@ public partial class NodeConfigWindow : Window
             await _protocolService.RequestMqttConfigAsync();
             await System.Threading.Tasks.Task.Delay(200);
             await _protocolService.RequestTelemetryConfigAsync();
+            await System.Threading.Tasks.Task.Delay(200);
+            await _protocolService.RequestBluetoothConfigAsync();
         }
         catch (Exception ex)
         {
@@ -173,6 +178,19 @@ public partial class NodeConfigWindow : Window
             EnvironmentMeasurementCheckBox.IsChecked = config.EnvironmentMeasurementEnabled;
             AirQualityIntervalTextBox.Text = SecondsToHumanTime(config.AirQualityInterval);
             PowerIntervalTextBox.Text = SecondsToHumanTime(config.PowerUpdateInterval);
+            CheckAllLoaded();
+        });
+    }
+
+    private void OnBluetoothConfigReceived(object? sender, BluetoothConfig config)
+    {
+        _loadedBluetooth = config;
+        Dispatcher.BeginInvoke(() =>
+        {
+            BtEnabledCheckBox.IsChecked = config.Enabled;
+            SelectComboBoxByTag(BtModeComboBox, (int)config.Mode);
+            BtFixedPinTextBox.Text = config.FixedPin > 0 ? config.FixedPin.ToString() : string.Empty;
+            BtFixedPinTextBox.IsEnabled = config.Mode == 1; // 1 = FIXED_PIN
             CheckAllLoaded();
         });
     }
@@ -404,6 +422,16 @@ public partial class NodeConfigWindow : Window
                 PowerUpdateInterval = HumanTimeToSeconds(PowerIntervalTextBox.Text)
             };
             await _protocolService.SetTelemetryConfigAsync(newTelemetry);
+            await System.Threading.Tasks.Task.Delay(300);
+
+            // Bluetooth Config
+            var newBluetooth = new BluetoothConfig
+            {
+                Enabled = BtEnabledCheckBox.IsChecked == true,
+                Mode = (uint)GetComboBoxTag(BtModeComboBox),
+                FixedPin = uint.TryParse(BtFixedPinTextBox.Text.Trim(), out var pin) ? pin : 0
+            };
+            await _protocolService.SetBluetoothConfigAsync(newBluetooth);
 
             UpdateStatus("Gespeichert! Gerät wendet Änderungen an...");
             Services.Logger.WriteLine("NodeConfigWindow: All configs saved");
@@ -418,6 +446,13 @@ public partial class NodeConfigWindow : Window
         {
             SaveButton.IsEnabled = true;
         }
+    }
+
+    private void BtModeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        // Enable fixed-PIN field only when mode 1 (FIXED_PIN) is selected
+        if (BtFixedPinTextBox != null)
+            BtFixedPinTextBox.IsEnabled = GetComboBoxTag(BtModeComboBox) == 1;
     }
 
     private void Close_Click(object sender, RoutedEventArgs e)

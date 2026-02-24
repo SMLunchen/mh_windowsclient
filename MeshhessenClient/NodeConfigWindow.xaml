@@ -180,6 +180,28 @@
                 </ScrollViewer>
             </TabItem>
 
+            <!-- Tab: Bluetooth -->
+            <TabItem Header="Bluetooth">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="10">
+                        <CheckBox x:Name="BtEnabledCheckBox" Content="Bluetooth aktivieren" Margin="0,8,0,0"/>
+                        <TextBlock Text="Kopplungsmodus" Margin="0,12,0,2"/>
+                        <ComboBox x:Name="BtModeComboBox" Width="180" HorizontalAlignment="Left"
+                                  SelectionChanged="BtModeComboBox_SelectionChanged">
+                            <ComboBoxItem Content="Zufällige PIN" Tag="0"/>
+                            <ComboBoxItem Content="Feste PIN" Tag="1"/>
+                            <ComboBoxItem Content="Keine PIN" Tag="2"/>
+                        </ComboBox>
+                        <TextBlock Text="Feste PIN (4–6 Ziffern)" Margin="0,10,0,2"
+                                   x:Name="BtFixedPinLabel"/>
+                        <TextBox x:Name="BtFixedPinTextBox" Width="120" HorizontalAlignment="Left"
+                                 MaxLength="6" IsEnabled="False"/>
+                        <TextBlock Margin="0,12,0,0" TextWrapping="Wrap" Foreground="Gray"
+                                   Text="Hinweis: Nach Änderung der Bluetooth-Einstellungen startet das Gerät neu."/>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
         </TabControl>
 
         <!-- Buttons -->
