@@ -17,4 +17,5 @@ public class NodeInfo
     public int? Altitude { get; set; }
     public string ColorHex { get; set; } = string.Empty;  // Empty = no color, otherwise #RRGGBB
     public string Note { get; set; } = string.Empty;      // User note
+    public bool IsPinned { get; set; }                    // Pinned to top of node list
 }

@@ -60,7 +60,18 @@ Der Meshhessen Client ist ein Gemeinschaftsprojekt der Meshtastic-Community in H
 
 ## 📸 Screenshots
 
-*(folgen in Kürze)*
+Map and Distance:
+<img width="1250" height="813" alt="image" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/map.png" />
+Node Overwiew:
+<img width="1249" height="812" alt="image" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/nodes.png" />
+Messages:
+<img width="1443" height="813" alt="image" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/messaging.png" />
+Alert Bell signalisation:
+<img width="1446" height="816" alt="image" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/alert_bell.png" />
+Map and Tile downloading:
+<img width="567" height="883" alt="image" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/tile_downloader.png" />
+Channels:
+<img width="1443" height="814" alt="image" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/channel_list.png" />
 
 
 ## ⚠️ Bekannte Einschränkungen
