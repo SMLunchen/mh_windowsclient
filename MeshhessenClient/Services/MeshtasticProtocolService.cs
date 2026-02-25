@@ -785,7 +785,7 @@ public class MeshtasticProtocolService
                 From = fromName,
                 FromId = packet.From,
                 ToId = packet.To,
-                Message = "[Verschlüsselte Nachricht - PSK erforderlich]",
+                Message = System.Windows.Application.Current?.Resources["StrEncryptedMessage"] as string ?? "[Encrypted message – PSK required]",
                 Channel = FormatChannelDisplay(packet.Channel),
                 IsEncrypted = true,
                 IsViaMqtt = packet.ViaMqtt
@@ -881,12 +881,12 @@ public class MeshtasticProtocolService
                 }
                 else
                 {
-                    Logger.WriteLine($"  Node {nodeInfo.Id}: Position vorhanden aber LatI=LonI=0 (kein GPS-Fix)");
+                    Logger.WriteLine($"  Node {nodeInfo.Id}: Position present but LatI=LonI=0 (no GPS fix)");
                 }
             }
             else
             {
-                Logger.WriteLine($"  Node {nodeInfo.Id}: Keine Positionsdaten");
+                Logger.WriteLine($"  Node {nodeInfo.Id}: No position data");
             }
 
             if (protoNodeInfo.DeviceMetrics != null)
@@ -981,7 +981,7 @@ public class MeshtasticProtocolService
             ModelNodeInfo? nodeToFire = null;
             bool shouldFireEvent;
 
-            Logger.WriteLine($"Position-Packet von !{packet.From:x8}: LatI={position.LatitudeI}, LonI={position.LongitudeI}, Alt={position.Altitude}");
+            Logger.WriteLine($"Position packet from !{packet.From:x8}: LatI={position.LatitudeI}, LonI={position.LongitudeI}, Alt={position.Altitude}");
 
             lock (_dataLock)
             {
@@ -992,11 +992,11 @@ public class MeshtasticProtocolService
                         nodeInfo.Latitude = position.LatitudeI / 1e7;
                         nodeInfo.Longitude = position.LongitudeI / 1e7;
                         nodeInfo.Altitude = position.Altitude;
-                        Logger.WriteLine($"  Position aktualisiert: lat={nodeInfo.Latitude:F6}, lon={nodeInfo.Longitude:F6}");
+                        Logger.WriteLine($"  Position updated: lat={nodeInfo.Latitude:F6}, lon={nodeInfo.Longitude:F6}");
                     }
                     else
                     {
-                        Logger.WriteLine($"  Position ignoriert (LatI=LonI=0, kein GPS-Fix)");
+                        Logger.WriteLine($"  Position ignored (LatI=LonI=0, no GPS fix)");
                     }
                     nodeInfo.LastSeen = DateTime.Now.ToString("HH:mm:ss");
                     if (packet.RxRssi != 0) nodeInfo.Rssi = packet.RxRssi.ToString();
@@ -1006,7 +1006,7 @@ public class MeshtasticProtocolService
                 }
                 else
                 {
-                    Logger.WriteLine($"  Node !{packet.From:x8} unbekannt, Position verworfen");
+                    Logger.WriteLine($"  Node !{packet.From:x8} unknown, position discarded");
                     shouldFireEvent = false;
                 }
             }

@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ui="http://schemas.modernwpf.com/2019"
         ui:WindowHelper.UseModernWindowStyle="True"
-        Title="Kanäle aus Liste"
+        Title="{DynamicResource StrCbWindowTitle}"
         Width="750"
         Height="500"
         MinWidth="550"
@@ -18,10 +18,10 @@
 
         <!-- Filter -->
         <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
-            <TextBlock Text="Bundesland:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+            <TextBlock Text="{DynamicResource StrCbState}" VerticalAlignment="Center" Margin="0,0,8,0"/>
             <ComboBox x:Name="BundeslandFilterComboBox" Width="180" Margin="0,0,15,0"
                       SelectionChanged="BundeslandFilter_Changed"/>
-            <TextBlock Text="Suche:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+            <TextBlock Text="{DynamicResource StrCbSearch}" VerticalAlignment="Center" Margin="0,0,8,0"/>
             <TextBox x:Name="SearchTextBox" Width="200" TextChanged="SearchText_Changed"/>
         </StackPanel>
 
@@ -29,7 +29,7 @@
         <ListView x:Name="ChannelListView" Grid.Row="1">
             <ListView.View>
                 <GridView>
-                    <GridViewColumn Header="Bundesland" Width="100"
+                    <GridViewColumn Header="{DynamicResource StrCbColState}" Width="100"
                                     DisplayMemberBinding="{Binding Bundesland}"/>
                     <GridViewColumn Header="Name" Width="130"
                                     DisplayMemberBinding="{Binding Name}"/>
@@ -37,7 +37,7 @@
                                     DisplayMemberBinding="{Binding Psk}"/>
                     <GridViewColumn Header="MQTT" Width="60"
                                     DisplayMemberBinding="{Binding MqttEnabled}"/>
-                    <GridViewColumn Header="Bemerkung" Width="180">
+                    <GridViewColumn Header="{DynamicResource StrCbColNotes}" Width="180">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
                                 <TextBlock Text="{Binding Bemerkung}" TextWrapping="Wrap"/>
@@ -52,8 +52,8 @@
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
             <TextBlock x:Name="StatusText" VerticalAlignment="Center" Margin="0,0,15,0"
                        FontStyle="Italic" Opacity="0.7"/>
-            <Button Content="Hinzufügen" Margin="0,0,10,0" Click="AddSelected_Click"/>
-            <Button Content="Schließen" IsCancel="True" Click="Close_Click"/>
+            <Button Content="{DynamicResource StrCbAdd}" Margin="0,0,10,0" Click="AddSelected_Click"/>
+            <Button Content="{DynamicResource StrClose}" IsCancel="True" Click="Close_Click"/>
         </StackPanel>
     </Grid>
 </Window>

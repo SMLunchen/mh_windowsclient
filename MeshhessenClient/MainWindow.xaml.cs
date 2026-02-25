@@ -287,7 +287,7 @@ public partial class MainWindow : Window
 
             var sourceTileDir = Path.Combine(tileDir, sourceFolder);
             MapStatusText.Text = Directory.Exists(sourceTileDir) && Directory.EnumerateFiles(sourceTileDir, "*.png", SearchOption.AllDirectories).Any()
-                ? "" : "Keine Tiles – bitte herunterladen";
+                ? "" : Loc("StrNoTiles");
 
             // Copyright-Hinweis basierend auf Kartenquelle setzen
             UpdateMapCopyright();
@@ -431,35 +431,35 @@ public partial class MainWindow : Window
             if (hitNode != null)
             {
                 _mapContextMenuNode = hitNode;
-                var dmItem = new MenuItem { Header = "💬 DM senden" };
+                var dmItem = new MenuItem { Header = Loc("StrSendDm") };
                 dmItem.Click += (s, ev) => { if (_mapContextMenuNode != null) OpenDmToNode(_mapContextMenuNode); };
                 menu.Items.Add(dmItem);
 
-                var infoItem = new MenuItem { Header = "ℹ️ Node Info" };
+                var infoItem = new MenuItem { Header = Loc("StrNodeInfo") };
                 infoItem.Click += (s, ev) => { if (_mapContextMenuNode != null) ShowNodeInfoDialog(_mapContextMenuNode); };
                 menu.Items.Add(infoItem);
 
                 menu.Items.Add(new Separator());
 
                 // Color submenu
-                var colorMenu = new MenuItem { Header = "🎨 Farbe setzen" };
+                var colorMenu = new MenuItem { Header = Loc("StrSetColor") };
                 var colors = new[]
                 {
-                    ("Grün", "#00FF00"),
-                    ("Blau", "#0080FF"),
-                    ("Gelb", "#FFFF00"),
-                    ("Orange", "#FF8000"),
-                    ("Lila", "#8000FF"),
-                    ("Braun", "#804000"),
-                    ("Pink", "#FF00FF"),
-                    ("Türkis", "#00FFFF")
+                    ("StrColorGreen", "#00FF00"),
+                    ("StrColorBlue", "#0080FF"),
+                    ("StrColorYellow", "#FFFF00"),
+                    ("StrColorOrange", "#FF8000"),
+                    ("StrColorPurple", "#8000FF"),
+                    ("StrColorBrown", "#804000"),
+                    ("StrColorPink", "#FF00FF"),
+                    ("StrColorCyan", "#00FFFF")
                 };
 
-                foreach (var (label, colorHex) in colors)
+                foreach (var (key, colorHex) in colors)
                 {
                     var textBlock = new TextBlock
                     {
-                        Text = $"■ {label}",
+                        Text = Loc(key),
                         Foreground = new SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(colorHex)),
                         FontWeight = FontWeights.Bold
                     };
@@ -473,7 +473,7 @@ public partial class MainWindow : Window
                 }
 
                 colorMenu.Items.Add(new Separator());
-                var removeColorItem = new MenuItem { Header = "❌ Farbe entfernen" };
+                var removeColorItem = new MenuItem { Header = Loc("StrRemoveColor") };
                 removeColorItem.Click += (s, ev) =>
                 {
                     if (_mapContextMenuNode != null)
@@ -483,7 +483,7 @@ public partial class MainWindow : Window
                 menu.Items.Add(colorMenu);
 
                 // Note option
-                var noteItem = new MenuItem { Header = "📝 Notiz bearbeiten..." };
+                var noteItem = new MenuItem { Header = Loc("StrEditNote") };
                 noteItem.Click += (s, ev) =>
                 {
                     if (_mapContextMenuNode != null)
@@ -493,11 +493,19 @@ public partial class MainWindow : Window
 
                 menu.Items.Add(new Separator());
 
+                // Pin
+                var pinItem = new MenuItem { Header = hitNode.IsPinned ? Loc("StrUnpin") : Loc("StrPin") };
+                pinItem.Click += (s, ev) =>
+                {
+                    if (_mapContextMenuNode != null) PinNodeInternal(_mapContextMenuNode);
+                };
+                menu.Items.Add(pinItem);
+
                 // Path show/hide
                 bool pathActive = hitNode != null && _pathLayers.ContainsKey(hitNode.NodeId);
                 if (pathActive)
                 {
-                    var hidePathItem = new MenuItem { Header = "🛤️ Pfad ausblenden" };
+                    var hidePathItem = new MenuItem { Header = Loc("StrHidePath") };
                     hidePathItem.Click += (s, ev) =>
                     {
                         if (_mapContextMenuNode != null && _pathLayers.TryGetValue(_mapContextMenuNode.NodeId, out var layer))
@@ -511,7 +519,7 @@ public partial class MainWindow : Window
                 }
                 else
                 {
-                    var showPathItem = new MenuItem { Header = "🛤️ Bewegungspfad anzeigen" };
+                    var showPathItem = new MenuItem { Header = Loc("StrShowPath") };
                     showPathItem.Click += (s, ev) =>
                     {
                         if (_mapContextMenuNode != null)
@@ -526,7 +534,7 @@ public partial class MainWindow : Window
                 var clickLat = lonLat.lat;
                 var clickLon = lonLat.lon;
 
-                var setPosItem = new MenuItem { Header = $"📍 Eigenen Standort hier setzen ({clickLat:F4}, {clickLon:F4})" };
+                var setPosItem = new MenuItem { Header = string.Format(Loc("StrSetMyPosition"), $"{clickLat:F4}", $"{clickLon:F4}") };
                 setPosItem.Click += (s, ev) => SetMyPosition(clickLat, clickLon);
                 menu.Items.Add(setPosItem);
             }
@@ -647,7 +655,7 @@ public partial class MainWindow : Window
         var sourceFolder = _currentSettings.MapSource;
         var sourceTileDir = Path.Combine(tileDir, sourceFolder);
         MapStatusText.Text = Directory.Exists(sourceTileDir) && Directory.EnumerateFiles(sourceTileDir, "*.png", SearchOption.AllDirectories).Any()
-            ? "" : "Keine Tiles – bitte herunterladen";
+            ? "" : Loc("StrNoTiles");
     }
 
     private void MapSourceComboBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
@@ -960,14 +968,14 @@ public partial class MainWindow : Window
                     _connectionService?.Disconnect();
                 });
 
-                ConnectButton.Content = "Verbinden";
-                UpdateStatusBar("Getrennt");
+                ConnectButton.Content = Loc("StrConnect");
+                UpdateStatusBar(Loc("StrDisconnectedMsg"));
                 SetConnectionStatus(ConnectionStatus.Disconnected);
             }
             catch (Exception ex)
             {
                 Services.Logger.WriteLine($"Disconnect error: {ex.Message}");
-                UpdateStatusBar("Fehler beim Trennen");
+                UpdateStatusBar(Loc("StrDisconnectError"));
                 SetConnectionStatus(ConnectionStatus.Error);
             }
             finally
@@ -1044,7 +1052,7 @@ public partial class MainWindow : Window
                 _lastConnectionType = _currentConnectionType;
 
                 ConnectButton.IsEnabled = false;
-                UpdateStatusBar($"Verbinde mit {displayName}...");
+                UpdateStatusBar(string.Format(Loc("StrConnectingTo"), displayName));
                 SetConnectionStatus(ConnectionStatus.Connecting);
 
                 // Create new connection service based on type
@@ -1090,9 +1098,9 @@ public partial class MainWindow : Window
                 SettingsService.Save(_currentSettings);
 
                 // GUI sofort als "Verbunden" anzeigen
-                ConnectButton.Content = "Trennen";
+                ConnectButton.Content = Loc("StrDisconnect");
                 ConnectButton.IsEnabled = true;
-                UpdateStatusBar($"Verbunden mit {displayName} - Initialisiere...");
+                UpdateStatusBar(string.Format(Loc("StrConnectedInit"), displayName));
                 SetConnectionStatus(ConnectionStatus.Initializing);
 
                 // Initialisierung im Hintergrund starten (nicht blockieren!)
@@ -1103,7 +1111,7 @@ public partial class MainWindow : Window
                         await _protocolService.InitializeAsync();
                         Dispatcher.BeginInvoke(() =>
                         {
-                            UpdateStatusBar($"Verbunden mit {displayName} - Bereit");
+                            UpdateStatusBar(string.Format(Loc("StrConnectedReady"), displayName));
                             SetConnectionStatus(ConnectionStatus.Ready);
                             NodeConfigButton.IsEnabled = true;
                         });
@@ -1113,7 +1121,7 @@ public partial class MainWindow : Window
                         Services.Logger.WriteLine($"Initialization error: {initEx.Message}");
                         Dispatcher.BeginInvoke(() =>
                         {
-                            UpdateStatusBar($"Verbunden mit {displayName} - Init-Fehler");
+                            UpdateStatusBar(string.Format(Loc("StrConnectedInitError"), displayName));
                             SetConnectionStatus(ConnectionStatus.Error);
                         });
                     }
@@ -1122,7 +1130,7 @@ public partial class MainWindow : Window
             catch (Exception ex)
             {
                 MessageBox.Show($"Verbindung fehlgeschlagen: {ex.Message}", "Fehler", MessageBoxButton.OK, MessageBoxImage.Error);
-                UpdateStatusBar("Verbindung fehlgeschlagen");
+                UpdateStatusBar(Loc("StrConnectionFailed"));
                 SetConnectionStatus(ConnectionStatus.Error);
                 ConnectButton.IsEnabled = true;
             }
@@ -1147,8 +1155,8 @@ public partial class MainWindow : Window
         }
 
         var result = MessageBox.Show(
-            "Möchten Sie wirklich einen NOTRUF (Alert Bell) senden?\n\nDies wird als wichtige Benachrichtigung an alle Empfänger gesendet!",
-            "Notruf bestätigen",
+            string.Format(Loc("StrAlertConfirmText"), "\n"),
+            Loc("StrAlertConfirmTitle"),
             MessageBoxButton.YesNo,
             MessageBoxImage.Warning);
 
@@ -1186,7 +1194,7 @@ public partial class MainWindow : Window
 
             await _protocolService.SendTextMessageAsync(alertMessage, 0xFFFFFFFF, (uint)_activeChannelIndex);
 
-            UpdateStatusBar("Notruf gesendet!");
+            UpdateStatusBar(Loc("StrAlertSent"));
         }
         catch (Exception ex)
         {
@@ -1320,8 +1328,8 @@ public partial class MainWindow : Window
         }
 
         var result = MessageBox.Show(
-            $"Kanal '{selectedChannel.Name}' (Index {selectedChannel.Index}) wirklich löschen?",
-            "Kanal löschen", MessageBoxButton.YesNo, MessageBoxImage.Question);
+            string.Format(Loc("StrDeleteChannelConfirm"), selectedChannel.Name, selectedChannel.Index),
+            Loc("StrDeleteChannel"), MessageBoxButton.YesNo, MessageBoxImage.Question);
 
         if (result != MessageBoxResult.Yes) return;
 
@@ -1568,22 +1576,22 @@ public partial class MainWindow : Window
                     _currentLoRaConfig = null;
                     NodeConfigButton.IsEnabled = false;
                     UpdateMeshHessenButtonState();
-                    PacketCountText.Text = "Pakete: 0";
+                    PacketCountText.Text = string.Format(Loc("StrPacketCount"), 0);
 
                     if (!_intentionalDisconnect && !_isReconnecting && _lastConnectionParams != null)
                     {
                         // Unexpected disconnect (e.g. node reboot) — try to reconnect
                         _isReconnecting = true;
                         StatusIndicator.Fill = Brushes.Orange;
-                        StatusText.Text = "Verbindung verloren";
-                        ConnectButton.Content = "Trennen";
+                        StatusText.Text = Loc("StrConnectionLost");
+                        ConnectButton.Content = Loc("StrDisconnect");
                         _ = TryReconnectAsync();
                     }
                     else if (!_isReconnecting)
                     {
                         StatusIndicator.Fill = Brushes.Gray;
-                        StatusText.Text = "Nicht verbunden";
-                        ConnectButton.Content = "Verbinden";
+                        StatusText.Text = Loc("StrDisconnected");
+                        ConnectButton.Content = Loc("StrConnect");
                         ConnectButton.IsEnabled = true;
                     }
                 }
@@ -1610,7 +1618,7 @@ public partial class MainWindow : Window
             Services.Logger.WriteLine($"[RECONNECT] Attempt {attempt}/{maxAttempts}...");
             Dispatcher.BeginInvoke(() =>
             {
-                UpdateStatusBar($"Verbinde erneut... (Versuch {attempt}/{maxAttempts})");
+                UpdateStatusBar(string.Format(Loc("StrReconnectingAttempt"), attempt, maxAttempts));
                 SetConnectionStatus(ConnectionStatus.Connecting);
             });
 
@@ -1643,9 +1651,9 @@ public partial class MainWindow : Window
 
                 Dispatcher.BeginInvoke(() =>
                 {
-                    ConnectButton.Content = "Trennen";
+                    ConnectButton.Content = Loc("StrDisconnect");
                     ConnectButton.IsEnabled = true;
-                    UpdateStatusBar("Verbunden - Initialisiere...");
+                    UpdateStatusBar(Loc("StrConnectedInitSimple"));
                     SetConnectionStatus(ConnectionStatus.Initializing);
                 });
 
@@ -1656,7 +1664,7 @@ public partial class MainWindow : Window
                         await _protocolService.InitializeAsync();
                         Dispatcher.BeginInvoke(() =>
                         {
-                            UpdateStatusBar("Verbunden - Bereit");
+                            UpdateStatusBar(Loc("StrConnectedReadySimple"));
                             SetConnectionStatus(ConnectionStatus.Ready);
                             NodeConfigButton.IsEnabled = true;
                         });
@@ -1682,10 +1690,10 @@ public partial class MainWindow : Window
         Dispatcher.BeginInvoke(() =>
         {
             StatusIndicator.Fill = Brushes.Gray;
-            StatusText.Text = "Nicht verbunden";
-            ConnectButton.Content = "Verbinden";
+            StatusText.Text = Loc("StrDisconnected");
+            ConnectButton.Content = Loc("StrConnect");
             ConnectButton.IsEnabled = true;
-            UpdateStatusBar("Verbindung verloren – bitte manuell verbinden");
+            UpdateStatusBar(Loc("StrConnectionLostMsg"));
             SetConnectionStatus(ConnectionStatus.Disconnected);
         });
     }
@@ -1947,7 +1955,7 @@ public partial class MainWindow : Window
                 // Update Message Filter ComboBox
                 UpdateMessageFilterComboBox();
 
-                UpdateStatusBar($"Kanal {channel.Index} empfangen: {channel.Name}");
+                UpdateStatusBar(string.Format(Loc("StrChannelReceived"), channel.Index, channel.Name));
                 UpdateMeshHessenButtonState();
             }
             catch (Exception ex)
@@ -2042,7 +2050,7 @@ public partial class MainWindow : Window
         {
             try
             {
-                PacketCountText.Text = $"Pakete: {count}";
+                PacketCountText.Text = string.Format(Loc("StrPacketCount"), count);
             }
             catch (Exception ex)
             {
@@ -2144,27 +2152,27 @@ public partial class MainWindow : Window
         {
             case ConnectionStatus.Disconnected:
                 StatusIndicator.Fill = new SolidColorBrush(Colors.Gray);
-                StatusText.Text = "Nicht verbunden";
+                StatusText.Text = Loc("StrDisconnected");
                 break;
             case ConnectionStatus.Connecting:
                 StatusIndicator.Fill = new SolidColorBrush(Colors.Yellow);
-                StatusText.Text = "Verbinde...";
+                StatusText.Text = Loc("StrConnecting");
                 break;
             case ConnectionStatus.Initializing:
                 StatusIndicator.Fill = new SolidColorBrush(Colors.Orange);
-                StatusText.Text = "Initialisiere...";
+                StatusText.Text = Loc("StrInitializing");
                 break;
             case ConnectionStatus.Ready:
                 StatusIndicator.Fill = new SolidColorBrush(Colors.LimeGreen);
-                StatusText.Text = "Verbunden";
+                StatusText.Text = Loc("StrConnected");
                 break;
             case ConnectionStatus.Disconnecting:
                 StatusIndicator.Fill = new SolidColorBrush(Colors.Orange);
-                StatusText.Text = "Trenne...";
+                StatusText.Text = Loc("StrDisconnecting");
                 break;
             case ConnectionStatus.Error:
                 StatusIndicator.Fill = new SolidColorBrush(Colors.Red);
-                StatusText.Text = "Fehler";
+                StatusText.Text = Loc("StrError");
                 break;
         }
     }
@@ -2176,7 +2184,7 @@ public partial class MainWindow : Window
 
         // Erstelle Liste mit "Alle" Option
         var filterItems = new List<ChannelInfo>();
-        filterItems.Add(new ChannelInfo { Index = 999, Name = "Alle Kanäle", Role = "" });
+        filterItems.Add(new ChannelInfo { Index = 999, Name = Loc("StrAllChannels"), Role = "" });
         filterItems.AddRange(_channels);
 
         MessageChannelFilterComboBox.ItemsSource = filterItems;
@@ -2610,6 +2618,36 @@ public partial class MainWindow : Window
         if (node != null) EditNodeNoteInternal(node);
     }
 
+    private void MessagesListView_ContextMenuOpening(object sender, ContextMenuEventArgs e)
+    {
+        var node = GetNodeFromSelectedMessage();
+        if (node == null) { e.Handled = true; return; }
+        PinMsgMenuItem.Header = node.IsPinned ? Loc("StrUnpin") : Loc("StrPin");
+        bool pathActive = _pathLayers.ContainsKey(node.NodeId);
+        ShowPathMsgMenuItem.Visibility = pathActive ? Visibility.Collapsed : Visibility.Visible;
+        HidePathMsgMenuItem.Visibility = pathActive ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private void MessageContextMenu_Pin_Click(object sender, RoutedEventArgs e)
+    {
+        var node = GetNodeFromSelectedMessage();
+        if (node != null) PinNodeInternal(node);
+    }
+
+    private void MessageContextMenu_ShowPath_Click(object sender, RoutedEventArgs e)
+    {
+        var node = GetNodeFromSelectedMessage();
+        if (node != null) ShowPathForNode(node);
+    }
+
+    private void MessageContextMenu_HidePath_Click(object sender, RoutedEventArgs e)
+    {
+        var node = GetNodeFromSelectedMessage();
+        if (node == null) return;
+        HidePathForNode(node);
+        HidePathMsgMenuItem.Visibility = Visibility.Collapsed;
+    }
+
     // ========== Node Color and Note Management ==========
 
     private void SetNodeColor_Click(object sender, RoutedEventArgs e)
@@ -2942,6 +2980,9 @@ public partial class MainWindow : Window
         }
     }
 
+    private static string Loc(string key) =>
+        Application.Current?.Resources[key] as string ?? key;
+
     private void LanguageComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (LanguageComboBox.SelectedItem is not System.Windows.Controls.ComboBoxItem item) return;
@@ -2974,21 +3015,20 @@ public partial class MainWindow : Window
     {
         if (NodesListView.SelectedItem is NodeInfo node)
         {
-            PinNodeMenuItem.Header = node.IsPinned ? "📌 Loslösen" : "📌 Anheften";
+            PinNodeMenuItem.Header = node.IsPinned ? Loc("StrUnpin") : Loc("StrPin");
+            bool pathActive = _pathLayers.ContainsKey(node.NodeId);
+            ShowPathNodeMenuItem.Visibility = pathActive ? Visibility.Collapsed : Visibility.Visible;
+            HidePathMenuItem.Visibility = pathActive ? Visibility.Visible : Visibility.Collapsed;
         }
     }
 
-    private void NodeContextMenu_Pin_Click(object sender, RoutedEventArgs e)
+    private void PinNodeInternal(NodeInfo node)
     {
-        if (NodesListView.SelectedItem is not NodeInfo node) return;
-
         node.IsPinned = !node.IsPinned;
 
-        // Update in _allNodes
         var existing = _allNodes.FirstOrDefault(n => n.NodeId == node.NodeId);
         if (existing != null) existing.IsPinned = node.IsPinned;
 
-        // Save to settings
         if (node.IsPinned)
             _currentSettings.PinnedNodes[node.NodeId] = true;
         else
@@ -2997,6 +3037,12 @@ public partial class MainWindow : Window
 
         ApplyNodeSortAndFilter();
         Services.Logger.WriteLine($"Node {node.Name} ({node.Id}) {(node.IsPinned ? "pinned" : "unpinned")}");
+    }
+
+    private void NodeContextMenu_Pin_Click(object sender, RoutedEventArgs e)
+    {
+        if (NodesListView.SelectedItem is not NodeInfo node) return;
+        PinNodeInternal(node);
     }
 
     // ========== Path Display ==========

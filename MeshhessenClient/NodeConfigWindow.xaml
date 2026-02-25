@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ui="http://schemas.modernwpf.com/2019"
         ui:WindowHelper.UseModernWindowStyle="True"
-        Title="Node konfigurieren"
+        Title="{DynamicResource StrNcWindowTitle}"
         Width="520"
         Height="560"
         WindowStartupLocation="CenterOwner">
@@ -15,27 +15,27 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0" x:Name="StatusText" Text="Lade Konfiguration..." Margin="0,0,0,8" Foreground="Gray" FontStyle="Italic"/>
+        <TextBlock Grid.Row="0" x:Name="StatusText" Text="{DynamicResource StrLoadingConfig}" Margin="0,0,0,8" Foreground="Gray" FontStyle="Italic"/>
 
         <TabControl Grid.Row="1" x:Name="ConfigTabs">
 
             <!-- Tab: Benutzer -->
-            <TabItem Header="Benutzer">
+            <TabItem Header="{DynamicResource StrNcTabUser}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="10">
-                        <TextBlock Text="Anzeigename (LongName)" Margin="0,8,0,2"/>
+                        <TextBlock Text="{DynamicResource StrNcLongName}" Margin="0,8,0,2"/>
                         <TextBox x:Name="LongNameTextBox" MaxLength="39"/>
-                        <TextBlock Text="Kurzname (ShortName, max. 4 Zeichen)" Margin="0,10,0,2"/>
+                        <TextBlock Text="{DynamicResource StrNcShortName}" Margin="0,10,0,2"/>
                         <TextBox x:Name="ShortNameTextBox" MaxLength="4"/>
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
 
             <!-- Tab: Gerät -->
-            <TabItem Header="Gerät">
+            <TabItem Header="{DynamicResource StrNcTabDevice}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="10">
-                        <TextBlock Text="Rolle" Margin="0,8,0,2"/>
+                        <TextBlock Text="{DynamicResource StrNcRole}" Margin="0,8,0,2"/>
                         <ComboBox x:Name="RoleComboBox" Width="200" HorizontalAlignment="Left">
                             <ComboBoxItem Content="CLIENT" Tag="0"/>
                             <ComboBoxItem Content="CLIENT_MUTE" Tag="1"/>
@@ -47,7 +47,7 @@
                             <ComboBoxItem Content="TAK" Tag="7"/>
                             <ComboBoxItem Content="CLIENT_HIDDEN" Tag="8"/>
                         </ComboBox>
-                        <TextBlock Text="Rebroadcast-Modus" Margin="0,10,0,2"/>
+                        <TextBlock Text="{DynamicResource StrNcRebroadcast}" Margin="0,10,0,2"/>
                         <ComboBox x:Name="RebroadcastComboBox" Width="200" HorizontalAlignment="Left">
                             <ComboBoxItem Content="ALL" Tag="0"/>
                             <ComboBoxItem Content="ALL_SKIP_DECODING" Tag="1"/>
@@ -56,18 +56,18 @@
                             <ComboBoxItem Content="NONE" Tag="4"/>
                             <ComboBoxItem Content="CORE_PORTNUMS_ONLY" Tag="5"/>
                         </ComboBox>
-                        <TextBlock Text="NodeInfo Broadcast-Intervall (z.B. 3h, 1h 30m, 0=Auto)" Margin="0,10,0,2"/>
+                        <TextBlock Text="{DynamicResource StrNcNodeInfoInterval}" Margin="0,10,0,2"/>
                         <TextBox x:Name="NodeInfoIntervalTextBox" Width="150" HorizontalAlignment="Left"/>
-                        <TextBlock Text="Zeitzone (POSIX-Format, z.B. CET-1CEST,M3.5.0,M10.5.0/3)" Margin="0,10,0,2"/>
+                        <TextBlock Text="{DynamicResource StrNcTimezone}" Margin="0,10,0,2"/>
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <TextBox x:Name="TzdefTextBox" Grid.Column="0" Margin="0,0,6,0"/>
-                            <Button Grid.Column="1" Content="Von Windows" ToolTip="Zeitzone des lokalen Windows-PCs übernehmen" Click="TzFromWindows_Click" Padding="8,4"/>
+                            <Button Grid.Column="1" Content="{DynamicResource StrNcFromWindows}" ToolTip="{DynamicResource StrNcFromWindowsTip}" Click="TzFromWindows_Click" Padding="8,4"/>
                         </Grid>
-                        <CheckBox x:Name="LedHeartbeatCheckBox" Content="LED-Heartbeat deaktivieren" Margin="0,12,0,0"/>
+                        <CheckBox x:Name="LedHeartbeatCheckBox" Content="{DynamicResource StrNcLedHeartbeat}" Margin="0,12,0,0"/>
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
@@ -98,8 +98,8 @@
                             <ComboBoxItem Content="SG_923" Tag="17"/>
                             <ComboBoxItem Content="WLAN" Tag="18"/>
                         </ComboBox>
-                        <CheckBox x:Name="LoraUsePresetCheckBox" Content="Modem-Preset verwenden" Margin="0,10,0,0" Checked="LoraUsePresetCheckBox_Changed" Unchecked="LoraUsePresetCheckBox_Changed"/>
-                        <TextBlock Text="Modem-Preset" Margin="0,8,0,2"/>
+                        <CheckBox x:Name="LoraUsePresetCheckBox" Content="{DynamicResource StrNcUsePreset}" Margin="0,10,0,0" Checked="LoraUsePresetCheckBox_Changed" Unchecked="LoraUsePresetCheckBox_Changed"/>
+                        <TextBlock Text="{DynamicResource StrNcModemPreset}" Margin="0,8,0,2"/>
                         <ComboBox x:Name="LoraPresetComboBox" Width="180" HorizontalAlignment="Left" IsEnabled="False">
                             <ComboBoxItem Content="LONG_FAST" Tag="0"/>
                             <ComboBoxItem Content="LONG_SLOW" Tag="1"/>
@@ -110,10 +110,10 @@
                             <ComboBoxItem Content="SHORT_FAST" Tag="6"/>
                             <ComboBoxItem Content="LONG_MODERATE" Tag="7"/>
                         </ComboBox>
-                        <TextBlock Text="Hop-Limit (1-7)" Margin="0,10,0,2"/>
+                        <TextBlock Text="{DynamicResource StrNcHopLimit}" Margin="0,10,0,2"/>
                         <TextBox x:Name="HopLimitTextBox" Width="60" HorizontalAlignment="Left"/>
-                        <CheckBox x:Name="TxEnabledCheckBox" Content="Senden aktiv (TX)" Margin="0,10,0,0"/>
-                        <TextBlock Text="TX-Leistung (dBm, 0=Maximum)" Margin="0,8,0,2"/>
+                        <CheckBox x:Name="TxEnabledCheckBox" Content="{DynamicResource StrNcTxEnabled}" Margin="0,10,0,0"/>
+                        <TextBlock Text="{DynamicResource StrNcTxPower}" Margin="0,8,0,2"/>
                         <TextBox x:Name="TxPowerTextBox" Width="80" HorizontalAlignment="Left"/>
                     </StackPanel>
                 </ScrollViewer>
@@ -123,18 +123,18 @@
             <TabItem Header="Position">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="10">
-                        <TextBlock Text="GPS-Modus" Margin="0,8,0,2"/>
+                        <TextBlock Text="{DynamicResource StrNcGpsMode}" Margin="0,8,0,2"/>
                         <ComboBox x:Name="GpsModeComboBox" Width="160" HorizontalAlignment="Left">
-                            <ComboBoxItem Content="Deaktiviert" Tag="0"/>
-                            <ComboBoxItem Content="Aktiv" Tag="1"/>
-                            <ComboBoxItem Content="Nicht vorhanden" Tag="2"/>
+                            <ComboBoxItem Content="{DynamicResource StrNcGpsDisabled}" Tag="0"/>
+                            <ComboBoxItem Content="{DynamicResource StrNcGpsActive}" Tag="1"/>
+                            <ComboBoxItem Content="{DynamicResource StrNcGpsNotPresent}" Tag="2"/>
                         </ComboBox>
-                        <TextBlock Text="Broadcast-Intervall (z.B. 15m, 1h, 0=Smart)" Margin="0,10,0,2"/>
+                        <TextBlock Text="{DynamicResource StrNcPosBroadcast}" Margin="0,10,0,2"/>
                         <TextBox x:Name="PosBroadcastSecsTextBox" Width="150" HorizontalAlignment="Left"/>
-                        <CheckBox x:Name="SmartBroadcastCheckBox" Content="Smart-Broadcast aktivieren" Margin="0,10,0,0"/>
-                        <TextBlock Text="Min. Abstand für Smart-Broadcast (Meter)" Margin="0,8,0,2"/>
+                        <CheckBox x:Name="SmartBroadcastCheckBox" Content="{DynamicResource StrNcSmartBroadcast}" Margin="0,10,0,0"/>
+                        <TextBlock Text="{DynamicResource StrNcMinDistance}" Margin="0,8,0,2"/>
                         <TextBox x:Name="MinDistanceTextBox" Width="120" HorizontalAlignment="Left"/>
-                        <TextBlock Text="Min. Geschwindigkeit für Smart-Broadcast (m/s)" Margin="0,8,0,2"/>
+                        <TextBlock Text="{DynamicResource StrNcMinSpeed}" Margin="0,8,0,2"/>
                         <TextBox x:Name="MinSpeedTextBox" Width="120" HorizontalAlignment="Left"/>
                     </StackPanel>
                 </ScrollViewer>
@@ -144,37 +144,37 @@
             <TabItem Header="MQTT">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="10">
-                        <CheckBox x:Name="MqttEnabledCheckBox" Content="MQTT aktivieren" Margin="0,8,0,8"/>
-                        <TextBlock Text="Server (Hostname oder IP)" Margin="0,4,0,2"/>
+                        <CheckBox x:Name="MqttEnabledCheckBox" Content="{DynamicResource StrNcMqttEnabled}" Margin="0,8,0,8"/>
+                        <TextBlock Text="{DynamicResource StrNcMqttServer}" Margin="0,4,0,2"/>
                         <TextBox x:Name="MqttAddressTextBox"/>
-                        <TextBlock Text="Benutzername" Margin="0,8,0,2"/>
+                        <TextBlock Text="{DynamicResource StrNcMqttUsername}" Margin="0,8,0,2"/>
                         <TextBox x:Name="MqttUsernameTextBox"/>
-                        <TextBlock Text="Passwort" Margin="0,8,0,2"/>
+                        <TextBlock Text="{DynamicResource StrNcMqttPassword}" Margin="0,8,0,2"/>
                         <PasswordBox x:Name="MqttPasswordBox"/>
-                        <CheckBox x:Name="MqttEncryptionCheckBox" Content="Verschlüsselung" Margin="0,10,0,0"/>
-                        <CheckBox x:Name="MqttJsonCheckBox" Content="JSON-Modus" Margin="0,4,0,0"/>
-                        <CheckBox x:Name="MqttTlsCheckBox" Content="TLS (verschlüsselte Verbindung)" Margin="0,4,0,0"/>
-                        <TextBlock Text="Root-Topic" Margin="0,8,0,2"/>
+                        <CheckBox x:Name="MqttEncryptionCheckBox" Content="{DynamicResource StrNcMqttEncryption}" Margin="0,10,0,0"/>
+                        <CheckBox x:Name="MqttJsonCheckBox" Content="{DynamicResource StrNcMqttJson}" Margin="0,4,0,0"/>
+                        <CheckBox x:Name="MqttTlsCheckBox" Content="{DynamicResource StrNcMqttTls}" Margin="0,4,0,0"/>
+                        <TextBlock Text="{DynamicResource StrNcMqttRootTopic}" Margin="0,8,0,2"/>
                         <TextBox x:Name="MqttRootTextBox"/>
                         <CheckBox x:Name="MqttProxyCheckBox" Content="Proxy to Client" Margin="0,10,0,0"/>
-                        <CheckBox x:Name="MqttMapReportingCheckBox" Content="Kartenreporting" Margin="0,4,0,0"/>
+                        <CheckBox x:Name="MqttMapReportingCheckBox" Content="{DynamicResource StrNcMqttMapReporting}" Margin="0,4,0,0"/>
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
 
             <!-- Tab: Telemetrie -->
-            <TabItem Header="Telemetrie">
+            <TabItem Header="{DynamicResource StrNcTabTelemetry}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="10">
-                        <TextBlock Text="Geräte-Update-Intervall (z.B. 30m, 1h, 0=Aus)" Margin="0,8,0,2"/>
+                        <TextBlock Text="{DynamicResource StrNcDeviceTelemetry}" Margin="0,8,0,2"/>
                         <TextBox x:Name="DeviceTelemetryIntervalTextBox" Width="150" HorizontalAlignment="Left"/>
-                        <TextBlock Text="Umgebungs-Update-Intervall (z.B. 5m, 1h, 0=Aus)" Margin="0,8,0,2"/>
+                        <TextBlock Text="{DynamicResource StrNcEnvironmentInterval}" Margin="0,8,0,2"/>
                         <TextBox x:Name="EnvironmentIntervalTextBox" Width="150" HorizontalAlignment="Left"/>
-                        <CheckBox x:Name="FahrenheitCheckBox" Content="Temperatur in Fahrenheit anzeigen" Margin="0,10,0,0"/>
-                        <CheckBox x:Name="EnvironmentMeasurementCheckBox" Content="Umgebungsmessung aktivieren" Margin="0,4,0,0"/>
-                        <TextBlock Text="Luftqualitäts-Intervall (z.B. 5m, 1h, 0=Aus)" Margin="0,8,0,2"/>
+                        <CheckBox x:Name="FahrenheitCheckBox" Content="{DynamicResource StrNcFahrenheit}" Margin="0,10,0,0"/>
+                        <CheckBox x:Name="EnvironmentMeasurementCheckBox" Content="{DynamicResource StrNcEnvironmentMeasurement}" Margin="0,4,0,0"/>
+                        <TextBlock Text="{DynamicResource StrNcAirQualityInterval}" Margin="0,8,0,2"/>
                         <TextBox x:Name="AirQualityIntervalTextBox" Width="150" HorizontalAlignment="Left"/>
-                        <TextBlock Text="Energie-Update-Intervall (z.B. 5m, 1h, 0=Aus)" Margin="0,8,0,2"/>
+                        <TextBlock Text="{DynamicResource StrNcPowerInterval}" Margin="0,8,0,2"/>
                         <TextBox x:Name="PowerIntervalTextBox" Width="150" HorizontalAlignment="Left"/>
                     </StackPanel>
                 </ScrollViewer>
@@ -184,20 +184,20 @@
             <TabItem Header="Bluetooth">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="10">
-                        <CheckBox x:Name="BtEnabledCheckBox" Content="Bluetooth aktivieren" Margin="0,8,0,0"/>
-                        <TextBlock Text="Kopplungsmodus" Margin="0,12,0,2"/>
+                        <CheckBox x:Name="BtEnabledCheckBox" Content="{DynamicResource StrNcBtEnabled}" Margin="0,8,0,0"/>
+                        <TextBlock Text="{DynamicResource StrNcBtPairingMode}" Margin="0,12,0,2"/>
                         <ComboBox x:Name="BtModeComboBox" Width="180" HorizontalAlignment="Left"
                                   SelectionChanged="BtModeComboBox_SelectionChanged">
-                            <ComboBoxItem Content="Zufällige PIN" Tag="0"/>
-                            <ComboBoxItem Content="Feste PIN" Tag="1"/>
-                            <ComboBoxItem Content="Keine PIN" Tag="2"/>
+                            <ComboBoxItem Content="{DynamicResource StrNcBtRandomPin}" Tag="0"/>
+                            <ComboBoxItem Content="{DynamicResource StrNcBtFixedPin}" Tag="1"/>
+                            <ComboBoxItem Content="{DynamicResource StrNcBtNoPin}" Tag="2"/>
                         </ComboBox>
-                        <TextBlock Text="Feste PIN (4–6 Ziffern)" Margin="0,10,0,2"
+                        <TextBlock Text="{DynamicResource StrNcBtFixedPinLabel}" Margin="0,10,0,2"
                                    x:Name="BtFixedPinLabel"/>
                         <TextBox x:Name="BtFixedPinTextBox" Width="120" HorizontalAlignment="Left"
                                  MaxLength="6" IsEnabled="False"/>
                         <TextBlock Margin="0,12,0,0" TextWrapping="Wrap" Foreground="Gray"
-                                   Text="Hinweis: Nach Änderung der Bluetooth-Einstellungen startet das Gerät neu."/>
+                                   Text="{DynamicResource StrNcBtRebootHint}"/>
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
@@ -207,15 +207,15 @@
         <!-- Buttons -->
         <Grid Grid.Row="2" Margin="0,10,0,0">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
-                <Button Content="NodeDB zurücksetzen..." Width="180"
-                        ToolTip="Löscht die bekannten Nodes auf dem Gerät (kein Factory Reset)"
+                <Button Content="{DynamicResource StrNcNodeDbReset}" Width="180"
+                        ToolTip="{DynamicResource StrNcNodeDbResetTip}"
                         Click="NodeDbReset_Click"
                         Foreground="OrangeRed"/>
             </StackPanel>
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                <Button x:Name="SaveButton" Content="Speichern" Width="100" Margin="0,0,10,0"
+                <Button x:Name="SaveButton" Content="{DynamicResource StrSave}" Width="100" Margin="0,0,10,0"
                         IsEnabled="False" Click="Save_Click"/>
-                <Button Content="Schließen" Width="100" Click="Close_Click" IsCancel="True"/>
+                <Button Content="{DynamicResource StrClose}" Width="100" Click="Close_Click" IsCancel="True"/>
             </StackPanel>
         </Grid>
     </Grid>

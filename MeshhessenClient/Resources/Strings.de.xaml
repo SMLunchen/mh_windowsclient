@@ -10,20 +10,20 @@
     <sys:String x:Key="StrCancel">Abbrechen</sys:String>
     <sys:String x:Key="StrClose">Schließen</sys:String>
 
-    <!-- Tab headers -->
-    <sys:String x:Key="StrTabMessages">Nachrichten</sys:String>
-    <sys:String x:Key="StrTabNodes">Knoten</sys:String>
-    <sys:String x:Key="StrTabChannels">Kanäle</sys:String>
-    <sys:String x:Key="StrTabSettings">Einstellungen</sys:String>
-    <sys:String x:Key="StrTabMap">Karte</sys:String>
-    <sys:String x:Key="StrTabInfo">Info</sys:String>
+    <!-- Tab headers (with icons) -->
+    <sys:String x:Key="StrTabMessages">📨 Nachrichten</sys:String>
+    <sys:String x:Key="StrTabNodes">🌐 Knoten</sys:String>
+    <sys:String x:Key="StrTabChannels">📡 Kanäle</sys:String>
+    <sys:String x:Key="StrTabSettings">⚙️ Einstellungen</sys:String>
+    <sys:String x:Key="StrTabMap">🗺️ Karte</sys:String>
+    <sys:String x:Key="StrTabInfo">ℹ️ Info</sys:String>
 
     <!-- Node context menu -->
     <sys:String x:Key="StrPin">📌 Anheften</sys:String>
     <sys:String x:Key="StrUnpin">📌 Loslösen</sys:String>
     <sys:String x:Key="StrShowPath">🛤️ Bewegungspfad anzeigen</sys:String>
     <sys:String x:Key="StrHidePath">🛤️ Pfad ausblenden</sys:String>
-    <sys:String x:Key="StrShowOnMap">🗺️ Auf Karte anzeigen</sys:String>
+    <sys:String x:Key="StrShowOnMap">🗺️ Auf Karte zeigen</sys:String>
     <sys:String x:Key="StrNodeInfo">ℹ️ Node Info</sys:String>
     <sys:String x:Key="StrSendDm">💬 DM senden</sys:String>
     <sys:String x:Key="StrEditNote">📝 Notiz bearbeiten...</sys:String>
@@ -35,11 +35,12 @@
     <sys:String x:Key="StrDisconnected">Nicht verbunden</sys:String>
     <sys:String x:Key="StrConnecting">Verbinde...</sys:String>
     <sys:String x:Key="StrInitializing">Initialisiere...</sys:String>
+    <sys:String x:Key="StrReady">Bereit</sys:String>
 
     <!-- Settings -->
     <sys:String x:Key="StrDarkMode">Dark Mode</sys:String>
-    <sys:String x:Key="StrStationName">Stationsname</sys:String>
-    <sys:String x:Key="StrLanguage">Sprache</sys:String>
+    <sys:String x:Key="StrStationName">Stationsname:</sys:String>
+    <sys:String x:Key="StrLanguage">Sprache:</sys:String>
     <sys:String x:Key="StrLocationLogging">Standort-Logging aktivieren</sys:String>
     <sys:String x:Key="StrNodeConfig">Node konfigurieren...</sys:String>
 
@@ -50,5 +51,224 @@
     <!-- Messages -->
     <sys:String x:Key="StrNotConnected">Nicht verbunden. Bitte zuerst mit einem Gerät verbinden.</sys:String>
     <sys:String x:Key="StrNoPathLog">Kein Standort-Log vorhanden.</sys:String>
+
+    <!-- Toolbar -->
+    <sys:String x:Key="StrRefreshPorts">Ports aktualisieren</sys:String>
+    <sys:String x:Key="StrDevice">Gerät:</sys:String>
+    <sys:String x:Key="StrScanDevices">Geräte suchen</sys:String>
+    <sys:String x:Key="StrOpenDms">Direktnachrichten öffnen</sys:String>
+
+    <!-- Alert -->
+    <sys:String x:Key="StrAlertReceived">Notruf empfangen!</sys:String>
+    <sys:String x:Key="StrGoToMap">📍 Zur Karte</sys:String>
+    <sys:String x:Key="StrSosTooltip">Notruf senden (Alert Bell)</sys:String>
+    <sys:String x:Key="StrAlertBellTooltip">Diese Nachricht enthält ein Alert Bell</sys:String>
+
+    <!-- Message list columns -->
+    <sys:String x:Key="StrFilterChannel">Kanal filtern:</sys:String>
+    <sys:String x:Key="StrChannelLabel">Kanal:</sys:String>
+    <sys:String x:Key="StrMessagePlaceholder">Nachricht eingeben...</sys:String>
+    <sys:String x:Key="StrColTime">Zeit</sys:String>
+    <sys:String x:Key="StrColFrom">Von</sys:String>
+    <sys:String x:Key="StrColShort">Kurz</sys:String>
+    <sys:String x:Key="StrColNote">Notiz</sys:String>
+    <sys:String x:Key="StrColMessage">Nachricht</sys:String>
+    <sys:String x:Key="StrColChannel">Kanal</sys:String>
+    <sys:String x:Key="StrColDistance">Entfernung</sys:String>
+    <sys:String x:Key="StrColBattery">Batterie</sys:String>
+    <sys:String x:Key="StrColLastSeen">Zuletzt gesehen</sys:String>
+    <sys:String x:Key="StrNodeFilterPlaceholder">🔍 Filter nach Name, ID, SNR, Batterie...</sys:String>
+
+    <!-- Colors -->
+    <sys:String x:Key="StrColorGreen">■ Grün</sys:String>
+    <sys:String x:Key="StrColorBlue">■ Blau</sys:String>
+    <sys:String x:Key="StrColorYellow">■ Gelb</sys:String>
+    <sys:String x:Key="StrColorOrange">■ Orange</sys:String>
+    <sys:String x:Key="StrColorPurple">■ Lila</sys:String>
+    <sys:String x:Key="StrColorBrown">■ Braun</sys:String>
+    <sys:String x:Key="StrColorPink">■ Pink</sys:String>
+    <sys:String x:Key="StrColorCyan">■ Türkis</sys:String>
+
+    <!-- Channels tab -->
+    <sys:String x:Key="StrCopyPsk">PSK kopieren</sys:String>
+    <sys:String x:Key="StrAddChannel">Kanal hinzufügen</sys:String>
+    <sys:String x:Key="StrDeleteChannel">Kanal löschen</sys:String>
+    <sys:String x:Key="StrBrowseChannels">Aus Liste...</sys:String>
+    <sys:String x:Key="StrMeshHessenChannel">Mesh-Hessen Kanal hinzufügen</sys:String>
+
+    <!-- Settings tab -->
+    <sys:String x:Key="StrAppearance">Darstellung</sys:String>
+    <sys:String x:Key="StrStationNameHint">Wird neben dem Verbinden-Button angezeigt.</sys:String>
+    <sys:String x:Key="StrNotifications">Benachrichtigungen</sys:String>
+    <sys:String x:Key="StrAlertBellSound">Ton bei Alert Bell abspielen (🔔)</sys:String>
+    <sys:String x:Key="StrAlertBellSoundHint">Spielt einen Benachrichtigungston ab, wenn eine Nachricht das Alert Bell Character (ASCII 7) enthält.</sys:String>
+    <sys:String x:Key="StrMapGroup">Karte / Offline Tiles</sys:String>
+    <sys:String x:Key="StrMapSource">Kartenquelle:</sys:String>
+    <sys:String x:Key="StrTileServerUrl">Tile-Server URL:</sys:String>
+    <sys:String x:Key="StrTileServerUrlHint">Vollständige URL mit Platzhaltern {z}/{x}/{y}.</sys:String>
+    <sys:String x:Key="StrDownloadTiles">Tiles herunterladen...</sys:String>
+    <sys:String x:Key="StrImportTilesZip">Maptiles aus Zip laden...</sys:String>
+    <sys:String x:Key="StrLocationLoggingGroup">Standort-Logging</sys:String>
+    <sys:String x:Key="StrLocationLoggingHint">GPS-Positionen von Nodes werden in 'locationlogs/' gespeichert. Ermöglicht Bewegungspfade auf der Karte.</sys:String>
+    <sys:String x:Key="StrMessagesGroup">Nachrichten</sys:String>
+    <sys:String x:Key="StrShowEncrypted">Verschlüsselte Nachrichten anzeigen (ohne PSK)</sys:String>
+    <sys:String x:Key="StrShowEncryptedHint">Wenn deaktiviert, werden verschlüsselte Nachrichten ausgeblendet.</sys:String>
+    <sys:String x:Key="StrDebugMessages">Nachrichten-Debug (Details im Log)</sys:String>
+    <sys:String x:Key="StrDebugSerial">Serielle Daten-Debug (Hex-Dump)</sys:String>
+    <sys:String x:Key="StrDebugDevice">Device-Log (serielle Debug-Ausgabe)</sys:String>
+    <sys:String x:Key="StrDebugBluetooth">Bluetooth-Debug (BLE-Kommunikation)</sys:String>
+    <sys:String x:Key="StrSaveSettings">Einstellungen speichern</sys:String>
+    <sys:String x:Key="StrNodeConfigGroup">Node-Konfiguration</sys:String>
+    <sys:String x:Key="StrNodeConfigHint">Erweiterte Gerätekonfiguration (LoRa, Position, MQTT, Telemetrie u.a.)</sys:String>
+    <sys:String x:Key="StrDeviceInfoGroup">Geräteinfo</sys:String>
+    <sys:String x:Key="StrDeviceName">Name</sys:String>
+    <sys:String x:Key="StrDeviceShortName">Kurzname</sys:String>
+    <sys:String x:Key="StrDeviceHardware">Hardware</sys:String>
+    <sys:String x:Key="StrDeviceFirmware">Firmware</sys:String>
+    <sys:String x:Key="StrDeviceRegion">Region</sys:String>
+    <sys:String x:Key="StrDevicePreset">Modem-Preset</sys:String>
+
+    <!-- Info tab -->
+    <sys:String x:Key="StrAboutDescription">Offline-fähiger Windows-Client für Meshtastic-Geräte mit Kartenansicht, Kanalverwaltung und Multi-Verbindungsunterstützung (Serial, TCP/WiFi, Bluetooth).</sys:String>
+    <sys:String x:Key="StrLicensesTitle">Lizenzen &amp; Danksagungen</sys:String>
+    <sys:String x:Key="StrProjectTitle">Projekt</sys:String>
+
+    <!-- Debug tab -->
+    <sys:String x:Key="StrLogClear">Log löschen</sys:String>
+    <sys:String x:Key="StrLogCopy">Log kopieren</sys:String>
+    <sys:String x:Key="StrLogFile">Log-Datei öffnen</sys:String>
+
+    <!-- NodeConfig window -->
+    <sys:String x:Key="StrNcWindowTitle">Node konfigurieren</sys:String>
+    <sys:String x:Key="StrNcTabUser">Benutzer</sys:String>
+    <sys:String x:Key="StrNcTabDevice">Gerät</sys:String>
+    <sys:String x:Key="StrNcTabTelemetry">Telemetrie</sys:String>
+    <sys:String x:Key="StrNcLongName">Anzeigename (LongName)</sys:String>
+    <sys:String x:Key="StrNcShortName">Kurzname (ShortName, max. 4 Zeichen)</sys:String>
+    <sys:String x:Key="StrNcRole">Rolle</sys:String>
+    <sys:String x:Key="StrNcRebroadcast">Rebroadcast-Modus</sys:String>
+    <sys:String x:Key="StrNcNodeInfoInterval">NodeInfo Broadcast-Intervall (z.B. 3h, 1h 30m, 0=Auto)</sys:String>
+    <sys:String x:Key="StrNcTimezone">Zeitzone (POSIX-Format, z.B. CET-1CEST,M3.5.0,M10.5.0/3)</sys:String>
+    <sys:String x:Key="StrNcFromWindows">Von Windows</sys:String>
+    <sys:String x:Key="StrNcFromWindowsTip">Zeitzone des lokalen Windows-PCs übernehmen</sys:String>
+    <sys:String x:Key="StrNcLedHeartbeat">LED-Heartbeat deaktivieren</sys:String>
+    <sys:String x:Key="StrNcUsePreset">Modem-Preset verwenden</sys:String>
+    <sys:String x:Key="StrNcModemPreset">Modem-Preset</sys:String>
+    <sys:String x:Key="StrNcHopLimit">Hop-Limit (1-7)</sys:String>
+    <sys:String x:Key="StrNcTxEnabled">Senden aktiv (TX)</sys:String>
+    <sys:String x:Key="StrNcTxPower">TX-Leistung (dBm, 0=Maximum)</sys:String>
+    <sys:String x:Key="StrNcGpsMode">GPS-Modus</sys:String>
+    <sys:String x:Key="StrNcGpsDisabled">Deaktiviert</sys:String>
+    <sys:String x:Key="StrNcGpsActive">Aktiv</sys:String>
+    <sys:String x:Key="StrNcGpsNotPresent">Nicht vorhanden</sys:String>
+    <sys:String x:Key="StrNcPosBroadcast">Broadcast-Intervall (z.B. 15m, 1h, 0=Smart)</sys:String>
+    <sys:String x:Key="StrNcSmartBroadcast">Smart-Broadcast aktivieren</sys:String>
+    <sys:String x:Key="StrNcMinDistance">Min. Abstand für Smart-Broadcast (Meter)</sys:String>
+    <sys:String x:Key="StrNcMinSpeed">Min. Geschwindigkeit für Smart-Broadcast (m/s)</sys:String>
+    <sys:String x:Key="StrNcMqttEnabled">MQTT aktivieren</sys:String>
+    <sys:String x:Key="StrNcMqttServer">Server (Hostname oder IP)</sys:String>
+    <sys:String x:Key="StrNcMqttUsername">Benutzername</sys:String>
+    <sys:String x:Key="StrNcMqttPassword">Passwort</sys:String>
+    <sys:String x:Key="StrNcMqttEncryption">Verschlüsselung</sys:String>
+    <sys:String x:Key="StrNcMqttJson">JSON-Modus</sys:String>
+    <sys:String x:Key="StrNcMqttTls">TLS (verschlüsselte Verbindung)</sys:String>
+    <sys:String x:Key="StrNcMqttRootTopic">Root-Topic</sys:String>
+    <sys:String x:Key="StrNcMqttMapReporting">Kartenreporting</sys:String>
+    <sys:String x:Key="StrNcDeviceTelemetry">Geräte-Update-Intervall (z.B. 30m, 1h, 0=Aus)</sys:String>
+    <sys:String x:Key="StrNcEnvironmentInterval">Umgebungs-Update-Intervall (z.B. 5m, 1h, 0=Aus)</sys:String>
+    <sys:String x:Key="StrNcFahrenheit">Temperatur in Fahrenheit anzeigen</sys:String>
+    <sys:String x:Key="StrNcEnvironmentMeasurement">Umgebungsmessung aktivieren</sys:String>
+    <sys:String x:Key="StrNcAirQualityInterval">Luftqualitäts-Intervall (z.B. 5m, 1h, 0=Aus)</sys:String>
+    <sys:String x:Key="StrNcPowerInterval">Energie-Update-Intervall (z.B. 5m, 1h, 0=Aus)</sys:String>
+    <sys:String x:Key="StrNcBtEnabled">Bluetooth aktivieren</sys:String>
+    <sys:String x:Key="StrNcBtPairingMode">Kopplungsmodus</sys:String>
+    <sys:String x:Key="StrNcBtRandomPin">Zufällige PIN</sys:String>
+    <sys:String x:Key="StrNcBtFixedPin">Feste PIN</sys:String>
+    <sys:String x:Key="StrNcBtNoPin">Keine PIN</sys:String>
+    <sys:String x:Key="StrNcBtFixedPinLabel">Feste PIN (4–6 Ziffern)</sys:String>
+    <sys:String x:Key="StrNcBtRebootHint">Hinweis: Nach Änderung der Bluetooth-Einstellungen startet das Gerät neu.</sys:String>
+    <sys:String x:Key="StrNcNodeDbReset">NodeDB zurücksetzen...</sys:String>
+    <sys:String x:Key="StrNcNodeDbResetTip">Löscht die bekannten Nodes auf dem Gerät (kein Factory Reset)</sys:String>
+
+    <!-- DirectMessages window -->
+    <sys:String x:Key="StrDmWindowTitle">Direktnachrichten</sys:String>
+    <sys:String x:Key="StrNoActiveChats">Keine aktiven Chats</sys:String>
+
+    <!-- AddChannel window -->
+    <sys:String x:Key="StrAddChannelTitle">Kanal hinzufügen</sys:String>
+    <sys:String x:Key="StrGeneratePsk">Generieren</sys:String>
+
+    <!-- TileDownloader window -->
+    <sys:String x:Key="StrTdWindowTitle">Karten-Tiles herunterladen</sys:String>
+    <sys:String x:Key="StrTdDocLine1">Tiles werden lokal gespeichert und funktionieren offline.</sys:String>
+    <sys:String x:Key="StrTdDocLine2">Du kannst mehrere Regionen nacheinander herunterladen (z.B. erst Hessen, dann Bayern).</sys:String>
+    <sys:String x:Key="StrTdDocLine3">Höhere Zoom-Stufen (12+) benötigen viele Tiles. Beispiel: Hessen Zoom 1-12 ≈ 25.000 Tiles.</sys:String>
+    <sys:String x:Key="StrTdDocLine4">Respektiere bitte die OSM-Nutzungsbedingungen (max ~2 Anfragen/Sekunde).</sys:String>
+    <sys:String x:Key="StrTdSelectState">Bundesland wählen (optional):</sys:String>
+    <sys:String x:Key="StrTdManualEntry">(Manuelle Eingabe)</sys:String>
+    <sys:String x:Key="StrTdNorth">Nord (max Lat):</sys:String>
+    <sys:String x:Key="StrTdSouth">Süd (min Lat):</sys:String>
+    <sys:String x:Key="StrTdEast">Ost (max Lon):</sys:String>
+    <sys:String x:Key="StrTdWest">West (min Lon):</sys:String>
+    <sys:String x:Key="StrTdZoomLevels">Zoom-Stufen</sys:String>
+    <sys:String x:Key="StrTdMinMaxZoom">Min / Max Zoom:</sys:String>
+    <sys:String x:Key="StrTdEstimate">Geschätzte Tiles: –</sys:String>
+    <sys:String x:Key="StrTdStartDownload">Download starten</sys:String>
+
+    <!-- ZipImport window -->
+    <sys:String x:Key="StrZipWindowTitle">Tiles aus Zip importieren...</sys:String>
+    <sys:String x:Key="StrZipImporting">Importiere Tiles...</sys:String>
+    <sys:String x:Key="StrZipHint">Tiles werden in den entsprechenden Kartenordner extrahiert (osm, osmtopo oder osmdark).</sys:String>
+
+    <!-- ChannelBrowser window -->
+    <sys:String x:Key="StrCbWindowTitle">Kanäle aus Liste</sys:String>
+    <sys:String x:Key="StrCbState">Bundesland:</sys:String>
+    <sys:String x:Key="StrCbSearch">Suche:</sys:String>
+    <sys:String x:Key="StrCbColState">Bundesland</sys:String>
+    <sys:String x:Key="StrCbColNotes">Bemerkung</sys:String>
+    <sys:String x:Key="StrCbAdd">Hinzufügen</sys:String>
+
+    <!-- NodeInfo window -->
+    <sys:String x:Key="StrNiWindowTitle">Node Info</sys:String>
+
+    <!-- Code-behind status strings -->
+    <sys:String x:Key="StrDisconnecting">Trenne...</sys:String>
+    <sys:String x:Key="StrError">Fehler</sys:String>
+    <sys:String x:Key="StrConnectionLost">Verbindung verloren</sys:String>
+    <sys:String x:Key="StrAllChannels">Alle Kanäle</sys:String>
+    <sys:String x:Key="StrConnectingTo">Verbinde mit {0}...</sys:String>
+    <sys:String x:Key="StrConnectedInit">Verbunden mit {0} – Initialisiere...</sys:String>
+    <sys:String x:Key="StrConnectedReady">Verbunden mit {0} – Bereit</sys:String>
+    <sys:String x:Key="StrConnectedInitError">Verbunden mit {0} – Init-Fehler</sys:String>
+    <sys:String x:Key="StrConnectionFailed">Verbindung fehlgeschlagen</sys:String>
+    <sys:String x:Key="StrDisconnectError">Fehler beim Trennen</sys:String>
+    <sys:String x:Key="StrDisconnectedMsg">Getrennt</sys:String>
+    <sys:String x:Key="StrReconnectingAttempt">Verbinde erneut... (Versuch {0}/{1})</sys:String>
+    <sys:String x:Key="StrConnectedReadySimple">Verbunden – Bereit</sys:String>
+    <sys:String x:Key="StrConnectedInitSimple">Verbunden – Initialisiere...</sys:String>
+    <sys:String x:Key="StrConnectionLostMsg">Verbindung verloren – bitte manuell verbinden</sys:String>
+    <sys:String x:Key="StrPacketCount">Pakete: {0}</sys:String>
+    <sys:String x:Key="StrChannelReceived">Kanal {0} empfangen: {1}</sys:String>
+    <sys:String x:Key="StrAlertSent">Notruf gesendet!</sys:String>
+    <sys:String x:Key="StrEncryptedMessage">[Verschlüsselte Nachricht – PSK erforderlich]</sys:String>
+    <sys:String x:Key="StrActiveChats">{0} aktive Chat(s)</sys:String>
+    <sys:String x:Key="StrCloseTab">Tab schließen</sys:String>
+    <sys:String x:Key="StrSentFrom">Ich</sys:String>
+    <sys:String x:Key="StrSetMyPosition">📍 Eigenen Standort hier setzen ({0}, {1})</sys:String>
+    <sys:String x:Key="StrNoTiles">Keine Tiles – bitte herunterladen</sys:String>
+    <sys:String x:Key="StrAlertConfirmTitle">Notruf bestätigen</sys:String>
+    <sys:String x:Key="StrAlertConfirmText">Möchten Sie wirklich einen NOTRUF (Alert Bell) senden?{0}{0}Dies wird als wichtige Benachrichtigung an alle Empfänger gesendet!</sys:String>
+    <sys:String x:Key="StrAlertConfirmTextDm">Möchten Sie wirklich einen NOTRUF (Alert Bell) senden?{0}{0}Dies wird als wichtige Benachrichtigung gesendet!</sys:String>
+    <sys:String x:Key="StrDeleteChannelConfirm">Kanal '{0}' (Index {1}) wirklich löschen?</sys:String>
+
+    <!-- Info tab library descriptions -->
+    <sys:String x:Key="StrOsmData">Kartendaten © OpenStreetMap-Mitwirkende</sys:String>
+    <sys:String x:Key="StrOsmTopoData">Kartendarstellung © OpenTopoMap</sys:String>
+    <sys:String x:Key="StrMeshtasticDesc">Firmware und Protokoll für LoRa-Mesh-Netzwerke</sys:String>
+    <sys:String x:Key="StrMapsuiDesc">Offline-Kartendarstellung für .NET</sys:String>
+    <sys:String x:Key="StrBruTileDesc">Tile-Schema und -Handling</sys:String>
+    <sys:String x:Key="StrModernWpfDesc">Fluent Design UI-Theming für WPF</sys:String>
+    <sys:String x:Key="StrProtobufDesc">Protokoll-Serialisierung für Meshtastic-Kommunikation</sys:String>
+    <sys:String x:Key="StrLicense">Lizenz</sys:String>
 
 </ResourceDictionary>
