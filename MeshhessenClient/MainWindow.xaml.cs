@@ -493,6 +493,14 @@ public partial class MainWindow : Window
 
                 menu.Items.Add(new Separator());
 
+                // Pin
+                var pinItem = new MenuItem { Header = hitNode.IsPinned ? Loc("StrUnpin") : Loc("StrPin") };
+                pinItem.Click += (s, ev) =>
+                {
+                    if (_mapContextMenuNode != null) PinNodeInternal(_mapContextMenuNode);
+                };
+                menu.Items.Add(pinItem);
+
                 // Path show/hide
                 bool pathActive = hitNode != null && _pathLayers.ContainsKey(hitNode.NodeId);
                 if (pathActive)
@@ -2610,6 +2618,36 @@ public partial class MainWindow : Window
         if (node != null) EditNodeNoteInternal(node);
     }
 
+    private void MessagesListView_ContextMenuOpening(object sender, ContextMenuEventArgs e)
+    {
+        var node = GetNodeFromSelectedMessage();
+        if (node == null) { e.Handled = true; return; }
+        PinMsgMenuItem.Header = node.IsPinned ? Loc("StrUnpin") : Loc("StrPin");
+        bool pathActive = _pathLayers.ContainsKey(node.NodeId);
+        ShowPathMsgMenuItem.Visibility = pathActive ? Visibility.Collapsed : Visibility.Visible;
+        HidePathMsgMenuItem.Visibility = pathActive ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private void MessageContextMenu_Pin_Click(object sender, RoutedEventArgs e)
+    {
+        var node = GetNodeFromSelectedMessage();
+        if (node != null) PinNodeInternal(node);
+    }
+
+    private void MessageContextMenu_ShowPath_Click(object sender, RoutedEventArgs e)
+    {
+        var node = GetNodeFromSelectedMessage();
+        if (node != null) ShowPathForNode(node);
+    }
+
+    private void MessageContextMenu_HidePath_Click(object sender, RoutedEventArgs e)
+    {
+        var node = GetNodeFromSelectedMessage();
+        if (node == null) return;
+        HidePathForNode(node);
+        HidePathMsgMenuItem.Visibility = Visibility.Collapsed;
+    }
+
     // ========== Node Color and Note Management ==========
 
     private void SetNodeColor_Click(object sender, RoutedEventArgs e)
@@ -2978,20 +3016,19 @@ public partial class MainWindow : Window
         if (NodesListView.SelectedItem is NodeInfo node)
         {
             PinNodeMenuItem.Header = node.IsPinned ? Loc("StrUnpin") : Loc("StrPin");
+            bool pathActive = _pathLayers.ContainsKey(node.NodeId);
+            ShowPathNodeMenuItem.Visibility = pathActive ? Visibility.Collapsed : Visibility.Visible;
+            HidePathMenuItem.Visibility = pathActive ? Visibility.Visible : Visibility.Collapsed;
         }
     }
 
-    private void NodeContextMenu_Pin_Click(object sender, RoutedEventArgs e)
+    private void PinNodeInternal(NodeInfo node)
     {
-        if (NodesListView.SelectedItem is not NodeInfo node) return;
-
         node.IsPinned = !node.IsPinned;
 
-        // Update in _allNodes
         var existing = _allNodes.FirstOrDefault(n => n.NodeId == node.NodeId);
         if (existing != null) existing.IsPinned = node.IsPinned;
 
-        // Save to settings
         if (node.IsPinned)
             _currentSettings.PinnedNodes[node.NodeId] = true;
         else
@@ -3000,6 +3037,12 @@ public partial class MainWindow : Window
 
         ApplyNodeSortAndFilter();
         Services.Logger.WriteLine($"Node {node.Name} ({node.Id}) {(node.IsPinned ? "pinned" : "unpinned")}");
+    }
+
+    private void NodeContextMenu_Pin_Click(object sender, RoutedEventArgs e)
+    {
+        if (NodesListView.SelectedItem is not NodeInfo node) return;
+        PinNodeInternal(node);
     }
 
     // ========== Path Display ==========
