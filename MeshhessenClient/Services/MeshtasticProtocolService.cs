@@ -37,6 +37,12 @@ public class MeshtasticProtocolService
     public event EventHandler<ModelNodeInfo>? NodeInfoReceived;
     public event EventHandler<ChannelInfo>? ChannelInfoReceived;
     public event EventHandler<LoRaConfig>? LoRaConfigReceived;
+    public event EventHandler<DeviceConfig>? DeviceConfigReceived;
+    public event EventHandler<PositionConfig>? PositionConfigReceived;
+    public event EventHandler<MQTTConfig>? MqttConfigReceived;
+    public event EventHandler<TelemetryConfig>? TelemetryConfigReceived;
+    public event EventHandler<BluetoothConfig>? BluetoothConfigReceived;
+    public event EventHandler<User>? OwnerReceived;
     public event EventHandler<DeviceInfo>? DeviceInfoReceived;
     public event EventHandler<int>? PacketCountChanged;
 
@@ -779,7 +785,7 @@ public class MeshtasticProtocolService
                 From = fromName,
                 FromId = packet.From,
                 ToId = packet.To,
-                Message = "[Verschlüsselte Nachricht - PSK erforderlich]",
+                Message = System.Windows.Application.Current?.Resources["StrEncryptedMessage"] as string ?? "[Encrypted message – PSK required]",
                 Channel = FormatChannelDisplay(packet.Channel),
                 IsEncrypted = true,
                 IsViaMqtt = packet.ViaMqtt
@@ -875,12 +881,12 @@ public class MeshtasticProtocolService
                 }
                 else
                 {
-                    Logger.WriteLine($"  Node {nodeInfo.Id}: Position vorhanden aber LatI=LonI=0 (kein GPS-Fix)");
+                    Logger.WriteLine($"  Node {nodeInfo.Id}: Position present but LatI=LonI=0 (no GPS fix)");
                 }
             }
             else
             {
-                Logger.WriteLine($"  Node {nodeInfo.Id}: Keine Positionsdaten");
+                Logger.WriteLine($"  Node {nodeInfo.Id}: No position data");
             }
 
             if (protoNodeInfo.DeviceMetrics != null)
@@ -925,8 +931,8 @@ public class MeshtasticProtocolService
                 Name = user.LongName ?? user.ShortName ?? $"Node-{packet.From:x4}",
                 ShortName = user.ShortName ?? "",
                 LongName = user.LongName ?? "",
-                Snr = packet.RxSnr.ToString("F1"),
-                Rssi = packet.RxRssi.ToString(),
+                Snr = packet.RxSnr != 0f ? packet.RxSnr.ToString("F1") : "-",
+                Rssi = packet.RxRssi != 0 ? packet.RxRssi.ToString() : "-",
                 LastSeen = DateTime.Now.ToString("HH:mm:ss")
             };
 
@@ -975,7 +981,7 @@ public class MeshtasticProtocolService
             ModelNodeInfo? nodeToFire = null;
             bool shouldFireEvent;
 
-            Logger.WriteLine($"Position-Packet von !{packet.From:x8}: LatI={position.LatitudeI}, LonI={position.LongitudeI}, Alt={position.Altitude}");
+            Logger.WriteLine($"Position packet from !{packet.From:x8}: LatI={position.LatitudeI}, LonI={position.LongitudeI}, Alt={position.Altitude}");
 
             lock (_dataLock)
             {
@@ -986,19 +992,21 @@ public class MeshtasticProtocolService
                         nodeInfo.Latitude = position.LatitudeI / 1e7;
                         nodeInfo.Longitude = position.LongitudeI / 1e7;
                         nodeInfo.Altitude = position.Altitude;
-                        Logger.WriteLine($"  Position aktualisiert: lat={nodeInfo.Latitude:F6}, lon={nodeInfo.Longitude:F6}");
+                        Logger.WriteLine($"  Position updated: lat={nodeInfo.Latitude:F6}, lon={nodeInfo.Longitude:F6}");
                     }
                     else
                     {
-                        Logger.WriteLine($"  Position ignoriert (LatI=LonI=0, kein GPS-Fix)");
+                        Logger.WriteLine($"  Position ignored (LatI=LonI=0, no GPS fix)");
                     }
                     nodeInfo.LastSeen = DateTime.Now.ToString("HH:mm:ss");
+                    if (packet.RxRssi != 0) nodeInfo.Rssi = packet.RxRssi.ToString();
+                    if (packet.RxSnr != 0f) nodeInfo.Snr = packet.RxSnr.ToString("F1");
                     nodeToFire = nodeInfo;
                     shouldFireEvent = !_isInitializing;
                 }
                 else
                 {
-                    Logger.WriteLine($"  Node !{packet.From:x8} unbekannt, Position verworfen");
+                    Logger.WriteLine($"  Node !{packet.From:x8} unknown, position discarded");
                     shouldFireEvent = false;
                 }
             }
@@ -1027,6 +1035,8 @@ public class MeshtasticProtocolService
                 if (_knownNodes.TryGetValue(packet.From, out var nodeInfo))
                 {
                     nodeInfo.LastSeen = DateTime.Now.ToString("HH:mm:ss");
+                    if (packet.RxRssi != 0) nodeInfo.Rssi = packet.RxRssi.ToString();
+                    if (packet.RxSnr != 0f) nodeInfo.Snr = packet.RxSnr.ToString("F1");
                     nodeToFire = nodeInfo;
                     shouldFireEvent = !_isInitializing;
                 }
@@ -1389,6 +1399,108 @@ public class MeshtasticProtocolService
         await SendToRadioAsync(toRadio);
     }
 
+    // ========== Config Request Methods ==========
+
+    public async Task RequestOwnerAsync()
+    {
+        var adminMsg = new AdminMessage { GetOwnerRequest = true };
+        await SendAdminMessageAsync(adminMsg);
+    }
+
+    public async Task RequestDeviceConfigAsync()
+    {
+        var adminMsg = new AdminMessage { GetConfigRequest = 0 }; // DEVICE = 0
+        await SendAdminMessageAsync(adminMsg);
+    }
+
+    public async Task RequestPositionConfigAsync()
+    {
+        var adminMsg = new AdminMessage { GetConfigRequest = 1 }; // POSITION = 1
+        await SendAdminMessageAsync(adminMsg);
+    }
+
+    public async Task RequestLoRaConfigAsync()
+    {
+        var adminMsg = new AdminMessage { GetConfigRequest = 5 }; // LORA = 5
+        await SendAdminMessageAsync(adminMsg);
+    }
+
+    public async Task RequestMqttConfigAsync()
+    {
+        var adminMsg = new AdminMessage { GetModuleConfigRequest = 0 }; // MQTT = 0
+        await SendAdminMessageAsync(adminMsg);
+    }
+
+    public async Task RequestTelemetryConfigAsync()
+    {
+        var adminMsg = new AdminMessage { GetModuleConfigRequest = 5 }; // TELEMETRY = 5
+        await SendAdminMessageAsync(adminMsg);
+    }
+
+    public async Task RequestBluetoothConfigAsync()
+    {
+        var adminMsg = new AdminMessage { GetConfigRequest = 6 }; // BLUETOOTH = 6
+        await SendAdminMessageAsync(adminMsg);
+    }
+
+    // ========== Config Set Methods ==========
+
+    public async Task SetOwnerAsync(User user)
+    {
+        await EnsureSessionKeyAsync();
+        var adminMsg = new AdminMessage { SetOwner = user };
+        await SendAdminMessageAsync(adminMsg);
+    }
+
+    public async Task SetDeviceConfigAsync(DeviceConfig config)
+    {
+        await EnsureSessionKeyAsync();
+        var adminMsg = new AdminMessage { SetConfig = new Config { Device = config } };
+        await SendAdminMessageAsync(adminMsg);
+    }
+
+    public async Task SetPositionConfigAsync(PositionConfig config)
+    {
+        await EnsureSessionKeyAsync();
+        var adminMsg = new AdminMessage { SetConfig = new Config { Position = config } };
+        await SendAdminMessageAsync(adminMsg);
+    }
+
+    public async Task SetLoRaConfigAsync(LoRaConfig config)
+    {
+        await EnsureSessionKeyAsync();
+        var adminMsg = new AdminMessage { SetConfig = new Config { Lora = config } };
+        await SendAdminMessageAsync(adminMsg);
+    }
+
+    public async Task SetMqttConfigAsync(MQTTConfig config)
+    {
+        await EnsureSessionKeyAsync();
+        var adminMsg = new AdminMessage { SetModuleConfig = new ModuleConfig { Mqtt = config } };
+        await SendAdminMessageAsync(adminMsg);
+    }
+
+    public async Task SetTelemetryConfigAsync(TelemetryConfig config)
+    {
+        await EnsureSessionKeyAsync();
+        var adminMsg = new AdminMessage { SetModuleConfig = new ModuleConfig { Telemetry = config } };
+        await SendAdminMessageAsync(adminMsg);
+    }
+
+    public async Task SetBluetoothConfigAsync(BluetoothConfig config)
+    {
+        await EnsureSessionKeyAsync();
+        var adminMsg = new AdminMessage { SetConfig = new Config { Bluetooth = config } };
+        await SendAdminMessageAsync(adminMsg);
+    }
+
+    public async Task ResetNodeDbAsync()
+    {
+        await EnsureSessionKeyAsync();
+        var adminMsg = new AdminMessage { NodedbReset = true };
+        await SendAdminMessageAsync(adminMsg);
+    }
+
     public void Disconnect()
     {
         Logger.WriteLine("MeshtasticProtocolService: Disconnecting...");
@@ -1479,24 +1591,55 @@ public class MeshtasticProtocolService
                     }
                     break;
 
+                case AdminMessage.PayloadVariantOneofCase.GetOwnerResponse:
+                    Logger.WriteLine($"  Owner response received");
+                    OwnerReceived?.Invoke(this, adminMsg.GetOwnerResponse);
+                    break;
+
                 case AdminMessage.PayloadVariantOneofCase.GetConfigResponse:
                     var config = adminMsg.GetConfigResponse;
+                    Logger.WriteLine($"  Config response type: {config.PayloadVariantCase}");
 
-                    if (config.PayloadVariantCase == Config.PayloadVariantOneofCase.Lora)
+                    switch (config.PayloadVariantCase)
                     {
-                        var loraConfig = config.Lora;
+                        case Config.PayloadVariantOneofCase.Lora:
+                            bool shouldFireLoRaEvent;
+                            lock (_dataLock)
+                            {
+                                _currentLoRaConfig = config.Lora;
+                                shouldFireLoRaEvent = !_isInitializing;
+                            }
+                            if (shouldFireLoRaEvent)
+                                LoRaConfigReceived?.Invoke(this, config.Lora);
+                            break;
 
-                        bool shouldFireLoRaEvent;
-                        lock (_dataLock)
-                        {
-                            _currentLoRaConfig = loraConfig;
-                            shouldFireLoRaEvent = !_isInitializing;
-                        }
+                        case Config.PayloadVariantOneofCase.Device:
+                            DeviceConfigReceived?.Invoke(this, config.Device);
+                            break;
 
-                        if (shouldFireLoRaEvent)
-                        {
-                            LoRaConfigReceived?.Invoke(this, loraConfig);
-                        }
+                        case Config.PayloadVariantOneofCase.Position:
+                            PositionConfigReceived?.Invoke(this, config.Position);
+                            break;
+
+                        case Config.PayloadVariantOneofCase.Bluetooth:
+                            BluetoothConfigReceived?.Invoke(this, config.Bluetooth);
+                            break;
+                    }
+                    break;
+
+                case AdminMessage.PayloadVariantOneofCase.GetModuleConfigResponse:
+                    var moduleConfig = adminMsg.GetModuleConfigResponse;
+                    Logger.WriteLine($"  ModuleConfig response type: {moduleConfig.PayloadVariantCase}");
+
+                    switch (moduleConfig.PayloadVariantCase)
+                    {
+                        case ModuleConfig.PayloadVariantOneofCase.Mqtt:
+                            MqttConfigReceived?.Invoke(this, moduleConfig.Mqtt);
+                            break;
+
+                        case ModuleConfig.PayloadVariantOneofCase.Telemetry:
+                            TelemetryConfigReceived?.Invoke(this, moduleConfig.Telemetry);
+                            break;
                     }
                     break;
             }

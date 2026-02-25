@@ -22,7 +22,10 @@ public record AppSettings(
     bool DebugSerial,                        // Enable serial data hex dump
     bool DebugDevice,                        // Enable device serial debug output logging
     bool DebugBluetooth,                     // Enable BLE debug logging
-    bool AlertBellSound);                    // Play sound on alert bell character
+    bool AlertBellSound,                     // Play sound on alert bell character
+    string Language,                         // UI language: "de" or "en"
+    bool EnableLocationLogging,              // Log GPS positions to locationlogs/
+    Dictionary<uint, bool> PinnedNodes);     // NodeId -> pinned
 
 public static class SettingsService
 {
@@ -49,7 +52,10 @@ public static class SettingsService
             false,
             false,
             false,
-            true);  // AlertBellSound default enabled
+            true,   // AlertBellSound default enabled
+            "de",   // Language default German
+            false,  // EnableLocationLogging default off
+            new Dictionary<uint, bool>());  // PinnedNodes
 
         try
         {
@@ -98,6 +104,20 @@ public static class SettingsService
                 }
             }
 
+            // Load pinned nodes
+            var pinnedNodes = new Dictionary<uint, bool>();
+            foreach (var key in values.Keys)
+            {
+                if (key.StartsWith("PinnedNode_", StringComparison.OrdinalIgnoreCase))
+                {
+                    var nodeIdHex = key.Substring(11);
+                    if (uint.TryParse(nodeIdHex, NumberStyles.HexNumber, null, out uint nodeId))
+                    {
+                        pinnedNodes[nodeId] = true;
+                    }
+                }
+            }
+
             // Migration: Convert old TileServerUrl to new format
             string osmUrl = defaults.OSMTileUrl;
             string osmTopoUrl = defaults.OSMTopoTileUrl;
@@ -139,7 +159,10 @@ public static class SettingsService
                 DebugSerial: values.TryGetValue("DebugSerial", out var dbs) && bool.TryParse(dbs, out var dbsBool) && dbsBool,
                 DebugDevice: values.TryGetValue("DebugDevice", out var dbd) && bool.TryParse(dbd, out var dbdBool) && dbdBool,
                 DebugBluetooth: values.TryGetValue("DebugBluetooth", out var dbb) && bool.TryParse(dbb, out var dbbBool) && dbbBool,
-                AlertBellSound: !values.TryGetValue("AlertBellSound", out var abs) || !bool.TryParse(abs, out var absBool) || absBool
+                AlertBellSound: !values.TryGetValue("AlertBellSound", out var abs) || !bool.TryParse(abs, out var absBool) || absBool,
+                Language: values.TryGetValue("Language", out var lang) && !string.IsNullOrEmpty(lang) ? lang : defaults.Language,
+                EnableLocationLogging: values.TryGetValue("EnableLocationLogging", out var ell) && bool.TryParse(ell, out var ellBool) && ellBool,
+                PinnedNodes: pinnedNodes
             );
         }
         catch (Exception ex)
@@ -173,7 +196,9 @@ public static class SettingsService
                 $"DebugSerial={settings.DebugSerial}",
                 $"DebugDevice={settings.DebugDevice}",
                 $"DebugBluetooth={settings.DebugBluetooth}",
-                $"AlertBellSound={settings.AlertBellSound}"
+                $"AlertBellSound={settings.AlertBellSound}",
+                $"Language={settings.Language}",
+                $"EnableLocationLogging={settings.EnableLocationLogging}"
             };
 
             // Save node colors
@@ -186,6 +211,12 @@ public static class SettingsService
             foreach (var kvp in settings.NodeNotes)
             {
                 lines.Add($"NodeNote_{kvp.Key:X8}={kvp.Value}");
+            }
+
+            // Save pinned nodes
+            foreach (var kvp in settings.PinnedNodes.Where(p => p.Value))
+            {
+                lines.Add($"PinnedNode_{kvp.Key:X8}=true");
             }
 
             File.WriteAllLines(IniFilePath, lines);
