@@ -167,8 +167,8 @@ public partial class DirectMessagesWindow : Window
         alertBellButton.Click += async (s, e) =>
         {
             var result = MessageBox.Show(
-                "Möchten Sie wirklich einen NOTRUF (Alert Bell) senden?\n\nDies wird als wichtige Benachrichtigung gesendet!",
-                "Notruf bestätigen",
+                string.Format(Loc("StrAlertConfirmTextDm"), "\n"),
+                Loc("StrAlertConfirmTitle"),
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Warning);
 

@@ -254,6 +254,12 @@
     <sys:String x:Key="StrActiveChats">{0} active chat(s)</sys:String>
     <sys:String x:Key="StrCloseTab">Close tab</sys:String>
     <sys:String x:Key="StrSentFrom">Me</sys:String>
+    <sys:String x:Key="StrSetMyPosition">📍 Set my position here ({0}, {1})</sys:String>
+    <sys:String x:Key="StrNoTiles">No tiles – please download</sys:String>
+    <sys:String x:Key="StrAlertConfirmTitle">Confirm SOS</sys:String>
+    <sys:String x:Key="StrAlertConfirmText">Do you really want to send an SOS (Alert Bell)?{0}{0}This will be sent as an important notification to all recipients!</sys:String>
+    <sys:String x:Key="StrAlertConfirmTextDm">Do you really want to send an SOS (Alert Bell)?{0}{0}This will be sent as an important notification!</sys:String>
+    <sys:String x:Key="StrDeleteChannelConfirm">Really delete channel '{0}' (index {1})?</sys:String>
 
     <!-- Info tab library descriptions -->
     <sys:String x:Key="StrOsmData">Map data © OpenStreetMap contributors</sys:String>

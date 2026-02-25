@@ -287,7 +287,7 @@ public partial class MainWindow : Window
 
             var sourceTileDir = Path.Combine(tileDir, sourceFolder);
             MapStatusText.Text = Directory.Exists(sourceTileDir) && Directory.EnumerateFiles(sourceTileDir, "*.png", SearchOption.AllDirectories).Any()
-                ? "" : "Keine Tiles – bitte herunterladen";
+                ? "" : Loc("StrNoTiles");
 
             // Copyright-Hinweis basierend auf Kartenquelle setzen
             UpdateMapCopyright();
@@ -431,35 +431,35 @@ public partial class MainWindow : Window
             if (hitNode != null)
             {
                 _mapContextMenuNode = hitNode;
-                var dmItem = new MenuItem { Header = "💬 DM senden" };
+                var dmItem = new MenuItem { Header = Loc("StrSendDm") };
                 dmItem.Click += (s, ev) => { if (_mapContextMenuNode != null) OpenDmToNode(_mapContextMenuNode); };
                 menu.Items.Add(dmItem);
 
-                var infoItem = new MenuItem { Header = "ℹ️ Node Info" };
+                var infoItem = new MenuItem { Header = Loc("StrNodeInfo") };
                 infoItem.Click += (s, ev) => { if (_mapContextMenuNode != null) ShowNodeInfoDialog(_mapContextMenuNode); };
                 menu.Items.Add(infoItem);
 
                 menu.Items.Add(new Separator());
 
                 // Color submenu
-                var colorMenu = new MenuItem { Header = "🎨 Farbe setzen" };
+                var colorMenu = new MenuItem { Header = Loc("StrSetColor") };
                 var colors = new[]
                 {
-                    ("Grün", "#00FF00"),
-                    ("Blau", "#0080FF"),
-                    ("Gelb", "#FFFF00"),
-                    ("Orange", "#FF8000"),
-                    ("Lila", "#8000FF"),
-                    ("Braun", "#804000"),
-                    ("Pink", "#FF00FF"),
-                    ("Türkis", "#00FFFF")
+                    ("StrColorGreen", "#00FF00"),
+                    ("StrColorBlue", "#0080FF"),
+                    ("StrColorYellow", "#FFFF00"),
+                    ("StrColorOrange", "#FF8000"),
+                    ("StrColorPurple", "#8000FF"),
+                    ("StrColorBrown", "#804000"),
+                    ("StrColorPink", "#FF00FF"),
+                    ("StrColorCyan", "#00FFFF")
                 };
 
-                foreach (var (label, colorHex) in colors)
+                foreach (var (key, colorHex) in colors)
                 {
                     var textBlock = new TextBlock
                     {
-                        Text = $"■ {label}",
+                        Text = Loc(key),
                         Foreground = new SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(colorHex)),
                         FontWeight = FontWeights.Bold
                     };
@@ -473,7 +473,7 @@ public partial class MainWindow : Window
                 }
 
                 colorMenu.Items.Add(new Separator());
-                var removeColorItem = new MenuItem { Header = "❌ Farbe entfernen" };
+                var removeColorItem = new MenuItem { Header = Loc("StrRemoveColor") };
                 removeColorItem.Click += (s, ev) =>
                 {
                     if (_mapContextMenuNode != null)
@@ -483,7 +483,7 @@ public partial class MainWindow : Window
                 menu.Items.Add(colorMenu);
 
                 // Note option
-                var noteItem = new MenuItem { Header = "📝 Notiz bearbeiten..." };
+                var noteItem = new MenuItem { Header = Loc("StrEditNote") };
                 noteItem.Click += (s, ev) =>
                 {
                     if (_mapContextMenuNode != null)
@@ -497,7 +497,7 @@ public partial class MainWindow : Window
                 bool pathActive = hitNode != null && _pathLayers.ContainsKey(hitNode.NodeId);
                 if (pathActive)
                 {
-                    var hidePathItem = new MenuItem { Header = "🛤️ Pfad ausblenden" };
+                    var hidePathItem = new MenuItem { Header = Loc("StrHidePath") };
                     hidePathItem.Click += (s, ev) =>
                     {
                         if (_mapContextMenuNode != null && _pathLayers.TryGetValue(_mapContextMenuNode.NodeId, out var layer))
@@ -511,7 +511,7 @@ public partial class MainWindow : Window
                 }
                 else
                 {
-                    var showPathItem = new MenuItem { Header = "🛤️ Bewegungspfad anzeigen" };
+                    var showPathItem = new MenuItem { Header = Loc("StrShowPath") };
                     showPathItem.Click += (s, ev) =>
                     {
                         if (_mapContextMenuNode != null)
@@ -526,7 +526,7 @@ public partial class MainWindow : Window
                 var clickLat = lonLat.lat;
                 var clickLon = lonLat.lon;
 
-                var setPosItem = new MenuItem { Header = $"📍 Eigenen Standort hier setzen ({clickLat:F4}, {clickLon:F4})" };
+                var setPosItem = new MenuItem { Header = string.Format(Loc("StrSetMyPosition"), $"{clickLat:F4}", $"{clickLon:F4}") };
                 setPosItem.Click += (s, ev) => SetMyPosition(clickLat, clickLon);
                 menu.Items.Add(setPosItem);
             }
@@ -647,7 +647,7 @@ public partial class MainWindow : Window
         var sourceFolder = _currentSettings.MapSource;
         var sourceTileDir = Path.Combine(tileDir, sourceFolder);
         MapStatusText.Text = Directory.Exists(sourceTileDir) && Directory.EnumerateFiles(sourceTileDir, "*.png", SearchOption.AllDirectories).Any()
-            ? "" : "Keine Tiles – bitte herunterladen";
+            ? "" : Loc("StrNoTiles");
     }
 
     private void MapSourceComboBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
@@ -1147,8 +1147,8 @@ public partial class MainWindow : Window
         }
 
         var result = MessageBox.Show(
-            "Möchten Sie wirklich einen NOTRUF (Alert Bell) senden?\n\nDies wird als wichtige Benachrichtigung an alle Empfänger gesendet!",
-            "Notruf bestätigen",
+            string.Format(Loc("StrAlertConfirmText"), "\n"),
+            Loc("StrAlertConfirmTitle"),
             MessageBoxButton.YesNo,
             MessageBoxImage.Warning);
 
@@ -1320,8 +1320,8 @@ public partial class MainWindow : Window
         }
 
         var result = MessageBox.Show(
-            $"Kanal '{selectedChannel.Name}' (Index {selectedChannel.Index}) wirklich löschen?",
-            "Kanal löschen", MessageBoxButton.YesNo, MessageBoxImage.Question);
+            string.Format(Loc("StrDeleteChannelConfirm"), selectedChannel.Name, selectedChannel.Index),
+            Loc("StrDeleteChannel"), MessageBoxButton.YesNo, MessageBoxImage.Question);
 
         if (result != MessageBoxResult.Yes) return;
 

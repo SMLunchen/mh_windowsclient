@@ -254,6 +254,12 @@
     <sys:String x:Key="StrActiveChats">{0} aktive Chat(s)</sys:String>
     <sys:String x:Key="StrCloseTab">Tab schließen</sys:String>
     <sys:String x:Key="StrSentFrom">Ich</sys:String>
+    <sys:String x:Key="StrSetMyPosition">📍 Eigenen Standort hier setzen ({0}, {1})</sys:String>
+    <sys:String x:Key="StrNoTiles">Keine Tiles – bitte herunterladen</sys:String>
+    <sys:String x:Key="StrAlertConfirmTitle">Notruf bestätigen</sys:String>
+    <sys:String x:Key="StrAlertConfirmText">Möchten Sie wirklich einen NOTRUF (Alert Bell) senden?{0}{0}Dies wird als wichtige Benachrichtigung an alle Empfänger gesendet!</sys:String>
+    <sys:String x:Key="StrAlertConfirmTextDm">Möchten Sie wirklich einen NOTRUF (Alert Bell) senden?{0}{0}Dies wird als wichtige Benachrichtigung gesendet!</sys:String>
+    <sys:String x:Key="StrDeleteChannelConfirm">Kanal '{0}' (Index {1}) wirklich löschen?</sys:String>
 
     <!-- Info tab library descriptions -->
     <sys:String x:Key="StrOsmData">Kartendaten © OpenStreetMap-Mitwirkende</sys:String>
