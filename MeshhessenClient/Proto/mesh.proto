@@ -23,6 +23,9 @@ message User {
 
 message RouteDiscovery {
   repeated fixed32 route = 1;
+  repeated int32 snr_towards = 2;
+  repeated fixed32 route_back = 3;
+  repeated int32 snr_back = 4;
 }
 
 message Data {
@@ -33,7 +36,7 @@ message Data {
   fixed32 source = 5;
   fixed32 request_id = 6;
   fixed32 reply_id = 7;
-  bytes emoji = 8;
+  fixed32 emoji = 8;
 }
 
 message Routing {

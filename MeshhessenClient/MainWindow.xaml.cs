@@ -1,6 +1,7 @@
 ﻿using System.Collections.ObjectModel;
 using System.IO;
 using System.IO.Ports;
+using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -87,6 +88,28 @@ public partial class MainWindow : Window
     private NodeInfo? _mapContextMenuNode;
     private uint? _alertNodeId;  // Stores the node ID for "Show on Map" button
 
+    // Traceroute + Reactions
+    private readonly Dictionary<uint, TracerouteWindow> _tracerouteWindows = new();
+    private readonly Dictionary<uint, MemoryLayer> _tracerouteLayers = new();
+    private readonly Dictionary<uint, string> _tracerouteNames = new(); // nodeId → display name
+    private readonly Dictionary<uint, Mapsui.Styles.Color> _tracerouteColors = new();
+    private int _tracerouteColorIndex = 0;
+
+    // Palette: avoids Blue (my node), Red/custom (other nodes), Cyan (old default)
+    private static readonly Mapsui.Styles.Color[] TracerouteColorPalette =
+    {
+        new(255, 109,   0, 255), // Orange
+        new(174, 234,   0, 255), // Lime
+        new(245,   0,  87, 255), // HotPink
+        new(170,   0, 255, 255), // Purple
+        new(255, 214,   0, 255), // Yellow
+        new(  0, 230, 118, 255), // SpringGreen
+        new( 29, 233, 182, 255), // Teal
+        new(255, 171,  64, 255), // Amber
+    };
+    // Map from packet-ID → MessageItem (for attaching reactions)
+    private readonly Dictionary<uint, MessageItem> _messageById = new();
+
     // Reconnect state
     private ConnectionParameters? _lastConnectionParams;
     private Services.ConnectionType _lastConnectionType;
@@ -121,6 +144,8 @@ public partial class MainWindow : Window
         _protocolService.LoRaConfigReceived += OnLoRaConfigReceived;
         _protocolService.DeviceInfoReceived += OnDeviceInfoReceived;
         _protocolService.PacketCountChanged += OnPacketCountChanged;
+        _protocolService.TracerouteReceived += OnTracerouteReceived;
+        _protocolService.ReactionReceived += OnReactionReceived;
 
         // LoadRegions / LoadModemPresets removed — now displayed as read-only TextBlocks in Settings right column
 
@@ -527,6 +552,15 @@ public partial class MainWindow : Window
                     };
                     menu.Items.Add(showPathItem);
                 }
+
+                // Traceroute
+                var traceItem = new MenuItem { Header = Loc("StrTraceroute") };
+                traceItem.Click += (s, ev) =>
+                {
+                    if (_mapContextMenuNode != null)
+                        OpenTracerouteForNode(_mapContextMenuNode);
+                };
+                menu.Items.Add(traceItem);
             }
             else
             {
@@ -1233,7 +1267,7 @@ public partial class MainWindow : Window
             SendButton.IsEnabled = false;
 
             // Sende Nachricht mit dem aktiven Kanal
-            await _protocolService.SendTextMessageAsync(message, 0xFFFFFFFF, (uint)_activeChannelIndex);
+            uint sentId = await _protocolService.SendTextMessageAsync(message, 0xFFFFFFFF, (uint)_activeChannelIndex);
 
             // Zeige gesendete Nachricht in der Liste
             var activeChannel = _channels.FirstOrDefault(c => c.Index == _activeChannelIndex);
@@ -1241,6 +1275,7 @@ public partial class MainWindow : Window
 
             var sentMessage = new MessageItem
             {
+                Id = sentId,
                 Time = DateTime.Now.ToString("HH:mm:ss"),
                 From = "Ich",
                 Message = message,
@@ -1249,6 +1284,7 @@ public partial class MainWindow : Window
                 IsViaMqtt = false
             };
             _allMessages.Add(sentMessage);
+            if (sentId != 0) _messageById[sentId] = sentMessage;
             _messages.Add(sentMessage);
             MessageListView.ScrollIntoView(sentMessage);
 
@@ -1641,6 +1677,8 @@ public partial class MainWindow : Window
                 _protocolService.LoRaConfigReceived += OnLoRaConfigReceived;
                 _protocolService.DeviceInfoReceived += OnDeviceInfoReceived;
                 _protocolService.PacketCountChanged += OnPacketCountChanged;
+                _protocolService.TracerouteReceived += OnTracerouteReceived;
+                _protocolService.ReactionReceived += OnReactionReceived;
                 _connectionService.ConnectionStateChanged += OnConnectionStateChanged;
 
                 await _connectionService.ConnectAsync(_lastConnectionParams!);
@@ -1811,8 +1849,10 @@ public partial class MainWindow : Window
                     message.SenderNote = senderNode.Note;
                 }
 
-                // Speichere in ungefilterte Liste
+                // Speichere in ungefilterte Liste und ID-Lookup
                 _allMessages.Add(message);
+                if (message.Id != 0)
+                    _messageById[message.Id] = message;
 
                 // Log die Kanal-Nachricht
                 if (uint.TryParse(message.Channel, out uint logChannelIndex))
@@ -3264,5 +3304,552 @@ public partial class MainWindow : Window
             Services.Logger.WriteLine($"Error showing node on map: {ex.Message}");
             MessageBox.Show($"Fehler beim Anzeigen der Node-Position: {ex.Message}", "Fehler", MessageBoxButton.OK, MessageBoxImage.Error);
         }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    //  TRACEROUTE
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private void OpenTracerouteForNode(NodeInfo node)
+    {
+        if (!_tracerouteWindows.TryGetValue(node.NodeId, out var win) || !win.IsVisible)
+        {
+            win = new TracerouteWindow(_protocolService, node, _myNodeId) { Owner = this };
+            win.PlotOnMapRequested += (_, result) => PlotTracerouteOnMap(result, node);
+            win.ClearFromMapRequested += (_, nodeId) => ClearTracerouteFromMap(nodeId);
+            win.Closed += (_, _) => _tracerouteWindows.Remove(node.NodeId);
+            _tracerouteWindows[node.NodeId] = win;
+        }
+
+        // Feed current node positions so window can compute distances
+        var positions = new Dictionary<uint, (double Lat, double Lon)>();
+        foreach (var n in _allNodes)
+        {
+            if (n.Latitude.HasValue && n.Longitude.HasValue)
+                positions[n.NodeId] = (n.Latitude.Value, n.Longitude.Value);
+        }
+        (double Lat, double Lon)? myPos = null;
+        if (_currentSettings.MyLatitude != 0 || _currentSettings.MyLongitude != 0)
+            myPos = (_currentSettings.MyLatitude, _currentSettings.MyLongitude);
+
+        win.SetKnownPositions(positions, myPos);
+        win.Show();
+        win.Activate();
+    }
+
+    private void OnTracerouteReceived(object? sender, TracerouteResult result)
+    {
+        // The TracerouteWindow subscribes itself - nothing extra needed here.
+        // (reserved for future logging / notification)
+        Dispatcher.BeginInvoke(() =>
+        {
+            Services.Logger.WriteLine($"Traceroute result for !{result.DestinationNodeId:x8}: {result.RouteForward.Count} forward hops");
+        });
+    }
+
+    private void PlotTracerouteOnMap(TracerouteResult result, NodeInfo targetNode)
+    {
+        // Build positions from live nodes
+        var positions = new Dictionary<uint, (double Lat, double Lon)>();
+        foreach (var n in _allNodes)
+            if (n.Latitude.HasValue && n.Longitude.HasValue)
+                positions[n.NodeId] = (n.Latitude.Value, n.Longitude.Value);
+
+        // My position: live node data or map settings fallback
+        (double Lat, double Lon)? myPos = null;
+        if (positions.TryGetValue(_myNodeId, out var np)) myPos = np;
+        else if (_currentSettings.MyLatitude != 0 || _currentSettings.MyLongitude != 0)
+            myPos = (_currentSettings.MyLatitude, _currentSettings.MyLongitude);
+        if (myPos.HasValue) positions[_myNodeId] = myPos.Value;
+
+        // Build node names from live data
+        var nodeNames = _allNodes.ToDictionary(n => n.NodeId, n => n.LongName);
+        nodeNames[_myNodeId] = "Ich";
+
+        // Assign palette color (reuse existing if re-plotting same target)
+        if (!_tracerouteColors.TryGetValue(result.DestinationNodeId, out var color))
+        {
+            color = TracerouteColorPalette[_tracerouteColorIndex % TracerouteColorPalette.Length];
+            _tracerouteColorIndex++;
+            _tracerouteColors[result.DestinationNodeId] = color;
+        }
+
+        // Save snapshot before drawing (so positions are captured)
+        SaveTracerouteToFile(result, targetNode.LongName, positions, nodeNames);
+
+        DrawTracerouteLayer(result, targetNode.LongName, positions, nodeNames, color, zoomToFit: true);
+    }
+
+    /// <summary>
+    /// Core drawing: builds and adds a MemoryLayer for a traceroute.
+    /// Accepts external positions and names (works for both live and loaded data).
+    /// </summary>
+    private void DrawTracerouteLayer(
+        TracerouteResult result,
+        string destName,
+        Dictionary<uint, (double Lat, double Lon)> positions,
+        Dictionary<uint, string> nodeNames,
+        Mapsui.Styles.Color color,
+        bool zoomToFit = false)
+    {
+        // Remove existing layer for this target
+        if (_tracerouteLayers.TryGetValue(result.DestinationNodeId, out var oldLayer))
+        {
+            _map?.Layers.Remove(oldLayer);
+            _tracerouteLayers.Remove(result.DestinationNodeId);
+        }
+
+        var orderedIds = new List<uint> { result.SourceNodeId == 0 ? _myNodeId : result.SourceNodeId };
+        orderedIds.AddRange(result.RouteForward);
+        orderedIds.Add(result.DestinationNodeId);
+
+        var features = new List<IFeature>();
+        MPoint? lastKnownPoint = null;
+
+        for (int i = 0; i < orderedIds.Count - 1; i++)
+        {
+            uint fromId = orderedIds[i];
+            uint toId = orderedIds[i + 1];
+
+            bool hasFrom = positions.TryGetValue(fromId, out var fromPos);
+            bool hasTo = positions.TryGetValue(toId, out var toPos);
+
+            if (hasFrom && hasTo)
+            {
+                var ptFrom = SphericalMercator.FromLonLat(fromPos.Lon, fromPos.Lat);
+                var ptTo = SphericalMercator.FromLonLat(toPos.Lon, toPos.Lat);
+                var coords = new[] { new Coordinate(ptFrom.x, ptFrom.y), new Coordinate(ptTo.x, ptTo.y) };
+                var line = new GeometryFeature(new NetTopologySuite.Geometries.LineString(coords));
+                line.Styles.Add(new VectorStyle { Line = new Mapsui.Styles.Pen(color, 2.5), Fill = null });
+                features.Add(line);
+                lastKnownPoint = new MPoint(ptTo.x, ptTo.y);
+            }
+            else if (hasFrom && !hasTo)
+            {
+                var ptFrom = SphericalMercator.FromLonLat(fromPos.Lon, fromPos.Lat);
+                var start = new MPoint(ptFrom.x, ptFrom.y);
+                features.AddRange(MakeDashedLine(start, null, "?", color));
+                lastKnownPoint = start;
+            }
+            else if (!hasFrom && hasTo)
+            {
+                var ptTo = SphericalMercator.FromLonLat(toPos.Lon, toPos.Lat);
+                var end = new MPoint(ptTo.x, ptTo.y);
+                features.AddRange(MakeDashedLine(lastKnownPoint, end, "?", color));
+                lastKnownPoint = end;
+            }
+            else
+            {
+                if (lastKnownPoint != null)
+                    features.AddRange(MakeDashedLine(lastKnownPoint, null, "?", color));
+            }
+        }
+
+        // Dots + labels for each hop with known position
+        var dotColor = new Mapsui.Styles.Color(color.R, color.G, color.B, 200);
+        var bgColor  = new Mapsui.Styles.Color(color.R, color.G, color.B, 160);
+        foreach (var nodeId in orderedIds)
+        {
+            if (!positions.TryGetValue(nodeId, out var pos)) continue;
+            var pt = SphericalMercator.FromLonLat(pos.Lon, pos.Lat);
+            var mpt = new MPoint(pt.x, pt.y);
+
+            string label = nodeId == _myNodeId ? "Ich" : $"!{nodeId:x4}";
+            if (nodeNames.TryGetValue(nodeId, out var nm)) label = nm;
+
+            var pin = new PointFeature(mpt);
+            pin.Styles.Add(new SymbolStyle
+            {
+                SymbolType = SymbolType.Ellipse,
+                Fill = new Mapsui.Styles.Brush(dotColor),
+                Outline = new Mapsui.Styles.Pen(Mapsui.Styles.Color.White, 2),
+                SymbolScale = 0.45,
+            });
+            pin.Styles.Add(new LabelStyle
+            {
+                Text = label,
+                ForeColor = Mapsui.Styles.Color.Black,
+                BackColor = new Mapsui.Styles.Brush(bgColor),
+                HorizontalAlignment = LabelStyle.HorizontalAlignmentEnum.Left,
+                VerticalAlignment = LabelStyle.VerticalAlignmentEnum.Center,
+                Offset = new Offset(10, 0),
+                Font = new Font { Size = 9 },
+            });
+            features.Add(pin);
+        }
+
+        var traceLayer = new MemoryLayer($"Traceroute_{result.DestinationNodeId}") { Features = features, Style = null };
+        _tracerouteLayers[result.DestinationNodeId] = traceLayer;
+        _tracerouteNames[result.DestinationNodeId] = destName;
+        _tracerouteColors[result.DestinationNodeId] = color;
+        _map?.Layers.Add(traceLayer);
+        UpdateTracerouteLegend();
+
+        if (zoomToFit)
+        {
+            MainTabs.SelectedIndex = 4;
+            var allPts = orderedIds
+                .Where(id => positions.ContainsKey(id))
+                .Select(id => { var p = SphericalMercator.FromLonLat(positions[id].Lon, positions[id].Lat); return new MPoint(p.x, p.y); })
+                .ToList();
+
+            if (allPts.Count >= 2)
+            {
+                double minX = allPts.Min(p => p.X), maxX = allPts.Max(p => p.X);
+                double minY = allPts.Min(p => p.Y), maxY = allPts.Max(p => p.Y);
+                var center = new MPoint((minX + maxX) / 2, (minY + maxY) / 2);
+                double extent = Math.Max(maxX - minX, maxY - minY);
+                _map?.Navigator.CenterOnAndZoomTo(center, Math.Max(extent * 1.4 / 800.0, 10.0));
+            }
+            else if (allPts.Count == 1)
+                _map?.Navigator.CenterOnAndZoomTo(allPts[0], 10.0);
+
+            Services.Logger.WriteLine($"Traceroute plotted for {destName}: {allPts.Count} known positions");
+        }
+
+        MapControl.Refresh();
+    }
+
+    private void SaveTracerouteToFile(
+        TracerouteResult result,
+        string destName,
+        Dictionary<uint, (double Lat, double Lon)> positions,
+        Dictionary<uint, string> nodeNames)
+    {
+        try
+        {
+            string folder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "traceroutes");
+            Directory.CreateDirectory(folder);
+
+            // Collect all node IDs in this route
+            var allIds = new HashSet<uint> { result.SourceNodeId == 0 ? _myNodeId : result.SourceNodeId, result.DestinationNodeId };
+            foreach (var id in result.RouteForward) allIds.Add(id);
+            foreach (var id in result.RouteBack)   allIds.Add(id);
+
+            var saveData = new TracerouteSaveData
+            {
+                Result = result,
+                DestinationName = destName,
+                Nodes = allIds.Select(id => new TracerouteSaveData.NodeEntry
+                {
+                    NodeId = id,
+                    Name   = nodeNames.TryGetValue(id, out var n) ? n : $"!{id:x8}",
+                    Lat    = positions.TryGetValue(id, out var p) ? p.Lat : null,
+                    Lon    = positions.TryGetValue(id, out var p2) ? p2.Lon : null,
+                }).ToList(),
+            };
+
+            string ts = result.ReceivedAt.ToString("yyyyMMdd_HHmmss");
+            string file = Path.Combine(folder, $"traceroute_!{result.DestinationNodeId:x8}_{ts}.json");
+            string json = JsonSerializer.Serialize(saveData, new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(file, json);
+            Services.Logger.WriteLine($"Traceroute saved: {Path.GetFileName(file)}");
+        }
+        catch (Exception ex)
+        {
+            Services.Logger.WriteLine($"Error saving traceroute: {ex.Message}");
+        }
+    }
+
+    private void MapLoadTraceroute_Click(object sender, RoutedEventArgs e)
+    {
+        var dlg = new Microsoft.Win32.OpenFileDialog
+        {
+            Title = "Traceroute laden",
+            Filter = "Traceroute-Dateien (*.json)|*.json",
+            InitialDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "traceroutes"),
+            Multiselect = true,
+        };
+
+        if (dlg.ShowDialog() != true) return;
+
+        foreach (var file in dlg.FileNames)
+        {
+            try
+            {
+                string json = File.ReadAllText(file);
+                var saveData = JsonSerializer.Deserialize<TracerouteSaveData>(json);
+                if (saveData?.Result == null) continue;
+
+                var positions = saveData.GetPositionsDict();
+                var nodeNames = saveData.GetNamesDict();
+
+                // Assign a new palette color if not already tracked
+                if (!_tracerouteColors.TryGetValue(saveData.Result.DestinationNodeId, out var color))
+                {
+                    color = TracerouteColorPalette[_tracerouteColorIndex % TracerouteColorPalette.Length];
+                    _tracerouteColorIndex++;
+                }
+
+                DrawTracerouteLayer(saveData.Result, saveData.DestinationName, positions, nodeNames, color, zoomToFit: true);
+                Services.Logger.WriteLine($"Traceroute loaded from: {Path.GetFileName(file)}");
+            }
+            catch (Exception ex)
+            {
+                Services.Logger.WriteLine($"Error loading traceroute {Path.GetFileName(file)}: {ex.Message}");
+                MessageBox.Show($"Fehler beim Laden:\n{ex.Message}", "Traceroute laden", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Simulates a dashed line between two map points (or a "?" marker if toPoint is null).
+    /// Draws alternating short LineString segments using the traceroute's assigned color.
+    /// </summary>
+    private static List<IFeature> MakeDashedLine(MPoint? fromPoint, MPoint? toPoint, string unknownLabel, Mapsui.Styles.Color? color = null)
+    {
+        var result = new List<IFeature>();
+        var dashColor = color ?? Mapsui.Styles.Color.Cyan;
+
+        if (fromPoint == null)
+        {
+            if (toPoint != null) result.Add(MakeUnknownMarker(toPoint, unknownLabel));
+            return result;
+        }
+
+        if (toPoint == null)
+        {
+            // No destination: just put a "?" marker at the known end
+            result.Add(MakeUnknownMarker(fromPoint, unknownLabel));
+            return result;
+        }
+
+        // Draw dashed line: split into N segments, draw even ones, skip odd ones
+        const int steps = 16; // 8 dashes + 8 gaps
+        double dx = toPoint.X - fromPoint.X;
+        double dy = toPoint.Y - fromPoint.Y;
+
+        for (int s = 0; s < steps; s += 2) // only even = dash, skip odd = gap
+        {
+            double t0 = (double)s / steps;
+            double t1 = (double)(s + 1) / steps;
+            var p0 = new Coordinate(fromPoint.X + dx * t0, fromPoint.Y + dy * t0);
+            var p1 = new Coordinate(fromPoint.X + dx * t1, fromPoint.Y + dy * t1);
+            var seg = new GeometryFeature(new NetTopologySuite.Geometries.LineString(new[] { p0, p1 }));
+            seg.Styles.Add(new VectorStyle { Line = new Mapsui.Styles.Pen(dashColor, 2.0), Fill = null });
+            result.Add(seg);
+        }
+
+        // "?" marker at the destination end
+        result.Add(MakeUnknownMarker(toPoint, unknownLabel));
+        return result;
+    }
+
+    private void ClearTracerouteFromMap(uint destinationNodeId)
+    {
+        if (_tracerouteLayers.TryGetValue(destinationNodeId, out var layer))
+        {
+            _map?.Layers.Remove(layer);
+            _tracerouteLayers.Remove(destinationNodeId);
+            _tracerouteNames.Remove(destinationNodeId);
+            MapControl.Refresh();
+            UpdateTracerouteLegend();
+            Services.Logger.WriteLine($"Traceroute layer cleared for !{destinationNodeId:x8}");
+        }
+    }
+
+    private void UpdateTracerouteLegend()
+    {
+        TracerouteLegendItems.Items.Clear();
+
+        if (_tracerouteLayers.Count == 0)
+        {
+            TracerouteLegend.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        TracerouteLegend.Visibility = Visibility.Visible;
+        foreach (var kv in _tracerouteLayers)
+        {
+            uint nodeId = kv.Key;
+            string name = _tracerouteNames.TryGetValue(nodeId, out var n) ? n : $"!{nodeId:x8}";
+
+            var row = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 2, 0, 2) };
+
+            // Colored dot matching the traceroute line color
+            var mc = _tracerouteColors.TryGetValue(nodeId, out var tc)
+                ? System.Windows.Media.Color.FromArgb((byte)tc.A, (byte)tc.R, (byte)tc.G, (byte)tc.B)
+                : Colors.Cyan;
+            row.Children.Add(new System.Windows.Shapes.Ellipse
+            {
+                Width = 10, Height = 10,
+                Fill = new SolidColorBrush(mc),
+                Margin = new Thickness(0, 0, 6, 0),
+                VerticalAlignment = VerticalAlignment.Center,
+            });
+
+            // Node name
+            row.Children.Add(new TextBlock
+            {
+                Text = name,
+                Foreground = new SolidColorBrush(Colors.White),
+                FontSize = 11,
+                VerticalAlignment = VerticalAlignment.Center,
+                MaxWidth = 150,
+                TextTrimming = TextTrimming.CharacterEllipsis,
+            });
+
+            // Clear button
+            var clearBtn = new Button
+            {
+                Content = "✕",
+                FontSize = 10,
+                Padding = new Thickness(4, 1, 4, 1),
+                Margin = new Thickness(8, 0, 0, 0),
+                Background = new SolidColorBrush(System.Windows.Media.Color.FromArgb(100, 255, 80, 80)),
+                BorderThickness = new Thickness(0),
+                Foreground = Brushes.White,
+                Cursor = Cursors.Hand,
+                ToolTip = $"Traceroute von Karte entfernen",
+            };
+            uint capturedId = nodeId;
+            clearBtn.Click += (_, _) => ClearTracerouteFromMap(capturedId);
+            row.Children.Add(clearBtn);
+
+            TracerouteLegendItems.Items.Add(row);
+        }
+    }
+
+    private static PointFeature MakeUnknownMarker(MPoint pos, string label)
+    {
+        var f = new PointFeature(pos);
+        f.Styles.Add(new SymbolStyle
+        {
+            SymbolType = SymbolType.Ellipse,
+            Fill = new Mapsui.Styles.Brush(new Mapsui.Styles.Color(150, 150, 150, 180)),
+            Outline = new Mapsui.Styles.Pen(Mapsui.Styles.Color.White, 1),
+            SymbolScale = 0.35,
+        });
+        f.Styles.Add(new LabelStyle
+        {
+            Text = label,
+            ForeColor = Mapsui.Styles.Color.White,
+            BackColor = new Mapsui.Styles.Brush(new Mapsui.Styles.Color(100, 100, 100, 200)),
+            HorizontalAlignment = LabelStyle.HorizontalAlignmentEnum.Center,
+            VerticalAlignment = LabelStyle.VerticalAlignmentEnum.Center,
+            Font = new Font { Size = 9 },
+        });
+        return f;
+    }
+
+    // Context menu handlers for traceroute
+    private void NodeContextMenu_Traceroute_Click(object sender, RoutedEventArgs e)
+    {
+        if (NodesListView.SelectedItem is not NodeInfo node) return;
+        OpenTracerouteForNode(node);
+    }
+
+    private void MessageContextMenu_Traceroute_Click(object sender, RoutedEventArgs e)
+    {
+        var node = GetNodeFromSelectedMessage();
+        if (node == null) return;
+        OpenTracerouteForNode(node);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    //  REACTIONS / TAP-BACKS
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private void OnReactionReceived(object? sender, (uint ReplyId, string Emoji, uint FromId) reaction)
+    {
+        Dispatcher.BeginInvoke(() =>
+        {
+            // Try to find the message by ID in _messageById
+            if (_messageById.TryGetValue(reaction.ReplyId, out var msg))
+            {
+                msg.AddReaction(reaction.Emoji, reaction.FromId);
+                Services.Logger.WriteLine($"Reaction '{reaction.Emoji}' from !{reaction.FromId:x8} added to msg {reaction.ReplyId}");
+            }
+            else
+            {
+                Services.Logger.WriteLine($"Reaction '{reaction.Emoji}' for unknown msg ID {reaction.ReplyId}");
+            }
+        });
+    }
+
+    private void ShowEmojiPickerForMessage(MessageItem message, uint destinationId, uint channel)
+    {
+        var quickEmojis = new[]
+        {
+            "👍", "👎", "❤️", "😂", "😢", "😮", "😡", "🎉",
+            "❓", "❗", "‼️", "*️⃣", "1️⃣", "2️⃣", "3️⃣", "4️⃣",
+            "5️⃣", "6️⃣", "7️⃣", "💩", "👋", "🤠", "🐭", "😈",
+            "☀️", "☔", "☁️", "🌫️", "✅", "❌", "🔥", "💯",
+        };
+
+        var popup = new System.Windows.Controls.Primitives.Popup
+        {
+            StaysOpen = false,
+            AllowsTransparency = true,
+            Placement = System.Windows.Controls.Primitives.PlacementMode.MousePoint,
+        };
+
+        var border = new Border
+        {
+            Background = (System.Windows.Media.Brush)FindResource("SystemControlBackgroundChromeMediumLowBrush"),
+            BorderBrush = (System.Windows.Media.Brush)FindResource("SystemControlForegroundBaseLowBrush"),
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(6),
+            Padding = new Thickness(8),
+            Effect = new System.Windows.Media.Effects.DropShadowEffect { BlurRadius = 10, ShadowDepth = 2, Opacity = 0.3 },
+        };
+
+        var panel = new WrapPanel { MaxWidth = 380 }; // 8 columns × ~47px
+
+        foreach (var emoji in quickEmojis)
+        {
+            var btn = new Button
+            {
+                Content = emoji,
+                FontSize = 22,
+                FontFamily = new System.Windows.Media.FontFamily("Segoe UI Emoji"),
+                Padding = new Thickness(6),
+                Margin = new Thickness(2),
+                Background = Brushes.Transparent,
+                BorderThickness = new Thickness(0),
+                Cursor = Cursors.Hand,
+                ToolTip = emoji,
+            };
+            btn.Click += async (_, _) =>
+            {
+                popup.IsOpen = false;
+                try
+                {
+                    await _protocolService.SendReactionAsync(emoji, message.Id, destinationId, channel);
+                    // Show our own reaction immediately
+                    message.AddReaction(emoji, _myNodeId);
+                    if (message.Id != 0) _messageById[message.Id] = message;
+                }
+                catch (Exception ex)
+                {
+                    Services.Logger.WriteLine($"Error sending reaction: {ex.Message}");
+                }
+            };
+            panel.Children.Add(btn);
+        }
+
+        border.Child = panel;
+        popup.Child = border;
+        popup.IsOpen = true;
+    }
+
+    private void MessageContextMenu_React_Click(object sender, RoutedEventArgs e)
+    {
+        if (MessageListView.SelectedItem is not MessageItem msg) return;
+        if (msg.Id == 0)
+        {
+            MessageBox.Show("Auf diese Nachricht kann nicht reagiert werden (keine ID).", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+        // DM (ToId is a specific node): react back to sender; channel broadcast: react to all on that channel
+        bool isDm = msg.ToId != 0 && msg.ToId != 0xFFFFFFFF;
+        uint dest = isDm ? msg.FromId : 0xFFFFFFFF;
+        uint ch = uint.TryParse(msg.Channel, out var ci) ? ci : 0;
+        ShowEmojiPickerForMessage(msg, dest, ch);
+    }
+
+    private void DmMessageContextMenu_React_Click(object sender, RoutedEventArgs e)
+    {
+        // Forwarded from DirectMessagesWindow - handled there via EmojiPickerRequested
     }
 }
