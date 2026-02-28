@@ -90,9 +90,10 @@ public partial class MainWindow : Window
 
     // Traceroute + Reactions
     private readonly Dictionary<uint, TracerouteWindow> _tracerouteWindows = new();
-    private readonly Dictionary<uint, MemoryLayer> _tracerouteLayers = new();
-    private readonly Dictionary<uint, string> _tracerouteNames = new(); // nodeId → display name
-    private readonly Dictionary<uint, Mapsui.Styles.Color> _tracerouteColors = new();
+    // Keyed by layerKey: "live_{destId:x8}" for live routes, filename for loaded routes
+    private readonly Dictionary<string, MemoryLayer> _tracerouteLayers = new();
+    private readonly Dictionary<string, string> _tracerouteNames = new();  // layerKey → display name
+    private readonly Dictionary<string, Mapsui.Styles.Color> _tracerouteColors = new(); // layerKey → color
     private int _tracerouteColorIndex = 0;
 
     // Palette: avoids Blue (my node), Red/custom (other nodes), Cyan (old default)
@@ -3316,7 +3317,7 @@ public partial class MainWindow : Window
         {
             win = new TracerouteWindow(_protocolService, node, _myNodeId) { Owner = this };
             win.PlotOnMapRequested += (_, result) => PlotTracerouteOnMap(result, node);
-            win.ClearFromMapRequested += (_, nodeId) => ClearTracerouteFromMap(nodeId);
+            win.ClearFromMapRequested += (_, nodeId) => ClearLiveTracerouteFromMap(nodeId);
             win.Closed += (_, _) => _tracerouteWindows.Remove(node.NodeId);
             _tracerouteWindows[node.NodeId] = win;
         }
@@ -3366,37 +3367,41 @@ public partial class MainWindow : Window
         var nodeNames = _allNodes.ToDictionary(n => n.NodeId, n => n.LongName);
         nodeNames[_myNodeId] = "Ich";
 
-        // Assign palette color (reuse existing if re-plotting same target)
-        if (!_tracerouteColors.TryGetValue(result.DestinationNodeId, out var color))
+        // Live routes get a stable key per destination (new measurement replaces old on map)
+        string layerKey = $"live_{result.DestinationNodeId:x8}";
+        string displayName = $"{targetNode.LongName} (live)";
+
+        // Assign palette color (reuse existing live-key color so re-plots keep the same color)
+        if (!_tracerouteColors.TryGetValue(layerKey, out var color))
         {
             color = TracerouteColorPalette[_tracerouteColorIndex % TracerouteColorPalette.Length];
             _tracerouteColorIndex++;
-            _tracerouteColors[result.DestinationNodeId] = color;
         }
 
-        // Save snapshot before drawing (so positions are captured)
+        // Save snapshot before drawing (positions captured at this moment)
         SaveTracerouteToFile(result, targetNode.LongName, positions, nodeNames);
 
-        DrawTracerouteLayer(result, targetNode.LongName, positions, nodeNames, color, zoomToFit: true);
+        DrawTracerouteLayer(result, displayName, positions, nodeNames, color, layerKey, zoomToFit: true);
     }
 
     /// <summary>
     /// Core drawing: builds and adds a MemoryLayer for a traceroute.
-    /// Accepts external positions and names (works for both live and loaded data).
+    /// layerKey uniquely identifies the layer (live or loaded-file-based).
     /// </summary>
     private void DrawTracerouteLayer(
         TracerouteResult result,
-        string destName,
+        string displayName,
         Dictionary<uint, (double Lat, double Lon)> positions,
         Dictionary<uint, string> nodeNames,
         Mapsui.Styles.Color color,
+        string layerKey,
         bool zoomToFit = false)
     {
-        // Remove existing layer for this target
-        if (_tracerouteLayers.TryGetValue(result.DestinationNodeId, out var oldLayer))
+        // Remove existing layer with this exact key (e.g. previous live plot for same dest)
+        if (_tracerouteLayers.TryGetValue(layerKey, out var oldLayer))
         {
             _map?.Layers.Remove(oldLayer);
-            _tracerouteLayers.Remove(result.DestinationNodeId);
+            _tracerouteLayers.Remove(layerKey);
         }
 
         var orderedIds = new List<uint> { result.SourceNodeId == 0 ? _myNodeId : result.SourceNodeId };
@@ -3478,10 +3483,10 @@ public partial class MainWindow : Window
             features.Add(pin);
         }
 
-        var traceLayer = new MemoryLayer($"Traceroute_{result.DestinationNodeId}") { Features = features, Style = null };
-        _tracerouteLayers[result.DestinationNodeId] = traceLayer;
-        _tracerouteNames[result.DestinationNodeId] = destName;
-        _tracerouteColors[result.DestinationNodeId] = color;
+        var traceLayer = new MemoryLayer($"Traceroute_{layerKey}") { Features = features, Style = null };
+        _tracerouteLayers[layerKey] = traceLayer;
+        _tracerouteNames[layerKey] = displayName;
+        _tracerouteColors[layerKey] = color;
         _map?.Layers.Add(traceLayer);
         UpdateTracerouteLegend();
 
@@ -3504,7 +3509,7 @@ public partial class MainWindow : Window
             else if (allPts.Count == 1)
                 _map?.Navigator.CenterOnAndZoomTo(allPts[0], 10.0);
 
-            Services.Logger.WriteLine($"Traceroute plotted for {destName}: {allPts.Count} known positions");
+            Services.Logger.WriteLine($"Traceroute plotted [{layerKey}] for {displayName}: {allPts.Count} known positions");
         }
 
         MapControl.Refresh();
@@ -3571,18 +3576,21 @@ public partial class MainWindow : Window
                 var saveData = JsonSerializer.Deserialize<TracerouteSaveData>(json);
                 if (saveData?.Result == null) continue;
 
+                // Use filename (without extension) as the unique layer key so multiple
+                // saves for the same destination can coexist on the map.
+                string layerKey = Path.GetFileNameWithoutExtension(file);
+                string ts = saveData.Result.ReceivedAt.ToString("dd.MM HH:mm");
+                string displayName = $"{saveData.DestinationName} ({ts})";
+
                 var positions = saveData.GetPositionsDict();
                 var nodeNames = saveData.GetNamesDict();
 
-                // Assign a new palette color if not already tracked
-                if (!_tracerouteColors.TryGetValue(saveData.Result.DestinationNodeId, out var color))
-                {
-                    color = TracerouteColorPalette[_tracerouteColorIndex % TracerouteColorPalette.Length];
-                    _tracerouteColorIndex++;
-                }
+                // Each loaded file always gets its own fresh color from the palette
+                var color = TracerouteColorPalette[_tracerouteColorIndex % TracerouteColorPalette.Length];
+                _tracerouteColorIndex++;
 
-                DrawTracerouteLayer(saveData.Result, saveData.DestinationName, positions, nodeNames, color, zoomToFit: true);
-                Services.Logger.WriteLine($"Traceroute loaded from: {Path.GetFileName(file)}");
+                DrawTracerouteLayer(saveData.Result, displayName, positions, nodeNames, color, layerKey, zoomToFit: true);
+                Services.Logger.WriteLine($"Traceroute loaded: {Path.GetFileName(file)}");
             }
             catch (Exception ex)
             {
@@ -3635,18 +3643,23 @@ public partial class MainWindow : Window
         return result;
     }
 
-    private void ClearTracerouteFromMap(uint destinationNodeId)
+    private void ClearTracerouteFromMap(string layerKey)
     {
-        if (_tracerouteLayers.TryGetValue(destinationNodeId, out var layer))
+        if (_tracerouteLayers.TryGetValue(layerKey, out var layer))
         {
             _map?.Layers.Remove(layer);
-            _tracerouteLayers.Remove(destinationNodeId);
-            _tracerouteNames.Remove(destinationNodeId);
+            _tracerouteLayers.Remove(layerKey);
+            _tracerouteNames.Remove(layerKey);
+            // Keep color in _tracerouteColors so re-plotting reuses the same color
             MapControl.Refresh();
             UpdateTracerouteLegend();
-            Services.Logger.WriteLine($"Traceroute layer cleared for !{destinationNodeId:x8}");
+            Services.Logger.WriteLine($"Traceroute layer cleared: {layerKey}");
         }
     }
+
+    /// <summary>Called by TracerouteWindow's ClearFromMapRequested (passes uint destId).</summary>
+    private void ClearLiveTracerouteFromMap(uint destinationNodeId)
+        => ClearTracerouteFromMap($"live_{destinationNodeId:x8}");
 
     private void UpdateTracerouteLegend()
     {
@@ -3661,31 +3674,42 @@ public partial class MainWindow : Window
         TracerouteLegend.Visibility = Visibility.Visible;
         foreach (var kv in _tracerouteLayers)
         {
-            uint nodeId = kv.Key;
-            string name = _tracerouteNames.TryGetValue(nodeId, out var n) ? n : $"!{nodeId:x8}";
+            string layerKey = kv.Key;
+            string name = _tracerouteNames.TryGetValue(layerKey, out var n) ? n : layerKey;
+            bool isLive = layerKey.StartsWith("live_");
 
             var row = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 2, 0, 2) };
 
             // Colored dot matching the traceroute line color
-            var mc = _tracerouteColors.TryGetValue(nodeId, out var tc)
+            var mc = _tracerouteColors.TryGetValue(layerKey, out var tc)
                 ? System.Windows.Media.Color.FromArgb((byte)tc.A, (byte)tc.R, (byte)tc.G, (byte)tc.B)
                 : Colors.Cyan;
             row.Children.Add(new System.Windows.Shapes.Ellipse
             {
                 Width = 10, Height = 10,
                 Fill = new SolidColorBrush(mc),
-                Margin = new Thickness(0, 0, 6, 0),
+                Margin = new Thickness(0, 0, 4, 0),
                 VerticalAlignment = VerticalAlignment.Center,
             });
 
-            // Node name
+            // Live indicator
+            if (isLive)
+                row.Children.Add(new TextBlock
+                {
+                    Text = "📡",
+                    FontSize = 10,
+                    Margin = new Thickness(0, 0, 3, 0),
+                    VerticalAlignment = VerticalAlignment.Center,
+                });
+
+            // Display name (includes timestamp for loaded routes)
             row.Children.Add(new TextBlock
             {
                 Text = name,
                 Foreground = new SolidColorBrush(Colors.White),
                 FontSize = 11,
                 VerticalAlignment = VerticalAlignment.Center,
-                MaxWidth = 150,
+                MaxWidth = 160,
                 TextTrimming = TextTrimming.CharacterEllipsis,
             });
 
@@ -3700,10 +3724,10 @@ public partial class MainWindow : Window
                 BorderThickness = new Thickness(0),
                 Foreground = Brushes.White,
                 Cursor = Cursors.Hand,
-                ToolTip = $"Traceroute von Karte entfernen",
+                ToolTip = "Traceroute von Karte entfernen",
             };
-            uint capturedId = nodeId;
-            clearBtn.Click += (_, _) => ClearTracerouteFromMap(capturedId);
+            string capturedKey = layerKey;
+            clearBtn.Click += (_, _) => ClearTracerouteFromMap(capturedKey);
             row.Children.Add(clearBtn);
 
             TracerouteLegendItems.Items.Add(row);
