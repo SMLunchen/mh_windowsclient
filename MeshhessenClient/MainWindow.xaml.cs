@@ -3470,17 +3470,17 @@ public partial class MainWindow : Window
             {
                 SymbolType = SymbolType.Ellipse,
                 Fill = new Mapsui.Styles.Brush(dotColor),
-                Outline = new Mapsui.Styles.Pen(Mapsui.Styles.Color.White, 2),
-                SymbolScale = 0.45,
+                Outline = new Mapsui.Styles.Pen(Mapsui.Styles.Color.White, 1),
+                SymbolScale = 0.2,
             });
             pin.Styles.Add(new LabelStyle
             {
                 Text = label,
                 ForeColor = Mapsui.Styles.Color.Black,
-                BackColor = new Mapsui.Styles.Brush(bgColor),
+                BackColor = new Mapsui.Styles.Brush(new Mapsui.Styles.Color(255, 255, 255, 180)),
                 HorizontalAlignment = LabelStyle.HorizontalAlignmentEnum.Left,
                 VerticalAlignment = LabelStyle.VerticalAlignmentEnum.Center,
-                Offset = new Offset(10, 0),
+                Offset = new Offset(8, 0),
                 Font = new Font { Size = 9 },
             });
             features.Add(pin);
