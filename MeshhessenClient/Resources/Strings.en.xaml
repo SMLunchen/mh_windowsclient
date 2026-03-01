@@ -29,6 +29,8 @@
     <sys:String x:Key="StrEditNote">📝 Edit note...</sys:String>
     <sys:String x:Key="StrSetColor">🎨 Set color</sys:String>
     <sys:String x:Key="StrRemoveColor">❌ Remove color</sys:String>
+    <sys:String x:Key="StrTraceroute">📡 Traceroute</sys:String>
+    <sys:String x:Key="StrReact">😀 React...</sys:String>
 
     <!-- Status texts -->
     <sys:String x:Key="StrConnected">Connected</sys:String>

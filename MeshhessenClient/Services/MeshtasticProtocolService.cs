@@ -4,6 +4,7 @@ using Meshtastic.Protobufs;
 using MeshhessenClient.Models;
 using ProtoNodeInfo = Meshtastic.Protobufs.NodeInfo;
 using ModelNodeInfo = MeshhessenClient.Models.NodeInfo;
+using TracerouteResult = MeshhessenClient.Models.TracerouteResult;
 
 namespace MeshhessenClient.Services;
 
@@ -45,6 +46,8 @@ public class MeshtasticProtocolService
     public event EventHandler<User>? OwnerReceived;
     public event EventHandler<DeviceInfo>? DeviceInfoReceived;
     public event EventHandler<int>? PacketCountChanged;
+    public event EventHandler<TracerouteResult>? TracerouteReceived;
+    public event EventHandler<(uint ReplyId, string Emoji, uint FromId)>? ReactionReceived;
 
     private const byte PACKET_START_BYTE_1 = 0x94;
     private const byte PACKET_START_BYTE_2 = 0xC3;
@@ -765,6 +768,10 @@ public class MeshtasticProtocolService
                 case 67: // TELEMETRY_APP
                     HandleTelemetryPacket(packet, data);
                     break;
+
+                case 70: // TRACEROUTE_APP
+                    HandleTraceroutePacket(packet, data);
+                    break;
             }
         }
         else if (packet.PayloadVariantCase == MeshPacket.PayloadVariantOneofCase.Encrypted)
@@ -815,6 +822,16 @@ public class MeshtasticProtocolService
     {
         try
         {
+            // Check if this is a tap-back reaction (emoji flag != 0, reply_id set)
+            // emoji is a fixed32 indicator flag (=1); actual emoji string is in payload
+            if (data.Emoji != 0 && data.ReplyId != 0)
+            {
+                string emoji = Encoding.UTF8.GetString(data.Payload.ToByteArray());
+                Logger.WriteLine($"Reaction received: '{emoji}' from !{packet.From:x8} for msg {data.ReplyId}");
+                ReactionReceived?.Invoke(this, (data.ReplyId, emoji, packet.From));
+                return;
+            }
+
             byte[] payloadBytes = data.Payload.ToByteArray();
             string messageText = Encoding.UTF8.GetString(payloadBytes);
 
@@ -836,6 +853,7 @@ public class MeshtasticProtocolService
 
             var messageItem = new MessageItem
             {
+                Id = packet.Id,
                 Time = DateTime.Now.ToString("HH:mm:ss"),
                 From = fromName,
                 FromId = packet.From,
@@ -852,6 +870,109 @@ public class MeshtasticProtocolService
             Logger.WriteLine($"ERROR: Text message handling failed: {ex.Message}");
         }
     }
+
+    private void HandleTraceroutePacket(MeshPacket packet, Data data)
+    {
+        try
+        {
+            var routeDiscovery = RouteDiscovery.Parser.ParseFrom(data.Payload);
+            Logger.WriteLine($"Traceroute received: {routeDiscovery.Route.Count} forward hops, {routeDiscovery.RouteBack.Count} return hops, from !{packet.From:x8}");
+
+            var result = new TracerouteResult
+            {
+                RequestId = data.RequestId,
+                DestinationNodeId = packet.From, // response comes FROM the destination
+                SourceNodeId = _myNodeId,
+                IsViaMqtt = packet.ViaMqtt,
+                RouteForward = routeDiscovery.Route.ToList(),
+                SnrTowards = routeDiscovery.SnrTowards.ToList(),
+                RouteBack = routeDiscovery.RouteBack.ToList(),
+                SnrBack = routeDiscovery.SnrBack.ToList(),
+            };
+
+            TracerouteReceived?.Invoke(this, result);
+        }
+        catch (Exception ex)
+        {
+            Logger.WriteLine($"ERROR: Traceroute handling failed: {ex.Message}");
+        }
+    }
+
+    public async Task SendTracerouteAsync(uint destinationId)
+    {
+        try
+        {
+            var routeDiscovery = new RouteDiscovery();
+            var meshPacket = new MeshPacket
+            {
+                From = _myNodeId,
+                To = destinationId,
+                Channel = 0,
+                Decoded = new Data
+                {
+                    Portnum = 70, // TRACEROUTE_APP
+                    Payload = routeDiscovery.ToByteString(),
+                    WantResponse = true,
+                },
+                Id = (uint)Random.Shared.Next(),
+                WantAck = false,
+                HopLimit = 7,
+                HopStart = 7,
+            };
+
+            var toRadio = new ToRadio { Packet = meshPacket };
+            await SendToRadioAsync(toRadio);
+            Logger.WriteLine($"Traceroute request sent to !{destinationId:x8}");
+        }
+        catch (Exception ex)
+        {
+            Logger.WriteLine($"Error sending traceroute: {ex.Message}");
+            throw;
+        }
+    }
+
+    public async Task SendReactionAsync(string emoji, uint replyId, uint destinationId, uint channel = 0)
+    {
+        try
+        {
+            var meshPacket = new MeshPacket
+            {
+                From = _myNodeId,
+                To = destinationId,
+                Channel = channel,
+                Decoded = new Data
+                {
+                    Portnum = 1, // TEXT_MESSAGE_APP
+                    Payload = ByteString.CopyFromUtf8(emoji), // emoji string in payload
+                    ReplyId = replyId,
+                    Emoji = 1, // fixed32 indicator flag: marks this as a tap-back reaction
+                },
+                Id = (uint)Random.Shared.Next(),
+                WantAck = false,
+                HopLimit = 7,
+                HopStart = 0,
+            };
+
+            var toRadio = new ToRadio { Packet = meshPacket };
+            await SendToRadioAsync(toRadio);
+            Logger.WriteLine($"Reaction '{emoji}' sent for msg {replyId} to !{destinationId:x8}");
+        }
+        catch (Exception ex)
+        {
+            Logger.WriteLine($"Error sending reaction: {ex.Message}");
+            throw;
+        }
+    }
+
+    public Dictionary<uint, ModelNodeInfo> GetKnownNodes()
+    {
+        lock (_dataLock)
+        {
+            return new Dictionary<uint, ModelNodeInfo>(_knownNodes);
+        }
+    }
+
+    public uint GetMyNodeId() => _myNodeId;
 
     private void HandleNodeInfo(Meshtastic.Protobufs.NodeInfo protoNodeInfo)
     {
@@ -1139,10 +1260,11 @@ public class MeshtasticProtocolService
         }
     }
 
-    public async Task SendTextMessageAsync(string text, uint destinationId = 0xFFFFFFFF, uint channel = 0)
+    public async Task<uint> SendTextMessageAsync(string text, uint destinationId = 0xFFFFFFFF, uint channel = 0)
     {
         try
         {
+            uint packetId = (uint)Random.Shared.Next(1, int.MaxValue); // never 0
             var meshPacket = new MeshPacket
             {
                 From = _myNodeId,
@@ -1153,7 +1275,7 @@ public class MeshtasticProtocolService
                     Portnum = 1, // TEXT_MESSAGE_APP
                     Payload = ByteString.CopyFromUtf8(text)
                 },
-                Id = (uint)Random.Shared.Next(),
+                Id = packetId,
                 WantAck = false,
                 HopLimit = 7,
                 HopStart = 0
@@ -1165,6 +1287,7 @@ public class MeshtasticProtocolService
             };
 
             await SendToRadioAsync(toRadio);
+            return packetId;
         }
         catch (Exception ex)
         {

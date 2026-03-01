@@ -124,8 +124,30 @@ public partial class DirectMessagesWindow : Window
 
         gridView.Columns.Add(new GridViewColumn { Header = Loc("StrColTime"), Width = 100, DisplayMemberBinding = new System.Windows.Data.Binding("Time") });
         gridView.Columns.Add(new GridViewColumn { Header = Loc("StrColFrom"), Width = 120, DisplayMemberBinding = new System.Windows.Data.Binding("From") });
-        gridView.Columns.Add(new GridViewColumn { Header = Loc("StrColMessage"), Width = 350, DisplayMemberBinding = new System.Windows.Data.Binding("Message") });
+        gridView.Columns.Add(new GridViewColumn { Header = Loc("StrColMessage"), Width = 300, DisplayMemberBinding = new System.Windows.Data.Binding("Message") });
+
+        // Reactions column
+        var reactCol = new GridViewColumn { Header = "💬", Width = 90 };
+        var reactFactory = new FrameworkElementFactory(typeof(TextBlock));
+        reactFactory.SetBinding(TextBlock.TextProperty, new System.Windows.Data.Binding("ReactionsDisplay"));
+        reactFactory.SetValue(TextBlock.FontSizeProperty, 14.0);
+        reactFactory.SetValue(TextBlock.FontFamilyProperty, new System.Windows.Media.FontFamily("Segoe UI Emoji"));
+        var reactTemplate = new DataTemplate { VisualTree = reactFactory };
+        reactCol.CellTemplate = reactTemplate;
+        gridView.Columns.Add(reactCol);
+
         listView.View = gridView;
+
+        // Right-click context menu for reactions on DM messages
+        var cmenu = new ContextMenu();
+        var reactItem = new MenuItem { Header = "😀 Reaktion..." };
+        reactItem.Click += (s, e) =>
+        {
+            if (listView.SelectedItem is MeshhessenClient.Models.MessageItem msg)
+                ShowDmEmojiPicker(msg, conversation.NodeId);
+        };
+        cmenu.Items.Add(reactItem);
+        listView.ContextMenu = cmenu;
 
         Grid.SetRow(listView, 0);
         grid.Children.Add(listView);
@@ -329,7 +351,7 @@ public partial class DirectMessagesWindow : Window
 
         try
         {
-            await _protocolService.SendTextMessageAsync(messageText, toNodeId, 0);
+            uint packetId = await _protocolService.SendTextMessageAsync(messageText, toNodeId, 0);
             Services.Logger.WriteLine($"DM sent to {toNodeId:X8}: {messageText}");
 
             // Zeige gesendete Nachricht im Chat
@@ -338,6 +360,7 @@ public partial class DirectMessagesWindow : Window
             {
                 var sentMessage = new MessageItem
                 {
+                    Id = packetId,
                     Time = DateTime.Now.ToString("HH:mm:ss"),
                     From = Loc("StrSentFrom"),
                     Message = messageText,
@@ -482,6 +505,76 @@ public partial class DirectMessagesWindow : Window
         {
             Services.Logger.WriteLine($"Error showing alert bell animation in DM window: {ex.Message}");
         }
+    }
+
+    private void ShowDmEmojiPicker(MeshhessenClient.Models.MessageItem message, uint partnerNodeId)
+    {
+        var quickEmojis = new[]
+        {
+            "👍", "👎", "❤️", "😂", "😢", "😮", "😡", "🎉",
+            "❓", "❗", "‼️", "*️⃣", "1️⃣", "2️⃣", "3️⃣", "4️⃣",
+            "5️⃣", "6️⃣", "7️⃣", "💩", "👋", "🤠", "🐭", "😈",
+            "☀️", "☔", "☁️", "🌫️", "✅", "❌", "🔥", "💯",
+        };
+
+        var popup = new System.Windows.Controls.Primitives.Popup
+        {
+            StaysOpen = false,
+            AllowsTransparency = true,
+            Placement = System.Windows.Controls.Primitives.PlacementMode.MousePoint,
+        };
+
+        var border = new Border
+        {
+            Background = (Brush)FindResource("SystemControlBackgroundChromeMediumLowBrush"),
+            BorderBrush = (Brush)FindResource("SystemControlForegroundBaseLowBrush"),
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(6),
+            Padding = new Thickness(8),
+        };
+
+        var panel = new WrapPanel { MaxWidth = 380 }; // 8 columns × ~47px
+        foreach (var emoji in quickEmojis)
+        {
+            var emojiBlock = new System.Windows.Controls.TextBlock
+            {
+                Text = emoji,
+                FontFamily = new System.Windows.Media.FontFamily("Segoe UI Emoji"),
+                FontSize = 24,
+                TextAlignment = System.Windows.TextAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+            };
+            System.Windows.Media.TextOptions.SetTextRenderingMode(emojiBlock, System.Windows.Media.TextRenderingMode.Auto);
+            var btn = new Button
+            {
+                Content = emojiBlock,
+                Padding = new Thickness(4),
+                Margin = new Thickness(2),
+                Background = Brushes.Transparent,
+                BorderThickness = new Thickness(0),
+                Cursor = Cursors.Hand,
+                MinWidth = 40,
+                MinHeight = 40,
+            };
+            btn.Click += async (_, _) =>
+            {
+                popup.IsOpen = false;
+                try
+                {
+                    await _protocolService.SendReactionAsync(emoji, message.Id, partnerNodeId, 0);
+                    message.AddReaction(emoji, _myNodeId);
+                }
+                catch (Exception ex)
+                {
+                    Services.Logger.WriteLine($"Error sending DM reaction: {ex.Message}");
+                }
+            };
+            panel.Children.Add(btn);
+        }
+
+        border.Child = panel;
+        popup.Child = border;
+        popup.IsOpen = true;
     }
 
     protected override void OnClosing(System.ComponentModel.CancelEventArgs e)

@@ -307,6 +307,15 @@
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
                                 <GridViewColumn Header="{DynamicResource StrColChannel}" Width="80" DisplayMemberBinding="{Binding ChannelName}"/>
+                                <GridViewColumn Header="💬" Width="100">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding ReactionsDisplay}" FontSize="14"
+                                                       FontFamily="Segoe UI Emoji"
+                                                       ToolTip="{Binding ReactionsDisplay}"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
                             </GridView>
                         </ListView.View>
                         <ListView.ContextMenu>
@@ -364,6 +373,9 @@
                                 <MenuItem x:Name="PinMsgMenuItem" Header="{DynamicResource StrPin}" Click="MessageContextMenu_Pin_Click"/>
                                 <MenuItem x:Name="ShowPathMsgMenuItem" Header="{DynamicResource StrShowPath}" Click="MessageContextMenu_ShowPath_Click"/>
                                 <MenuItem x:Name="HidePathMsgMenuItem" Header="{DynamicResource StrHidePath}" Click="MessageContextMenu_HidePath_Click" Visibility="Collapsed"/>
+                                <MenuItem Header="{DynamicResource StrTraceroute}" Click="MessageContextMenu_Traceroute_Click"/>
+                                <Separator/>
+                                <MenuItem Header="{DynamicResource StrReact}" Click="MessageContextMenu_React_Click"/>
                             </ContextMenu>
                         </ListView.ContextMenu>
                     </ListView>
@@ -569,6 +581,7 @@
                                 <MenuItem x:Name="PinNodeMenuItem" Header="{DynamicResource StrPin}" Click="NodeContextMenu_Pin_Click"/>
                                 <MenuItem x:Name="ShowPathNodeMenuItem" Header="{DynamicResource StrShowPath}" Click="NodeContextMenu_ShowPath_Click"/>
                                 <MenuItem x:Name="HidePathMenuItem" Header="{DynamicResource StrHidePath}" Click="NodeContextMenu_HidePath_Click" Visibility="Collapsed"/>
+                                <MenuItem Header="{DynamicResource StrTraceroute}" Click="NodeContextMenu_Traceroute_Click"/>
                             </ContextMenu>
                         </ListView.ContextMenu>
                     </ListView>
@@ -791,11 +804,33 @@
                                     Click="MapZoomIn_Click" ToolTip="Zoom In"/>
                             <Button Content="-" Width="32" Height="32" Margin="0,0,10,0"
                                     Click="MapZoomOut_Click" ToolTip="Zoom Out"/>
+                            <Button Content="📂 Traceroute laden" Height="28" Margin="0,0,0,0"
+                                    Padding="8,2"
+                                    Click="MapLoadTraceroute_Click"
+                                    ToolTip="Gespeicherte Traceroute(s) auf der Karte anzeigen"/>
                         </StackPanel>
                         <TextBlock x:Name="MapStatusText" Grid.Column="1" VerticalAlignment="Center" Foreground="Gray" FontStyle="Italic"/>
                     </Grid>
                     <Grid Grid.Row="1">
                         <mapsui:MapControl x:Name="MapControl"/>
+
+                        <!-- Traceroute Legend (top-left overlay) -->
+                        <Border x:Name="TracerouteLegend"
+                                HorizontalAlignment="Left" VerticalAlignment="Top"
+                                Margin="8,8,0,0"
+                                Background="#CC1E1E1E"
+                                BorderBrush="#44FFFFFF"
+                                BorderThickness="1"
+                                CornerRadius="5"
+                                Padding="8,6"
+                                Visibility="Collapsed">
+                            <StackPanel>
+                                <TextBlock Text="📡 Traceroutes" FontSize="11" FontWeight="SemiBold"
+                                           Foreground="#BBDDDDDD" Margin="0,0,0,4"/>
+                                <ItemsControl x:Name="TracerouteLegendItems"/>
+                            </StackPanel>
+                        </Border>
+
                         <!-- Copyright Hinweis rechts unten -->
                         <TextBlock x:Name="MapCopyrightText"
                                    HorizontalAlignment="Right"
@@ -985,6 +1020,15 @@
                           VerticalAlignment="Center"/>
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                    <!-- Update hint: shown when a newer release is detected -->
+                    <Border x:Name="UpdateBanner" Visibility="Collapsed"
+                            Background="#33FF8800" CornerRadius="3" Padding="6,2" Margin="0,0,12,0">
+                        <TextBlock FontSize="11" VerticalAlignment="Center">
+                            <Hyperlink x:Name="UpdateHintLink" RequestNavigate="UpdateHint_RequestNavigate">
+                                <Run x:Name="UpdateHintRun"/>
+                            </Hyperlink>
+                        </TextBlock>
+                    </Border>
                     <TextBlock x:Name="FooterVersionText" VerticalAlignment="Center" Foreground="Gray" Margin="0,0,12,0" FontSize="11"/>
                     <Image Source="pack://application:,,,/Resources/app.ico" Width="16" Height="16" Margin="0,0,6,0" VerticalAlignment="Center"/>
                     <TextBlock VerticalAlignment="Center">
