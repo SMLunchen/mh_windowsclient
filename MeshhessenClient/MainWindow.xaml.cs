@@ -1,6 +1,7 @@
 ﻿using System.Collections.ObjectModel;
 using System.IO;
 using System.IO.Ports;
+using System.Net.Http;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
@@ -96,10 +97,10 @@ public partial class MainWindow : Window
     private readonly Dictionary<string, Mapsui.Styles.Color> _tracerouteColors = new(); // layerKey → color
     private int _tracerouteColorIndex = 0;
 
-    // Palette: avoids Blue (my node), Red/custom (other nodes), Cyan (old default)
+    // Palette: avoids Blue (my node), Red/custom (other nodes), Orange (common node color)
     private static readonly Mapsui.Styles.Color[] TracerouteColorPalette =
     {
-        new(255, 109,   0, 255), // Orange
+        new(  0, 191, 255, 255), // Deep Sky Blue
         new(174, 234,   0, 255), // Lime
         new(245,   0,  87, 255), // HotPink
         new(170,   0, 255, 255), // Purple
@@ -127,6 +128,8 @@ public partial class MainWindow : Window
         Title = $"Meshhessen Client {versionStr}";
         AboutVersionText.Text = versionStr;
         FooterVersionText.Text = versionStr;
+
+        Loaded += (_, _) => _ = CheckForUpdateAsync();
 
         // Initialize with Serial connection (default)
         _connectionService = new SerialConnectionService();
@@ -3771,6 +3774,55 @@ public partial class MainWindow : Window
     }
 
     // ═══════════════════════════════════════════════════════════════════════
+    //  UPDATE CHECK
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private static readonly HttpClient _httpClient = new() { Timeout = TimeSpan.FromSeconds(6) };
+
+    private async Task CheckForUpdateAsync()
+    {
+        try
+        {
+            _httpClient.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "MeshhessenClient");
+            var json = await _httpClient.GetStringAsync(
+                "https://api.github.com/repos/SMLunchen/mh_windowsclient/releases");
+
+            var releases = JsonSerializer.Deserialize<JsonElement>(json);
+            if (releases.GetArrayLength() == 0) return;
+
+            var latest  = releases[0];
+            var tagName = latest.GetProperty("tag_name").GetString();
+            var htmlUrl = latest.GetProperty("html_url").GetString();
+            if (string.IsNullOrEmpty(tagName) || string.IsNullOrEmpty(htmlUrl)) return;
+
+            var current = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+            if (!Version.TryParse(tagName.TrimStart('v'), out var remote)) return;
+
+            if (remote > current)
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    UpdateHintRun.Text = $"🔔 Update verfügbar: {tagName}";
+                    UpdateHintLink.NavigateUri = new Uri(htmlUrl);
+                    UpdateBanner.Visibility = Visibility.Visible;
+                    Services.Logger.WriteLine($"Update available: {tagName} → {htmlUrl}");
+                });
+            }
+        }
+        catch
+        {
+            // Offline or API unavailable – silently ignore
+        }
+    }
+
+    private void UpdateHint_RequestNavigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)
+    {
+        try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(e.Uri.AbsoluteUri) { UseShellExecute = true }); }
+        catch { }
+        e.Handled = true;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
     //  REACTIONS / TAP-BACKS
     // ═══════════════════════════════════════════════════════════════════════
 
@@ -3822,17 +3874,27 @@ public partial class MainWindow : Window
 
         foreach (var emoji in quickEmojis)
         {
+            // Use explicit TextBlock so WPF .NET 8's DirectWrite path renders color emoji
+            var emojiBlock = new TextBlock
+            {
+                Text = emoji,
+                FontFamily = new System.Windows.Media.FontFamily("Segoe UI Emoji"),
+                FontSize = 24,
+                TextAlignment = TextAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+            };
+            System.Windows.Media.TextOptions.SetTextRenderingMode(emojiBlock, System.Windows.Media.TextRenderingMode.Auto);
             var btn = new Button
             {
-                Content = emoji,
-                FontSize = 22,
-                FontFamily = new System.Windows.Media.FontFamily("Segoe UI Emoji"),
-                Padding = new Thickness(6),
+                Content = emojiBlock,
+                Padding = new Thickness(4),
                 Margin = new Thickness(2),
                 Background = Brushes.Transparent,
                 BorderThickness = new Thickness(0),
                 Cursor = Cursors.Hand,
                 ToolTip = emoji,
+                MinWidth = 40,
+                MinHeight = 40,
             };
             btn.Click += async (_, _) =>
             {

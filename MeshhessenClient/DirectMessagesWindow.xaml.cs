@@ -536,16 +536,25 @@ public partial class DirectMessagesWindow : Window
         var panel = new WrapPanel { MaxWidth = 380 }; // 8 columns × ~47px
         foreach (var emoji in quickEmojis)
         {
+            var emojiBlock = new System.Windows.Controls.TextBlock
+            {
+                Text = emoji,
+                FontFamily = new System.Windows.Media.FontFamily("Segoe UI Emoji"),
+                FontSize = 24,
+                TextAlignment = System.Windows.TextAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+            };
+            System.Windows.Media.TextOptions.SetTextRenderingMode(emojiBlock, System.Windows.Media.TextRenderingMode.Auto);
             var btn = new Button
             {
-                Content = emoji,
-                FontSize = 22,
-                FontFamily = new System.Windows.Media.FontFamily("Segoe UI Emoji"),
-                Padding = new Thickness(5),
+                Content = emojiBlock,
+                Padding = new Thickness(4),
                 Margin = new Thickness(2),
                 Background = Brushes.Transparent,
                 BorderThickness = new Thickness(0),
                 Cursor = Cursors.Hand,
+                MinWidth = 40,
+                MinHeight = 40,
             };
             btn.Click += async (_, _) =>
             {

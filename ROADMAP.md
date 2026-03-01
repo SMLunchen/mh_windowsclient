@@ -6,11 +6,6 @@
 - [ ] History beim Start laden
 - [ ] Message-Suche
 
-## Config-Management
-
-- [ ] Config-Bearbeitung und Speichern (AdminMessage: set_config)
-- [ ] Kanal hinzufügen/bearbeiten/löschen
-- [ ] PSK-Generator
 
 ## Erweiterte Features
 
@@ -20,8 +15,6 @@
 
 ## Ideen / Backlog
 
-* Mehrsprachigkeit (Englisch)
-* Emoji-Picker
 * Export/Import von Nachrichten
 
 
