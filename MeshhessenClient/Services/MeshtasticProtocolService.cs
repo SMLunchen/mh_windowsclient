@@ -48,6 +48,9 @@ public class MeshtasticProtocolService
     public event EventHandler<int>? PacketCountChanged;
     public event EventHandler<TracerouteResult>? TracerouteReceived;
     public event EventHandler<(uint ReplyId, string Emoji, uint FromId)>? ReactionReceived;
+    public event EventHandler<(uint NodeId, float BatteryPercent, float Voltage)>? DeviceTelemetryReceived;
+
+    private TelemetryDatabaseService? _db;
 
     private const byte PACKET_START_BYTE_1 = 0x94;
     private const byte PACKET_START_BYTE_2 = 0xC3;
@@ -56,6 +59,11 @@ public class MeshtasticProtocolService
     {
         _connectionService = connectionService;
         _connectionService.DataReceived += OnDataReceived;
+    }
+
+    public void SetDatabase(TelemetryDatabaseService db)
+    {
+        _db = db;
     }
 
     public async Task InitializeAsync()
@@ -747,6 +755,29 @@ public class MeshtasticProtocolService
         {
             var data = packet.Decoded;
 
+            // Record every decoded packet for telemetry analysis
+            if (packet.From != 0 && !_isInitializing)
+            {
+                try
+                {
+                    int? hops = (packet.HopStart == 0 || packet.HopLimit > packet.HopStart)
+                        ? null
+                        : (int)(packet.HopStart - packet.HopLimit);
+                    _db?.InsertPacketRx(
+                        nodeId:    packet.From,
+                        packetId:  packet.Id,
+                        timestamp: DateTime.UtcNow,
+                        snr:       packet.RxSnr,
+                        rssi:      packet.RxRssi,
+                        hopCount:  hops,
+                        wantAck:   packet.WantAck);
+                }
+                catch (Exception ex)
+                {
+                    Logger.WriteLine($"TelemetryDB packet_rx insert failed: {ex.Message}");
+                }
+            }
+
             switch (data.Portnum)
             {
                 case 1: // TEXT_MESSAGE_APP
@@ -891,6 +922,10 @@ public class MeshtasticProtocolService
             };
 
             TracerouteReceived?.Invoke(this, result);
+
+            // Persist hops for telemetry analysis
+            try { _db?.InsertTracerouteHops(result); }
+            catch (Exception ex) { Logger.WriteLine($"TelemetryDB traceroute insert failed: {ex.Message}"); }
         }
         catch (Exception ex)
         {
@@ -1150,6 +1185,38 @@ public class MeshtasticProtocolService
         {
             ModelNodeInfo? nodeToFire = null;
             bool shouldFireEvent;
+            float batteryPercent = 0f, voltage = 0f;
+
+            // Parse telemetry payload
+            Telemetry? telemetry = null;
+            try { telemetry = Telemetry.Parser.ParseFrom(data.Payload); }
+            catch { /* ignore parse errors for unknown variants */ }
+
+            if (telemetry?.DeviceMetrics is { } dm)
+            {
+                batteryPercent = dm.BatteryLevel;
+                voltage        = dm.Voltage;
+
+                _db?.InsertDeviceTelemetry(
+                    nodeId:          packet.From,
+                    timestamp:       DateTime.UtcNow,
+                    batteryPercent:  dm.BatteryLevel,
+                    voltage:         dm.Voltage,
+                    channelUtil:     dm.ChannelUtilization,
+                    airTxUtil:       dm.AirUtilTx,
+                    uptimeSeconds:   dm.UptimeSeconds);
+            }
+
+            if (telemetry?.EnvironmentMetrics is { } em && (em.Temperature != 0 || em.RelativeHumidity != 0))
+            {
+                _db?.InsertEnvironmentTelemetry(
+                    nodeId:      packet.From,
+                    timestamp:   DateTime.UtcNow,
+                    temp:        em.Temperature,
+                    humidity:    em.RelativeHumidity,
+                    pressure:    em.BarometricPressure,
+                    iaq:         (int)em.Iaq);
+            }
 
             lock (_dataLock)
             {
@@ -1158,6 +1225,9 @@ public class MeshtasticProtocolService
                     nodeInfo.LastSeen = DateTime.Now.ToString("HH:mm:ss");
                     if (packet.RxRssi != 0) nodeInfo.Rssi = packet.RxRssi.ToString();
                     if (packet.RxSnr != 0f) nodeInfo.Snr = packet.RxSnr.ToString("F1");
+                    // Live-update battery from telemetry payload
+                    if (batteryPercent > 0)
+                        nodeInfo.Battery = $"{batteryPercent:F0}%";
                     nodeToFire = nodeInfo;
                     shouldFireEvent = !_isInitializing;
                 }
@@ -1171,6 +1241,8 @@ public class MeshtasticProtocolService
             if (shouldFireEvent && nodeToFire != null)
             {
                 NodeInfoReceived?.Invoke(this, nodeToFire);
+                if (batteryPercent > 0 || voltage > 0)
+                    DeviceTelemetryReceived?.Invoke(this, (packet.From, batteryPercent, voltage));
             }
         }
         catch (Exception ex)

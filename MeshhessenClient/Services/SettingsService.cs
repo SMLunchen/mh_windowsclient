@@ -25,7 +25,8 @@ public record AppSettings(
     bool AlertBellSound,                     // Play sound on alert bell character
     string Language,                         // UI language: "de" or "en"
     bool EnableLocationLogging,              // Log GPS positions to locationlogs/
-    Dictionary<uint, bool> PinnedNodes);     // NodeId -> pinned
+    Dictionary<uint, bool> PinnedNodes,      // NodeId -> pinned
+    int TelemetryRetentionDays);             // 0=unlimited, 30/90/365
 
 public static class SettingsService
 {
@@ -55,7 +56,8 @@ public static class SettingsService
             true,   // AlertBellSound default enabled
             "de",   // Language default German
             false,  // EnableLocationLogging default off
-            new Dictionary<uint, bool>());  // PinnedNodes
+            new Dictionary<uint, bool>(),   // PinnedNodes
+            90);                            // TelemetryRetentionDays default 90
 
         try
         {
@@ -162,7 +164,8 @@ public static class SettingsService
                 AlertBellSound: !values.TryGetValue("AlertBellSound", out var abs) || !bool.TryParse(abs, out var absBool) || absBool,
                 Language: values.TryGetValue("Language", out var lang) && !string.IsNullOrEmpty(lang) ? lang : defaults.Language,
                 EnableLocationLogging: values.TryGetValue("EnableLocationLogging", out var ell) && bool.TryParse(ell, out var ellBool) && ellBool,
-                PinnedNodes: pinnedNodes
+                PinnedNodes: pinnedNodes,
+                TelemetryRetentionDays: values.TryGetValue("TelemetryRetentionDays", out var trd) && int.TryParse(trd, out var trdInt) ? trdInt : defaults.TelemetryRetentionDays
             );
         }
         catch (Exception ex)
@@ -198,7 +201,8 @@ public static class SettingsService
                 $"DebugBluetooth={settings.DebugBluetooth}",
                 $"AlertBellSound={settings.AlertBellSound}",
                 $"Language={settings.Language}",
-                $"EnableLocationLogging={settings.EnableLocationLogging}"
+                $"EnableLocationLogging={settings.EnableLocationLogging}",
+                $"TelemetryRetentionDays={settings.TelemetryRetentionDays}"
             };
 
             // Save node colors

@@ -374,6 +374,7 @@
                                 <MenuItem x:Name="ShowPathMsgMenuItem" Header="{DynamicResource StrShowPath}" Click="MessageContextMenu_ShowPath_Click"/>
                                 <MenuItem x:Name="HidePathMsgMenuItem" Header="{DynamicResource StrHidePath}" Click="MessageContextMenu_HidePath_Click" Visibility="Collapsed"/>
                                 <MenuItem Header="{DynamicResource StrTraceroute}" Click="MessageContextMenu_Traceroute_Click"/>
+                                <MenuItem Header="{DynamicResource StrTelemetry}" Click="MessageContextMenu_Telemetry_Click"/>
                                 <Separator/>
                                 <MenuItem Header="{DynamicResource StrReact}" Click="MessageContextMenu_React_Click"/>
                             </ContextMenu>
@@ -582,6 +583,7 @@
                                 <MenuItem x:Name="ShowPathNodeMenuItem" Header="{DynamicResource StrShowPath}" Click="NodeContextMenu_ShowPath_Click"/>
                                 <MenuItem x:Name="HidePathMenuItem" Header="{DynamicResource StrHidePath}" Click="NodeContextMenu_HidePath_Click" Visibility="Collapsed"/>
                                 <MenuItem Header="{DynamicResource StrTraceroute}" Click="NodeContextMenu_Traceroute_Click"/>
+                                <MenuItem Header="{DynamicResource StrTelemetry}" Click="NodeContextMenu_Telemetry_Click"/>
                             </ContextMenu>
                         </ListView.ContextMenu>
                     </ListView>
@@ -698,7 +700,20 @@
                                 </StackPanel>
                             </GroupBox>
 
-                            <!-- e) Standort-Logging -->
+                            <!-- e) Telemetrie-Datenbank -->
+                            <GroupBox Header="{DynamicResource StrTelemetryDbGroup}" Margin="0,0,0,16">
+                                <StackPanel Margin="10">
+                                    <TextBlock Text="{DynamicResource StrRetentionLabel}" Margin="0,0,0,4"/>
+                                    <ComboBox x:Name="TelemetryRetentionComboBox" Width="200" HorizontalAlignment="Left">
+                                        <ComboBoxItem Tag="30"  Content="{DynamicResource StrRetention30}"/>
+                                        <ComboBoxItem Tag="90"  Content="{DynamicResource StrRetention90}" IsSelected="True"/>
+                                        <ComboBoxItem Tag="365" Content="{DynamicResource StrRetention365}"/>
+                                        <ComboBoxItem Tag="0"   Content="{DynamicResource StrRetentionUnlimited}"/>
+                                    </ComboBox>
+                                </StackPanel>
+                            </GroupBox>
+
+                            <!-- f) Standort-Logging -->
                             <GroupBox Header="{DynamicResource StrLocationLoggingGroup}" Margin="0,0,0,16">
                                 <StackPanel Margin="10">
                                     <CheckBox x:Name="EnableLocationLoggingCheckBox"

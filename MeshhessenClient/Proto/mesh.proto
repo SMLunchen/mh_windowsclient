@@ -55,14 +55,14 @@ message MeshPacket {
     bytes encrypted = 5;
   }
   fixed32 id = 6;
-  uint32 rx_time = 7;
+  fixed32 rx_time = 7;
   float rx_snr = 8;
-  int32 rx_rssi = 9;
-  uint32 hop_limit = 10;
-  bool want_ack = 11;
-  Priority priority = 12;
-  int32 hop_start = 13;
+  uint32 hop_limit = 9;
+  bool want_ack = 10;
+  Priority priority = 11;
+  int32 rx_rssi = 12;
   bool via_mqtt = 14;
+  uint32 hop_start = 15;
 }
 
 message NodeInfo {

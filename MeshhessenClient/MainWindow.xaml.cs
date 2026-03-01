@@ -85,7 +85,8 @@ public partial class MainWindow : Window
         true,
         "de",
         false,
-        new Dictionary<uint, bool>());
+        new Dictionary<uint, bool>(),
+        90);
     private NodeInfo? _mapContextMenuNode;
     private uint? _alertNodeId;  // Stores the node ID for "Show on Map" button
 
@@ -111,6 +112,9 @@ public partial class MainWindow : Window
     };
     // Map from packet-ID → MessageItem (for attaching reactions)
     private readonly Dictionary<uint, MessageItem> _messageById = new();
+
+    // Telemetry DB
+    private TelemetryDatabaseService? _db;
 
     // Reconnect state
     private ConnectionParameters? _lastConnectionParams;
@@ -150,6 +154,7 @@ public partial class MainWindow : Window
         _protocolService.PacketCountChanged += OnPacketCountChanged;
         _protocolService.TracerouteReceived += OnTracerouteReceived;
         _protocolService.ReactionReceived += OnReactionReceived;
+        _protocolService.DeviceTelemetryReceived += OnDeviceTelemetryReceived;
 
         // LoadRegions / LoadModemPresets removed — now displayed as read-only TextBlocks in Settings right column
 
@@ -172,6 +177,22 @@ public partial class MainWindow : Window
 
         // Einstellungen laden (VOR RefreshPorts, damit LastComPort bekannt ist)
         LoadSettings();
+
+        // Telemetry DB initialisieren
+        try
+        {
+            var dbPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "telemetry.db");
+            _db = new TelemetryDatabaseService(dbPath);
+            _db.Latitude  = _currentSettings.MyLatitude;
+            _db.Longitude = _currentSettings.MyLongitude;
+            _db.RunRetentionCleanup(_currentSettings.TelemetryRetentionDays);
+            _protocolService.SetDatabase(_db);
+            Services.Logger.WriteLine($"TelemetryDB initialized: {dbPath}");
+        }
+        catch (Exception ex)
+        {
+            Services.Logger.WriteLine($"TelemetryDB init failed: {ex.Message}");
+        }
 
         RefreshPorts();
 
@@ -273,6 +294,16 @@ public partial class MainWindow : Window
 
             if (settings.DarkMode)
                 ModernWpf.ThemeManager.Current.ApplicationTheme = ModernWpf.ApplicationTheme.Dark;
+
+            // Retention ComboBox
+            foreach (System.Windows.Controls.ComboBoxItem item in TelemetryRetentionComboBox.Items)
+            {
+                if (item.Tag is string tagStr && int.TryParse(tagStr, out var tagVal) && tagVal == settings.TelemetryRetentionDays)
+                {
+                    TelemetryRetentionComboBox.SelectedItem = item;
+                    break;
+                }
+            }
         }
         catch (Exception ex)
         {
@@ -1112,6 +1143,10 @@ public partial class MainWindow : Window
                 _protocolService.LoRaConfigReceived += OnLoRaConfigReceived;
                 _protocolService.DeviceInfoReceived += OnDeviceInfoReceived;
                 _protocolService.PacketCountChanged += OnPacketCountChanged;
+                _protocolService.TracerouteReceived += OnTracerouteReceived;
+                _protocolService.ReactionReceived += OnReactionReceived;
+                _protocolService.DeviceTelemetryReceived += OnDeviceTelemetryReceived;
+                if (_db != null) _protocolService.SetDatabase(_db);
 
                 // Wire up connection state changed
                 _connectionService.ConnectionStateChanged += OnConnectionStateChanged;
@@ -1577,7 +1612,8 @@ public partial class MainWindow : Window
                 AlertBellSound: AlertBellSoundCheckBox.IsChecked == true,
                 Language: (LanguageComboBox.SelectedItem as System.Windows.Controls.ComboBoxItem)?.Tag as string ?? "de",
                 EnableLocationLogging: EnableLocationLoggingCheckBox.IsChecked == true,
-                PinnedNodes: _currentSettings.PinnedNodes
+                PinnedNodes: _currentSettings.PinnedNodes,
+                TelemetryRetentionDays: int.TryParse((TelemetryRetentionComboBox.SelectedItem as System.Windows.Controls.ComboBoxItem)?.Tag as string, out var ret) ? ret : 90
             );
             _currentSettings = settings;
             SettingsService.Save(settings);
@@ -1683,6 +1719,8 @@ public partial class MainWindow : Window
                 _protocolService.PacketCountChanged += OnPacketCountChanged;
                 _protocolService.TracerouteReceived += OnTracerouteReceived;
                 _protocolService.ReactionReceived += OnReactionReceived;
+                _protocolService.DeviceTelemetryReceived += OnDeviceTelemetryReceived;
+                if (_db != null) _protocolService.SetDatabase(_db);
                 _connectionService.ConnectionStateChanged += OnConnectionStateChanged;
 
                 await _connectionService.ConnectAsync(_lastConnectionParams!);
@@ -3759,6 +3797,28 @@ public partial class MainWindow : Window
         return f;
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    //  TELEMETRY
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private void OnDeviceTelemetryReceived(object? sender, (uint NodeId, float BatteryPercent, float Voltage) e)
+    {
+        // Already handled in HandleTelemetryPacket via NodeInfoReceived – no extra UI update needed here.
+        // This event is available for future consumers (e.g. live tile updates).
+    }
+
+    private void NodeContextMenu_Telemetry_Click(object sender, RoutedEventArgs e)
+    {
+        if (NodesListView.SelectedItem is not NodeInfo node || _db == null) return;
+
+        var nodeNames = _allNodes.ToDictionary(n => n.NodeId, n => n.Name);
+        var win = new TelemetryWindow(node, _db, nodeNames, _currentSettings.MyLatitude, _currentSettings.MyLongitude)
+        {
+            Owner = this
+        };
+        win.Show();
+    }
+
     // Context menu handlers for traceroute
     private void NodeContextMenu_Traceroute_Click(object sender, RoutedEventArgs e)
     {
@@ -3771,6 +3831,18 @@ public partial class MainWindow : Window
         var node = GetNodeFromSelectedMessage();
         if (node == null) return;
         OpenTracerouteForNode(node);
+    }
+
+    private void MessageContextMenu_Telemetry_Click(object sender, RoutedEventArgs e)
+    {
+        var node = GetNodeFromSelectedMessage();
+        if (node == null || _db == null) return;
+        var nodeNames = _allNodes.ToDictionary(n => n.NodeId, n => n.Name);
+        var win = new TelemetryWindow(node, _db, nodeNames, _currentSettings.MyLatitude, _currentSettings.MyLongitude)
+        {
+            Owner = this
+        };
+        win.Show();
     }
 
     // ═══════════════════════════════════════════════════════════════════════

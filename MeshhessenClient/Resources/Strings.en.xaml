@@ -30,6 +30,7 @@
     <sys:String x:Key="StrSetColor">🎨 Set color</sys:String>
     <sys:String x:Key="StrRemoveColor">❌ Remove color</sys:String>
     <sys:String x:Key="StrTraceroute">📡 Traceroute</sys:String>
+    <sys:String x:Key="StrTelemetry">📊 Telemetry</sys:String>
     <sys:String x:Key="StrReact">😀 React...</sys:String>
 
     <!-- Status texts -->
@@ -110,6 +111,12 @@
     <sys:String x:Key="StrTileServerUrlHint">Complete URL with placeholders {z}/{x}/{y}.</sys:String>
     <sys:String x:Key="StrDownloadTiles">Download tiles...</sys:String>
     <sys:String x:Key="StrImportTilesZip">Load map tiles from ZIP...</sys:String>
+    <sys:String x:Key="StrTelemetryDbGroup">Telemetry Database</sys:String>
+    <sys:String x:Key="StrRetentionLabel">Data retention period</sys:String>
+    <sys:String x:Key="StrRetention30">30 days</sys:String>
+    <sys:String x:Key="StrRetention90">90 days (default)</sys:String>
+    <sys:String x:Key="StrRetention365">365 days</sys:String>
+    <sys:String x:Key="StrRetentionUnlimited">Unlimited</sys:String>
     <sys:String x:Key="StrLocationLoggingGroup">Location Logging</sys:String>
     <sys:String x:Key="StrLocationLoggingHint">GPS positions of nodes are saved in 'locationlogs/'. Enables movement paths on the map.</sys:String>
     <sys:String x:Key="StrMessagesGroup">Messages</sys:String>
