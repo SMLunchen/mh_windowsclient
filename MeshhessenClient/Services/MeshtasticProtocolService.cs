@@ -202,19 +202,24 @@ public class MeshtasticProtocolService
 
         if (_isDisconnecting) return;
 
-        // SecurityConfig anfordern → private key für PKI-Entschlüsselung
+        // SecurityConfig + DeviceMetadata anfordern nach Init
         _ = Task.Run(async () =>
         {
             try
             {
                 await Task.Delay(500); // kurz warten bis Gerät bereit
-                var req = new AdminMessage { GetConfigRequest = (uint)AdminMessage.Types.ConfigType.SecurityConfig };
-                await SendAdminMessageAsync(req);
+                var secReq = new AdminMessage { GetConfigRequest = (uint)AdminMessage.Types.ConfigType.SecurityConfig };
+                await SendAdminMessageAsync(secReq);
                 Logger.WriteLine("SecurityConfig requested for PKI decryption");
+
+                await Task.Delay(200);
+                var metaReq = new AdminMessage { GetDeviceMetadataRequest = true };
+                await SendAdminMessageAsync(metaReq);
+                Logger.WriteLine("DeviceMetadata requested for firmware version");
             }
             catch (Exception ex)
             {
-                Logger.WriteLine($"SecurityConfig request failed: {ex.Message}");
+                Logger.WriteLine($"Post-init admin request failed: {ex.Message}");
             }
         });
 
@@ -1119,6 +1124,9 @@ public class MeshtasticProtocolService
                 nodeInfo.Battery = $"{protoNodeInfo.DeviceMetrics.BatteryLevel}%";
             }
 
+            if (protoNodeInfo.User?.HwModel is HardwareModel hw && hw != HardwareModel.Unset)
+                nodeInfo.HardwareModel = hw.ToString();
+
             if (_nodeKeyService != null && protoNodeInfo.User?.PublicKey.Length > 0)
             {
                 _nodeKeyService.CheckAndUpdate(
@@ -1127,6 +1135,17 @@ public class MeshtasticProtocolService
                     protoNodeInfo.User.LongName ?? "",
                     protoNodeInfo.User.PublicKey.ToByteArray(),
                     _pskMismatchAction);
+            }
+
+            nodeInfo.PkiKeyKnown = _nodeKeyService?.GetPublicKey(protoNodeInfo.Num) != null;
+
+            // Update DeviceInfo if this is our own node
+            if (protoNodeInfo.Num == _myNodeId && _myDeviceInfo != null && !string.IsNullOrEmpty(nodeInfo.HardwareModel))
+            {
+                lock (_dataLock)
+                {
+                    _myDeviceInfo.HardwareModel = nodeInfo.HardwareModel;
+                }
             }
 
             bool shouldFireEvent;
@@ -1178,7 +1197,9 @@ public class MeshtasticProtocolService
                 LongName = user.LongName ?? "",
                 Snr = packet.RxSnr != 0f ? packet.RxSnr.ToString("F1") : "-",
                 Rssi = packet.RxRssi != 0 ? packet.RxRssi.ToString() : "-",
-                LastSeen = DateTime.Now.ToString("HH:mm:ss")
+                LastSeen = DateTime.Now.ToString("HH:mm:ss"),
+                HardwareModel = user.HwModel != HardwareModel.Unset ? user.HwModel.ToString() : "",
+                PkiKeyKnown = _nodeKeyService?.GetPublicKey(packet.From) != null
             };
 
             // Update DeviceInfo if this is our own node
@@ -1186,7 +1207,8 @@ public class MeshtasticProtocolService
             {
                 lock (_dataLock)
                 {
-                    _myDeviceInfo.HardwareModel = user.HwModel.ToString();
+                    if (user.HwModel != HardwareModel.Unset)
+                        _myDeviceInfo.HardwareModel = user.HwModel.ToString();
                     _myDeviceInfo.ShortName = user.ShortName ?? "";
                     _myDeviceInfo.LongName = user.LongName ?? "";
                     Logger.WriteLine($"Updated own DeviceInfo: HW={_myDeviceInfo.HardwareModel}, Name={_myDeviceInfo.LongName}");
@@ -1922,6 +1944,22 @@ public class MeshtasticProtocolService
                             }
                             break;
                     }
+                    break;
+
+                case AdminMessage.PayloadVariantOneofCase.GetDeviceMetadataResponse:
+                    var meta = adminMsg.GetDeviceMetadataResponse;
+                    Logger.WriteLine($"DeviceMetadata: FW={meta.FirmwareVersion}, HW={meta.HwModel}");
+                    lock (_dataLock)
+                    {
+                        if (_myDeviceInfo != null)
+                        {
+                            _myDeviceInfo.FirmwareVersion = meta.FirmwareVersion;
+                            if (meta.HwModel != HardwareModel.Unset)
+                                _myDeviceInfo.HardwareModel = meta.HwModel.ToString();
+                        }
+                    }
+                    if (_myDeviceInfo != null)
+                        DeviceInfoReceived?.Invoke(this, _myDeviceInfo);
                     break;
 
                 case AdminMessage.PayloadVariantOneofCase.GetModuleConfigResponse:

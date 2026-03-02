@@ -525,6 +525,11 @@
                                         <Binding Path="LastSeen"/>
                                     </GridViewColumn.DisplayMemberBinding>
                                 </GridViewColumn>
+                                <GridViewColumn Width="35" DisplayMemberBinding="{Binding PkiKeyIcon}">
+                                    <GridViewColumn.Header>
+                                        <GridViewColumnHeader Content="🔑" ToolTip="PKI Public Key bekannt"/>
+                                    </GridViewColumn.Header>
+                                </GridViewColumn>
                             </GridView>
                         </ListView.View>
                         <ListView.ContextMenu>

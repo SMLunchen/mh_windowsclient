@@ -18,4 +18,7 @@ public class NodeInfo
     public string ColorHex { get; set; } = string.Empty;  // Empty = no color, otherwise #RRGGBB
     public string Note { get; set; } = string.Empty;      // User note
     public bool IsPinned { get; set; }                    // Pinned to top of node list
+    public string HardwareModel { get; set; } = string.Empty;
+    public bool PkiKeyKnown { get; set; }
+    public string PkiKeyIcon => PkiKeyKnown ? "🔑" : "";
 }

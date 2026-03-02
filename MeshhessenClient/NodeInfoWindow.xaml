@@ -5,7 +5,7 @@
         ui:WindowHelper.UseModernWindowStyle="True"
         Title="Node Info"
         Width="380"
-        Height="350"
+        Height="420"
         ResizeMode="NoResize"
         WindowStartupLocation="CenterOwner">
     <StackPanel Margin="20">
@@ -15,6 +15,8 @@
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
@@ -33,17 +35,23 @@
             <TextBlock Grid.Row="2" Grid.Column="0" Text="Node ID:" FontWeight="Bold" Margin="0,6"/>
             <TextBlock Grid.Row="2" Grid.Column="1" x:Name="NodeIdText" Margin="0,6"/>
 
-            <TextBlock Grid.Row="3" Grid.Column="0" Text="Latitude:" FontWeight="Bold" Margin="0,6"/>
-            <TextBlock Grid.Row="3" Grid.Column="1" x:Name="LatText" Margin="0,6"/>
+            <TextBlock Grid.Row="3" Grid.Column="0" Text="Hardware:" FontWeight="Bold" Margin="0,6"/>
+            <TextBlock Grid.Row="3" Grid.Column="1" x:Name="HardwareModelText" Margin="0,6"/>
 
-            <TextBlock Grid.Row="4" Grid.Column="0" Text="Longitude:" FontWeight="Bold" Margin="0,6"/>
-            <TextBlock Grid.Row="4" Grid.Column="1" x:Name="LonText" Margin="0,6"/>
+            <TextBlock Grid.Row="4" Grid.Column="0" Text="PKI Key:" FontWeight="Bold" Margin="0,6"/>
+            <TextBlock Grid.Row="4" Grid.Column="1" x:Name="PkiKeyText" Margin="0,6"/>
 
-            <TextBlock Grid.Row="5" Grid.Column="0" Text="Altitude:" FontWeight="Bold" Margin="0,6"/>
-            <TextBlock Grid.Row="5" Grid.Column="1" x:Name="AltText" Margin="0,6"/>
+            <TextBlock Grid.Row="5" Grid.Column="0" Text="Latitude:" FontWeight="Bold" Margin="0,6"/>
+            <TextBlock Grid.Row="5" Grid.Column="1" x:Name="LatText" Margin="0,6"/>
 
-            <TextBlock Grid.Row="6" Grid.Column="0" Text="Last Seen:" FontWeight="Bold" Margin="0,6"/>
-            <TextBlock Grid.Row="6" Grid.Column="1" x:Name="LastSeenText" Margin="0,6"/>
+            <TextBlock Grid.Row="6" Grid.Column="0" Text="Longitude:" FontWeight="Bold" Margin="0,6"/>
+            <TextBlock Grid.Row="6" Grid.Column="1" x:Name="LonText" Margin="0,6"/>
+
+            <TextBlock Grid.Row="7" Grid.Column="0" Text="Altitude:" FontWeight="Bold" Margin="0,6"/>
+            <TextBlock Grid.Row="7" Grid.Column="1" x:Name="AltText" Margin="0,6"/>
+
+            <TextBlock Grid.Row="8" Grid.Column="0" Text="Last Seen:" FontWeight="Bold" Margin="0,6"/>
+            <TextBlock Grid.Row="8" Grid.Column="1" x:Name="LastSeenText" Margin="0,6"/>
         </Grid>
 
         <Button Content="{DynamicResource StrClose}"

@@ -143,6 +143,12 @@ message SecurityConfig {
   bool admin_channel_enabled = 8;
 }
 
+message DeviceMetadata {
+  string firmware_version = 1;
+  // fields 2-8 omitted (not needed client-side)
+  HardwareModel hw_model = 9;
+}
+
 message Config {
   oneof payload_variant {
     DeviceConfig device = 1;
