@@ -70,7 +70,7 @@ message NodeInfo {
   User user = 2;
   Position position = 3;
   float snr = 4;
-  int32 last_heard = 5;
+  fixed32 last_heard = 5;
   DeviceMetrics device_metrics = 6;
   uint32 channel = 7;
   bool via_mqtt = 8;
@@ -80,9 +80,8 @@ message NodeInfo {
 
 message MyNodeInfo {
   uint32 my_node_num = 1;
-  uint32 reboot_count = 2;
-  uint32 min_app_version = 3;
-  uint32 max_channels = 4;
+  uint32 reboot_count = 8;
+  uint32 min_app_version = 11;
 }
 
 message DeviceMetrics {
@@ -100,12 +99,10 @@ message FromRadio {
     MyNodeInfo my_info = 3;
     NodeInfo node_info = 4;
     Config config = 5;
-    ModuleConfig module_config = 6;
-    Channel channel = 7;
-    bytes config_complete_id = 8;
-    bytes rebooted = 9;
-    bytes moduleconfig_complete_id = 10;
-    bytes channels_complete_id = 11;
+    uint32 config_complete_id = 7;
+    bool rebooted = 8;
+    ModuleConfig module_config = 9;
+    Channel channel = 10;
   }
 }
 

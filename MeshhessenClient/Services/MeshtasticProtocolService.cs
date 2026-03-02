@@ -721,10 +721,6 @@ public class MeshtasticProtocolService
                 HandleChannel(fromRadio.Channel);
                 break;
 
-            case FromRadio.PayloadVariantOneofCase.ChannelsCompleteId:
-                Logger.WriteLine("ChannelsCompleteId received");
-                break;
-
             case FromRadio.PayloadVariantOneofCase.Config:
                 HandleConfig(fromRadio.Config);
                 break;
@@ -735,13 +731,6 @@ public class MeshtasticProtocolService
                     _configComplete = true;
                 }
                 Logger.WriteLine("Config complete");
-                break;
-
-            case FromRadio.PayloadVariantOneofCase.ModuleconfigCompleteId:
-                lock (_dataLock)
-                {
-                    _configComplete = true;
-                }
                 break;
 
             case FromRadio.PayloadVariantOneofCase.ModuleConfig:
