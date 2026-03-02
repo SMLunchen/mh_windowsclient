@@ -1,0 +1,48 @@
+<Window x:Class="MeshhessenClient.NodeKeyMismatchDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Node Key geändert"
+        Width="480" SizeToContent="Height"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False">
+    <StackPanel Margin="20">
+        <TextBlock FontSize="14" FontWeight="SemiBold" Margin="0,0,0,12"
+                   Text="Der Public Key dieses Nodes hat sich geändert."/>
+
+        <Grid Margin="0,0,0,12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="90"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <TextBlock Grid.Row="0" Grid.Column="0" Text="Node:" VerticalAlignment="Center" Margin="0,4"/>
+            <TextBlock Grid.Row="0" Grid.Column="1" x:Name="NodeLabel" VerticalAlignment="Center" Margin="0,4" FontWeight="SemiBold"/>
+
+            <TextBlock Grid.Row="1" Grid.Column="0" Text="Alter Key:" VerticalAlignment="Top" Margin="0,4"/>
+            <TextBox  Grid.Row="1" Grid.Column="1" x:Name="OldKeyBox" IsReadOnly="True"
+                      TextWrapping="Wrap" FontFamily="Consolas" FontSize="10"
+                      Margin="0,4" Background="Transparent" BorderThickness="0"/>
+
+            <TextBlock Grid.Row="2" Grid.Column="0" Text="Neuer Key:" VerticalAlignment="Top" Margin="0,4"/>
+            <TextBox  Grid.Row="2" Grid.Column="1" x:Name="NewKeyBox" IsReadOnly="True"
+                      TextWrapping="Wrap" FontFamily="Consolas" FontSize="10"
+                      Margin="0,4" Background="Transparent" BorderThickness="0"/>
+        </Grid>
+
+        <TextBlock TextWrapping="Wrap" Foreground="Gray" FontStyle="Italic" FontSize="11" Margin="0,0,0,16">
+            Soll der neue Key übernommen werden? Bei einem unbekannten Key-Wechsel könnte es sich um eine andere Person handeln.
+        </TextBlock>
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="Übernehmen" Width="110" Margin="0,0,8,0" IsDefault="True" Click="Accept_Click"/>
+            <Button Content="Ignorieren"  Width="110" IsCancel="True"  Click="Ignore_Click"/>
+        </StackPanel>
+    </StackPanel>
+</Window>

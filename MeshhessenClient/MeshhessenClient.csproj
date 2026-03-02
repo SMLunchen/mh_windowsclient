@@ -44,6 +44,9 @@
     <!-- Modern UI -->
     <PackageReference Include="ModernWpfUI" Version="0.9.6" />
 
+    <!-- Crypto: X25519 ECDH + AES-CTR for PKI packet decryption -->
+    <PackageReference Include="BouncyCastle.Cryptography" Version="2.4.0" />
+
     <!-- Offline Map -->
     <PackageReference Include="Mapsui" Version="4.1.7" />
     <PackageReference Include="Mapsui.Wpf" Version="4.1.7" />

@@ -51,6 +51,9 @@ public class MeshtasticProtocolService
     public event EventHandler<(uint NodeId, float BatteryPercent, float Voltage)>? DeviceTelemetryReceived;
 
     private TelemetryDatabaseService? _db;
+    private NodeKeyService? _nodeKeyService;
+    private PskMismatchAction _pskMismatchAction = PskMismatchAction.Overwrite;
+    private readonly PkiDecryptionService _pkiDecrypt = new();
 
     private const byte PACKET_START_BYTE_1 = 0x94;
     private const byte PACKET_START_BYTE_2 = 0xC3;
@@ -64,6 +67,16 @@ public class MeshtasticProtocolService
     public void SetDatabase(TelemetryDatabaseService db)
     {
         _db = db;
+    }
+
+    public void SetNodeKeyService(NodeKeyService service)
+    {
+        _nodeKeyService = service;
+    }
+
+    public void SetPskMismatchAction(PskMismatchAction action)
+    {
+        _pskMismatchAction = action;
     }
 
     public async Task InitializeAsync()
@@ -85,6 +98,7 @@ public class MeshtasticProtocolService
             _packetCount = 0;
             _receivedChannelResponses.Clear();
             _sessionPasskey = Array.Empty<byte>();
+            _pkiDecrypt.ClearPrivateKey();
             Logger.WriteLine("Cleared all data from previous session");
         }
 
@@ -187,6 +201,22 @@ public class MeshtasticProtocolService
         }
 
         if (_isDisconnecting) return;
+
+        // SecurityConfig anfordern → private key für PKI-Entschlüsselung
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(500); // kurz warten bis Gerät bereit
+                var req = new AdminMessage { GetConfigRequest = (uint)AdminMessage.Types.ConfigType.SecurityConfig };
+                await SendAdminMessageAsync(req);
+                Logger.WriteLine("SecurityConfig requested for PKI decryption");
+            }
+            catch (Exception ex)
+            {
+                Logger.WriteLine($"SecurityConfig request failed: {ex.Message}");
+            }
+        });
 
         // Kopiere Daten thread-safe
         List<ModelNodeInfo> nodesToFire;
@@ -767,35 +797,55 @@ public class MeshtasticProtocolService
                 }
             }
 
-            switch (data.Portnum)
-            {
-                case 1: // TEXT_MESSAGE_APP
-                    HandleTextMessage(packet, data);
-                    break;
-
-                case 4: // NODEINFO_APP
-                    HandleNodeInfoPacket(packet, data);
-                    break;
-
-                case 3: // POSITION_APP
-                    HandlePositionPacket(packet, data);
-                    break;
-
-                case 6: // ADMIN_APP
-                    HandleAdminMessage(packet, data);
-                    break;
-
-                case 67: // TELEMETRY_APP
-                    HandleTelemetryPacket(packet, data);
-                    break;
-
-                case 70: // TRACEROUTE_APP
-                    HandleTraceroutePacket(packet, data);
-                    break;
-            }
+            RouteDecodedData(packet, data);
         }
         else if (packet.PayloadVariantCase == MeshPacket.PayloadVariantOneofCase.Encrypted)
         {
+            // --- PKI fallback: try client-side decryption ---
+            if (packet.PkiEncrypted && _pkiDecrypt.HasPrivateKey)
+            {
+                // Prefer the public key embedded in the packet (field 16); fall back to CSV
+                byte[]? senderPublicKey = null;
+                if (packet.PublicKey != null && packet.PublicKey.Length == 32)
+                    senderPublicKey = packet.PublicKey.ToByteArray();
+                else
+                    senderPublicKey = _nodeKeyService?.GetPublicKey(packet.From) is { } b64
+                        ? Convert.FromBase64String(b64) : null;
+
+                if (senderPublicKey != null)
+                {
+                    var plaintext = _pkiDecrypt.TryDecrypt(
+                        packet.Encrypted.ToByteArray(),
+                        senderPublicKey,
+                        packet.From,
+                        packet.Id);
+
+                    if (plaintext != null)
+                    {
+                        try
+                        {
+                            var data = Data.Parser.ParseFrom(plaintext);
+                            Logger.WriteLine($"PKI decrypt OK: portnum={data.Portnum} from=!{packet.From:x8}");
+                            // Record packet_rx for telemetry (same as firmware-decoded path)
+                            try
+                            {
+                                int? hops = (packet.HopStart == 0 || packet.HopLimit > packet.HopStart)
+                                    ? null : (int)(packet.HopStart - packet.HopLimit);
+                                _db?.InsertPacketRx(packet.From, packet.Id, DateTime.UtcNow,
+                                    packet.RxSnr, packet.RxRssi, hops, packet.WantAck);
+                            }
+                            catch { /* non-critical */ }
+                            RouteDecodedData(packet, data);
+                            return;
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger.WriteLine($"PKI decrypt: proto parse failed: {ex.Message}");
+                        }
+                    }
+                }
+            }
+
             // Zeige verschlüsselte Nachricht (MainWindow filtert basierend auf Einstellung)
             string fromName = $"!{packet.From:x8}";
             lock (_dataLock)
@@ -818,6 +868,36 @@ public class MeshtasticProtocolService
                 IsViaMqtt = packet.ViaMqtt
             };
             MessageReceived?.Invoke(this, messageItem);
+        }
+    }
+
+    private void RouteDecodedData(MeshPacket packet, Data data)
+    {
+        switch (data.Portnum)
+        {
+            case 1: // TEXT_MESSAGE_APP
+                HandleTextMessage(packet, data);
+                break;
+
+            case 4: // NODEINFO_APP
+                HandleNodeInfoPacket(packet, data);
+                break;
+
+            case 3: // POSITION_APP
+                HandlePositionPacket(packet, data);
+                break;
+
+            case 6: // ADMIN_APP
+                HandleAdminMessage(packet, data);
+                break;
+
+            case 67: // TELEMETRY_APP
+                HandleTelemetryPacket(packet, data);
+                break;
+
+            case 70: // TRACEROUTE_APP
+                HandleTraceroutePacket(packet, data);
+                break;
         }
     }
 
@@ -1039,6 +1119,16 @@ public class MeshtasticProtocolService
                 nodeInfo.Battery = $"{protoNodeInfo.DeviceMetrics.BatteryLevel}%";
             }
 
+            if (_nodeKeyService != null && protoNodeInfo.User?.PublicKey.Length > 0)
+            {
+                _nodeKeyService.CheckAndUpdate(
+                    protoNodeInfo.Num,
+                    protoNodeInfo.User.ShortName ?? "",
+                    protoNodeInfo.User.LongName ?? "",
+                    protoNodeInfo.User.PublicKey.ToByteArray(),
+                    _pskMismatchAction);
+            }
+
             bool shouldFireEvent;
             lock (_dataLock)
             {
@@ -1068,6 +1158,16 @@ public class MeshtasticProtocolService
         try
         {
             var user = User.Parser.ParseFrom(data.Payload);
+
+            if (_nodeKeyService != null && user.PublicKey.Length > 0)
+            {
+                _nodeKeyService.CheckAndUpdate(
+                    packet.From,
+                    user.ShortName ?? "",
+                    user.LongName ?? "",
+                    user.PublicKey.ToByteArray(),
+                    _pskMismatchAction);
+            }
 
             var nodeInfo = new ModelNodeInfo
             {
@@ -1807,6 +1907,19 @@ public class MeshtasticProtocolService
 
                         case Config.PayloadVariantOneofCase.Bluetooth:
                             BluetoothConfigReceived?.Invoke(this, config.Bluetooth);
+                            break;
+
+                        case Config.PayloadVariantOneofCase.Security:
+                            var sec = config.Security;
+                            if (sec.PrivateKey != null && sec.PrivateKey.Length == 32)
+                            {
+                                _pkiDecrypt.SetPrivateKey(sec.PrivateKey.ToByteArray());
+                                Logger.WriteLine("PKI private key loaded — client-side decryption active");
+                            }
+                            else
+                            {
+                                Logger.WriteLine("SecurityConfig received but private key missing/invalid");
+                            }
                             break;
                     }
                     break;

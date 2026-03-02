@@ -117,6 +117,11 @@
     <sys:String x:Key="StrRetention90">90 days (default)</sys:String>
     <sys:String x:Key="StrRetention365">365 days</sys:String>
     <sys:String x:Key="StrRetentionUnlimited">Unlimited</sys:String>
+    <sys:String x:Key="StrNodeKeyGroup">Node Public Keys (PKI)</sys:String>
+    <sys:String x:Key="StrNodeKeyHint">The client stores Curve25519 public keys of received nodes in 'node_keys.csv'. A key change for a known node may indicate a different sender.</sys:String>
+    <sys:String x:Key="StrPskWarn">Warn only (log entry, CSV unchanged)</sys:String>
+    <sys:String x:Key="StrPskOverwrite">Overwrite automatically (default)</sys:String>
+    <sys:String x:Key="StrPskAsk">Ask manually (confirmation dialog)</sys:String>
     <sys:String x:Key="StrLocationLoggingGroup">Location Logging</sys:String>
     <sys:String x:Key="StrLocationLoggingHint">GPS positions of nodes are saved in 'locationlogs/'. Enables movement paths on the map.</sys:String>
     <sys:String x:Key="StrMessagesGroup">Messages</sys:String>

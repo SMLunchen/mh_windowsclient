@@ -9,6 +9,18 @@ import "mesh.proto";
 message AdminMessage {
   bytes session_passkey = 101;
 
+  enum ConfigType {
+    DEVICE_CONFIG = 0;
+    POSITION_CONFIG = 1;
+    POWER_CONFIG = 2;
+    NETWORK_CONFIG = 3;
+    DISPLAY_CONFIG = 4;
+    LORA_CONFIG = 5;
+    BLUETOOTH_CONFIG = 6;
+    SECURITY_CONFIG = 7;
+    SESSIONKEY_CONFIG = 8;
+  }
+
   oneof payload_variant {
     uint32 get_channel_request = 1;
     Channel get_channel_response = 2;

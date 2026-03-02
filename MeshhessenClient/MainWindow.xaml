@@ -713,7 +713,24 @@
                                 </StackPanel>
                             </GroupBox>
 
-                            <!-- f) Standort-Logging -->
+                            <!-- f) Node Public-Keys (PKI) -->
+                            <GroupBox Header="{DynamicResource StrNodeKeyGroup}" Margin="0,0,0,16">
+                                <StackPanel Margin="10">
+                                    <TextBlock Text="{DynamicResource StrNodeKeyHint}"
+                                              FontStyle="Italic" Foreground="Gray" TextWrapping="Wrap" FontSize="11" Margin="0,0,0,8"/>
+                                    <RadioButton x:Name="PskWarnRadio"
+                                                Content="{DynamicResource StrPskWarn}"
+                                                GroupName="PskAction" Margin="0,0,0,4"/>
+                                    <RadioButton x:Name="PskOverwriteRadio"
+                                                Content="{DynamicResource StrPskOverwrite}"
+                                                GroupName="PskAction" IsChecked="True" Margin="0,0,0,4"/>
+                                    <RadioButton x:Name="PskAskRadio"
+                                                Content="{DynamicResource StrPskAsk}"
+                                                GroupName="PskAction"/>
+                                </StackPanel>
+                            </GroupBox>
+
+                            <!-- g) Standort-Logging -->
                             <GroupBox Header="{DynamicResource StrLocationLoggingGroup}" Margin="0,0,0,16">
                                 <StackPanel Margin="10">
                                     <CheckBox x:Name="EnableLocationLoggingCheckBox"

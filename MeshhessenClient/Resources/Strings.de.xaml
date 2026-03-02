@@ -117,6 +117,11 @@
     <sys:String x:Key="StrRetention90">90 Tage (Standard)</sys:String>
     <sys:String x:Key="StrRetention365">365 Tage</sys:String>
     <sys:String x:Key="StrRetentionUnlimited">Unbegrenzt</sys:String>
+    <sys:String x:Key="StrNodeKeyGroup">Node Public-Keys (PKI)</sys:String>
+    <sys:String x:Key="StrNodeKeyHint">Der Client speichert Curve25519-Public-Keys empfangener Nodes in 'node_keys.csv'. Bei Key-Änderung eines bekannten Nodes kann das auf einen anderen Sender hinweisen.</sys:String>
+    <sys:String x:Key="StrPskWarn">Warnen (Key in Log, CSV unverändert)</sys:String>
+    <sys:String x:Key="StrPskOverwrite">Automatisch überschreiben (Standard)</sys:String>
+    <sys:String x:Key="StrPskAsk">Manuell entscheiden (Abfragefenster)</sys:String>
     <sys:String x:Key="StrLocationLoggingGroup">Standort-Logging</sys:String>
     <sys:String x:Key="StrLocationLoggingHint">GPS-Positionen von Nodes werden in 'locationlogs/' gespeichert. Ermöglicht Bewegungspfade auf der Karte.</sys:String>
     <sys:String x:Key="StrMessagesGroup">Nachrichten</sys:String>

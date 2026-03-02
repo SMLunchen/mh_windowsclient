@@ -86,7 +86,8 @@ public partial class MainWindow : Window
         "de",
         false,
         new Dictionary<uint, bool>(),
-        90);
+        90,
+        Services.PskMismatchAction.Overwrite);
     private NodeInfo? _mapContextMenuNode;
     private uint? _alertNodeId;  // Stores the node ID for "Show on Map" button
 
@@ -115,6 +116,9 @@ public partial class MainWindow : Window
 
     // Telemetry DB
     private TelemetryDatabaseService? _db;
+
+    // Node Public Key CSV
+    private NodeKeyService? _nodeKeyService;
 
     // Reconnect state
     private ConnectionParameters? _lastConnectionParams;
@@ -192,6 +196,21 @@ public partial class MainWindow : Window
         catch (Exception ex)
         {
             Services.Logger.WriteLine($"TelemetryDB init failed: {ex.Message}");
+        }
+
+        // NodeKey CSV Service
+        try
+        {
+            var csvPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "node_keys.csv");
+            _nodeKeyService = new NodeKeyService(csvPath);
+            _nodeKeyService.KeyMismatchDetected += OnNodeKeyMismatch;
+            _protocolService.SetNodeKeyService(_nodeKeyService);
+            _protocolService.SetPskMismatchAction(_currentSettings.NodeKeyMismatchAction);
+            Services.Logger.WriteLine($"NodeKeyService initialized: {csvPath}");
+        }
+        catch (Exception ex)
+        {
+            Services.Logger.WriteLine($"NodeKeyService init failed: {ex.Message}");
         }
 
         RefreshPorts();
@@ -304,6 +323,11 @@ public partial class MainWindow : Window
                     break;
                 }
             }
+
+            // PSK Mismatch RadioButtons
+            PskWarnRadio.IsChecked      = settings.NodeKeyMismatchAction == Services.PskMismatchAction.Warn;
+            PskOverwriteRadio.IsChecked = settings.NodeKeyMismatchAction == Services.PskMismatchAction.Overwrite;
+            PskAskRadio.IsChecked       = settings.NodeKeyMismatchAction == Services.PskMismatchAction.Ask;
         }
         catch (Exception ex)
         {
@@ -1147,6 +1171,8 @@ public partial class MainWindow : Window
                 _protocolService.ReactionReceived += OnReactionReceived;
                 _protocolService.DeviceTelemetryReceived += OnDeviceTelemetryReceived;
                 if (_db != null) _protocolService.SetDatabase(_db);
+                if (_nodeKeyService != null) _protocolService.SetNodeKeyService(_nodeKeyService);
+                _protocolService.SetPskMismatchAction(_currentSettings.NodeKeyMismatchAction);
 
                 // Wire up connection state changed
                 _connectionService.ConnectionStateChanged += OnConnectionStateChanged;
@@ -1613,10 +1639,14 @@ public partial class MainWindow : Window
                 Language: (LanguageComboBox.SelectedItem as System.Windows.Controls.ComboBoxItem)?.Tag as string ?? "de",
                 EnableLocationLogging: EnableLocationLoggingCheckBox.IsChecked == true,
                 PinnedNodes: _currentSettings.PinnedNodes,
-                TelemetryRetentionDays: int.TryParse((TelemetryRetentionComboBox.SelectedItem as System.Windows.Controls.ComboBoxItem)?.Tag as string, out var ret) ? ret : 90
+                TelemetryRetentionDays: int.TryParse((TelemetryRetentionComboBox.SelectedItem as System.Windows.Controls.ComboBoxItem)?.Tag as string, out var ret) ? ret : 90,
+                NodeKeyMismatchAction: PskWarnRadio.IsChecked == true ? Services.PskMismatchAction.Warn
+                                     : PskAskRadio.IsChecked  == true ? Services.PskMismatchAction.Ask
+                                     : Services.PskMismatchAction.Overwrite
             );
             _currentSettings = settings;
             SettingsService.Save(settings);
+            _protocolService.SetPskMismatchAction(settings.NodeKeyMismatchAction);
             StationNameLabel.Text = settings.StationName;
             _showEncryptedMessages = settings.ShowEncryptedMessages;
             TileDownloaderService.OSMTileUrl = settings.OSMTileUrl;
@@ -1721,6 +1751,8 @@ public partial class MainWindow : Window
                 _protocolService.ReactionReceived += OnReactionReceived;
                 _protocolService.DeviceTelemetryReceived += OnDeviceTelemetryReceived;
                 if (_db != null) _protocolService.SetDatabase(_db);
+                if (_nodeKeyService != null) _protocolService.SetNodeKeyService(_nodeKeyService);
+                _protocolService.SetPskMismatchAction(_currentSettings.NodeKeyMismatchAction);
                 _connectionService.ConnectionStateChanged += OnConnectionStateChanged;
 
                 await _connectionService.ConnectAsync(_lastConnectionParams!);
@@ -3805,6 +3837,18 @@ public partial class MainWindow : Window
     {
         // Already handled in HandleTelemetryPacket via NodeInfoReceived – no extra UI update needed here.
         // This event is available for future consumers (e.g. live tile updates).
+    }
+
+    private void OnNodeKeyMismatch(object? sender, Services.NodeKeyMismatchEventArgs e)
+    {
+        Dispatcher.Invoke(() =>
+        {
+            var dlg = new NodeKeyMismatchDialog(e.NodeId, e.ShortName, e.OldKeyBase64, e.NewKeyBase64)
+            {
+                Owner = this
+            };
+            e.Accept = dlg.ShowDialog() == true;
+        });
     }
 
     private void NodeContextMenu_Telemetry_Click(object sender, RoutedEventArgs e)
