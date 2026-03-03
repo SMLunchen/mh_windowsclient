@@ -110,14 +110,13 @@ VALUES ($n, $pid, $ts, $snr, $rssi, $hops, $wa, 0)";
         }
     }
 
-    public void MarkAckReceived(uint nodeId, uint packetId)
+    public void MarkAckReceived(uint packetId)
     {
         lock (_lock)
         {
             using var con = Open();
             using var cmd = con.CreateCommand();
-            cmd.CommandText = "UPDATE packet_rx SET ack_received=1 WHERE node_id=$n AND packet_id=$pid";
-            cmd.Parameters.AddWithValue("$n",   (long)nodeId);
+            cmd.CommandText = "UPDATE packet_rx SET ack_received=1 WHERE packet_id=$pid";
             cmd.Parameters.AddWithValue("$pid", (long)packetId);
             cmd.ExecuteNonQuery();
         }
@@ -297,10 +296,10 @@ VALUES ($rid, $src, $dst, $ts, $hi, $nid, $st, $sb)";
             TotalReadings    = rows.Count,
             DayBatteryAvg    = dayBatAvg,
             NightBatteryAvg  = nightBatAvg,
-            NightBatteryDrop = dayBatAvg.HasValue && nightBatAvg.HasValue ? dayBatAvg - nightBatAvg : null,
+            NightBatteryDrop = dayBatAvg.HasValue && nightBatAvg.HasValue ? nightBatAvg - dayBatAvg : null,
             DayVoltageAvg    = dayVoltAvg,
             NightVoltageAvg  = nightVoltAvg,
-            NightVoltageDrop = dayVoltAvg.HasValue && nightVoltAvg.HasValue ? dayVoltAvg - nightVoltAvg : null,
+            NightVoltageDrop = dayVoltAvg.HasValue && nightVoltAvg.HasValue ? nightVoltAvg - dayVoltAvg : null,
             VoltageMin       = voltRows.Count > 0 ? voltRows.Min(x => x.volt) : null,
             VoltageMax       = voltRows.Count > 0 ? voltRows.Max(x => x.volt) : null,
             LastUptimeSeconds = rows.LastOrDefault(x => x.uptime.HasValue).uptime,
@@ -387,7 +386,10 @@ VALUES ($rid, $src, $dst, $ts, $hi, $nid, $st, $sb)";
             TotalPackets    = total,
             AckRequested    = ackReq,
             AckReceived     = ackRcv,
-            AckSuccessRate  = ackReq > 0 ? (float)ackRcv / ackReq : null,
+            // Only report a rate when at least one ACK has been confirmed via serial API.
+            // If ackRcv==0 but ackReq>0, ACKs are handled entirely by firmware and never
+            // forwarded to the client — treat as NoData rather than 100% timeout.
+            AckSuccessRate  = ackReq > 0 && ackRcv > 0 ? (float)ackRcv / ackReq : null,
             AvgHops         = hops.Count > 0 ? (float?)hops.Average() : null,
             MinHops         = hops.Count > 0 ? hops.Min() : null,
             MaxHops         = hops.Count > 0 ? hops.Max() : null,
@@ -528,6 +530,375 @@ LIMIT 50";
             });
         }
         return result;
+    }
+
+    // ── Signal Analysis ───────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Returns linear regression slope in units/hour for a list of (unix timestamp, value) pairs.
+    /// Requires at least 3 data points, returns 0 otherwise.
+    /// </summary>
+    private static float LinearRegressionSlope(List<(long ts, float val)> pts)
+    {
+        if (pts.Count < 3) return 0f;
+        double n     = pts.Count;
+        double meanX = pts.Average(p => (double)p.ts);
+        double meanY = pts.Average(p => (double)p.val);
+        double num   = pts.Sum(p => (p.ts - meanX) * (p.val - meanY));
+        double den   = pts.Sum(p => (p.ts - meanX) * (p.ts - meanX));
+        if (Math.Abs(den) < 1e-9) return 0f;
+        return (float)(num / den * 3600.0);  // convert from per-second to per-hour
+    }
+
+    /// <summary>
+    /// Computes short-term and long-term SNR trends for each node seen in packet_rx.
+    /// nodeId=0 → all nodes, otherwise only neighbors of that node (node_id != nodeId).
+    /// </summary>
+    public List<NeighborTrend> GetNeighborSnrTrends(
+        uint myNodeId, int shortHours, int longDays, Dictionary<uint, string> nodeNames)
+    {
+        long since = Since(longDays);
+        long shortSince = ToUnix(DateTime.UtcNow.AddHours(-shortHours));
+
+        // Load all SNR readings grouped by node_id
+        var rawData = new Dictionary<uint, List<(long ts, float val)>>();
+
+        using var con = Open();
+        using var cmd = con.CreateCommand();
+        cmd.CommandText = myNodeId == 0
+            ? "SELECT node_id, timestamp, rx_snr FROM packet_rx WHERE timestamp>=$s AND rx_snr IS NOT NULL ORDER BY node_id, timestamp"
+            : "SELECT node_id, timestamp, rx_snr FROM packet_rx WHERE timestamp>=$s AND node_id!=$me AND rx_snr IS NOT NULL ORDER BY node_id, timestamp";
+        cmd.Parameters.AddWithValue("$s", since);
+        if (myNodeId != 0) cmd.Parameters.AddWithValue("$me", (long)myNodeId);
+
+        using var r = cmd.ExecuteReader();
+        while (r.Read())
+        {
+            var nid = (uint)r.GetInt64(0);
+            if (!rawData.ContainsKey(nid)) rawData[nid] = new List<(long, float)>();
+            rawData[nid].Add((r.GetInt64(1), (float)r.GetDouble(2)));
+        }
+
+        var result = new List<NeighborTrend>();
+        foreach (var (nid, pts) in rawData)
+        {
+            if (pts.Count < 5) continue;  // not enough data for meaningful trend
+
+            var shortPts = pts.Where(p => p.ts >= shortSince).ToList();
+            float shortSlope = shortPts.Count >= 3 ? LinearRegressionSlope(shortPts) : 0f;
+            float longSlope  = LinearRegressionSlope(pts);  // already in per-hour; convert to per-day
+            longSlope *= 24f;
+
+            nodeNames.TryGetValue(nid, out var name);
+            result.Add(new NeighborTrend
+            {
+                NeighborId   = nid,
+                NeighborName = name ?? $"!{nid:x8}",
+                ShortSlope   = shortSlope,
+                LongSlope    = longSlope,
+                PointCount   = pts.Count,
+            });
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Runs signal analysis for a specific node and returns LED states for all 4 indicators.
+    /// </summary>
+    public SignalAnalysisResult GetSignalAnalysis(
+        uint myNodeId, int shortHours, int longDays, Dictionary<uint, string> nodeNames)
+    {
+        var trends = GetNeighborSnrTrends(myNodeId, shortHours, longDays, nodeNames);
+        var result = new SignalAnalysisResult { Trends = trends };
+
+        if (trends.Count == 0)
+        {
+            result.WeatherLed  = LedState.NoData;
+            result.AntennaLed  = LedState.NoData;
+            result.NeighborLed = LedState.NoData;
+        }
+        else
+        {
+            result.TotalNeighbors = trends.Count;
+
+            // LED 1: Weather — multiple neighbors simultaneously declining short-term
+            int decliningShort = trends.Count(t => t.ShortSlope < -0.5f && t.PointCount >= 5);
+            result.DecliningNeighbors = decliningShort;
+            result.WeatherLed = decliningShort >= 2 && decliningShort >= trends.Count * 0.4
+                ? LedState.Alert
+                : decliningShort >= 1 && decliningShort >= trends.Count * 0.25
+                    ? LedState.Warning
+                    : LedState.Good;
+
+            // LED 2: Antenna — all neighbors falling long-term
+            var validTrends = trends.Where(t => t.PointCount >= 5).ToList();
+            if (validTrends.Count > 0)
+            {
+                float avgLong = validTrends.Average(t => t.LongSlope);
+                result.AvgLongSlope = avgLong;
+                result.AntennaLed = avgLong < -0.2f ? LedState.Alert
+                                  : avgLong < -0.1f ? LedState.Warning
+                                  : LedState.Good;
+            }
+            else
+            {
+                result.AntennaLed = LedState.NoData;
+            }
+
+            // LED 3: Neighbor problem — one neighbor significantly worse than the median
+            if (trends.Count >= 2)
+            {
+                var sortedShort = trends.OrderBy(t => t.ShortSlope).ToList();
+                float medianSlope = sortedShort.Count % 2 == 1
+                    ? sortedShort[sortedShort.Count / 2].ShortSlope
+                    : (sortedShort[sortedShort.Count / 2 - 1].ShortSlope + sortedShort[sortedShort.Count / 2].ShortSlope) / 2f;
+
+                var problemNode = trends.FirstOrDefault(t => t.ShortSlope < -1.0f && t.ShortSlope < medianSlope - 0.8f);
+                if (problemNode != null)
+                {
+                    result.NeighborLed          = LedState.Alert;
+                    result.ProblemNeighborId    = problemNode.NeighborId;
+                    result.ProblemNeighborName  = problemNode.NeighborName;
+                }
+                else
+                {
+                    result.NeighborLed = LedState.Good;
+                }
+            }
+            else
+            {
+                result.NeighborLed = LedState.NoData;
+            }
+        }
+
+        // LED 4: Path stability from traceroute data
+        var (hopCost, hopSamples) = GetHopCost(myNodeId, longDays);
+        float routeChangeRate = GetRouteChangeRate(myNodeId, longDays);
+        result.HopCost         = hopCost;
+        result.RouteChangeRate = routeChangeRate;
+
+        if (hopSamples == 0)
+        {
+            result.PathLed = LedState.NoData;
+        }
+        else
+        {
+            float pathScore = hopCost * 0.6f + Math.Min(1f, routeChangeRate / 2f) * 0.4f;
+            result.PathLed = pathScore > 0.6f ? LedState.Alert
+                           : pathScore > 0.3f ? LedState.Warning
+                           : LedState.Good;
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Computes a path cost metric (0=perfect, 1=worst) from traceroute SNR data.
+    /// </summary>
+    public (float cost, int sampleCount) GetHopCost(uint myNodeId, int days)
+    {
+        long since = Since(days);
+
+        using var con = Open();
+        using var cmd = con.CreateCommand();
+        // Only use snr_back since it represents quality in both directions
+        // When myNodeId==0, query all hops (global view)
+        if (myNodeId == 0)
+        {
+            cmd.CommandText = @"SELECT snr_back FROM traceroute_hops
+                WHERE timestamp>=$s AND snr_back IS NOT NULL";
+        }
+        else
+        {
+            cmd.CommandText = @"SELECT snr_back FROM traceroute_hops
+                WHERE (source_node_id=$me OR dest_node_id=$me)
+                AND timestamp>=$s AND snr_back IS NOT NULL";
+            cmd.Parameters.AddWithValue("$me", (long)myNodeId);
+        }
+        cmd.Parameters.AddWithValue("$s", since);
+
+        var snrs = new List<float>();
+        using var r = cmd.ExecuteReader();
+        while (r.Read())
+            snrs.Add((float)r.GetDouble(0));
+
+        if (snrs.Count == 0) return (0f, 0);
+
+        float? median = Median(snrs);
+        float? variance = Variance(snrs);
+        if (!median.HasValue) return (0f, 0);
+
+        float cost = 0.5f * Math.Max(0f, (10f - median.Value) / 30f)
+                   + 0.5f * Math.Min(1f, (variance ?? 0f) / 50f);
+        return (Math.Clamp(cost, 0f, 1f), snrs.Count);
+    }
+
+    /// <summary>
+    /// Computes how often routes change per hour based on traceroute history.
+    /// </summary>
+    public float GetRouteChangeRate(uint myNodeId, int days)
+    {
+        long since = Since(days);
+
+        using var con = Open();
+        using var cmd = con.CreateCommand();
+        // When myNodeId==0, query all hops (global view)
+        if (myNodeId == 0)
+        {
+            cmd.CommandText = @"SELECT request_id, dest_node_id, hop_index, node_id, timestamp
+                FROM traceroute_hops
+                WHERE timestamp>=$s
+                ORDER BY dest_node_id, request_id, hop_index";
+        }
+        else
+        {
+            cmd.CommandText = @"SELECT request_id, dest_node_id, hop_index, node_id, timestamp
+                FROM traceroute_hops
+                WHERE source_node_id=$me AND timestamp>=$s
+                ORDER BY dest_node_id, request_id, hop_index";
+            cmd.Parameters.AddWithValue("$me", (long)myNodeId);
+        }
+        cmd.Parameters.AddWithValue("$s", since);
+
+        // Group routes: (request_id, dest) → ordered list of hop node_ids
+        var routes = new Dictionary<(long req, long dest), List<uint>>();
+        var timestamps = new Dictionary<long, long>();  // request_id → timestamp
+
+        using var r = cmd.ExecuteReader();
+        while (r.Read())
+        {
+            long reqId  = r.GetInt64(0);
+            long dest   = r.GetInt64(1);
+            var  nid    = (uint)r.GetInt64(3);
+            long ts     = r.GetInt64(4);
+
+            var key = (reqId, dest);
+            if (!routes.ContainsKey(key)) routes[key] = new List<uint>();
+            routes[key].Add(nid);
+            timestamps.TryAdd(reqId, ts);
+        }
+
+        if (routes.Count < 2) return 0f;
+
+        // Group by dest, sort by request timestamp, count route changes
+        int changes = 0;
+        var byDest = routes.GroupBy(kv => kv.Key.dest);
+        long minTs = long.MaxValue, maxTs = long.MinValue;
+
+        foreach (var group in byDest)
+        {
+            var ordered = group
+                .OrderBy(kv => timestamps.TryGetValue(kv.Key.req, out var t) ? t : 0)
+                .ToList();
+
+            for (int i = 1; i < ordered.Count; i++)
+            {
+                var prev = ordered[i - 1].Value;
+                var curr = ordered[i].Value;
+                if (!prev.SequenceEqual(curr)) changes++;
+            }
+        }
+
+        // Time span
+        if (timestamps.Count > 0)
+        {
+            minTs = timestamps.Values.Min();
+            maxTs = timestamps.Values.Max();
+        }
+
+        double hours = maxTs > minTs ? (maxTs - minTs) / 3600.0 : 1.0;
+        return (float)(changes / Math.Max(1.0, hours));
+    }
+
+    /// <summary>
+    /// Computes a global mesh health score (0-100) across all nodes with telemetry data.
+    /// </summary>
+    public MeshHealthScore GetMeshHealthScore(int days)
+    {
+        long since = Since(days);
+
+        // 1. ACK timeout rate (global)
+        float ackTimeoutRate = 0f;
+        using (var con = Open())
+        {
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "SELECT SUM(want_ack), SUM(ack_received) FROM packet_rx WHERE timestamp>=$s";
+            cmd.Parameters.AddWithValue("$s", since);
+            using var r = cmd.ExecuteReader();
+            if (r.Read() && !r.IsDBNull(0))
+            {
+                long wantAck = r.GetInt64(0);
+                long ackRcv  = r.IsDBNull(1) ? 0 : r.GetInt64(1);
+                // Only use rate if at least one ACK has been confirmed via serial API.
+                // If ackRcv==0, firmware handles ACKs internally; treat as no data.
+                if (wantAck > 0 && ackRcv > 0)
+                    ackTimeoutRate = 1f - (float)ackRcv / wantAck;
+            }
+        }
+
+        // 2. Channel utilization (average across all nodes)
+        float channelUtil = 0f;
+        using (var con = Open())
+        {
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "SELECT AVG(channel_utilization) FROM device_telemetry WHERE timestamp>=$s AND channel_utilization IS NOT NULL";
+            cmd.Parameters.AddWithValue("$s", since);
+            var val = cmd.ExecuteScalar();
+            if (val != null && val != DBNull.Value) channelUtil = (float)(double)val;
+        }
+
+        // 3. Path cost and route change rate across all nodes with traceroute data
+        float avgPathCost = 0f, avgRouteChange = 0f;
+        List<uint> activeNodes;
+        using (var con = Open())
+        {
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "SELECT DISTINCT source_node_id FROM traceroute_hops WHERE timestamp>=$s";
+            cmd.Parameters.AddWithValue("$s", since);
+            activeNodes = new List<uint>();
+            using var r = cmd.ExecuteReader();
+            while (r.Read()) activeNodes.Add((uint)r.GetInt64(0));
+        }
+
+        if (activeNodes.Count > 0)
+        {
+            var costs   = activeNodes.Select(n => GetHopCost(n, days).cost).ToList();
+            var changes = activeNodes.Select(n => GetRouteChangeRate(n, days)).ToList();
+            avgPathCost   = costs.Average();
+            avgRouteChange = changes.Average();
+        }
+
+        // Score: 100 = perfect
+        float score = 100f
+            - 0.3f * avgPathCost              * 100f
+            - 0.3f * Math.Min(1f, avgRouteChange / 10f) * 100f
+            - 0.2f * ackTimeoutRate           * 100f
+            - 0.2f * Math.Min(1f, channelUtil / 25f) * 100f;
+
+        score = Math.Clamp(score, 0f, 100f);
+
+        var state = score > 70f ? LedState.Good
+                  : score > 40f ? LedState.Warning
+                  : LedState.Alert;
+
+        var summary =
+            $"Mesh Health Score: {score:0}%\n" +
+            $"Pfad-Kosten (Ø): {avgPathCost:0.00}\n" +
+            $"Route-Änderungen: {avgRouteChange:0.00}/h\n" +
+            $"ACK-Timeout-Rate: {ackTimeoutRate * 100:0.0}%\n" +
+            $"Kanalauslastung (Ø): {channelUtil:0.1}%";
+
+        return new MeshHealthScore
+        {
+            Score              = score,
+            State              = state,
+            AvgPathCost        = avgPathCost,
+            RouteChangeRate    = avgRouteChange,
+            AckTimeoutRate     = ackTimeoutRate,
+            ChannelUtilization = channelUtil,
+            Summary            = summary,
+        };
     }
 
     // ── Utilities ─────────────────────────────────────────────────────────────

@@ -4,7 +4,7 @@
         xmlns:ui="http://schemas.modernwpf.com/2019"
         ui:WindowHelper.UseModernWindowStyle="True"
         Title="Telemetrie"
-        Width="640" Height="560"
+        Width="640" Height="580"
         MinWidth="500" MinHeight="400"
         WindowStartupLocation="CenterOwner"
         ResizeMode="CanResize">
@@ -36,14 +36,54 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- Header -->
-        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
-            <TextBlock Text="📊" FontSize="22" VerticalAlignment="Center" Margin="0,0,8,0"/>
-            <StackPanel VerticalAlignment="Center">
-                <TextBlock x:Name="NodeNameText" FontSize="16" FontWeight="SemiBold"/>
-                <TextBlock x:Name="NodeIdText" FontSize="11" Opacity="0.6"/>
+        <!-- Header: Node info left, 2×2 LED Ampel right -->
+        <Grid Grid.Row="0" Margin="0,0,0,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="0" Orientation="Horizontal">
+                <TextBlock Text="📊" FontSize="22" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock x:Name="NodeNameText" FontSize="16" FontWeight="SemiBold"/>
+                    <TextBlock x:Name="NodeIdText" FontSize="11" Opacity="0.6"/>
+                </StackPanel>
             </StackPanel>
-        </StackPanel>
+
+            <!-- Node-Status Ampel (2×2): Signal / Energie / ACK / Kanal -->
+            <Grid Grid.Column="1" VerticalAlignment="Center">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal" Margin="0,0,14,4">
+                    <Ellipse x:Name="NodeSignalLed" Width="14" Height="14" Fill="#757575"
+                             Margin="0,0,5,0" VerticalAlignment="Center"/>
+                    <TextBlock Text="Signal" FontSize="10" Opacity="0.7" VerticalAlignment="Center"/>
+                </StackPanel>
+                <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,4">
+                    <Ellipse x:Name="NodeBatteryLed" Width="14" Height="14" Fill="#757575"
+                             Margin="0,0,5,0" VerticalAlignment="Center"/>
+                    <TextBlock Text="Energie" FontSize="10" Opacity="0.7" VerticalAlignment="Center"/>
+                </StackPanel>
+                <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Horizontal" Margin="0,0,14,0">
+                    <Ellipse x:Name="NodeAckLed" Width="14" Height="14" Fill="#757575"
+                             Margin="0,0,5,0" VerticalAlignment="Center"/>
+                    <TextBlock Text="ACK" FontSize="10" Opacity="0.7" VerticalAlignment="Center"/>
+                </StackPanel>
+                <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal">
+                    <Ellipse x:Name="NodeChanLed" Width="14" Height="14" Fill="#757575"
+                             Margin="0,0,5,0" VerticalAlignment="Center"/>
+                    <TextBlock Text="Kanal" FontSize="10" Opacity="0.7" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Grid>
+        </Grid>
 
         <!-- Time range selector -->
         <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,10">
@@ -73,18 +113,17 @@
                                 <RowDefinition Height="28"/>
                                 <RowDefinition Height="28"/>
                                 <RowDefinition Height="28"/>
-                                <RowDefinition Height="28"/>
-                                <RowDefinition Height="28"/>
                             </Grid.RowDefinitions>
-                            <!-- Headers -->
                             <TextBlock Grid.Row="0" Grid.Column="1" Text="Tag" Style="{StaticResource StatLabel}" HorizontalAlignment="Center"/>
                             <TextBlock Grid.Row="0" Grid.Column="2" Text="Nacht" Style="{StaticResource StatLabel}" HorizontalAlignment="Center"/>
-                            <!-- SNR -->
-                            <TextBlock Grid.Row="1" Grid.Column="0" Text="SNR Median" Style="{StaticResource StatLabel}"/>
+
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="SNR Median" Style="{StaticResource StatLabel}"
+                                       ToolTip="Signal-Rausch-Verhältnis (Signal-to-Noise Ratio) in dB.&#xa;Höher = bessere Empfangsqualität.&#xa;Typisch: &gt;5 dB sehr gut, -10…5 dB normal, &lt;-10 dB schwach."/>
                             <TextBlock Grid.Row="1" Grid.Column="1" x:Name="SnrDayMedian" Style="{StaticResource StatValue}" HorizontalAlignment="Center"/>
                             <TextBlock Grid.Row="1" Grid.Column="2" x:Name="SnrNightMedian" Style="{StaticResource StatValue}" HorizontalAlignment="Center"/>
-                            <!-- RSSI -->
-                            <TextBlock Grid.Row="2" Grid.Column="0" Text="RSSI Median" Style="{StaticResource StatLabel}"/>
+
+                            <TextBlock Grid.Row="2" Grid.Column="0" Text="RSSI Median" Style="{StaticResource StatLabel}"
+                                       ToolTip="Received Signal Strength Indicator in dBm.&#xa;Misst die absolute Signalstärke am Empfänger.&#xa;Typisch: &gt;-100 dBm gut, -100…-115 dBm grenzwertig, &lt;-115 dBm schlecht."/>
                             <TextBlock Grid.Row="2" Grid.Column="1" x:Name="RssiDayMedian" Style="{StaticResource StatValue}" HorizontalAlignment="Center"/>
                             <TextBlock Grid.Row="2" Grid.Column="2" x:Name="RssiNightMedian" Style="{StaticResource StatValue}" HorizontalAlignment="Center"/>
                         </Grid>
@@ -101,13 +140,17 @@
                                 <RowDefinition Height="28"/>
                                 <RowDefinition Height="28"/>
                             </Grid.RowDefinitions>
-                            <TextBlock Grid.Row="0" Grid.Column="0" Text="SNR Min / Max" Style="{StaticResource StatLabel}"/>
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="SNR Min / Max" Style="{StaticResource StatLabel}"
+                                       ToolTip="Niedrigster und höchster gemessener SNR-Wert im gewählten Zeitraum."/>
                             <TextBlock Grid.Row="0" Grid.Column="1" x:Name="SnrMinMax" Style="{StaticResource StatValue}"/>
-                            <TextBlock Grid.Row="1" Grid.Column="0" Text="SNR Varianz" Style="{StaticResource StatLabel}"/>
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="SNR Varianz" Style="{StaticResource StatLabel}"
+                                       ToolTip="Streuung des SNR-Werts (Stichprobenvarianz).&#xa;Hohe Varianz = unregelmäßige Verbindungsqualität.&#xa;Niedrige Varianz = stabile Verbindung."/>
                             <TextBlock Grid.Row="1" Grid.Column="1" x:Name="SnrVariance" Style="{StaticResource StatValue}"/>
-                            <TextBlock Grid.Row="2" Grid.Column="0" Text="RSSI Min / Max" Style="{StaticResource StatLabel}"/>
+                            <TextBlock Grid.Row="2" Grid.Column="0" Text="RSSI Min / Max" Style="{StaticResource StatLabel}"
+                                       ToolTip="Niedrigster und höchster gemessener RSSI-Wert im gewählten Zeitraum."/>
                             <TextBlock Grid.Row="2" Grid.Column="1" x:Name="RssiMinMax" Style="{StaticResource StatValue}"/>
-                            <TextBlock Grid.Row="3" Grid.Column="0" Text="Pakete gesamt" Style="{StaticResource StatLabel}"/>
+                            <TextBlock Grid.Row="3" Grid.Column="0" Text="Pakete gesamt" Style="{StaticResource StatLabel}"
+                                       ToolTip="Anzahl der im gewählten Zeitraum empfangenen Pakete dieses Nodes."/>
                             <TextBlock Grid.Row="3" Grid.Column="1" x:Name="TotalPackets" Style="{StaticResource StatValue}"/>
                         </Grid>
                     </StackPanel>
@@ -137,21 +180,35 @@
                             </Grid.RowDefinitions>
                             <TextBlock Grid.Row="0" Grid.Column="1" Text="Tag" Style="{StaticResource StatLabel}" HorizontalAlignment="Center"/>
                             <TextBlock Grid.Row="0" Grid.Column="2" Text="Nacht" Style="{StaticResource StatLabel}" HorizontalAlignment="Center"/>
-                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Batterie Ø" Style="{StaticResource StatLabel}"/>
+
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Batterie Ø" Style="{StaticResource StatLabel}"
+                                       ToolTip="Durchschnittlicher Batterieladestand in % während Tag- bzw. Nachtstunden.&#xa;Tag/Nacht-Grenze wird per astronomischer Sonnenauf-/-untergangsberechnung bestimmt (NOAA-Algorithmus)."/>
                             <TextBlock Grid.Row="1" Grid.Column="1" x:Name="BatDayAvg" Style="{StaticResource StatValue}" HorizontalAlignment="Center"/>
                             <TextBlock Grid.Row="1" Grid.Column="2" x:Name="BatNightAvg" Style="{StaticResource StatValue}" HorizontalAlignment="Center"/>
-                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Batterie Nacht-Abfall" Style="{StaticResource StatLabel}"/>
+
+                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Batterie Nacht-Differenz" Style="{StaticResource StatLabel}"
+                                       ToolTip="Nacht-Ø minus Tag-Ø des Batterieladestands.&#xa;Negativ = Batterie sinkt über Nacht (Entladung ohne Solar).&#xa;Positiv = Batterie steigt (Solar-Aufladung tagsüber überwiegt)."/>
                             <TextBlock Grid.Row="2" Grid.Column="1" x:Name="BatNightDrop" Style="{StaticResource StatValue}" HorizontalAlignment="Center" Grid.ColumnSpan="2"/>
-                            <TextBlock Grid.Row="3" Grid.Column="0" Text="Spannung Ø" Style="{StaticResource StatLabel}"/>
+
+                            <TextBlock Grid.Row="3" Grid.Column="0" Text="Spannung Ø" Style="{StaticResource StatLabel}"
+                                       ToolTip="Durchschnittliche Versorgungsspannung in Volt während Tag- bzw. Nachtstunden."/>
                             <TextBlock Grid.Row="3" Grid.Column="1" x:Name="VoltDayAvg" Style="{StaticResource StatValue}" HorizontalAlignment="Center"/>
                             <TextBlock Grid.Row="3" Grid.Column="2" x:Name="VoltNightAvg" Style="{StaticResource StatValue}" HorizontalAlignment="Center"/>
-                            <TextBlock Grid.Row="4" Grid.Column="0" Text="Spannung Nacht-Abfall" Style="{StaticResource StatLabel}"/>
+
+                            <TextBlock Grid.Row="4" Grid.Column="0" Text="Spannung Nacht-Differenz" Style="{StaticResource StatLabel}"
+                                       ToolTip="Nacht-Ø minus Tag-Ø der Spannung.&#xa;Negativ = Spannung sinkt nachts (Entladung/Dunkelheit).&#xa;Positiv = Spannung steigt tagsüber (Solar-Einspeisung)."/>
                             <TextBlock Grid.Row="4" Grid.Column="1" x:Name="VoltNightDrop" Style="{StaticResource StatValue}" HorizontalAlignment="Center" Grid.ColumnSpan="2"/>
-                            <TextBlock Grid.Row="5" Grid.Column="0" Text="Spannung Min / Max" Style="{StaticResource StatLabel}"/>
+
+                            <TextBlock Grid.Row="5" Grid.Column="0" Text="Spannung Min / Max" Style="{StaticResource StatLabel}"
+                                       ToolTip="Niedrigste und höchste gemessene Spannung im gewählten Zeitraum."/>
                             <TextBlock Grid.Row="5" Grid.Column="1" x:Name="VoltMinMax" Style="{StaticResource StatValue}" Grid.ColumnSpan="2"/>
-                            <TextBlock Grid.Row="6" Grid.Column="0" Text="Uptime (zuletzt)" Style="{StaticResource StatLabel}"/>
+
+                            <TextBlock Grid.Row="6" Grid.Column="0" Text="Uptime (zuletzt)" Style="{StaticResource StatLabel}"
+                                       ToolTip="Laufzeit des Geräts seit dem letzten Neustart, aus dem aktuellsten Telemetrie-Paket."/>
                             <TextBlock Grid.Row="6" Grid.Column="1" x:Name="LastUptime" Style="{StaticResource StatValue}" Grid.ColumnSpan="2"/>
-                            <TextBlock Grid.Row="7" Grid.Column="0" Text="Messwerte gesamt" Style="{StaticResource StatLabel}"/>
+
+                            <TextBlock Grid.Row="7" Grid.Column="0" Text="Messwerte gesamt" Style="{StaticResource StatLabel}"
+                                       ToolTip="Anzahl der gespeicherten Gerätemetrik-Einträge (device_telemetry) im gewählten Zeitraum."/>
                             <TextBlock Grid.Row="7" Grid.Column="1" x:Name="TelReadings" Style="{StaticResource StatValue}" Grid.ColumnSpan="2"/>
                         </Grid>
                     </StackPanel>
@@ -175,19 +232,26 @@
                                 <RowDefinition Height="28"/>
                                 <RowDefinition Height="28"/>
                                 <RowDefinition Height="28"/>
-                                <RowDefinition Height="28"/>
                             </Grid.RowDefinitions>
                             <TextBlock Grid.Row="0" Grid.Column="1" Text="Tag" Style="{StaticResource StatLabel}" HorizontalAlignment="Center"/>
                             <TextBlock Grid.Row="0" Grid.Column="2" Text="Nacht" Style="{StaticResource StatLabel}" HorizontalAlignment="Center"/>
-                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Channel Util Ø" Style="{StaticResource StatLabel}"/>
+
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Channel Util Ø" Style="{StaticResource StatLabel}"
+                                       ToolTip="Durchschnittliche Kanalauslastung in % (channel_utilization).&#xa;Messung des LoRa-Mediums über einen gleitenden Zeitraum.&#xa;Empfehlung: unter 25% für stabilen Betrieb."/>
                             <TextBlock Grid.Row="1" Grid.Column="1" x:Name="CuDayAvg" Style="{StaticResource StatValue}" HorizontalAlignment="Center"/>
                             <TextBlock Grid.Row="1" Grid.Column="2" x:Name="CuNightAvg" Style="{StaticResource StatValue}" HorizontalAlignment="Center"/>
-                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Channel Util Max" Style="{StaticResource StatLabel}"/>
+
+                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Channel Util Max" Style="{StaticResource StatLabel}"
+                                       ToolTip="Maximale Kanalauslastung im gewählten Zeitraum.&#xa;Hohe Spitzen können auf Überlastung des Mesh-Kanals hinweisen."/>
                             <TextBlock Grid.Row="2" Grid.Column="1" x:Name="CuMax" Style="{StaticResource StatValue}" Grid.ColumnSpan="2"/>
-                            <TextBlock Grid.Row="3" Grid.Column="0" Text="Air TX Util Ø" Style="{StaticResource StatLabel}"/>
+
+                            <TextBlock Grid.Row="3" Grid.Column="0" Text="Air TX Util Ø" Style="{StaticResource StatLabel}"
+                                       ToolTip="Durchschnittliche Sendezeit-Auslastung in % (air_util_tx).&#xa;Anteil der Zeit, in der dieser Node selbst sendet.&#xa;Sollte deutlich unter Channel Util liegen."/>
                             <TextBlock Grid.Row="3" Grid.Column="1" x:Name="AuDayAvg" Style="{StaticResource StatValue}" HorizontalAlignment="Center"/>
                             <TextBlock Grid.Row="3" Grid.Column="2" x:Name="AuNightAvg" Style="{StaticResource StatValue}" HorizontalAlignment="Center"/>
-                            <TextBlock Grid.Row="4" Grid.Column="0" Text="Air TX Util Max" Style="{StaticResource StatLabel}"/>
+
+                            <TextBlock Grid.Row="4" Grid.Column="0" Text="Air TX Util Max" Style="{StaticResource StatLabel}"
+                                       ToolTip="Maximale Sendezeit-Auslastung im gewählten Zeitraum."/>
                             <TextBlock Grid.Row="4" Grid.Column="1" x:Name="AuMax" Style="{StaticResource StatValue}" Grid.ColumnSpan="2"/>
                         </Grid>
                     </StackPanel>
@@ -210,44 +274,85 @@
                                 <RowDefinition Height="28"/>
                                 <RowDefinition Height="28"/>
                                 <RowDefinition Height="28"/>
-                                <RowDefinition Height="28"/>
-                                <RowDefinition Height="28"/>
-                                <RowDefinition Height="28"/>
                             </Grid.RowDefinitions>
-                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Hops Ø / Min / Max" Style="{StaticResource StatLabel}"/>
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Hops Ø / Min / Max" Style="{StaticResource StatLabel}"
+                                       ToolTip="Durchschnittliche, minimale und maximale Hop-Anzahl der empfangenen Pakete.&#xa;Jeder Hop = ein Weiterleitungsschritt durch einen anderen Node."/>
                             <TextBlock Grid.Row="0" Grid.Column="1" x:Name="HopsStats" Style="{StaticResource StatValue}"/>
-                            <TextBlock Grid.Row="1" Grid.Column="0" Text="ACK-Erfolgsrate" Style="{StaticResource StatLabel}"/>
+
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="ACK-Erfolgsrate" Style="{StaticResource StatLabel}"
+                                       ToolTip="Anteil der bestätigten ACK-Pakete an den angeforderten ACKs (in %).&#xa;100% = alle Pakete, die eine Bestätigung anforderten, wurden bestätigt.&#xa;Niedrige Rate kann auf schlechte Verbindungsqualität hinweisen."/>
                             <TextBlock Grid.Row="1" Grid.Column="1" x:Name="AckRate" Style="{StaticResource StatValue}"/>
-                            <TextBlock Grid.Row="2" Grid.Column="0" Text="ACK angefordert / erhalten" Style="{StaticResource StatLabel}"/>
+
+                            <TextBlock Grid.Row="2" Grid.Column="0" Text="ACK angefordert / erhalten" Style="{StaticResource StatLabel}"
+                                       ToolTip="Absolute Anzahl der ACK-angeforderten Pakete und der tatsächlich erhaltenen Bestätigungen."/>
                             <TextBlock Grid.Row="2" Grid.Column="1" x:Name="AckCounts" Style="{StaticResource StatValue}"/>
-                            <TextBlock Grid.Row="3" Grid.Column="0" Text="Unique Relay-Nodes" Style="{StaticResource StatLabel}"/>
+
+                            <TextBlock Grid.Row="3" Grid.Column="0" Text="Unique Relay-Nodes" Style="{StaticResource StatLabel}"
+                                       ToolTip="Anzahl der verschiedenen Nodes, die Pakete für diesen Node weitergeleitet haben (aus Traceroute-Daten)."/>
                             <TextBlock Grid.Row="3" Grid.Column="1" x:Name="UniqueFrom" Style="{StaticResource StatValue}"/>
-                            <TextBlock Grid.Row="4" Grid.Column="0" Text="Pakete gesamt" Style="{StaticResource StatLabel}"/>
+
+                            <TextBlock Grid.Row="4" Grid.Column="0" Text="Pakete gesamt" Style="{StaticResource StatLabel}"
+                                       ToolTip="Gesamtzahl der im gewählten Zeitraum aufgezeichneten Routing-Pakete."/>
                             <TextBlock Grid.Row="4" Grid.Column="1" x:Name="RoutingTotal" Style="{StaticResource StatValue}"/>
                         </Grid>
 
                         <TextBlock Style="{StaticResource SectionHeader}" Text="Hop-Verteilung"/>
                         <TextBlock x:Name="HopDistText" FontSize="12" TextWrapping="Wrap" Opacity="0.85"/>
+
+                        <TextBlock Style="{StaticResource SectionHeader}" Text="Pfad-Analyse (Traceroute)" Margin="0,14,0,4"/>
+                        <TextBlock FontSize="11" FontStyle="Italic" Opacity="0.55" TextWrapping="Wrap" Margin="0,0,0,6"
+                                   Text="Nur verfügbar, wenn Traceroutes für diesen Node aufgezeichnet wurden."/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="200"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="28"/>
+                                <RowDefinition Height="28"/>
+                                <RowDefinition Height="28"/>
+                            </Grid.RowDefinitions>
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Hop-Kosten" Style="{StaticResource StatLabel}"
+                                       ToolTip="Kombiniertes Pfadqualitäts-Maß (0 = optimal, 1 = schlechtester Pfad).&#xa;Basiert auf SNR-Median und -Varianz der Traceroute-Hops.&#xa;Niedrig = gute, stabile Verbindungsqualität auf dem Pfad."/>
+                            <TextBlock Grid.Row="0" Grid.Column="1" x:Name="HopCostText" Style="{StaticResource StatValue}"/>
+
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Route-Änderungen/h" Style="{StaticResource StatLabel}"
+                                       ToolTip="Wie oft wechselt der Routing-Pfad zum selben Ziel pro Stunde.&#xa;Hohe Rate = instabile Mesh-Topologie, häufige Umwege.&#xa;0 = konstanter stabiler Pfad."/>
+                            <TextBlock Grid.Row="1" Grid.Column="1" x:Name="RouteChangeRateText" Style="{StaticResource StatValue}"/>
+
+                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Traceroute-Stichproben" Style="{StaticResource StatLabel}"
+                                       ToolTip="Anzahl der für diese Berechnung ausgewerteten Traceroute-Hop-Einträge."/>
+                            <TextBlock Grid.Row="2" Grid.Column="1" x:Name="TracerouteCountText" Style="{StaticResource StatValue}"/>
+                        </Grid>
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
 
             <!-- ── Neighbors ── -->
             <TabItem Header="🔗 Nachbarn">
-                <DataGrid x:Name="NeighborGrid"
-                          AutoGenerateColumns="False"
-                          IsReadOnly="True"
-                          Margin="4"
-                          GridLinesVisibility="Horizontal"
-                          HeadersVisibility="Column">
-                    <DataGrid.Columns>
-                        <DataGridTextColumn Header="Node" Binding="{Binding NeighborName}" Width="160"/>
-                        <DataGridTextColumn Header="Median SNR" Binding="{Binding MedianSnrDisplay}" Width="90"/>
-                        <DataGridTextColumn Header="Median RSSI" Binding="{Binding MedianRssiDisplay}" Width="95"/>
-                        <DataGridTextColumn Header="Pkts/h" Binding="{Binding PacketsPerHourDisplay}" Width="70"/>
-                        <DataGridTextColumn Header="Letzte Sichtung" Binding="{Binding LastSeenDisplay}" Width="*"/>
-                    </DataGrid.Columns>
-                </DataGrid>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Grid.Row="0" Margin="8,8,8,4" FontSize="11" FontStyle="Italic" Opacity="0.6"
+                               TextWrapping="Wrap"
+                               Text="Nodes, von denen unser Knoten Signale direkt empfangen hat (packet_rx). Zeigt die Empfangsqualität aus unserer Perspektive — nicht die Qualität in Gegenrichtung."/>
+                    <DataGrid Grid.Row="1" x:Name="NeighborGrid"
+                              AutoGenerateColumns="False"
+                              IsReadOnly="True"
+                              Margin="4"
+                              GridLinesVisibility="Horizontal"
+                              HeadersVisibility="Column">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Node" Binding="{Binding NeighborName}" Width="160"/>
+                            <DataGridTextColumn Header="Median SNR" Binding="{Binding MedianSnrDisplay}" Width="90"/>
+                            <DataGridTextColumn Header="Median RSSI" Binding="{Binding MedianRssiDisplay}" Width="95"/>
+                            <DataGridTextColumn Header="Pkts/h" Binding="{Binding PacketsPerHourDisplay}" Width="70"/>
+                            <DataGridTextColumn Header="Letzte Sichtung" Binding="{Binding LastSeenDisplay}" Width="*"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
             </TabItem>
 
         </TabControl>

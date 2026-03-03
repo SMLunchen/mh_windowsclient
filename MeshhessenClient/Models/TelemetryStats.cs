@@ -28,7 +28,7 @@ public class PowerStats
 
     public float? DayBatteryAvg    { get; set; }
     public float? NightBatteryAvg  { get; set; }
-    /// <summary>Day Ø – Night Ø, positive = drops overnight</summary>
+    /// <summary>Night Ø – Day Ø: negative = drops overnight (discharge), positive = rises (solar charging)</summary>
     public float? NightBatteryDrop { get; set; }
 
     public float? DayVoltageAvg    { get; set; }
@@ -92,4 +92,52 @@ public class TimeSeriesPoint
     public DateTime Timestamp { get; set; }
     public double   Value     { get; set; }
     public string   Metric    { get; set; } = string.Empty;
+}
+
+// ── Signal analysis models ─────────────────────────────────────────────────────
+
+public enum LedState { NoData, Good, Warning, Alert }
+
+public class NeighborTrend
+{
+    public uint   NeighborId   { get; set; }
+    public string NeighborName { get; set; } = string.Empty;
+    public float  ShortSlope   { get; set; }  // dB/h in short window (negative = falling)
+    public float  LongSlope    { get; set; }  // dB/day in long window
+    public int    PointCount   { get; set; }
+}
+
+public class SignalAnalysisResult
+{
+    // LED 1: multiple neighbors simultaneously falling short-term → weather effect
+    public LedState WeatherLed         { get; set; }
+    public int      DecliningNeighbors { get; set; }
+    public int      TotalNeighbors     { get; set; }
+
+    // LED 2: all/most neighbors falling long-term → own antenna problem
+    public LedState AntennaLed         { get; set; }
+    public float    AvgLongSlope       { get; set; }
+
+    // LED 3: exactly one neighbor falling while others stable → neighbor problem
+    public LedState NeighborLed            { get; set; }
+    public uint?    ProblemNeighborId      { get; set; }
+    public string   ProblemNeighborName    { get; set; } = string.Empty;
+
+    // LED 4: path stability from traceroute data
+    public LedState PathLed            { get; set; }
+    public float    HopCost            { get; set; }
+    public float    RouteChangeRate    { get; set; }
+
+    public List<NeighborTrend> Trends  { get; set; } = new();
+}
+
+public class MeshHealthScore
+{
+    public float    Score              { get; set; }  // 0–100, higher = better
+    public LedState State              { get; set; }
+    public float    AvgPathCost        { get; set; }
+    public float    RouteChangeRate    { get; set; }
+    public float    AckTimeoutRate     { get; set; }
+    public float    ChannelUtilization { get; set; }
+    public string   Summary            { get; set; } = string.Empty;
 }

@@ -87,7 +87,9 @@ public partial class MainWindow : Window
         false,
         new Dictionary<uint, bool>(),
         90,
-        Services.PskMismatchAction.Overwrite);
+        Services.PskMismatchAction.Overwrite,
+        6,   // SignalWeatherWindowHours
+        7);  // SignalAntennaWindowDays
     private NodeInfo? _mapContextMenuNode;
     private uint? _alertNodeId;  // Stores the node ID for "Show on Map" button
 
@@ -116,6 +118,9 @@ public partial class MainWindow : Window
 
     // Telemetry DB
     private TelemetryDatabaseService? _db;
+
+    // Signal Analysis Background Timer
+    private System.Threading.Timer? _analysisTimer;
 
     // Node Public Key CSV
     private NodeKeyService? _nodeKeyService;
@@ -328,6 +333,10 @@ public partial class MainWindow : Window
             PskWarnRadio.IsChecked      = settings.NodeKeyMismatchAction == Services.PskMismatchAction.Warn;
             PskOverwriteRadio.IsChecked = settings.NodeKeyMismatchAction == Services.PskMismatchAction.Overwrite;
             PskAskRadio.IsChecked       = settings.NodeKeyMismatchAction == Services.PskMismatchAction.Ask;
+
+            // Signal Analysis Windows
+            WeatherHoursBox.Text = settings.SignalWeatherWindowHours.ToString();
+            AntennaDaysBox.Text  = settings.SignalAntennaWindowDays.ToString();
         }
         catch (Exception ex)
         {
@@ -1642,7 +1651,9 @@ public partial class MainWindow : Window
                 TelemetryRetentionDays: int.TryParse((TelemetryRetentionComboBox.SelectedItem as System.Windows.Controls.ComboBoxItem)?.Tag as string, out var ret) ? ret : 90,
                 NodeKeyMismatchAction: PskWarnRadio.IsChecked == true ? Services.PskMismatchAction.Warn
                                      : PskAskRadio.IsChecked  == true ? Services.PskMismatchAction.Ask
-                                     : Services.PskMismatchAction.Overwrite
+                                     : Services.PskMismatchAction.Overwrite,
+                SignalWeatherWindowHours: int.TryParse(WeatherHoursBox.Text, out var swh) ? Math.Max(1, swh) : 6,
+                SignalAntennaWindowDays: int.TryParse(AntennaDaysBox.Text, out var sad) ? Math.Max(1, sad) : 7
             );
             _currentSettings = settings;
             SettingsService.Save(settings);
@@ -1673,6 +1684,17 @@ public partial class MainWindow : Window
                 // Only handle disconnection here - connection status is managed by Connect_Click
                 if (!isConnected)
                 {
+                    // Stop analysis timer on disconnect
+                    _analysisTimer?.Dispose();
+                    _analysisTimer = null;
+                    var gray = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0x75, 0x75, 0x75));
+                    GlobalWeatherLed.Fill  = gray;
+                    GlobalAntennaLed.Fill  = gray;
+                    GlobalNeighborLed.Fill = gray;
+                    GlobalPathLed.Fill     = gray;
+                    GlobalMeshHealthLed.Fill = gray;
+                    GlobalMeshHealthText.Text = "–";
+
                     ActiveChannelComboBox.IsEnabled = false;
                     _messages.Clear();
                     _allMessages.Clear();
@@ -2279,6 +2301,13 @@ public partial class MainWindow : Window
             case ConnectionStatus.Ready:
                 StatusIndicator.Fill = new SolidColorBrush(Colors.LimeGreen);
                 StatusText.Text = Loc("StrConnected");
+                // Start signal analysis background timer (60s initial delay, then every 10 min)
+                _analysisTimer?.Dispose();
+                _analysisTimer = new System.Threading.Timer(
+                    _ => RefreshSignalAnalysis(),
+                    null,
+                    TimeSpan.FromSeconds(60),
+                    TimeSpan.FromMinutes(10));
                 break;
             case ConnectionStatus.Disconnecting:
                 StatusIndicator.Fill = new SolidColorBrush(Colors.Orange);
@@ -3851,12 +3880,86 @@ public partial class MainWindow : Window
         });
     }
 
+    private void RefreshSignalAnalysis()
+    {
+        if (_db == null) return;
+        try
+        {
+            var nodeNames = _allNodes.ToDictionary(n => n.NodeId, n => n.Name);
+            int shortH = _currentSettings.SignalWeatherWindowHours;
+            int longD  = _currentSettings.SignalAntennaWindowDays;
+
+            // Global signal analysis (nodeId=0 → all nodes)
+            var analysis = _db.GetSignalAnalysis(0, shortH, longD, nodeNames);
+            // Global mesh health
+            var health = _db.GetMeshHealthScore(longD);
+
+            Dispatcher.Invoke(() =>
+            {
+                // Global 4-LED signal status strip
+                LedFill(GlobalWeatherLed, analysis.WeatherLed,
+                    $"Wetter-Effekt: {analysis.DecliningNeighbors} von {analysis.TotalNeighbors} Nodes " +
+                    "zeigen gleichzeitigen kurzfristigen SNR-Abfall.\n" +
+                    "Mehrere Nodes gleichzeitig fallend → wahrscheinlich Wetter / atmosphärische Effekte.");
+                LedFill(GlobalAntennaLed, analysis.AntennaLed,
+                    $"Eigene Antenne: Langfristiger SNR-Trend aller Nachbarn: " +
+                    $"{analysis.AvgLongSlope:+0.00;-0.00;0.00} dB/Tag.\n" +
+                    "Alle Nachbarn gemeinsam langfristig fallend → mögliches Problem mit eigener Antenne oder Position.");
+                LedFill(GlobalNeighborLed, analysis.NeighborLed,
+                    string.IsNullOrEmpty(analysis.ProblemNeighborName)
+                    ? "Kein einzelnes Nachbar-Problem erkannt. Alle Verbindungen ähnlich stabil."
+                    : $"Node '{analysis.ProblemNeighborName}' zeigt signifikant schlechteren SNR\n" +
+                      "als die anderen Nachbarn → mögliches Problem bei diesem einzelnen Node.");
+                LedFill(GlobalPathLed, analysis.PathLed,
+                    $"Pfad-Stabilität (aus Traceroute-Daten):\n" +
+                    $"  Hop-Kosten: {analysis.HopCost:0.00}  (0 = optimal, 1 = schlecht)\n" +
+                    $"  Route-Änderungen: {analysis.RouteChangeRate:0.00}/h\n" +
+                    "(Nur aussagekräftig, wenn Traceroutes aufgezeichnet wurden.)");
+
+                // Update per-node signal trend colors from analysis trends
+                var trendDict = analysis.Trends.ToDictionary(t => t.NeighborId);
+                foreach (var node in _allNodes)
+                {
+                    if (trendDict.TryGetValue(node.NodeId, out var trend))
+                    {
+                        node.SignalTrendColor = trend.ShortSlope < -1.0f ? "#F44336"
+                                             : trend.ShortSlope < -0.3f ? "#FFC107"
+                                             : trend.PointCount >= 5    ? "#4CAF50"
+                                             : string.Empty;
+                    }
+                }
+                NodesListView.Items.Refresh();
+
+                // Update mesh health in status strip
+                LedFill(GlobalMeshHealthLed, health.State, health.Summary);
+                GlobalMeshHealthText.Text = health.Score > 0 ? $"{health.Score:0}%" : "–";
+            });
+        }
+        catch (Exception ex)
+        {
+            Services.Logger.WriteLine($"[Analysis] RefreshSignalAnalysis error: {ex.Message}");
+        }
+    }
+
+    private static void LedFill(System.Windows.Shapes.Ellipse led, LedState state, string tooltip)
+    {
+        led.Fill = state switch
+        {
+            LedState.Good    => new SolidColorBrush(System.Windows.Media.Color.FromRgb(0x4C, 0xAF, 0x50)),
+            LedState.Warning => new SolidColorBrush(System.Windows.Media.Color.FromRgb(0xFF, 0xC1, 0x07)),
+            LedState.Alert   => new SolidColorBrush(System.Windows.Media.Color.FromRgb(0xF4, 0x43, 0x36)),
+            _                => new SolidColorBrush(System.Windows.Media.Color.FromRgb(0x75, 0x75, 0x75)),
+        };
+        ToolTipService.SetToolTip(led, tooltip);
+    }
+
     private void NodeContextMenu_Telemetry_Click(object sender, RoutedEventArgs e)
     {
         if (NodesListView.SelectedItem is not NodeInfo node || _db == null) return;
 
         var nodeNames = _allNodes.ToDictionary(n => n.NodeId, n => n.Name);
-        var win = new TelemetryWindow(node, _db, nodeNames, _currentSettings.MyLatitude, _currentSettings.MyLongitude)
+        var win = new TelemetryWindow(node, _db, nodeNames, _currentSettings.MyLatitude, _currentSettings.MyLongitude,
+            _currentSettings.SignalWeatherWindowHours, _currentSettings.SignalAntennaWindowDays)
         {
             Owner = this
         };
@@ -3882,7 +3985,8 @@ public partial class MainWindow : Window
         var node = GetNodeFromSelectedMessage();
         if (node == null || _db == null) return;
         var nodeNames = _allNodes.ToDictionary(n => n.NodeId, n => n.Name);
-        var win = new TelemetryWindow(node, _db, nodeNames, _currentSettings.MyLatitude, _currentSettings.MyLongitude)
+        var win = new TelemetryWindow(node, _db, nodeNames, _currentSettings.MyLatitude, _currentSettings.MyLongitude,
+            _currentSettings.SignalWeatherWindowHours, _currentSettings.SignalAntennaWindowDays)
         {
             Owner = this
         };

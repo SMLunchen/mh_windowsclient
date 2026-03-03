@@ -29,7 +29,9 @@ public record AppSettings(
     bool EnableLocationLogging,              // Log GPS positions to locationlogs/
     Dictionary<uint, bool> PinnedNodes,      // NodeId -> pinned
     int TelemetryRetentionDays,              // 0=unlimited, 30/90/365
-    PskMismatchAction NodeKeyMismatchAction); // Warn / Overwrite / Ask
+    PskMismatchAction NodeKeyMismatchAction, // Warn / Overwrite / Ask
+    int SignalWeatherWindowHours,            // Short analysis window for weather detection (default 6h)
+    int SignalAntennaWindowDays);            // Long analysis window for antenna trend (default 7d)
 
 public static class SettingsService
 {
@@ -61,7 +63,9 @@ public static class SettingsService
             false,  // EnableLocationLogging default off
             new Dictionary<uint, bool>(),   // PinnedNodes
             90,                             // TelemetryRetentionDays default 90
-            PskMismatchAction.Overwrite);   // NodeKeyMismatchAction default Overwrite
+            PskMismatchAction.Overwrite,    // NodeKeyMismatchAction default Overwrite
+            6,                              // SignalWeatherWindowHours default 6h
+            7);                             // SignalAntennaWindowDays default 7d
 
         try
         {
@@ -170,7 +174,9 @@ public static class SettingsService
                 EnableLocationLogging: values.TryGetValue("EnableLocationLogging", out var ell) && bool.TryParse(ell, out var ellBool) && ellBool,
                 PinnedNodes: pinnedNodes,
                 TelemetryRetentionDays: values.TryGetValue("TelemetryRetentionDays", out var trd) && int.TryParse(trd, out var trdInt) ? trdInt : defaults.TelemetryRetentionDays,
-                NodeKeyMismatchAction: values.TryGetValue("NodeKeyMismatchAction", out var pkm) && Enum.TryParse(pkm, out PskMismatchAction pkmVal) ? pkmVal : defaults.NodeKeyMismatchAction
+                NodeKeyMismatchAction: values.TryGetValue("NodeKeyMismatchAction", out var pkm) && Enum.TryParse(pkm, out PskMismatchAction pkmVal) ? pkmVal : defaults.NodeKeyMismatchAction,
+                SignalWeatherWindowHours: values.TryGetValue("SignalWeatherWindowHours", out var swh) && int.TryParse(swh, out var swhInt) ? swhInt : defaults.SignalWeatherWindowHours,
+                SignalAntennaWindowDays: values.TryGetValue("SignalAntennaWindowDays", out var sad) && int.TryParse(sad, out var sadInt) ? sadInt : defaults.SignalAntennaWindowDays
             );
         }
         catch (Exception ex)
@@ -208,7 +214,9 @@ public static class SettingsService
                 $"Language={settings.Language}",
                 $"EnableLocationLogging={settings.EnableLocationLogging}",
                 $"TelemetryRetentionDays={settings.TelemetryRetentionDays}",
-                $"NodeKeyMismatchAction={(int)settings.NodeKeyMismatchAction}"
+                $"NodeKeyMismatchAction={(int)settings.NodeKeyMismatchAction}",
+                $"SignalWeatherWindowHours={settings.SignalWeatherWindowHours}",
+                $"SignalAntennaWindowDays={settings.SignalAntennaWindowDays}"
             };
 
             // Save node colors

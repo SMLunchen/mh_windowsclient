@@ -31,13 +31,14 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <!-- Alert Bell Overlay (Blinkt bei Notruf) -->
         <Border x:Name="AlertBellOverlay"
-                Grid.RowSpan="4"
+                Grid.RowSpan="5"
                 BorderBrush="Red"
                 BorderThickness="8"
                 Visibility="Collapsed"
@@ -219,8 +220,35 @@
             </Grid>
         </Border>
 
+        <!-- Global Signal & Health Status Strip -->
+        <Border Grid.Row="2"
+                BorderThickness="0,1,0,1"
+                BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+                Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}"
+                Padding="12,4">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <TextBlock Text="Netz:" FontSize="11" Opacity="0.6" VerticalAlignment="Center" Margin="0,0,8,0"
+                           ToolTip="Globale Signalanalyse aller Nodes (wird alle 10 min aktualisiert, startet 60s nach Verbindung)."/>
+                <Ellipse x:Name="GlobalWeatherLed"  Width="12" Height="12" Fill="#757575" Margin="0,0,3,0"
+                         ToolTip="Wetter-Effekt: mehrere Nodes gleichzeitig mit fallendem SNR"/>
+                <Ellipse x:Name="GlobalAntennaLed"  Width="12" Height="12" Fill="#757575" Margin="0,0,3,0"
+                         ToolTip="Eigene Antenne: langfristiger SNR-Rückgang bei allen Nachbarn"/>
+                <Ellipse x:Name="GlobalNeighborLed" Width="12" Height="12" Fill="#757575" Margin="0,0,3,0"
+                         ToolTip="Nachbar-Problem: ein einzelner Node deutlich schlechter als andere"/>
+                <Ellipse x:Name="GlobalPathLed"     Width="12" Height="12" Fill="#757575" Margin="0,0,16,0"
+                         ToolTip="Pfad-Stabilität: Hop-Kosten und Route-Änderungsrate (aus Traceroute-Daten)"/>
+                <Rectangle Width="1" Height="16" Fill="{DynamicResource SystemControlForegroundBaseLowBrush}" Margin="0,0,16,0"/>
+                <TextBlock Text="Mesh Health:" FontSize="11" Opacity="0.6" VerticalAlignment="Center" Margin="0,0,6,0"
+                           ToolTip="Globale Mesh-Gesundheit (0–100%) basierend auf Pfad-Kosten, Route-Änderungen, ACK-Rate und Kanalauslastung."/>
+                <Ellipse x:Name="GlobalMeshHealthLed" Width="12" Height="12" Fill="#757575"
+                         VerticalAlignment="Center" Margin="0,0,5,0"/>
+                <TextBlock x:Name="GlobalMeshHealthText" Text="–" FontWeight="SemiBold" FontSize="12"
+                           VerticalAlignment="Center"/>
+            </StackPanel>
+        </Border>
+
         <!-- Main Content Area -->
-        <TabControl x:Name="MainTabs" Grid.Row="2" Margin="0">
+        <TabControl x:Name="MainTabs" Grid.Row="3" Margin="0">
 
             <!-- Messages Tab -->
             <TabItem Header="{DynamicResource StrTabMessages}">
@@ -440,7 +468,7 @@
                     <!-- Quick Filter -->
                     <TextBox x:Name="NodeFilterTextBox"
                              Grid.Row="0"
-                             Margin="0,0,0,10"
+                             Margin="0,0,0,6"
                              TextChanged="NodeFilterTextBox_TextChanged"
                              Tag="🔍 Filter nach Name, ID, SNR, Batterie..."/>
 
@@ -529,6 +557,29 @@
                                     <GridViewColumn.Header>
                                         <GridViewColumnHeader Content="🔑" ToolTip="PKI Public Key bekannt"/>
                                     </GridViewColumn.Header>
+                                </GridViewColumn>
+                                <GridViewColumn Width="56">
+                                    <GridViewColumn.Header>
+                                        <GridViewColumnHeader ToolTip="Signal-Indikatoren: SNR-Qualität | SNR-Trend | Batterie&#xa;Grün=gut, Gelb=mittel, Rot=schlecht, Grau/leer=keine Daten"/>
+                                    </GridViewColumn.Header>
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                                <Ellipse Width="11" Height="11" Margin="1,0"
+                                                         Fill="{Binding SignalQualityColor, Converter={StaticResource HexToColorConverter}}"
+                                                         Visibility="{Binding SignalQualityColor, Converter={StaticResource IsNotEmptyConverter}}"
+                                                         ToolTip="SNR-Qualität (aktuell): Grün ≥5dB | Gelb -5…5dB | Rot &lt;-5dB"/>
+                                                <Ellipse Width="11" Height="11" Margin="1,0"
+                                                         Fill="{Binding SignalTrendColor, Converter={StaticResource HexToColorConverter}}"
+                                                         Visibility="{Binding SignalTrendColor, Converter={StaticResource IsNotEmptyConverter}}"
+                                                         ToolTip="SNR-Trend (kurzfristig): Grün=stabil/steigend | Gelb=leicht fallend | Rot=stark fallend"/>
+                                                <Ellipse Width="11" Height="11" Margin="1,0"
+                                                         Fill="{Binding BatteryStatusColor, Converter={StaticResource HexToColorConverter}}"
+                                                         Visibility="{Binding BatteryStatusColor, Converter={StaticResource IsNotEmptyConverter}}"
+                                                         ToolTip="Batteriestatus: Grün ≥50% | Gelb 20–50% | Rot &lt;20%"/>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
                             </GridView>
                         </ListView.View>
@@ -735,7 +786,33 @@
                                 </StackPanel>
                             </GroupBox>
 
-                            <!-- g) Standort-Logging -->
+                            <!-- g) Signalanalyse-Fenster -->
+                            <GroupBox Header="Signalanalyse-Fenster" Margin="0,0,0,16">
+                                <StackPanel Margin="10">
+                                    <TextBlock FontStyle="Italic" Foreground="Gray" TextWrapping="Wrap"
+                                               FontSize="11" Margin="0,0,0,8"
+                                               Text="Zeitfenster für die SNR-Trendberechnung (Ampel in Telemetrie-Fenster und Node-Liste)."/>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="180"/>
+                                            <ColumnDefinition Width="70"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="28"/>
+                                            <RowDefinition Height="28"/>
+                                        </Grid.RowDefinitions>
+                                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Wetter-Fenster (Stunden):" VerticalAlignment="Center" FontSize="11"/>
+                                        <TextBox  Grid.Row="0" Grid.Column="1" x:Name="WeatherHoursBox" Margin="0,2,8,2" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Row="0" Grid.Column="2" Text="Std. (kurzfristig)" FontSize="11" Opacity="0.6" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Antennen-Fenster (Tage):" VerticalAlignment="Center" FontSize="11"/>
+                                        <TextBox  Grid.Row="1" Grid.Column="1" x:Name="AntennaDaysBox" Margin="0,2,8,2" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Row="1" Grid.Column="2" Text="Tage (langfristig)" FontSize="11" Opacity="0.6" VerticalAlignment="Center"/>
+                                    </Grid>
+                                </StackPanel>
+                            </GroupBox>
+
+                            <!-- h) Standort-Logging -->
                             <GroupBox Header="{DynamicResource StrLocationLoggingGroup}" Margin="0,0,0,16">
                                 <StackPanel Margin="10">
                                     <CheckBox x:Name="EnableLocationLoggingCheckBox"
@@ -1038,7 +1115,7 @@
         </TabControl>
 
         <!-- Status Bar -->
-        <Border Grid.Row="3" Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}" Padding="10,5">
+        <Border Grid.Row="4" Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}" Padding="10,5">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>

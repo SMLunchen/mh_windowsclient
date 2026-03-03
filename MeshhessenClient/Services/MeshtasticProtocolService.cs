@@ -884,6 +884,11 @@ public class MeshtasticProtocolService
                 HandleTextMessage(packet, data);
                 break;
 
+            case 5: // ROUTING_APP — ACK response
+                if (data.RequestId != 0)
+                    _db?.MarkAckReceived(data.RequestId);
+                break;
+
             case 4: // NODEINFO_APP
                 HandleNodeInfoPacket(packet, data);
                 break;
@@ -1196,6 +1201,7 @@ public class MeshtasticProtocolService
                 ShortName = user.ShortName ?? "",
                 LongName = user.LongName ?? "",
                 Snr = packet.RxSnr != 0f ? packet.RxSnr.ToString("F1") : "-",
+                SnrValue = packet.RxSnr != 0f ? packet.RxSnr : null,
                 Rssi = packet.RxRssi != 0 ? packet.RxRssi.ToString() : "-",
                 LastSeen = DateTime.Now.ToString("HH:mm:ss"),
                 HardwareModel = user.HwModel != HardwareModel.Unset ? user.HwModel.ToString() : "",
@@ -1267,7 +1273,7 @@ public class MeshtasticProtocolService
                     }
                     nodeInfo.LastSeen = DateTime.Now.ToString("HH:mm:ss");
                     if (packet.RxRssi != 0) nodeInfo.Rssi = packet.RxRssi.ToString();
-                    if (packet.RxSnr != 0f) nodeInfo.Snr = packet.RxSnr.ToString("F1");
+                    if (packet.RxSnr != 0f) { nodeInfo.Snr = packet.RxSnr.ToString("F1"); nodeInfo.SnrValue = packet.RxSnr; }
                     nodeToFire = nodeInfo;
                     shouldFireEvent = !_isInitializing;
                 }
@@ -1335,10 +1341,13 @@ public class MeshtasticProtocolService
                 {
                     nodeInfo.LastSeen = DateTime.Now.ToString("HH:mm:ss");
                     if (packet.RxRssi != 0) nodeInfo.Rssi = packet.RxRssi.ToString();
-                    if (packet.RxSnr != 0f) nodeInfo.Snr = packet.RxSnr.ToString("F1");
+                    if (packet.RxSnr != 0f) { nodeInfo.Snr = packet.RxSnr.ToString("F1"); nodeInfo.SnrValue = packet.RxSnr; }
                     // Live-update battery from telemetry payload
                     if (batteryPercent > 0)
+                    {
                         nodeInfo.Battery = $"{batteryPercent:F0}%";
+                        nodeInfo.BatteryValue = batteryPercent;
+                    }
                     nodeToFire = nodeInfo;
                     shouldFireEvent = !_isInitializing;
                 }
