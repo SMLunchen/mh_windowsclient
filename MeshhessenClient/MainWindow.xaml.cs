@@ -197,6 +197,8 @@ public partial class MainWindow : Window
             _db.RunRetentionCleanup(_currentSettings.TelemetryRetentionDays);
             _protocolService.SetDatabase(_db);
             Services.Logger.WriteLine($"TelemetryDB initialized: {dbPath}");
+            // Populate global status LEDs from DB history immediately on startup (no connection required)
+            Task.Run(RefreshSignalAnalysis);
         }
         catch (Exception ex)
         {
@@ -2301,12 +2303,12 @@ public partial class MainWindow : Window
             case ConnectionStatus.Ready:
                 StatusIndicator.Fill = new SolidColorBrush(Colors.LimeGreen);
                 StatusText.Text = Loc("StrConnected");
-                // Start signal analysis background timer (60s initial delay, then every 10 min)
+                // Start signal analysis background timer (5s initial delay after connect, then every 10 min)
                 _analysisTimer?.Dispose();
                 _analysisTimer = new System.Threading.Timer(
                     _ => RefreshSignalAnalysis(),
                     null,
-                    TimeSpan.FromSeconds(60),
+                    TimeSpan.FromSeconds(5),
                     TimeSpan.FromMinutes(10));
                 break;
             case ConnectionStatus.Disconnecting:
@@ -3907,9 +3909,21 @@ public partial class MainWindow : Window
             var analysis = _db.GetSignalAnalysis(0, shortH, longD, nodeNames);
             // Global mesh health
             var health = _db.GetMeshHealthScore(longD);
+            // Last known SNR / battery per node from DB (pre-populates LEDs even before live packets arrive)
+            var dbSnr     = _db.GetLastSnrPerNode(longD);
+            var dbBattery = _db.GetLastBatteryPerNode(longD);
 
             Dispatcher.Invoke(() =>
             {
+                // Restore SnrValue / BatteryValue from DB for nodes that haven't received live data yet
+                foreach (var node in _allNodes)
+                {
+                    if (node.SnrValue == null && dbSnr.TryGetValue(node.NodeId, out var snr))
+                        node.SnrValue = snr;
+                    if (node.BatteryValue == null && dbBattery.TryGetValue(node.NodeId, out var bat))
+                        node.BatteryValue = bat;
+                }
+
                 // Global 4-LED signal status strip
                 LedFill(GlobalWeatherLed, analysis.WeatherLed,
                     $"Wetter-Effekt: {analysis.DecliningNeighbors} von {analysis.TotalNeighbors} Nodes " +

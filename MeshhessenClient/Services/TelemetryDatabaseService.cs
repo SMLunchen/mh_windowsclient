@@ -1045,6 +1045,54 @@ LIMIT 50";
         };
     }
 
+    /// <summary>
+    /// Returns the most recent rx_snr per node within the given day window.
+    /// Used to pre-populate SignalQualityColor on startup from DB history.
+    /// </summary>
+    public Dictionary<uint, float> GetLastSnrPerNode(int days)
+    {
+        long since = Since(days);
+        using var con = Open();
+        using var cmd = con.CreateCommand();
+        cmd.CommandText = @"
+SELECT node_id, rx_snr FROM packet_rx
+WHERE timestamp = (
+    SELECT MAX(timestamp) FROM packet_rx p2
+    WHERE p2.node_id = packet_rx.node_id AND p2.timestamp >= $s AND p2.rx_snr IS NOT NULL
+)
+AND timestamp >= $s AND rx_snr IS NOT NULL";
+        cmd.Parameters.AddWithValue("$s", since);
+        var result = new Dictionary<uint, float>();
+        using var r = cmd.ExecuteReader();
+        while (r.Read())
+            result[(uint)r.GetInt64(0)] = (float)r.GetDouble(1);
+        return result;
+    }
+
+    /// <summary>
+    /// Returns the most recent battery_percent per node within the given day window.
+    /// Used to pre-populate BatteryStatusColor on startup from DB history.
+    /// </summary>
+    public Dictionary<uint, float> GetLastBatteryPerNode(int days)
+    {
+        long since = Since(days);
+        using var con = Open();
+        using var cmd = con.CreateCommand();
+        cmd.CommandText = @"
+SELECT node_id, battery_percent FROM device_telemetry
+WHERE timestamp = (
+    SELECT MAX(timestamp) FROM device_telemetry d2
+    WHERE d2.node_id = device_telemetry.node_id AND d2.timestamp >= $s AND d2.battery_percent IS NOT NULL
+)
+AND timestamp >= $s AND battery_percent IS NOT NULL";
+        cmd.Parameters.AddWithValue("$s", since);
+        var result = new Dictionary<uint, float>();
+        using var r = cmd.ExecuteReader();
+        while (r.Read())
+            result[(uint)r.GetInt64(0)] = (float)r.GetDouble(1);
+        return result;
+    }
+
     // ── Utilities ─────────────────────────────────────────────────────────────
 
     private SqliteConnection Open()
