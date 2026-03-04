@@ -4094,16 +4094,12 @@ public partial class MainWindow : Window
 
         foreach (var emoji in quickEmojis)
         {
-            // Use explicit TextBlock so WPF .NET 8's DirectWrite path renders color emoji
-            var emojiBlock = new TextBlock
+            var emojiBlock = new Emoji.Wpf.TextBlock
             {
                 Text = emoji,
-                FontFamily = new System.Windows.Media.FontFamily("Segoe UI Emoji"),
                 FontSize = 24,
-                TextAlignment = TextAlignment.Center,
                 VerticalAlignment = VerticalAlignment.Center,
             };
-            System.Windows.Media.TextOptions.SetTextRenderingMode(emojiBlock, System.Windows.Media.TextRenderingMode.Auto);
             var btn = new Button
             {
                 Content = emojiBlock,

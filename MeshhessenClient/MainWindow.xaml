@@ -6,6 +6,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:converters="clr-namespace:MeshhessenClient.Converters"
+        xmlns:emoji="clr-namespace:Emoji.Wpf;assembly=Emoji.Wpf"
         mc:Ignorable="d"
         ui:WindowHelper.UseModernWindowStyle="True"
         Icon="pack://application:,,,/Resources/app.ico"
@@ -338,9 +339,8 @@
                                 <GridViewColumn Header="💬" Width="100">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate>
-                                            <TextBlock Text="{Binding ReactionsDisplay}" FontSize="14"
-                                                       FontFamily="Segoe UI Emoji"
-                                                       ToolTip="{Binding ReactionsDisplay}"/>
+                                            <emoji:TextBlock Text="{Binding ReactionsDisplay}" FontSize="14"
+                                                            ToolTip="{Binding ReactionsDisplay}"/>
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>

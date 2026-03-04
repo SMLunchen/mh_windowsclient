@@ -50,6 +50,9 @@
     <!-- Offline Map -->
     <PackageReference Include="Mapsui" Version="4.1.7" />
     <PackageReference Include="Mapsui.Wpf" Version="4.1.7" />
+
+    <!-- Color Emoji rendering (WPF does not natively support COLR color fonts) -->
+    <PackageReference Include="Emoji.Wpf" Version="0.3.3" />
   </ItemGroup>
 
   <ItemGroup>
