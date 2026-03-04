@@ -10,7 +10,7 @@ namespace MeshhessenClient;
 
 public partial class DirectMessagesWindow : Window
 {
-    private readonly MeshtasticProtocolService _protocolService;
+    private MeshtasticProtocolService _protocolService;
     private readonly ObservableCollection<DirectMessageConversation> _conversations = new();
     private readonly Dictionary<uint, TabItem> _tabByNodeId = new();
     private uint _myNodeId;
@@ -23,6 +23,11 @@ public partial class DirectMessagesWindow : Window
         InitializeComponent();
         _protocolService = protocolService;
         _myNodeId = myNodeId;
+    }
+
+    public void UpdateProtocolService(MeshtasticProtocolService protocolService)
+    {
+        _protocolService = protocolService;
     }
 
     public void AddOrUpdateMessage(MessageItem message)

@@ -806,6 +806,10 @@ public class MeshtasticProtocolService
         }
         else if (packet.PayloadVariantCase == MeshPacket.PayloadVariantOneofCase.Encrypted)
         {
+            // Echo of own sent packet — skip silently
+            if (_myNodeId != 0 && packet.From == _myNodeId)
+                return;
+
             // --- PKI fallback: try client-side decryption ---
             if (packet.PkiEncrypted && _pkiDecrypt.HasPrivateKey)
             {

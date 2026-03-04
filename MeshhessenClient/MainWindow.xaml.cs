@@ -1221,6 +1221,7 @@ public partial class MainWindow : Window
                         await _protocolService.InitializeAsync();
                         Dispatcher.BeginInvoke(() =>
                         {
+                            if (!(_connectionService?.IsConnected == true)) return;
                             UpdateStatusBar(string.Format(Loc("StrConnectedReady"), displayName));
                             SetConnectionStatus(ConnectionStatus.Ready);
                             NodeConfigButton.IsEnabled = true;
@@ -1787,10 +1788,12 @@ public partial class MainWindow : Window
 
                 Dispatcher.BeginInvoke(() =>
                 {
+                    if (!(_connectionService?.IsConnected == true)) return;
                     ConnectButton.Content = Loc("StrDisconnect");
                     ConnectButton.IsEnabled = true;
                     UpdateStatusBar(Loc("StrConnectedInitSimple"));
                     SetConnectionStatus(ConnectionStatus.Initializing);
+                    _dmWindow?.UpdateProtocolService(_protocolService);
                 });
 
                 _ = Task.Run(async () =>
@@ -1800,6 +1803,7 @@ public partial class MainWindow : Window
                         await _protocolService.InitializeAsync();
                         Dispatcher.BeginInvoke(() =>
                         {
+                            if (!(_connectionService?.IsConnected == true)) return;
                             UpdateStatusBar(Loc("StrConnectedReadySimple"));
                             SetConnectionStatus(ConnectionStatus.Ready);
                             NodeConfigButton.IsEnabled = true;
