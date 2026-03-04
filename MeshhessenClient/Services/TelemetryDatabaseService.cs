@@ -165,11 +165,26 @@ VALUES ($n, $ts, $t, $h, $p, $q)";
 
     public void InsertTracerouteHops(TracerouteResult result)
     {
-        if (result.RouteBack.Count == 0 && result.RouteForward.Count == 0) return;
         lock (_lock)
         {
             using var con = Open();
             long ts = ToUnix(result.ReceivedAt);
+
+            if (result.RouteBack.Count == 0 && result.RouteForward.Count == 0)
+            {
+                // Direct link (no relay hops) — store a sentinel row so route-change tracking works.
+                // hop_index = -1 marks a direct link; node_id = destination.
+                using var cmd = con.CreateCommand();
+                cmd.CommandText = @"
+INSERT INTO traceroute_hops (request_id, source_node_id, dest_node_id, timestamp, hop_index, node_id, snr_towards, snr_back)
+VALUES ($rid, $src, $dst, $ts, -1, $dst, NULL, NULL)";
+                cmd.Parameters.AddWithValue("$rid", (long)result.RequestId);
+                cmd.Parameters.AddWithValue("$src", (long)result.SourceNodeId);
+                cmd.Parameters.AddWithValue("$dst", (long)result.DestinationNodeId);
+                cmd.Parameters.AddWithValue("$ts",  ts);
+                cmd.ExecuteNonQuery();
+                return;
+            }
 
             // Insert one row per hop in the return path (snr_back is the primary data)
             for (int i = 0; i < result.RouteBack.Count; i++)
@@ -553,6 +568,43 @@ LIMIT 50";
     /// <summary>
     /// Computes short-term and long-term SNR trends for each node seen in packet_rx.
     /// nodeId=0 → all nodes, otherwise only neighbors of that node (node_id != nodeId).
+    /// <summary>
+    /// Returns the SNR trend for a single specific node as observed in packet_rx.
+    /// Returns null if fewer than 5 data points are available.
+    /// </summary>
+    public NeighborTrend? GetSingleNodeTrend(
+        uint targetNodeId, int shortHours, int longDays, Dictionary<uint, string> nodeNames)
+    {
+        long since      = Since(longDays);
+        long shortSince = ToUnix(DateTime.UtcNow.AddHours(-shortHours));
+
+        using var con = Open();
+        using var cmd = con.CreateCommand();
+        cmd.CommandText = "SELECT timestamp, rx_snr FROM packet_rx WHERE node_id=$n AND timestamp>=$s AND rx_snr IS NOT NULL ORDER BY timestamp";
+        cmd.Parameters.AddWithValue("$n", (long)targetNodeId);
+        cmd.Parameters.AddWithValue("$s", since);
+
+        var pts = new List<(long ts, float val)>();
+        using var r = cmd.ExecuteReader();
+        while (r.Read()) pts.Add((r.GetInt64(0), (float)r.GetDouble(1)));
+
+        if (pts.Count < 5) return null;
+
+        var shortPts   = pts.Where(p => p.ts >= shortSince).ToList();
+        float shortSlope = shortPts.Count >= 3 ? LinearRegressionSlope(shortPts) : 0f;
+        float longSlope  = LinearRegressionSlope(pts) * 24f;
+
+        nodeNames.TryGetValue(targetNodeId, out var name);
+        return new NeighborTrend
+        {
+            NeighborId   = targetNodeId,
+            NeighborName = name ?? $"!{targetNodeId:x8}",
+            ShortSlope   = shortSlope,
+            LongSlope    = longSlope,
+            PointCount   = pts.Count,
+        };
+    }
+
     /// </summary>
     public List<NeighborTrend> GetNeighborSnrTrends(
         uint myNodeId, int shortHours, int longDays, Dictionary<uint, string> nodeNames)
@@ -654,12 +706,19 @@ LIMIT 50";
                     ? sortedShort[sortedShort.Count / 2].ShortSlope
                     : (sortedShort[sortedShort.Count / 2 - 1].ShortSlope + sortedShort[sortedShort.Count / 2].ShortSlope) / 2f;
 
-                var problemNode = trends.FirstOrDefault(t => t.ShortSlope < -1.0f && t.ShortSlope < medianSlope - 0.8f);
+                var problemNodes = trends
+                    .Where(t => t.ShortSlope < -1.0f && t.ShortSlope < medianSlope - 0.8f)
+                    .OrderBy(t => t.ShortSlope)
+                    .ToList();
+                var problemNode = problemNodes.FirstOrDefault();
                 if (problemNode != null)
                 {
-                    result.NeighborLed          = LedState.Alert;
-                    result.ProblemNeighborId    = problemNode.NeighborId;
-                    result.ProblemNeighborName  = problemNode.NeighborName;
+                    result.ProblemNeighborId   = problemNode.NeighborId;
+                    result.ProblemNeighborName = problemNode.NeighborName;
+                    // Scale: Alert only when 2+ problem nodes OR >25% of all neighbors
+                    result.NeighborLed = problemNodes.Count >= 2 || problemNodes.Count >= trends.Count * 0.25
+                        ? LedState.Alert
+                        : LedState.Warning;
                 }
                 else
                 {
@@ -680,7 +739,19 @@ LIMIT 50";
 
         if (hopSamples == 0)
         {
-            result.PathLed = LedState.NoData;
+            // Check if any traceroute rows exist (e.g. direct links have no snr_back)
+            int traceRows = CountTracerouteRows(myNodeId, longDays);
+            if (traceRows == 0)
+            {
+                result.PathLed = LedState.NoData;
+            }
+            else
+            {
+                // Rows exist but no SNR data — use route-change-rate alone
+                result.PathLed = routeChangeRate > 2f   ? LedState.Alert
+                               : routeChangeRate > 0.5f ? LedState.Warning
+                               :                          LedState.Good;
+            }
         }
         else
         {
@@ -691,6 +762,30 @@ LIMIT 50";
         }
 
         return result;
+    }
+
+    /// <summary>
+    /// Returns the total number of traceroute rows (including direct-link sentinels) for a node.
+    /// Used to distinguish "no data" from "data but no SNR".
+    /// </summary>
+    private int CountTracerouteRows(uint myNodeId, int days)
+    {
+        long since = Since(days);
+        using var con = Open();
+        using var cmd = con.CreateCommand();
+        if (myNodeId == 0)
+        {
+            cmd.CommandText = "SELECT COUNT(*) FROM traceroute_hops WHERE timestamp>=$s";
+        }
+        else
+        {
+            cmd.CommandText = @"SELECT COUNT(*) FROM traceroute_hops
+                WHERE (source_node_id=$me OR dest_node_id=$me) AND timestamp>=$s";
+            cmd.Parameters.AddWithValue("$me", (long)myNodeId);
+        }
+        cmd.Parameters.AddWithValue("$s", since);
+        var val = cmd.ExecuteScalar();
+        return val != null && val != DBNull.Value ? (int)(long)val : 0;
     }
 
     /// <summary>
@@ -812,30 +907,74 @@ LIMIT 50";
     }
 
     /// <summary>
+    /// Computes day/night baseline reception rates and the current short-window rate.
+    /// Uses the NOAA solar algorithm (same as all other day/night splits in this service).
+    /// </summary>
+    /// <param name="days">Baseline window in days.</param>
+    /// <param name="currentWindowHours">How many hours back counts as "current" (1–2 recommended).</param>
+    public (float dayRxPerHour, float nightRxPerHour, float currentRxPerHour) GetReceptionRate(
+        int days, int currentWindowHours = 2)
+    {
+        long since        = Since(days);
+        long currentSince = ToUnix(DateTime.UtcNow.AddHours(-currentWindowHours));
+
+        // Load all packet timestamps in the baseline window
+        var allTimestamps = new List<long>();
+        using (var con = Open())
+        {
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "SELECT timestamp FROM packet_rx WHERE timestamp>=$s ORDER BY timestamp";
+            cmd.Parameters.AddWithValue("$s", since);
+            using var r = cmd.ExecuteReader();
+            while (r.Read()) allTimestamps.Add(r.GetInt64(0));
+        }
+
+        if (allTimestamps.Count == 0)
+            return (0f, 0f, 0f);
+
+        // Determine whether we are currently in daytime or nighttime
+        bool isCurrentlyDay = IsDay(ToUnix(DateTime.UtcNow));
+
+        // Count day/night packets in baseline (exclude current window)
+        int dayPkts   = allTimestamps.Count(ts => ts < currentSince &&  IsDay(ts));
+        int nightPkts = allTimestamps.Count(ts => ts < currentSince && !IsDay(ts));
+
+        // Current window: only count packets matching the current day/night period
+        // so we never compare night packets against a day baseline or vice versa
+        int currentPkts = allTimestamps.Count(ts => ts >= currentSince && IsDay(ts) == isCurrentlyDay);
+
+        // Count actual day/night hours in baseline window by sampling each hour
+        long endTs = ToUnix(DateTime.UtcNow.AddHours(-currentWindowHours)); // exclude current window from baseline
+        double dayHours = 0, nightHours = 0;
+        for (long h = since; h < endTs; h += 3600)
+        {
+            if (IsDay(h)) dayHours++;
+            else          nightHours++;
+        }
+
+        float dayRxPerHour   = dayHours   > 0 ? dayPkts   / (float)dayHours   : 0f;
+        float nightRxPerHour = nightHours > 0 ? nightPkts / (float)nightHours : 0f;
+        float currentRxPerHour = currentPkts / (float)Math.Max(1, currentWindowHours);
+
+        return (dayRxPerHour, nightRxPerHour, currentRxPerHour);
+    }
+
+    /// <summary>
     /// Computes a global mesh health score (0-100) across all nodes with telemetry data.
     /// </summary>
     public MeshHealthScore GetMeshHealthScore(int days)
     {
         long since = Since(days);
 
-        // 1. ACK timeout rate (global)
-        float ackTimeoutRate = 0f;
-        using (var con = Open())
-        {
-            using var cmd = con.CreateCommand();
-            cmd.CommandText = "SELECT SUM(want_ack), SUM(ack_received) FROM packet_rx WHERE timestamp>=$s";
-            cmd.Parameters.AddWithValue("$s", since);
-            using var r = cmd.ExecuteReader();
-            if (r.Read() && !r.IsDBNull(0))
-            {
-                long wantAck = r.GetInt64(0);
-                long ackRcv  = r.IsDBNull(1) ? 0 : r.GetInt64(1);
-                // Only use rate if at least one ACK has been confirmed via serial API.
-                // If ackRcv==0, firmware handles ACKs internally; treat as no data.
-                if (wantAck > 0 && ackRcv > 0)
-                    ackTimeoutRate = 1f - (float)ackRcv / wantAck;
-            }
-        }
+        // 1. Reception rate (day/night aware, replaces unreliable ACK rate)
+        //    ACK rate is only computed inside firmware and never forwarded via serial/TCP.
+        const int rxWindowHours = 2;
+        var (dayRxPerHour, nightRxPerHour, currentRxPerHour) = GetReceptionRate(days, rxWindowHours);
+        bool  isDay    = IsDay(ToUnix(DateTime.UtcNow));
+        float expected = isDay ? dayRxPerHour : nightRxPerHour;
+        // Linear: 0 current vs baseline = full penalty, at-baseline = no penalty
+        float rxScore   = expected > 0 ? Math.Min(1f, currentRxPerHour / expected) : 1f;
+        float rxPenalty = 1f - rxScore;
 
         // 2. Channel utilization (average across all nodes)
         float channelUtil = 0f;
@@ -871,10 +1010,10 @@ LIMIT 50";
 
         // Score: 100 = perfect
         float score = 100f
-            - 0.3f * avgPathCost              * 100f
+            - 0.3f * avgPathCost                        * 100f
             - 0.3f * Math.Min(1f, avgRouteChange / 10f) * 100f
-            - 0.2f * ackTimeoutRate           * 100f
-            - 0.2f * Math.Min(1f, channelUtil / 25f) * 100f;
+            - 0.2f * rxPenalty                          * 100f
+            - 0.2f * Math.Min(1f, channelUtil / 25f)    * 100f;
 
         score = Math.Clamp(score, 0f, 100f);
 
@@ -882,11 +1021,13 @@ LIMIT 50";
                   : score > 40f ? LedState.Warning
                   : LedState.Alert;
 
+        string dayNight = isDay ? "Tag" : "Nacht";
         var summary =
             $"Mesh Health Score: {score:0}%\n" +
             $"Pfad-Kosten (Ø): {avgPathCost:0.00}\n" +
             $"Route-Änderungen: {avgRouteChange:0.00}/h\n" +
-            $"ACK-Timeout-Rate: {ackTimeoutRate * 100:0.0}%\n" +
+            $"Empfangsrate ({dayNight}-Baseline): {expected:0.0} Pkts/h\n" +
+            $"Empfangsrate aktuell ({rxWindowHours}h): {currentRxPerHour:0.0} Pkts/h ({rxScore * 100:0}%)\n" +
             $"Kanalauslastung (Ø): {channelUtil:0.1}%";
 
         return new MeshHealthScore
@@ -895,7 +1036,10 @@ LIMIT 50";
             State              = state,
             AvgPathCost        = avgPathCost,
             RouteChangeRate    = avgRouteChange,
-            AckTimeoutRate     = ackTimeoutRate,
+            DayRxPerHour       = dayRxPerHour,
+            NightRxPerHour     = nightRxPerHour,
+            CurrentRxPerHour   = currentRxPerHour,
+            RxScore            = rxScore,
             ChannelUtilization = channelUtil,
             Summary            = summary,
         };

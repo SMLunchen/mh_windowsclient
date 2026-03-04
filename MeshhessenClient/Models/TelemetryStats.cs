@@ -137,7 +137,14 @@ public class MeshHealthScore
     public LedState State              { get; set; }
     public float    AvgPathCost        { get; set; }
     public float    RouteChangeRate    { get; set; }
-    public float    AckTimeoutRate     { get; set; }
+    /// <summary>Historical baseline: average packets/hour during daytime (NOAA).</summary>
+    public float    DayRxPerHour       { get; set; }
+    /// <summary>Historical baseline: average packets/hour during nighttime (NOAA).</summary>
+    public float    NightRxPerHour     { get; set; }
+    /// <summary>Actual packets/hour in the current short window (1–2 h).</summary>
+    public float    CurrentRxPerHour   { get; set; }
+    /// <summary>currentRx / expectedRx (day or night baseline), 0–1. 1 = on par with baseline.</summary>
+    public float    RxScore            { get; set; }
     public float    ChannelUtilization { get; set; }
     public string   Summary            { get; set; } = string.Empty;
 }

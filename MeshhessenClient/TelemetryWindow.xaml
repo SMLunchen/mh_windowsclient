@@ -75,7 +75,7 @@
                 <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Horizontal" Margin="0,0,14,0">
                     <Ellipse x:Name="NodeAckLed" Width="14" Height="14" Fill="#757575"
                              Margin="0,0,5,0" VerticalAlignment="Center"/>
-                    <TextBlock Text="ACK" FontSize="10" Opacity="0.7" VerticalAlignment="Center"/>
+                    <TextBlock Text="Trend" FontSize="10" Opacity="0.7" VerticalAlignment="Center"/>
                 </StackPanel>
                 <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal">
                     <Ellipse x:Name="NodeChanLed" Width="14" Height="14" Fill="#757575"
@@ -113,6 +113,8 @@
                                 <RowDefinition Height="28"/>
                                 <RowDefinition Height="28"/>
                                 <RowDefinition Height="28"/>
+                                <RowDefinition Height="28"/>
+                                <RowDefinition Height="28"/>
                             </Grid.RowDefinitions>
                             <TextBlock Grid.Row="0" Grid.Column="1" Text="Tag" Style="{StaticResource StatLabel}" HorizontalAlignment="Center"/>
                             <TextBlock Grid.Row="0" Grid.Column="2" Text="Nacht" Style="{StaticResource StatLabel}" HorizontalAlignment="Center"/>
@@ -126,6 +128,14 @@
                                        ToolTip="Received Signal Strength Indicator in dBm.&#xa;Misst die absolute Signalstärke am Empfänger.&#xa;Typisch: &gt;-100 dBm gut, -100…-115 dBm grenzwertig, &lt;-115 dBm schlecht."/>
                             <TextBlock Grid.Row="2" Grid.Column="1" x:Name="RssiDayMedian" Style="{StaticResource StatValue}" HorizontalAlignment="Center"/>
                             <TextBlock Grid.Row="2" Grid.Column="2" x:Name="RssiNightMedian" Style="{StaticResource StatValue}" HorizontalAlignment="Center"/>
+
+                            <TextBlock Grid.Row="3" Grid.Column="0" Text="SNR Δ Nacht−Tag" Style="{StaticResource StatLabel}"
+                                       ToolTip="Differenz des SNR-Medians (Nacht − Tag).&#xa;Positiv = besserer Empfang nachts (atmosphärische Effekte).&#xa;Negativ = besserer Empfang tagsüber."/>
+                            <TextBlock Grid.Row="3" Grid.Column="1" x:Name="SnrDelta" Style="{StaticResource StatValue}" HorizontalAlignment="Center" Grid.ColumnSpan="2"/>
+
+                            <TextBlock Grid.Row="4" Grid.Column="0" Text="RSSI Δ Nacht−Tag" Style="{StaticResource StatLabel}"
+                                       ToolTip="Differenz des RSSI-Medians (Nacht − Tag) in dBm.&#xa;Positiv = stärkeres Signal nachts.&#xa;Negativ = stärkeres Signal tagsüber."/>
+                            <TextBlock Grid.Row="4" Grid.Column="1" x:Name="RssiDelta" Style="{StaticResource StatValue}" HorizontalAlignment="Center" Grid.ColumnSpan="2"/>
                         </Grid>
 
                         <TextBlock Style="{StaticResource SectionHeader}" Text="Gesamtbereich"/>
@@ -345,10 +355,13 @@
                               GridLinesVisibility="Horizontal"
                               HeadersVisibility="Column">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="Node" Binding="{Binding NeighborName}" Width="160"/>
+                            <DataGridTextColumn Header="Node" Binding="{Binding NeighborName}" Width="150"/>
                             <DataGridTextColumn Header="Median SNR" Binding="{Binding MedianSnrDisplay}" Width="90"/>
                             <DataGridTextColumn Header="Median RSSI" Binding="{Binding MedianRssiDisplay}" Width="95"/>
-                            <DataGridTextColumn Header="Pkts/h" Binding="{Binding PacketsPerHourDisplay}" Width="70"/>
+                            <DataGridTextColumn Header="Pkts/h" Binding="{Binding PacketsPerHourDisplay}" Width="60"/>
+                            <DataGridTextColumn Header="Trend" Binding="{Binding TrendArrow}"
+                                                Width="55"
+                                                ElementStyle="{StaticResource StatValue}"/>
                             <DataGridTextColumn Header="Letzte Sichtung" Binding="{Binding LastSeenDisplay}" Width="*"/>
                         </DataGrid.Columns>
                     </DataGrid>

@@ -95,16 +95,17 @@ public partial class TelemetryWindow : Window
                 $"Batterie {battPeriod}: {Fmt(battVal, "%")}\n" +
                 "Grün ≥50% | Gelb 20–50% | Rot <20% | Grau = keine Telemetrie-Daten");
 
-            var ackLed = routing.AckSuccessRate switch
-            {
-                null    => LedState.NoData,
-                >= 0.9f => LedState.Good,
-                >= 0.6f => LedState.Warning,
-                _       => LedState.Alert
-            };
-            SetLed(NodeAckLed, ackLed,
-                $"ACK-Erfolgsrate: {(routing.AckSuccessRate.HasValue ? $"{routing.AckSuccessRate * 100:F0}%" : "–")}\n" +
-                "Grün ≥90% | Gelb 60–90% | Rot <60% | Grau = keine ACK-Anforderungen");
+            var nodeTrend = _db.GetSingleNodeTrend(_node.NodeId, _shortHours, _longDays, _nodeNames);
+            var trendLed  = nodeTrend == null || nodeTrend.PointCount < 5 ? LedState.NoData
+                          : nodeTrend.ShortSlope >  0.3f                  ? LedState.Good
+                          : nodeTrend.ShortSlope > -0.5f                  ? LedState.Warning
+                          :                                                  LedState.Alert;
+            string trendTip = nodeTrend == null || nodeTrend.PointCount < 5
+                ? $"SNR-Trend: zu wenige Datenpunkte (min. 5 benötigt)."
+                : $"SNR-Trend (kurzfristig, {_shortHours}h): {nodeTrend.ShortSlope:+0.00;-0.00} dB/h\n" +
+                  $"SNR-Trend (langfristig, {_longDays}d): {nodeTrend.LongSlope:+0.00;-0.00} dB/Tag\n" +
+                  "Grün = stabil/steigend | Gelb = leicht fallend | Rot = stark fallend";
+            SetLed(NodeAckLed, trendLed, trendTip);
 
             var chanLed = airtime.ChannelUtilMax switch
             {
@@ -122,18 +123,32 @@ public partial class TelemetryWindow : Window
             SnrNightMedian.Text  = Fmt(signal.NightSnrMedian, " dB");
             RssiDayMedian.Text   = Fmt(signal.DayRssiMedian,  " dBm");
             RssiNightMedian.Text = Fmt(signal.NightRssiMedian," dBm");
-            SnrMinMax.Text       = $"{Fmt(signal.SnrMin, " dB")} / {Fmt(signal.SnrMax, " dB")}";
+            SnrMinMax.Inlines.Clear();
+            SnrMinMax.Inlines.Add(new System.Windows.Documents.Run(Fmt(signal.SnrMin, " dB"))  { Foreground = SnrBrush(signal.SnrMin)  });
+            SnrMinMax.Inlines.Add(new System.Windows.Documents.Run(" / ")                       { Foreground = DefaultBrush });
+            SnrMinMax.Inlines.Add(new System.Windows.Documents.Run(Fmt(signal.SnrMax, " dB"))  { Foreground = SnrBrush(signal.SnrMax)  });
             SnrVariance.Text     = signal.SnrVariance.HasValue ? $"{signal.SnrVariance:F2}" : "–";
-            RssiMinMax.Text      = $"{Fmt(signal.RssiMin, " dBm")} / {Fmt(signal.RssiMax, " dBm")}";
+            SnrVariance.Foreground = VarianceBrush(signal.SnrVariance);
+            RssiMinMax.Inlines.Clear();
+            RssiMinMax.Inlines.Add(new System.Windows.Documents.Run(Fmt(signal.RssiMin, " dBm")) { Foreground = RssiBrush(signal.RssiMin) });
+            RssiMinMax.Inlines.Add(new System.Windows.Documents.Run(" / ")                        { Foreground = DefaultBrush });
+            RssiMinMax.Inlines.Add(new System.Windows.Documents.Run(Fmt(signal.RssiMax, " dBm")) { Foreground = RssiBrush(signal.RssiMax) });
             TotalPackets.Text    = signal.TotalPackets.ToString();
             // Color coding for signal values
             SnrDayMedian.Foreground    = SnrBrush(signal.DaySnrMedian);
             SnrNightMedian.Foreground  = SnrBrush(signal.NightSnrMedian);
             RssiDayMedian.Foreground   = RssiBrush(signal.DayRssiMedian);
             RssiNightMedian.Foreground = RssiBrush(signal.NightRssiMedian);
-            // Gesamtbereich: color by worst (min) value in the range
-            SnrMinMax.Foreground  = SnrBrush(signal.SnrMin);
-            RssiMinMax.Foreground = RssiBrush(signal.RssiMin);
+            // Gesamtbereich: Min/Max je individuell eingefärbt (via Inlines, s.o.)
+            // Delta Nacht − Tag
+            float? snrDelta  = signal.NightSnrMedian.HasValue  && signal.DaySnrMedian.HasValue
+                ? signal.NightSnrMedian  - signal.DaySnrMedian  : null;
+            float? rssiDelta = signal.NightRssiMedian.HasValue && signal.DayRssiMedian.HasValue
+                ? signal.NightRssiMedian - signal.DayRssiMedian : null;
+            SnrDelta.Text            = snrDelta.HasValue  ? $"{snrDelta:+0.0;-0.0;0} dB"  : "–";
+            RssiDelta.Text           = rssiDelta.HasValue ? $"{rssiDelta:+0.0;-0.0;0} dBm" : "–";
+            SnrDelta.Foreground      = DeltaBrush(snrDelta);
+            RssiDelta.Foreground     = DeltaBrush(rssiDelta);
 
             // ── Power ──
             BatDayAvg.Text    = Fmt(power.DayBatteryAvg,    "%");
@@ -184,7 +199,11 @@ public partial class TelemetryWindow : Window
             TracerouteCountText.Text  = hopSamples > 0 ? hopSamples.ToString() : "–";
 
             // ── Neighbors ──
-            NeighborGrid.ItemsSource = neighbors.Select(n => new NeighborRow(n)).ToList();
+            var trends = _db.GetNeighborSnrTrends(_node.NodeId, _shortHours, _longDays, _nodeNames)
+                            .ToDictionary(t => t.NeighborId);
+            NeighborGrid.ItemsSource = neighbors
+                .Select(n => new NeighborRow(n, trends.GetValueOrDefault(n.NeighborId)))
+                .ToList();
         }
         catch (Exception ex)
         {
@@ -249,6 +268,14 @@ public partial class TelemetryWindow : Window
     // ChannelUtil: 0% = green, 50%+ = red (inverted)
     private static SolidColorBrush ChanBrush(float? v)
         => v == null ? DefaultBrush : GradientBrush(1f - v.Value / 50f);
+    // Delta: positive (better at night) = green, negative = amber — neither is strictly "bad"
+    private static SolidColorBrush DeltaBrush(float? v)
+        => v == null ? DefaultBrush
+         : v >= 0   ? new SolidColorBrush(Color.FromRgb(0x4C, 0xAF, 0x50))
+                    : new SolidColorBrush(Color.FromRgb(0xFF, 0xC1, 0x07));
+    // Variance: low (stable) = green, high (unstable) = red; scale 0–30 dB²
+    private static SolidColorBrush VarianceBrush(float? v)
+        => v == null ? DefaultBrush : GradientBrush(1f - Math.Min(1f, v.Value / 30f));
 
     private static string Fmt(float? value, string unit, string fmt = "F1")
         => value.HasValue ? $"{value.Value.ToString(fmt)}{unit}" : "–";
@@ -264,13 +291,14 @@ public partial class TelemetryWindow : Window
     // ── View model for DataGrid ────────────────────────────────────────────
     private class NeighborRow
     {
-        public string NeighborName      { get; }
-        public string MedianSnrDisplay  { get; }
-        public string MedianRssiDisplay { get; }
+        public string NeighborName          { get; }
+        public string MedianSnrDisplay      { get; }
+        public string MedianRssiDisplay     { get; }
         public string PacketsPerHourDisplay { get; }
-        public string LastSeenDisplay   { get; }
+        public string TrendArrow            { get; }
+        public string LastSeenDisplay       { get; }
 
-        public NeighborRow(NeighborStats s)
+        public NeighborRow(NeighborStats s, NeighborTrend? trend)
         {
             NeighborName          = s.NeighborName;
             MedianSnrDisplay      = s.MedianSnr.HasValue  ? $"{s.MedianSnr:F1} dB"  : "–";
@@ -278,6 +306,19 @@ public partial class TelemetryWindow : Window
             PacketsPerHourDisplay = $"{s.PacketsPerHour:F1}";
             LastSeenDisplay       = s.LastSeen > DateTime.MinValue
                 ? s.LastSeen.ToString("dd.MM. HH:mm") : "–";
+            if (trend == null || trend.PointCount < 5)
+            {
+                TrendArrow = "–";
+            }
+            else
+            {
+                string arrow = trend.ShortSlope >  1.0f ? "↑"
+                             : trend.ShortSlope >  0.3f ? "↗"
+                             : trend.ShortSlope > -0.3f ? "→"
+                             : trend.ShortSlope > -1.0f ? "↘"
+                             :                            "↓";
+                TrendArrow = $"{arrow} {trend.ShortSlope:+0.0;-0.0}/h";
+            }
         }
     }
 }

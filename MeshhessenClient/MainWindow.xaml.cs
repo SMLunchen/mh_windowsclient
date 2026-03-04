@@ -3930,6 +3930,53 @@ public partial class MainWindow : Window
                 }
                 NodesListView.Items.Refresh();
 
+                // ── Individuelle Trend-Pfeile pro Metrik ───────────────────────────────
+                SetTopArrow(GlobalWeatherArrow,
+                    up:   analysis.TotalNeighbors > 0 && analysis.DecliningNeighbors == 0,
+                    down: analysis.TotalNeighbors > 0 && analysis.DecliningNeighbors >= Math.Max(1, analysis.TotalNeighbors * 0.25),
+                    noData: analysis.TotalNeighbors == 0,
+                    upTip:   "↑ Kein Wettereffekt erkennbar.\nAlle Nachbarn zeigen stabile Kurzzeit-SNR. Günstige atmosphärische Bedingungen für LoRa.",
+                    flatTip: $"→ Vereinzelte SNR-Schwankungen ({analysis.DecliningNeighbors}/{analysis.TotalNeighbors} Nodes leicht fallend).\nNoch kein klarer Wettereffekt, aber Entwicklung beobachten.",
+                    downTip: $"↓ Wettereffekt wahrscheinlich: {analysis.DecliningNeighbors} von {analysis.TotalNeighbors} Nodes zeigen gleichzeitig fallende Kurzzeit-SNR.\nLoRa reagiert empfindlich auf Luftfeuchtigkeit, Regen und Temperaturinversionen – alle Verbindungen sind betroffen.");
+
+                float snrSlope = analysis.AvgLongSlope; // dB/day
+                SetTopArrow(GlobalAntennaArrow,
+                    up:   snrSlope >  0.2f,
+                    down: snrSlope < -0.2f,
+                    noData: analysis.TotalNeighbors == 0,
+                    upTip:   $"↑ SNR-Langzeittrend: {snrSlope:+0.00} dB/Tag (Ø {analysis.TotalNeighbors} Nachbarn).\nDie Empfangsqualität verbessert sich langfristig – eigene Antenne und Position sind gut.",
+                    flatTip: $"→ SNR-Langzeittrend: {snrSlope:+0.00;-0.00} dB/Tag (Ø {analysis.TotalNeighbors} Nachbarn).\nStabile Verbindungsqualität, kein signifikanter Trend erkennbar.",
+                    downTip: $"↓ SNR-Langzeittrend: {snrSlope:+0.00;-0.00} dB/Tag (Ø {analysis.TotalNeighbors} Nachbarn).\nDie Empfangsqualität sinkt langfristig über ALLE Nachbarn gleichzeitig – mögliche Ursache: eigene Antenne beschädigt/verdreht, neuer Störsender oder geänderte Node-Position.");
+
+                bool hasNeighborProblem = analysis.ProblemNeighborId.HasValue;
+                SetTopArrow(GlobalNeighborArrow,
+                    up:   !hasNeighborProblem && analysis.TotalNeighbors > 0,
+                    down: hasNeighborProblem,
+                    noData: analysis.TotalNeighbors == 0,
+                    upTip:   "↑ Alle Nachbar-Nodes zeigen ähnliche SNR-Werte.\nKein einzelner Ausreißer erkannt – das Mesh ist homogen verbunden.",
+                    flatTip: "→ Leichte Unterschiede zwischen Nachbarn, aber kein klares Problem-Node.",
+                    downTip: $"↓ Node '{analysis.ProblemNeighborName}' zeigt deutlich schlechtere Kurzzeit-SNR als alle anderen Nachbarn.\nMögliche Ursache: Problem bei diesem Node (Antenne, Einbauort, Hardware) – nicht das gesamte Mesh ist betroffen.");
+
+                SetTopArrow(GlobalPathArrow,
+                    up:   analysis.HopCost < 0.2f && analysis.RouteChangeRate < 1f,
+                    down: analysis.HopCost > 0.5f || analysis.RouteChangeRate > 3f,
+                    noData: analysis.HopCost == 0f && analysis.RouteChangeRate == 0f,
+                    upTip:   $"↑ Gute Pfadqualität: Hop-Kosten {analysis.HopCost:0.00} (niedrig = gut), Route-Änderungen {analysis.RouteChangeRate:0.00}/h.\nStabile Routing-Pfade mit guter SNR-Qualität auf allen Hops.",
+                    flatTip: $"→ Mittlere Pfadqualität: Hop-Kosten {analysis.HopCost:0.00}, Route-Änderungen {analysis.RouteChangeRate:0.00}/h.\nEinige Pfade sind suboptimal oder wechseln gelegentlich.",
+                    downTip: $"↓ Schlechte Pfadqualität: Hop-Kosten {analysis.HopCost:0.00} (hoch), Route-Änderungen {analysis.RouteChangeRate:0.00}/h.\nPfade werden häufig gewechselt oder haben schlechte SNR auf den Hops – Mesh-Topologie ist instabil.");
+
+                // Mesh Health: Empfangsrate-Pfeil
+                bool   rxIsDay = Services.SunriseSunsetService.IsDay(DateTime.UtcNow, _currentSettings.MyLatitude, _currentSettings.MyLongitude);
+                float  rxBase  = rxIsDay ? health.DayRxPerHour : health.NightRxPerHour;
+                string rxPeriod = rxIsDay ? "Tag" : "Nacht";
+                SetTopArrow(GlobalRxTrendArrow,
+                    up:   health.RxScore >= 0.8f,
+                    down: health.RxScore <  0.5f,
+                    noData: rxBase == 0f,
+                    upTip:   $"↑ Empfangsrate normal: {health.CurrentRxPerHour:0.0} Pkts/h ({health.RxScore*100:0}% der {rxPeriod}-Baseline {rxBase:0.0} Pkts/h).\nDas Mesh sendet so viel wie erwartet – gute Erreichbarkeit.",
+                    flatTip: $"→ Empfangsrate leicht unter Erwartung: {health.CurrentRxPerHour:0.0} Pkts/h ({health.RxScore*100:0}% der {rxPeriod}-Baseline {rxBase:0.0} Pkts/h).\nWeniger Pakete als üblich, aber noch kein kritischer Rückgang.",
+                    downTip: $"↓ Empfangsrate deutlich unter Erwartung: {health.CurrentRxPerHour:0.0} Pkts/h ({health.RxScore*100:0}% der {rxPeriod}-Baseline {rxBase:0.0} Pkts/h).\nMögliche Ursachen: Nodes offline, Kanalüberlastung, oder Verbindungsabbrüche im Mesh.");
+
                 // Update mesh health in status strip
                 LedFill(GlobalMeshHealthLed, health.State, health.Summary);
                 GlobalMeshHealthText.Text = health.Score > 0 ? $"{health.Score:0}%" : "–";
@@ -3939,6 +3986,15 @@ public partial class MainWindow : Window
         {
             Services.Logger.WriteLine($"[Analysis] RefreshSignalAnalysis error: {ex.Message}");
         }
+    }
+
+    private static void SetTopArrow(TextBlock tb, bool up, bool down, bool noData,
+        string upTip, string flatTip, string downTip)
+    {
+        if (noData) { tb.Text = ""; ToolTipService.SetToolTip(tb, null); return; }
+        tb.Text = up ? "↑" : down ? "↓" : "→";
+        tb.ClearValue(TextBlock.ForegroundProperty); // inherit theme color — LED provides the color indicator
+        ToolTipService.SetToolTip(tb, up ? upTip : down ? downTip : flatTip);
     }
 
     private static void LedFill(System.Windows.Shapes.Ellipse led, LedState state, string tooltip)
