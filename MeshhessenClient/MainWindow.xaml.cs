@@ -3442,11 +3442,25 @@ public partial class MainWindow : Window
 
     private void OnTracerouteReceived(object? sender, TracerouteResult result)
     {
-        // The TracerouteWindow subscribes itself - nothing extra needed here.
-        // (reserved for future logging / notification)
         Dispatcher.BeginInvoke(() =>
         {
             Services.Logger.WriteLine($"Traceroute result for !{result.DestinationNodeId:x8}: {result.RouteForward.Count} forward hops");
+
+            // Auto-save JSON snapshot on every received result so "Traceroute laden" always has data.
+            var positions = new Dictionary<uint, (double Lat, double Lon)>();
+            foreach (var n in _allNodes)
+                if (n.Latitude.HasValue && n.Longitude.HasValue)
+                    positions[n.NodeId] = (n.Latitude.Value, n.Longitude.Value);
+            if (_currentSettings.MyLatitude != 0 || _currentSettings.MyLongitude != 0)
+                positions[_myNodeId] = (_currentSettings.MyLatitude, _currentSettings.MyLongitude);
+
+            var nodeNames = _allNodes.ToDictionary(n => n.NodeId, n => n.LongName);
+            nodeNames[_myNodeId] = "Ich";
+
+            string destName = nodeNames.TryGetValue(result.DestinationNodeId, out var dn)
+                ? dn : $"!{result.DestinationNodeId:x8}";
+
+            SaveTracerouteToFile(result, destName, positions, nodeNames);
         });
     }
 
