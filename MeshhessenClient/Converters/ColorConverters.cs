@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Windows;
 using System.Windows.Data;
 using System.Windows.Media;
 
@@ -15,12 +16,10 @@ public class HexToColorConverter : IValueConverter
                 var color = (Color)ColorConverter.ConvertFromString(hex);
                 return new SolidColorBrush(color);
             }
-            catch
-            {
-                return new SolidColorBrush(Colors.Black);
-            }
+            catch { }
         }
-        return new SolidColorBrush(Colors.Black);
+        // No data → neutral gray, visible in both light and dark mode
+        return new SolidColorBrush(Color.FromRgb(0xBD, 0xBD, 0xBD));
     }
 
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
@@ -33,7 +32,9 @@ public class IsNotEmptyConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
-        return value is string str && !string.IsNullOrEmpty(str);
+        return value is string str && !string.IsNullOrEmpty(str)
+            ? Visibility.Visible
+            : Visibility.Collapsed;
     }
 
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)

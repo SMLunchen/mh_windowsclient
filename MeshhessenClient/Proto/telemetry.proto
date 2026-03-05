@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package meshtastic;
+
+option csharp_namespace = "Meshtastic.Protobufs";
+
+import "mesh.proto";
+
+// Environment sensor data (temperature, humidity, pressure, etc.)
+message EnvironmentMetrics {
+  float temperature = 1;
+  float relative_humidity = 2;
+  float barometric_pressure = 3;
+  float gas_resistance = 4;
+  float voltage = 5;
+  float current = 6;
+  uint32 iaq = 7;
+}
+
+// Telemetry message sent on port 67 (TELEMETRY_APP)
+// Contains one of: device_metrics or environment_metrics
+message Telemetry {
+  fixed32 time = 1;
+  DeviceMetrics device_metrics = 2;
+  EnvironmentMetrics environment_metrics = 3;
+}

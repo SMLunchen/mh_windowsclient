@@ -10,7 +10,7 @@ namespace MeshhessenClient;
 
 public partial class DirectMessagesWindow : Window
 {
-    private readonly MeshtasticProtocolService _protocolService;
+    private MeshtasticProtocolService _protocolService;
     private readonly ObservableCollection<DirectMessageConversation> _conversations = new();
     private readonly Dictionary<uint, TabItem> _tabByNodeId = new();
     private uint _myNodeId;
@@ -23,6 +23,11 @@ public partial class DirectMessagesWindow : Window
         InitializeComponent();
         _protocolService = protocolService;
         _myNodeId = myNodeId;
+    }
+
+    public void UpdateProtocolService(MeshtasticProtocolService protocolService)
+    {
+        _protocolService = protocolService;
     }
 
     public void AddOrUpdateMessage(MessageItem message)
@@ -126,12 +131,11 @@ public partial class DirectMessagesWindow : Window
         gridView.Columns.Add(new GridViewColumn { Header = Loc("StrColFrom"), Width = 120, DisplayMemberBinding = new System.Windows.Data.Binding("From") });
         gridView.Columns.Add(new GridViewColumn { Header = Loc("StrColMessage"), Width = 300, DisplayMemberBinding = new System.Windows.Data.Binding("Message") });
 
-        // Reactions column
+        // Reactions column — use Emoji.Wpf.TextBlock for proper color emoji rendering
         var reactCol = new GridViewColumn { Header = "💬", Width = 90 };
-        var reactFactory = new FrameworkElementFactory(typeof(TextBlock));
-        reactFactory.SetBinding(TextBlock.TextProperty, new System.Windows.Data.Binding("ReactionsDisplay"));
-        reactFactory.SetValue(TextBlock.FontSizeProperty, 14.0);
-        reactFactory.SetValue(TextBlock.FontFamilyProperty, new System.Windows.Media.FontFamily("Segoe UI Emoji"));
+        var reactFactory = new FrameworkElementFactory(typeof(Emoji.Wpf.TextBlock));
+        reactFactory.SetBinding(Emoji.Wpf.TextBlock.TextProperty, new System.Windows.Data.Binding("ReactionsDisplay"));
+        reactFactory.SetValue(Emoji.Wpf.TextBlock.FontSizeProperty, 14.0);
         var reactTemplate = new DataTemplate { VisualTree = reactFactory };
         reactCol.CellTemplate = reactTemplate;
         gridView.Columns.Add(reactCol);
@@ -536,15 +540,12 @@ public partial class DirectMessagesWindow : Window
         var panel = new WrapPanel { MaxWidth = 380 }; // 8 columns × ~47px
         foreach (var emoji in quickEmojis)
         {
-            var emojiBlock = new System.Windows.Controls.TextBlock
+            var emojiBlock = new Emoji.Wpf.TextBlock
             {
                 Text = emoji,
-                FontFamily = new System.Windows.Media.FontFamily("Segoe UI Emoji"),
                 FontSize = 24,
-                TextAlignment = System.Windows.TextAlignment.Center,
                 VerticalAlignment = VerticalAlignment.Center,
             };
-            System.Windows.Media.TextOptions.SetTextRenderingMode(emojiBlock, System.Windows.Media.TextRenderingMode.Auto);
             var btn = new Button
             {
                 Content = emojiBlock,

@@ -4,7 +4,7 @@ Ein **offline-fähiger, nativer Windows-Client** für Meshtastic-Geräte mit USB
 
 ![Windows](https://img.shields.io/badge/Windows-10%2F11-blue)
 ![.NET](https://img.shields.io/badge/.NET-8.0-purple)
-![Status](https://img.shields.io/badge/Status-v1.5.4-yellow)
+![Status](https://img.shields.io/badge/Status-v1.5.5-yellow)
 
 
 ## 🚀 Schnellstart
@@ -26,6 +26,8 @@ Ein **offline-fähiger, nativer Windows-Client** für Meshtastic-Geräte mit USB
 * **Nachrichten** senden und empfangen (Broadcast & Direct Messages)
 * **Multi-Channel** – alle Kanäle deines Geräts automatisch geladen
 * **Direktnachrichten (DMs)** mit separatem Chat-Fenster im Tabbed-Layout
+* **PKI-Entschlüsselung** – client-seitige Entschlüsselung von PKI-verschlüsselten DMs (X25519 + AES-256-CTR); Private Key wird automatisch vom verbundenen Gerät geladen
+* **Node-Public-Key-Datenbank** – lokale CSV-Datei (`node_keys.csv`) zum Verwalten von Public Keys für PKI-Entschlüsselung
 * **Tap-Back Reaktionen** – auf Nachrichten mit Emoji reagieren (32 Emojis, wie Android-App)
   - Rechtsklick auf Nachricht → Emoji-Picker
   - Reaktionen werden direkt an Sender/Kanal übermittelt und angezeigt
@@ -33,6 +35,18 @@ Ein **offline-fähiger, nativer Windows-Client** für Meshtastic-Geräte mit USB
 * **🚨 Alert Bell Support** – Senden und Empfangen von Notrufen
   - 🚨 SOS-Button in Chat und DMs
   - Visuell: rote blinkende Umrandung + Notification-Bar mit „Zur Karte springen"-Button
+
+### 📊 Telemetrie & Statistik
+* **Persistente Telemetrie-Datenbank** – empfangene Paket- und Gerätedaten werden lokal in einer SQLite-Datenbank gespeichert
+* **Node-Statistik-Fenster** – detaillierte Auswertung pro Node:
+  - Tag/Nacht-Auswertung der Empfangsqualität
+  - Zeitreihen-Graphen für SNR, RSSI, Paketrate und Gerätedaten (Batterie, Spannung)
+* **LED-Indikatoren** im Hauptfenster zeigen auf einen Blick den Status des verbundenen Nodes:
+  - 📶 **Signal** – Empfangsqualität (SNR/RSSI-Trend)
+  - 👥 **Nachbarn** – Anzahl und Stabilität direkter Nachbar-Nodes
+  - 🛤️ **Pfad-Stabilität** – Stabilität des Traceroute-Pfads
+  - 🌐 **Mesh-Health** – Gesamtzustand des sichtbaren Meshes
+  - 🌤️ **Wetter** – für Nodes mit Umweltsensor
 
 ### 🗺️ Offline-Karte
 * **Drei Kartentypen:** OSM Standard, OSM Dark Mode, OpenTopoMap (topografisch)
@@ -228,7 +242,7 @@ An **offline-capable, native Windows client** for Meshtastic devices via USB/ser
 
 ![Windows](https://img.shields.io/badge/Windows-10%2F11-blue)
 ![.NET](https://img.shields.io/badge/.NET-8.0-purple)
-![Status](https://img.shields.io/badge/Status-v1.5.4-yellow)
+![Status](https://img.shields.io/badge/Status-v1.5.5-yellow)
 
 
 ## 🚀 Quick Start
@@ -250,6 +264,8 @@ An **offline-capable, native Windows client** for Meshtastic devices via USB/ser
 * **Send and receive messages** (broadcast & direct messages)
 * **Multi-channel** – all channels from your device loaded automatically
 * **Direct Messages (DMs)** with a dedicated chat window in a tabbed layout
+* **PKI decryption** – client-side decryption of PKI-encrypted DMs (X25519 + AES-256-CTR); private key is loaded automatically from the connected device
+* **Node public key database** – local CSV file (`node_keys.csv`) for managing public keys for PKI decryption
 * **Tap-back reactions** – react to messages with emoji (32 emojis, like the Android app)
   - Right-click a message → emoji picker
   - Reactions are sent to the sender/channel and displayed inline
@@ -257,6 +273,18 @@ An **offline-capable, native Windows client** for Meshtastic devices via USB/ser
 * **🚨 Alert Bell support** – send and receive emergency alerts
   - 🚨 SOS button in chat and DMs
   - Visual: red blinking border + notification bar with "Jump to map" button
+
+### 📊 Telemetry & Statistics
+* **Persistent telemetry database** – received packet and device data is stored locally in a SQLite database
+* **Node statistics window** – detailed analysis per node:
+  - Day/night breakdown of reception quality
+  - Time-series graphs for SNR, RSSI, packet rate and device data (battery, voltage)
+* **LED indicators** in the main window show the connected node's status at a glance:
+  - 📶 **Signal** – reception quality (SNR/RSSI trend)
+  - 👥 **Neighbors** – number and stability of direct neighbor nodes
+  - 🛤️ **Path stability** – stability of the traceroute path
+  - 🌐 **Mesh health** – overall health of the visible mesh
+  - 🌤️ **Weather** – for nodes with environmental sensors
 
 ### 🗺️ Offline Map
 * **Three map types:** OSM Standard, OSM Dark Mode, OpenTopoMap (topographic)

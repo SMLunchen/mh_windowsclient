@@ -18,9 +18,9 @@
     <PublishDir>..\public\</PublishDir>
 
     <AssemblyName>MeshhessenClient</AssemblyName>
-    <Version>1.5.4</Version>
-    <AssemblyVersion>1.5.4.0</AssemblyVersion>
-    <FileVersion>1.5.4.0</FileVersion>
+    <Version>1.5.5</Version>
+    <AssemblyVersion>1.5.5.0</AssemblyVersion>
+    <FileVersion>1.5.5.0</FileVersion>
     <Company>Meshtastic Community</Company>
     <Product>Meshhessen Client</Product>
     <Description>Offline-fähiger Windows Client für Meshtastic Geräte</Description>
@@ -30,6 +30,8 @@
   <ItemGroup>
     <!-- Serial Port Communication -->
     <PackageReference Include="Mapsui.Nts" Version="4.1.7" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.3" />
+    <PackageReference Include="OxyPlot.Wpf" Version="2.2.0" />
     <PackageReference Include="System.IO.Ports" Version="8.0.0" />
 
     <!-- Protobuf for Meshtastic Protocol -->
@@ -42,9 +44,15 @@
     <!-- Modern UI -->
     <PackageReference Include="ModernWpfUI" Version="0.9.6" />
 
+    <!-- Crypto: X25519 ECDH + AES-CTR for PKI packet decryption -->
+    <PackageReference Include="BouncyCastle.Cryptography" Version="2.4.0" />
+
     <!-- Offline Map -->
     <PackageReference Include="Mapsui" Version="4.1.7" />
     <PackageReference Include="Mapsui.Wpf" Version="4.1.7" />
+
+    <!-- Color Emoji rendering (WPF does not natively support COLR color fonts) -->
+    <PackageReference Include="Emoji.Wpf" Version="0.3.3" />
   </ItemGroup>
 
   <ItemGroup>

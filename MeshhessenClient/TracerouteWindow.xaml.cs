@@ -310,6 +310,15 @@ public partial class TracerouteWindow : Window
         {
             await _protocolService.SendTracerouteAsync(_targetNode.NodeId);
             StatusText.Text = "Warte auf Antwort…";
+
+            // Auto-reset after 30 s if no result arrives
+            _ = Task.Delay(30_000).ContinueWith(_ => Dispatcher.BeginInvoke(() =>
+            {
+                if (!_isRequesting) return; // result already arrived
+                _isRequesting = false;
+                RequestButton.IsEnabled = true;
+                StatusText.Text = "Timeout – kein Ergebnis nach 30 s. Erneut versuchen?";
+            }));
         }
         catch (Exception ex)
         {

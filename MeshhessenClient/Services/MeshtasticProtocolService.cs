@@ -48,6 +48,12 @@ public class MeshtasticProtocolService
     public event EventHandler<int>? PacketCountChanged;
     public event EventHandler<TracerouteResult>? TracerouteReceived;
     public event EventHandler<(uint ReplyId, string Emoji, uint FromId)>? ReactionReceived;
+    public event EventHandler<(uint NodeId, float BatteryPercent, float Voltage)>? DeviceTelemetryReceived;
+
+    private TelemetryDatabaseService? _db;
+    private NodeKeyService? _nodeKeyService;
+    private PskMismatchAction _pskMismatchAction = PskMismatchAction.Overwrite;
+    private readonly PkiDecryptionService _pkiDecrypt = new();
 
     private const byte PACKET_START_BYTE_1 = 0x94;
     private const byte PACKET_START_BYTE_2 = 0xC3;
@@ -56,6 +62,21 @@ public class MeshtasticProtocolService
     {
         _connectionService = connectionService;
         _connectionService.DataReceived += OnDataReceived;
+    }
+
+    public void SetDatabase(TelemetryDatabaseService db)
+    {
+        _db = db;
+    }
+
+    public void SetNodeKeyService(NodeKeyService service)
+    {
+        _nodeKeyService = service;
+    }
+
+    public void SetPskMismatchAction(PskMismatchAction action)
+    {
+        _pskMismatchAction = action;
     }
 
     public async Task InitializeAsync()
@@ -77,6 +98,7 @@ public class MeshtasticProtocolService
             _packetCount = 0;
             _receivedChannelResponses.Clear();
             _sessionPasskey = Array.Empty<byte>();
+            _pkiDecrypt.ClearPrivateKey();
             Logger.WriteLine("Cleared all data from previous session");
         }
 
@@ -179,6 +201,27 @@ public class MeshtasticProtocolService
         }
 
         if (_isDisconnecting) return;
+
+        // SecurityConfig + DeviceMetadata anfordern nach Init
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(500); // kurz warten bis Gerät bereit
+                var secReq = new AdminMessage { GetConfigRequest = (uint)AdminMessage.Types.ConfigType.SecurityConfig };
+                await SendAdminMessageAsync(secReq);
+                Logger.WriteLine("SecurityConfig requested for PKI decryption");
+
+                await Task.Delay(200);
+                var metaReq = new AdminMessage { GetDeviceMetadataRequest = true };
+                await SendAdminMessageAsync(metaReq);
+                Logger.WriteLine("DeviceMetadata requested for firmware version");
+            }
+            catch (Exception ex)
+            {
+                Logger.WriteLine($"Post-init admin request failed: {ex.Message}");
+            }
+        });
 
         // Kopiere Daten thread-safe
         List<ModelNodeInfo> nodesToFire;
@@ -713,10 +756,6 @@ public class MeshtasticProtocolService
                 HandleChannel(fromRadio.Channel);
                 break;
 
-            case FromRadio.PayloadVariantOneofCase.ChannelsCompleteId:
-                Logger.WriteLine("ChannelsCompleteId received");
-                break;
-
             case FromRadio.PayloadVariantOneofCase.Config:
                 HandleConfig(fromRadio.Config);
                 break;
@@ -727,13 +766,6 @@ public class MeshtasticProtocolService
                     _configComplete = true;
                 }
                 Logger.WriteLine("Config complete");
-                break;
-
-            case FromRadio.PayloadVariantOneofCase.ModuleconfigCompleteId:
-                lock (_dataLock)
-                {
-                    _configComplete = true;
-                }
                 break;
 
             case FromRadio.PayloadVariantOneofCase.ModuleConfig:
@@ -747,35 +779,82 @@ public class MeshtasticProtocolService
         {
             var data = packet.Decoded;
 
-            switch (data.Portnum)
+            // Record every decoded packet for telemetry analysis
+            if (packet.From != 0 && !_isInitializing)
             {
-                case 1: // TEXT_MESSAGE_APP
-                    HandleTextMessage(packet, data);
-                    break;
-
-                case 4: // NODEINFO_APP
-                    HandleNodeInfoPacket(packet, data);
-                    break;
-
-                case 3: // POSITION_APP
-                    HandlePositionPacket(packet, data);
-                    break;
-
-                case 6: // ADMIN_APP
-                    HandleAdminMessage(packet, data);
-                    break;
-
-                case 67: // TELEMETRY_APP
-                    HandleTelemetryPacket(packet, data);
-                    break;
-
-                case 70: // TRACEROUTE_APP
-                    HandleTraceroutePacket(packet, data);
-                    break;
+                try
+                {
+                    int? hops = (packet.HopStart == 0 || packet.HopLimit > packet.HopStart)
+                        ? null
+                        : (int)(packet.HopStart - packet.HopLimit);
+                    _db?.InsertPacketRx(
+                        nodeId:    packet.From,
+                        packetId:  packet.Id,
+                        timestamp: DateTime.UtcNow,
+                        snr:       packet.RxSnr,
+                        rssi:      packet.RxRssi,
+                        hopCount:  hops,
+                        wantAck:   packet.WantAck);
+                }
+                catch (Exception ex)
+                {
+                    Logger.WriteLine($"TelemetryDB packet_rx insert failed: {ex.Message}");
+                }
             }
+
+            RouteDecodedData(packet, data);
         }
         else if (packet.PayloadVariantCase == MeshPacket.PayloadVariantOneofCase.Encrypted)
         {
+            // Echo of own sent packet — skip silently
+            if (_myNodeId != 0 && packet.From == _myNodeId)
+                return;
+
+            // --- PKI fallback: try client-side decryption ---
+            if (packet.PkiEncrypted && _pkiDecrypt.HasPrivateKey)
+            {
+                // Prefer the public key embedded in the packet (field 16); fall back to CSV
+                byte[]? senderPublicKey = null;
+                if (packet.PublicKey != null && packet.PublicKey.Length == 32)
+                    senderPublicKey = packet.PublicKey.ToByteArray();
+                else
+                    senderPublicKey = _nodeKeyService?.GetPublicKey(packet.From) is { } b64
+                        ? Convert.FromBase64String(b64) : null;
+
+                if (senderPublicKey != null)
+                {
+                    var plaintext = _pkiDecrypt.TryDecrypt(
+                        packet.Encrypted.ToByteArray(),
+                        senderPublicKey,
+                        packet.From,
+                        packet.Id);
+
+                    if (plaintext != null)
+                    {
+                        try
+                        {
+                            var data = Data.Parser.ParseFrom(plaintext);
+                            Logger.WriteLine($"PKI decrypt OK: portnum={data.Portnum} from=!{packet.From:x8}");
+                            // Record packet_rx for telemetry (same as firmware-decoded path)
+                            try
+                            {
+                                int? hops = (packet.HopStart == 0 || packet.HopLimit > packet.HopStart)
+                                    ? null : (int)(packet.HopStart - packet.HopLimit);
+                                _db?.InsertPacketRx(packet.From, packet.Id, DateTime.UtcNow,
+                                    packet.RxSnr, packet.RxRssi, hops, packet.WantAck);
+                            }
+                            catch { /* non-critical */ }
+                            RouteDecodedData(packet, data);
+                            return;
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger.WriteLine($"PKI decrypt: proto parse failed: {ex.Message}");
+                        }
+                    }
+                }
+            }
+
             // Zeige verschlüsselte Nachricht (MainWindow filtert basierend auf Einstellung)
             string fromName = $"!{packet.From:x8}";
             lock (_dataLock)
@@ -798,6 +877,41 @@ public class MeshtasticProtocolService
                 IsViaMqtt = packet.ViaMqtt
             };
             MessageReceived?.Invoke(this, messageItem);
+        }
+    }
+
+    private void RouteDecodedData(MeshPacket packet, Data data)
+    {
+        switch (data.Portnum)
+        {
+            case 1: // TEXT_MESSAGE_APP
+                HandleTextMessage(packet, data);
+                break;
+
+            case 5: // ROUTING_APP — ACK response
+                if (data.RequestId != 0)
+                    _db?.MarkAckReceived(data.RequestId);
+                break;
+
+            case 4: // NODEINFO_APP
+                HandleNodeInfoPacket(packet, data);
+                break;
+
+            case 3: // POSITION_APP
+                HandlePositionPacket(packet, data);
+                break;
+
+            case 6: // ADMIN_APP
+                HandleAdminMessage(packet, data);
+                break;
+
+            case 67: // TELEMETRY_APP
+                HandleTelemetryPacket(packet, data);
+                break;
+
+            case 70: // TRACEROUTE_APP
+                HandleTraceroutePacket(packet, data);
+                break;
         }
     }
 
@@ -891,6 +1005,10 @@ public class MeshtasticProtocolService
             };
 
             TracerouteReceived?.Invoke(this, result);
+
+            // Persist hops for telemetry analysis
+            try { _db?.InsertTracerouteHops(result); }
+            catch (Exception ex) { Logger.WriteLine($"TelemetryDB traceroute insert failed: {ex.Message}"); }
         }
         catch (Exception ex)
         {
@@ -1015,6 +1133,30 @@ public class MeshtasticProtocolService
                 nodeInfo.Battery = $"{protoNodeInfo.DeviceMetrics.BatteryLevel}%";
             }
 
+            if (protoNodeInfo.User?.HwModel is HardwareModel hw && hw != HardwareModel.Unset)
+                nodeInfo.HardwareModel = hw.ToString();
+
+            if (_nodeKeyService != null && protoNodeInfo.User?.PublicKey.Length > 0)
+            {
+                _nodeKeyService.CheckAndUpdate(
+                    protoNodeInfo.Num,
+                    protoNodeInfo.User.ShortName ?? "",
+                    protoNodeInfo.User.LongName ?? "",
+                    protoNodeInfo.User.PublicKey.ToByteArray(),
+                    _pskMismatchAction);
+            }
+
+            nodeInfo.PkiKeyKnown = _nodeKeyService?.GetPublicKey(protoNodeInfo.Num) != null;
+
+            // Update DeviceInfo if this is our own node
+            if (protoNodeInfo.Num == _myNodeId && _myDeviceInfo != null && !string.IsNullOrEmpty(nodeInfo.HardwareModel))
+            {
+                lock (_dataLock)
+                {
+                    _myDeviceInfo.HardwareModel = nodeInfo.HardwareModel;
+                }
+            }
+
             bool shouldFireEvent;
             lock (_dataLock)
             {
@@ -1045,6 +1187,16 @@ public class MeshtasticProtocolService
         {
             var user = User.Parser.ParseFrom(data.Payload);
 
+            if (_nodeKeyService != null && user.PublicKey.Length > 0)
+            {
+                _nodeKeyService.CheckAndUpdate(
+                    packet.From,
+                    user.ShortName ?? "",
+                    user.LongName ?? "",
+                    user.PublicKey.ToByteArray(),
+                    _pskMismatchAction);
+            }
+
             var nodeInfo = new ModelNodeInfo
             {
                 NodeId = packet.From,
@@ -1053,8 +1205,11 @@ public class MeshtasticProtocolService
                 ShortName = user.ShortName ?? "",
                 LongName = user.LongName ?? "",
                 Snr = packet.RxSnr != 0f ? packet.RxSnr.ToString("F1") : "-",
+                SnrValue = packet.RxSnr != 0f ? packet.RxSnr : null,
                 Rssi = packet.RxRssi != 0 ? packet.RxRssi.ToString() : "-",
-                LastSeen = DateTime.Now.ToString("HH:mm:ss")
+                LastSeen = DateTime.Now.ToString("HH:mm:ss"),
+                HardwareModel = user.HwModel != HardwareModel.Unset ? user.HwModel.ToString() : "",
+                PkiKeyKnown = _nodeKeyService?.GetPublicKey(packet.From) != null
             };
 
             // Update DeviceInfo if this is our own node
@@ -1062,7 +1217,8 @@ public class MeshtasticProtocolService
             {
                 lock (_dataLock)
                 {
-                    _myDeviceInfo.HardwareModel = user.HwModel.ToString();
+                    if (user.HwModel != HardwareModel.Unset)
+                        _myDeviceInfo.HardwareModel = user.HwModel.ToString();
                     _myDeviceInfo.ShortName = user.ShortName ?? "";
                     _myDeviceInfo.LongName = user.LongName ?? "";
                     Logger.WriteLine($"Updated own DeviceInfo: HW={_myDeviceInfo.HardwareModel}, Name={_myDeviceInfo.LongName}");
@@ -1121,7 +1277,7 @@ public class MeshtasticProtocolService
                     }
                     nodeInfo.LastSeen = DateTime.Now.ToString("HH:mm:ss");
                     if (packet.RxRssi != 0) nodeInfo.Rssi = packet.RxRssi.ToString();
-                    if (packet.RxSnr != 0f) nodeInfo.Snr = packet.RxSnr.ToString("F1");
+                    if (packet.RxSnr != 0f) { nodeInfo.Snr = packet.RxSnr.ToString("F1"); nodeInfo.SnrValue = packet.RxSnr; }
                     nodeToFire = nodeInfo;
                     shouldFireEvent = !_isInitializing;
                 }
@@ -1150,6 +1306,38 @@ public class MeshtasticProtocolService
         {
             ModelNodeInfo? nodeToFire = null;
             bool shouldFireEvent;
+            float batteryPercent = 0f, voltage = 0f;
+
+            // Parse telemetry payload
+            Telemetry? telemetry = null;
+            try { telemetry = Telemetry.Parser.ParseFrom(data.Payload); }
+            catch { /* ignore parse errors for unknown variants */ }
+
+            if (telemetry?.DeviceMetrics is { } dm)
+            {
+                batteryPercent = dm.BatteryLevel;
+                voltage        = dm.Voltage;
+
+                _db?.InsertDeviceTelemetry(
+                    nodeId:          packet.From,
+                    timestamp:       DateTime.UtcNow,
+                    batteryPercent:  dm.BatteryLevel,
+                    voltage:         dm.Voltage,
+                    channelUtil:     dm.ChannelUtilization,
+                    airTxUtil:       dm.AirUtilTx,
+                    uptimeSeconds:   dm.UptimeSeconds);
+            }
+
+            if (telemetry?.EnvironmentMetrics is { } em && (em.Temperature != 0 || em.RelativeHumidity != 0))
+            {
+                _db?.InsertEnvironmentTelemetry(
+                    nodeId:      packet.From,
+                    timestamp:   DateTime.UtcNow,
+                    temp:        em.Temperature,
+                    humidity:    em.RelativeHumidity,
+                    pressure:    em.BarometricPressure,
+                    iaq:         (int)em.Iaq);
+            }
 
             lock (_dataLock)
             {
@@ -1157,7 +1345,13 @@ public class MeshtasticProtocolService
                 {
                     nodeInfo.LastSeen = DateTime.Now.ToString("HH:mm:ss");
                     if (packet.RxRssi != 0) nodeInfo.Rssi = packet.RxRssi.ToString();
-                    if (packet.RxSnr != 0f) nodeInfo.Snr = packet.RxSnr.ToString("F1");
+                    if (packet.RxSnr != 0f) { nodeInfo.Snr = packet.RxSnr.ToString("F1"); nodeInfo.SnrValue = packet.RxSnr; }
+                    // Live-update battery from telemetry payload
+                    if (batteryPercent > 0)
+                    {
+                        nodeInfo.Battery = $"{batteryPercent:F0}%";
+                        nodeInfo.BatteryValue = batteryPercent;
+                    }
                     nodeToFire = nodeInfo;
                     shouldFireEvent = !_isInitializing;
                 }
@@ -1171,6 +1365,8 @@ public class MeshtasticProtocolService
             if (shouldFireEvent && nodeToFire != null)
             {
                 NodeInfoReceived?.Invoke(this, nodeToFire);
+                if (batteryPercent > 0 || voltage > 0)
+                    DeviceTelemetryReceived?.Invoke(this, (packet.From, batteryPercent, voltage));
             }
         }
         catch (Exception ex)
@@ -1747,7 +1943,36 @@ public class MeshtasticProtocolService
                         case Config.PayloadVariantOneofCase.Bluetooth:
                             BluetoothConfigReceived?.Invoke(this, config.Bluetooth);
                             break;
+
+                        case Config.PayloadVariantOneofCase.Security:
+                            var sec = config.Security;
+                            if (sec.PrivateKey != null && sec.PrivateKey.Length == 32)
+                            {
+                                _pkiDecrypt.SetPrivateKey(sec.PrivateKey.ToByteArray());
+                                Logger.WriteLine("PKI private key loaded — client-side decryption active");
+                            }
+                            else
+                            {
+                                Logger.WriteLine("SecurityConfig received but private key missing/invalid");
+                            }
+                            break;
                     }
+                    break;
+
+                case AdminMessage.PayloadVariantOneofCase.GetDeviceMetadataResponse:
+                    var meta = adminMsg.GetDeviceMetadataResponse;
+                    Logger.WriteLine($"DeviceMetadata: FW={meta.FirmwareVersion}, HW={meta.HwModel}");
+                    lock (_dataLock)
+                    {
+                        if (_myDeviceInfo != null)
+                        {
+                            _myDeviceInfo.FirmwareVersion = meta.FirmwareVersion;
+                            if (meta.HwModel != HardwareModel.Unset)
+                                _myDeviceInfo.HardwareModel = meta.HwModel.ToString();
+                        }
+                    }
+                    if (_myDeviceInfo != null)
+                        DeviceInfoReceived?.Invoke(this, _myDeviceInfo);
                     break;
 
                 case AdminMessage.PayloadVariantOneofCase.GetModuleConfigResponse:
