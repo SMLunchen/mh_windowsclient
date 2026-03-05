@@ -98,6 +98,14 @@ Map and Tile downloading:
 <img width="567" height="883" alt="image" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/tile_downloader.png" />
 Channels:
 <img width="1443" height="814" alt="image" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/channel_list.png" />
+Traceroutes:
+<img width="1278" height="889" alt="image" src="https://github.com/user-attachments/assets/800925ef-0d4e-41ad-a7f2-56cdd06da6b7" />
+Telemetrie:
+<img width="516" height="162" alt="image" src="https://github.com/user-attachments/assets/a580cf69-ab10-4890-a17a-1c5086c19700" />
+Telemetrie Plot:
+<img width="902" height="604" alt="image" src="https://github.com/user-attachments/assets/a42d6a79-5b90-4f7a-8456-c74099c55c41" />
+Node Telemetrie:
+<img width="1278" height="889" alt="image" src="https://github.com/user-attachments/assets/4821c996-c524-499a-8fba-f738fb051f88" />
 
 
 ## ⚠️ Bekannte Einschränkungen
