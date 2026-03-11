@@ -1,6 +1,8 @@
+<<<<<<< HEAD
 # Meshhessen Client – Windows-Client für Meshtastic-Geräte (WPF · .NET 8)
 
 Der **Meshhessen Client** ist ein **kostenloser, nativer Windows-Client für Meshtastic-Geräte** (WPF/.NET 8) für Windows 10/11. Verbinde dein **Meshtastic-Gerät** (LILYGO T-Beam, T-Deck, RAK4631, Heltec u.a.) per **USB/Serial, TCP/WiFi oder Bluetooth** mit deinem Windows-PC – vollständig **offline-fähig**, keine Cloud, keine Installation. Entwickelt von und für die [Meshhessen Community](https://www.meshhessen.de).
+=======
 
 ![Windows](https://img.shields.io/badge/Windows-10%2F11-blue)
 ![.NET](https://img.shields.io/badge/.NET-8.0-purple)
