@@ -1,6 +1,13 @@
-# Meshhessen Client
+# Meshhessen Windows Client
 
-Ein **offline-fähiger, nativer Windows-Client** für Meshtastic-Geräte mit USB/serieller Verbindung – entwickelt von und für die [Meshhessen Community](https://www.meshhessen.de).
+Ein **offline-fähiger, nativer Windows-Client mit Grafischer Oberfläche** für Meshtastic-Geräte mit USB/serieller Verbindung – entwickelt von und für die [Meshhessen Community](https://www.meshhessen.de).
+
+English:
+MeshHessen Windows Client
+Windows client for interacting with Meshtastic-based mesh networks used in the MeshHessen community.
+
+The MeshHessen Windows Client provides a simple graphical interface to monitor nodes, view telemetry data and interact with the LoRa mesh network.
+It is designed for operators and participants of community mesh networks who want to observe network health and node connectivity from a Windows system.
 
 ![Windows](https://img.shields.io/badge/Windows-10%2F11-blue)
 ![.NET](https://img.shields.io/badge/.NET-8.0-purple)
