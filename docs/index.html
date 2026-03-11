@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Meshhessen Client – Windows App für Meshtastic-Geräte</title>
+  <meta name="description" content="Kostenloser Windows-Client für Meshtastic-Geräte (WPF/.NET 8). Offline-Karte, Telemetrie, Traceroute, PKI-Entschlüsselung – USB/Serial, TCP/WiFi und Bluetooth. Kein Cloud-Zwang, keine Installation. Von der Meshhessen Community." />
+  <meta name="keywords" content="Meshtastic Windows, Meshtastic Windows App, Windows App für Meshtastic-Geräte, Meshtastic PC Software, Meshtastic Desktop, Meshtastic USB Windows, Meshtastic Serial, Meshtastic Bluetooth Windows, Meshtastic BLE, Meshtastic Offline Karte, Meshtastic Telemetrie, Meshtastic Traceroute, Meshtastic Hessen, Meshtastic Deutschland, Meshhessen, Meshhessen Client, LILYGO T-Beam, T-Deck, RAK4631, Heltec, LoRa Mesh Windows, Meshtastic PKI, Meshtastic WPF, Meshtastic .NET" />
+  <meta name="author" content="Meshhessen Community" />
+  <link rel="canonical" href="https://smlunchen.github.io/mh_windowsclient/" />
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Meshhessen Client – Windows App für Meshtastic-Geräte" />
+  <meta property="og:description" content="Kostenloser Windows-Client für Meshtastic-Geräte. Offline-Karte, Telemetrie, Traceroute, PKI – USB/Serial/TCP/BLE. Keine Installation, keine Cloud." />
+  <meta property="og:url" content="https://smlunchen.github.io/mh_windowsclient/" />
+  <meta property="og:image" content="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/map.png?raw=true" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Meshhessen Client – Windows App für Meshtastic-Geräte" />
+  <meta name="twitter:description" content="Kostenloser Windows-Client für Meshtastic-Geräte. Offline-Karte, Telemetrie, Traceroute, PKI – USB/Serial/TCP/BLE." />
+  <meta name="twitter:image" content="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/map.png?raw=true" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #0d1117;
+      color: #e6edf3;
+      line-height: 1.6;
+    }
+    a { color: #58a6ff; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    header {
+      background: #161b22;
+      border-bottom: 1px solid #30363d;
+      padding: 2rem 1rem;
+      text-align: center;
+    }
+    header h1 { font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem; }
+    header p { color: #8b949e; font-size: 1.05rem; max-width: 680px; margin: 0 auto 1.2rem; }
+
+    .badges { display: flex; flex-wrap: wrap; gap: 0.4rem; justify-content: center; margin-bottom: 1.5rem; }
+
+    .btn {
+      display: inline-block;
+      background: #238636;
+      color: #fff;
+      padding: 0.6rem 1.4rem;
+      border-radius: 6px;
+      font-size: 1rem;
+      font-weight: 600;
+      margin: 0.3rem;
+    }
+    .btn:hover { background: #2ea043; text-decoration: none; }
+    .btn.secondary {
+      background: #21262d;
+      border: 1px solid #30363d;
+      color: #e6edf3;
+    }
+    .btn.secondary:hover { background: #30363d; }
+
+    main { max-width: 860px; margin: 0 auto; padding: 2.5rem 1rem; }
+
+    h2 { font-size: 1.4rem; margin: 2rem 0 0.8rem; border-bottom: 1px solid #30363d; padding-bottom: 0.4rem; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1rem;
+      margin-top: 0.8rem;
+    }
+    .card {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+    }
+    .card h3 { font-size: 1rem; margin-bottom: 0.4rem; }
+    .card p { color: #8b949e; font-size: 0.9rem; }
+
+    .screenshots { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 0.8rem; margin-top: 0.8rem; }
+    .screenshots img { width: 100%; border-radius: 6px; border: 1px solid #30363d; }
+
+    .devices { color: #8b949e; font-size: 0.9rem; margin-top: 0.5rem; }
+
+    footer {
+      text-align: center;
+      padding: 2rem 1rem;
+      color: #8b949e;
+      font-size: 0.85rem;
+      border-top: 1px solid #30363d;
+    }
+
+    /* English toggle note */
+    .lang-note { text-align: center; margin: 1rem 0 0; font-size: 0.85rem; color: #8b949e; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Meshhessen Client</h1>
+  <p>Kostenloser Windows-Client für Meshtastic-Geräte – Offline-Karte, Telemetrie, Traceroute und PKI-Entschlüsselung. Keine Cloud, keine Installation.</p>
+  <div class="badges">
+    <img src="https://img.shields.io/badge/Windows-10%2F11-blue" alt="Windows 10/11" />
+    <img src="https://img.shields.io/badge/.NET-8.0-purple" alt=".NET 8.0" />
+    <img src="https://img.shields.io/github/v/release/SMLunchen/mh_windowsclient" alt="Release" />
+    <img src="https://img.shields.io/github/license/SMLunchen/mh_windowsclient" alt="License" />
+    <img src="https://img.shields.io/github/stars/SMLunchen/mh_windowsclient" alt="Stars" />
+  </div>
+  <div>
+    <a class="btn" href="https://github.com/SMLunchen/mh_windowsclient/releases/latest">Download (EXE)</a>
+    <a class="btn secondary" href="https://github.com/SMLunchen/mh_windowsclient">GitHub Repository</a>
+    <a class="btn secondary" href="https://www.meshhessen.de">meshhessen.de</a>
+  </div>
+  <p class="lang-note">
+    Free <strong>Windows app for Meshtastic devices</strong> – offline map, telemetry, traceroute, PKI decryption, USB/Serial/TCP/BLE.
+    No installation, no cloud. By the <a href="https://www.meshhessen.de">Meshhessen community</a> (Hesse, Germany).
+  </p>
+</header>
+
+<main>
+
+  <h2>Features</h2>
+  <div class="grid">
+    <div class="card">
+      <h3>📨 Nachrichten</h3>
+      <p>Broadcast & Direktnachrichten, Multi-Channel, Tap-Back Reaktionen, Alert Bell / SOS-Notruf.</p>
+    </div>
+    <div class="card">
+      <h3>🗺️ Offline-Karte</h3>
+      <p>OSM Standard, OSM Dark, OpenTopoMap – Tiles für ganz Deutschland offline speicherbar. Node-Pins, GPS-Tracks.</p>
+    </div>
+    <div class="card">
+      <h3>📊 Telemetrie</h3>
+      <p>SQLite-Datenbank, Zeitreihen-Graphen (SNR, RSSI, Batterie), LED-Ampel für Mesh-Health.</p>
+    </div>
+    <div class="card">
+      <h3>📡 Traceroute</h3>
+      <p>Hop-Tabelle mit Entfernung & SNR, Karten-Visualisierung, mehrere Traces gleichzeitig, JSON-Speicherung.</p>
+    </div>
+    <div class="card">
+      <h3>🔒 PKI-Entschlüsselung</h3>
+      <p>Client-seitige X25519 + AES-256-CTR Entschlüsselung. Private Key wird automatisch vom Gerät geladen.</p>
+    </div>
+    <div class="card">
+      <h3>⚙️ Verbindung</h3>
+      <p>USB/Serial, TCP/WiFi, Bluetooth BLE – Auto-Reconnect, Update-Check, Dark Mode, Deutsch/Englisch.</p>
+    </div>
+  </div>
+
+  <h2>Unterstützte Geräte</h2>
+  <p class="devices">
+    Funktioniert mit allen Meshtastic-kompatiblen Geräten:
+    LILYGO T-Beam · LILYGO T-Deck · RAK4631 · Heltec LoRa 32 · Heltec Mesh Node · Seeed WiO-E5 · und weitere.
+    Verbindung per USB/Serial (115200 baud), TCP/WiFi oder Bluetooth Low Energy (BLE).
+  </p>
+
+  <h2>Screenshots</h2>
+  <div class="screenshots">
+    <img src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/map.png?raw=true"
+         alt="Meshhessen Client – Offline-Karte mit Meshtastic Node-Positionen unter Windows" />
+    <img src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/nodes.png?raw=true"
+         alt="Meshhessen Client – Node-Übersicht mit SNR, RSSI und Batterie für Meshtastic-Geräte" />
+    <img src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/messaging.png?raw=true"
+         alt="Meshhessen Client – Meshtastic Nachrichten und Kanal-Chat unter Windows" />
+    <img src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/channel_list.png?raw=true"
+         alt="Meshhessen Client – Meshtastic Kanal-Liste unter Windows" />
+  </div>
+
+  <h2>Download & Installation</h2>
+  <ol style="padding-left:1.4rem; color:#8b949e; font-size:0.95rem;">
+    <li>
+      <a href="https://dotnet.microsoft.com/en-us/download/dotnet/8.0">.NET 8 Desktop Runtime</a> herunterladen und installieren
+    </li>
+    <li>
+      <a href="https://github.com/SMLunchen/mh_windowsclient/releases/latest">Neueste <code>MeshhessenClient.exe</code></a> herunterladen
+    </li>
+    <li>Meshtastic-Gerät per USB anstecken</li>
+    <li>Doppelklick auf <code>MeshhessenClient.exe</code> – fertig. Keine Installation nötig.</li>
+  </ol>
+
+</main>
+
+<footer>
+  <p>
+    <strong>Meshhessen Client</strong> – Windows-App für Meshtastic-Geräte ·
+    <a href="https://github.com/SMLunchen/mh_windowsclient">GitHub</a> ·
+    <a href="https://www.meshhessen.de">meshhessen.de</a>
+  </p>
+  <p style="margin-top:0.5rem;">
+    Made with ❤️ by the <a href="https://www.meshhessen.de">Meshhessen Community</a> · Hessen, Germany
+  </p>
+  <p style="margin-top:0.5rem; font-size:0.8rem;">
+    Not affiliated with the official Meshtastic project.
+    Meshtastic® is a registered trademark of Meshtastic LLC.
+  </p>
+</footer>
+
+</body>
+</html>

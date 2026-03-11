@@ -1,10 +1,14 @@
-# Meshhessen Client
+# Meshhessen Client – Windows-Client für Meshtastic-Geräte (WPF · .NET 8)
 
-Ein **offline-fähiger, nativer Windows-Client** für Meshtastic-Geräte mit USB/serieller Verbindung – entwickelt von und für die [Meshhessen Community](https://www.meshhessen.de).
+Der **Meshhessen Client** ist ein **kostenloser, nativer Windows-Client für Meshtastic-Geräte** (WPF/.NET 8) für Windows 10/11. Verbinde dein **Meshtastic-Gerät** (LILYGO T-Beam, T-Deck, RAK4631, Heltec u.a.) per **USB/Serial, TCP/WiFi oder Bluetooth** mit deinem Windows-PC – vollständig **offline-fähig**, keine Cloud, keine Installation. Entwickelt von und für die [Meshhessen Community](https://www.meshhessen.de).
 
 ![Windows](https://img.shields.io/badge/Windows-10%2F11-blue)
 ![.NET](https://img.shields.io/badge/.NET-8.0-purple)
 ![Status](https://img.shields.io/badge/Status-v1.5.5-yellow)
+![License](https://img.shields.io/github/license/SMLunchen/mh_windowsclient)
+![Stars](https://img.shields.io/github/stars/SMLunchen/mh_windowsclient)
+
+> **English summary:** Free Windows app for Meshtastic devices – offline map (OSM/OpenTopo), telemetry, traceroute, PKI decryption, USB/Serial/TCP/BLE support. No installation, no cloud. By the Meshhessen community (Hesse, Germany). [→ English version below](#meshhessen-client--windows-client-for-meshtastic-devices-wpf--net-8)
 
 
 ## 🚀 Schnellstart
@@ -100,30 +104,30 @@ Der Meshhessen Client ist ein Gemeinschaftsprojekt der Meshtastic-Community in H
 
 ## 📸 Screenshots
 
-Map and Distance:
-<img width="1250" height="813" alt="image" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/map.png" />
-Node Overview:
-<img width="1249" height="812" alt="image" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/nodes.png" />
-Messages:
-<img width="1443" height="813" alt="image" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/messaging.png" />
-Alert Bell signalisation:
-<img width="1446" height="816" alt="image" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/alert_bell.png" />
-Map and Tile downloading:
-<img width="567" height="883" alt="image" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/tile_downloader.png" />
-Channels:
-<img width="1443" height="814" alt="image" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/channel_list.png" />
-Traceroutes:
-<img width="780" height="868" alt="image" src="https://github.com/user-attachments/assets/10880a3d-9d94-4b07-84bc-ad64af56dab1" />
-Pfad-Anzeige (Traceroute):
-<img width="1278" height="889" alt="image" src="https://github.com/user-attachments/assets/800925ef-0d4e-41ad-a7f2-56cdd06da6b7" />
-Pfad-Anzeige - Node-Stanort-Verlauf :
-<img width="967" height="411" alt="image" src="https://github.com/user-attachments/assets/0415083a-9f22-44fc-b767-be66b69892cd" />
-Telemetrie:
-<img width="516" height="162" alt="image" src="https://github.com/user-attachments/assets/a580cf69-ab10-4890-a17a-1c5086c19700" />
-Telemetrie Plot:
-<img width="902" height="604" alt="image" src="https://github.com/user-attachments/assets/a42d6a79-5b90-4f7a-8456-c74099c55c41" />
-Node Telemetrie:
-<img width="1278" height="889" alt="image" src="https://github.com/user-attachments/assets/4821c996-c524-499a-8fba-f738fb051f88" />
+Offline-Karte mit Node-Positionen und Entfernungsanzeige:
+<img width="1250" height="813" alt="Meshhessen Client – Windows-App für Meshtastic-Geräte: Offline-Karte mit Node-Positionen (OSM)" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/map.png" />
+Node-Übersicht mit SNR, Batterie und Hop-Anzahl:
+<img width="1249" height="812" alt="Meshhessen Client – Node-Übersicht mit SNR, RSSI, Batterie und Signal-LEDs" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/nodes.png" />
+Nachrichtenansicht mit Kanal-Chat und Direktnachrichten:
+<img width="1443" height="813" alt="Meshhessen Client – Meshtastic Nachrichten, Kanal-Chat und Direktnachrichten (DM) unter Windows" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/messaging.png" />
+Alert Bell / SOS-Notruf Anzeige:
+<img width="1446" height="816" alt="Meshhessen Client – Alert Bell SOS-Notruf Signalisierung für Meshtastic-Geräte unter Windows" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/alert_bell.png" />
+Offline-Tile-Downloader für Deutschland und Umgebung:
+<img width="567" height="883" alt="Meshhessen Client – Offline-Karten-Tile-Downloader für Meshtastic-Geräte unter Windows (OSM, OpenTopoMap)" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/tile_downloader.png" />
+Kanal-Liste mit allen Meshtastic-Kanälen:
+<img width="1443" height="814" alt="Meshhessen Client – Meshtastic Kanal-Liste (Multi-Channel) unter Windows" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/channel_list.png" />
+Traceroute-Fenster mit Hop-Tabelle:
+<img width="780" height="868" alt="Meshhessen Client – Traceroute für Meshtastic-Geräte: Hop-Tabelle, Entfernung und SNR unter Windows" src="https://github.com/user-attachments/assets/10880a3d-9d94-4b07-84bc-ad64af56dab1" />
+Traceroute-Pfad auf der Karte:
+<img width="1278" height="889" alt="Meshhessen Client – Meshtastic Traceroute-Pfad auf Offline-Karte visualisiert" src="https://github.com/user-attachments/assets/800925ef-0d4e-41ad-a7f2-56cdd06da6b7" />
+Node-Standort-Verlauf (GPS-Track) auf der Karte:
+<img width="967" height="411" alt="Meshhessen Client – Meshtastic Node-Standort-Verlauf GPS-Track auf Karte" src="https://github.com/user-attachments/assets/0415083a-9f22-44fc-b767-be66b69892cd" />
+Telemetrie-LED-Ampel im Hauptfenster:
+<img width="516" height="162" alt="Meshhessen Client – Meshtastic Telemetrie-LEDs für Signal, Nachbarn, Mesh-Health und Wetter" src="https://github.com/user-attachments/assets/a580cf69-ab10-4890-a17a-1c5086c19700" />
+Telemetrie-Zeitreihen-Graph (SNR, RSSI, Batterie):
+<img width="902" height="604" alt="Meshhessen Client – Meshtastic Telemetrie-Graph SNR RSSI Batterie Zeitreihe OxyPlot" src="https://github.com/user-attachments/assets/a42d6a79-5b90-4f7a-8456-c74099c55c41" />
+Node-Telemetrie-Statistik-Fenster:
+<img width="1278" height="889" alt="Meshhessen Client – Meshtastic Node-Telemetrie Tag/Nacht-Auswertung Statistik Windows" src="https://github.com/user-attachments/assets/4821c996-c524-499a-8fba-f738fb051f88" />
 
 
 ## ⚠️ Bekannte Einschränkungen
@@ -236,13 +240,21 @@ EXE liegt danach unter `public\MeshhessenClient.exe`. Alternativ: `build.bat` au
 
 ---
 
-# Meshhessen Client (English)
+## 🔍 Verwandte Suchbegriffe
 
-An **offline-capable, native Windows client** for Meshtastic devices via USB/serial connection – developed by and for the [Meshhessen Community](https://www.meshhessen.de).
+Meshhessen Client · Windows-Client für Meshtastic-Geräte · Meshtastic Windows App · Meshtastic PC Software · Meshtastic Desktop App · Meshtastic USB Windows · Meshtastic Serial Windows · Meshtastic WPF · Meshtastic .NET · LoRa Mesh Windows · Meshtastic Offline Karte · Meshtastic Telemetrie · Meshtastic Traceroute · Meshtastic Hessen · Meshtastic Deutschland · Meshtastic Germany · LILYGO T-Beam Windows · T-Deck Windows · RAK4631 Windows · Heltec Windows · Meshtastic BLE Windows · Meshtastic Bluetooth Windows · Meshtastic PKI · Meshhessen Community · Meshhessen
+
+---
+
+# Meshhessen Client – Windows Client for Meshtastic Devices (WPF · .NET 8)
+
+**Meshhessen Client** is a **free, native Windows client for Meshtastic devices** (WPF/.NET 8) for Windows 10/11. Connect your **Meshtastic device** (LILYGO T-Beam, T-Deck, RAK4631, Heltec, etc.) via **USB/Serial, TCP/WiFi, or Bluetooth** to your Windows PC – fully **offline-capable**, no cloud, no installation required. Developed by and for the [Meshhessen Community](https://www.meshhessen.de).
 
 ![Windows](https://img.shields.io/badge/Windows-10%2F11-blue)
 ![.NET](https://img.shields.io/badge/.NET-8.0-purple)
 ![Status](https://img.shields.io/badge/Status-v1.5.5-yellow)
+![License](https://img.shields.io/github/license/SMLunchen/mh_windowsclient)
+![Stars](https://img.shields.io/github/stars/SMLunchen/mh_windowsclient)
 
 
 ## 🚀 Quick Start
@@ -415,3 +427,9 @@ The EXE will be at `public\MeshhessenClient.exe`. Alternatively, run `build.bat`
 * **[Meshhessen Community](https://www.meshhessen.de)** – For the network and the inspiration
 
 **Made with ❤️ by the Meshhessen Community** · [www.meshhessen.de](https://www.meshhessen.de)
+
+---
+
+## 🔍 Related Search Terms
+
+Meshhessen Client · Windows client for Meshtastic devices · Meshtastic Windows app · Meshtastic PC software · Meshtastic desktop app · Meshtastic USB Windows · Meshtastic serial Windows · Meshtastic WPF · Meshtastic .NET · LoRa mesh Windows · Meshtastic offline map · Meshtastic telemetry · Meshtastic traceroute · Meshtastic Germany · Meshtastic Hessen · LILYGO T-Beam Windows · T-Deck Windows · RAK4631 Windows · Heltec Windows · Meshtastic BLE Windows · Meshtastic Bluetooth Windows · Meshtastic PKI decryption · Meshhessen community · Meshhessen
