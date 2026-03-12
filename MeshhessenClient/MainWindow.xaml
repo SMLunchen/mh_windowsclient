@@ -827,6 +827,40 @@
                                 </StackPanel>
                             </GroupBox>
 
+                            <!-- h2) Positionsverlauf -->
+                            <GroupBox Header="Positionsverlauf auf Karte" Margin="0,0,0,16">
+                                <StackPanel Margin="10">
+                                    <TextBlock FontStyle="Italic" Foreground="Gray" TextWrapping="Wrap" FontSize="11" Margin="0,0,0,8"
+                                               Text="Zeitfenster für den Positionsverlauf (📍 Pfad anzeigen) auf der Karte. DB und CSV werden parallel geschrieben."/>
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock Text="Verlauf zeigen:" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="11"/>
+                                        <ComboBox x:Name="PositionHistoryComboBox" Width="160" FontSize="11">
+                                            <ComboBoxItem Content="6 Stunden"    Tag="6"/>
+                                            <ComboBoxItem Content="24 Stunden"   Tag="24"  IsSelected="True"/>
+                                            <ComboBoxItem Content="7 Tage"       Tag="168"/>
+                                            <ComboBoxItem Content="30 Tage"      Tag="720"/>
+                                            <ComboBoxItem Content="Unbegrenzt"   Tag="0"/>
+                                        </ComboBox>
+                                    </StackPanel>
+                                </StackPanel>
+                            </GroupBox>
+
+                            <!-- h3) Zeitsynchronisation -->
+                            <GroupBox Header="Zeitsynchronisation" Margin="0,0,0,16">
+                                <StackPanel Margin="10">
+                                    <CheckBox x:Name="AutoTimeSyncCheckBox" IsChecked="True" Margin="0,0,0,6"
+                                              Content="Uhrzeit automatisch beim Verbinden synchronisieren"/>
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,4">
+                                        <TextBlock Text="Drift-Schwelle (Sek.):" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="11"/>
+                                        <TextBox x:Name="TimeSyncDriftBox" Width="60" Text="300" FontSize="11"/>
+                                        <TextBlock Text="(0 = kein Drift-Check)" VerticalAlignment="Center" Margin="8,0,0,0" FontSize="10" Foreground="Gray"/>
+                                    </StackPanel>
+                                    <Button Content="⏱ Jetzt synchronisieren" HorizontalAlignment="Left"
+                                            Padding="8,3" FontSize="11"
+                                            Click="TimeSyncManual_Click"/>
+                                </StackPanel>
+                            </GroupBox>
+
                             <!-- f) Verschlüsselte Nachrichten -->
                             <GroupBox Header="{DynamicResource StrMessagesGroup}" Margin="0,0,0,16">
                                 <StackPanel Margin="10">
@@ -922,10 +956,30 @@
                                     Click="MapZoomIn_Click" ToolTip="Zoom In"/>
                             <Button Content="-" Width="32" Height="32" Margin="0,0,10,0"
                                     Click="MapZoomOut_Click" ToolTip="Zoom Out"/>
-                            <Button Content="📂 Traceroute laden" Height="28" Margin="0,0,0,0"
+                            <Button Content="📂 Traceroute laden" Height="28" Margin="0,0,6,0"
                                     Padding="8,2"
                                     Click="MapLoadTraceroute_Click"
                                     ToolTip="Gespeicherte Traceroute(s) auf der Karte anzeigen"/>
+                            <ComboBox x:Name="TracerouteAgeFilterCombo" Height="28" Width="70"
+                                      Margin="0,0,4,0" ToolTip="Traceroutes aus DB: Zeitraum">
+                                <ComboBoxItem Content="3d"  Tag="3"   />
+                                <ComboBoxItem Content="7d"  Tag="7"   IsSelected="True"/>
+                                <ComboBoxItem Content="14d" Tag="14"  />
+                                <ComboBoxItem Content="30d" Tag="30"  />
+                                <ComboBoxItem Content="90d" Tag="90"  />
+                                <ComboBoxItem Content="Alle" Tag="0"  />
+                            </ComboBox>
+                            <Button Content="🗄 Aus DB" Height="28" Padding="8,2" Margin="0,0,6,0"
+                                    Click="MapLoadTracerouteFromDb_Click"
+                                    ToolTip="Traceroutes aus Datenbank für den gewählten Zeitraum laden"/>
+                            <CheckBox x:Name="TracerouteDedupeCheckBox" VerticalAlignment="Center"
+                                      IsChecked="True" Margin="0,0,6,0"
+                                      ToolTip="Nur neueste Traceroute pro Node-Paar anzeigen (Deduplizierung)">
+                                <TextBlock Text="Dedupe" FontSize="11"/>
+                            </CheckBox>
+                            <Button Content="🗑 Alle" Height="28" Padding="8,2" Margin="0,0,0,0"
+                                    Click="ClearAllTraceroutes_Click"
+                                    ToolTip="Alle Traceroutes von der Karte entfernen"/>
                         </StackPanel>
                         <TextBlock x:Name="MapStatusText" Grid.Column="1" VerticalAlignment="Center" Foreground="Gray" FontStyle="Italic"/>
                     </Grid>

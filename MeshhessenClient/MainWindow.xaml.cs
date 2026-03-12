@@ -88,8 +88,11 @@ public partial class MainWindow : Window
         new Dictionary<uint, bool>(),
         90,
         Services.PskMismatchAction.Overwrite,
-        6,   // SignalWeatherWindowHours
-        7);  // SignalAntennaWindowDays
+        6,    // SignalWeatherWindowHours
+        7,    // SignalAntennaWindowDays
+        24,   // PositionHistoryHours
+        true, // AutoTimeSyncOnConnect
+        300); // TimeSyncDriftThresholdSeconds
     private NodeInfo? _mapContextMenuNode;
     private uint? _alertNodeId;  // Stores the node ID for "Show on Map" button
 
@@ -100,6 +103,14 @@ public partial class MainWindow : Window
     private readonly Dictionary<string, string> _tracerouteNames = new();  // layerKey → display name
     private readonly Dictionary<string, Mapsui.Styles.Color> _tracerouteColors = new(); // layerKey → color
     private int _tracerouteColorIndex = 0;
+
+    // Segment midpoints for click detection (T3)
+    private record SegmentHitTarget(MPoint Midpoint, uint FromId, uint ToId, float? CurrentSnr, bool IsMqtt);
+    private readonly Dictionary<string, List<SegmentHitTarget>> _tracerouteSegmentHits = new();
+
+    // Waypoints map layer (W1+W2)
+    private MemoryLayer? _waypointLayer;
+    private readonly List<TelemetryDatabaseService.WaypointEntry> _waypoints = new();
 
     // Palette: avoids Blue (my node), Red/custom (other nodes), Orange (common node color)
     private static readonly Mapsui.Styles.Color[] TracerouteColorPalette =
@@ -121,6 +132,9 @@ public partial class MainWindow : Window
 
     // Signal Analysis Background Timer
     private System.Threading.Timer? _analysisTimer;
+
+    // Time Sync
+    private System.Threading.Timer? _timeSyncTimer;
 
     // Node Public Key CSV
     private NodeKeyService? _nodeKeyService;
@@ -164,6 +178,8 @@ public partial class MainWindow : Window
         _protocolService.TracerouteReceived += OnTracerouteReceived;
         _protocolService.ReactionReceived += OnReactionReceived;
         _protocolService.DeviceTelemetryReceived += OnDeviceTelemetryReceived;
+        _protocolService.TimeDriftDetected += OnTimeDriftDetected;
+        _protocolService.WaypointReceived  += OnWaypointReceived;
 
         // LoadRegions / LoadModemPresets removed — now displayed as read-only TextBlocks in Settings right column
 
@@ -195,8 +211,12 @@ public partial class MainWindow : Window
             _db.Latitude  = _currentSettings.MyLatitude;
             _db.Longitude = _currentSettings.MyLongitude;
             _db.RunRetentionCleanup(_currentSettings.TelemetryRetentionDays);
+            _db.DeleteOldNodePositions(_currentSettings.PositionHistoryHours);
             _protocolService.SetDatabase(_db);
+            _protocolService.TimeDriftThresholdSeconds = _currentSettings.TimeSyncDriftThresholdSeconds;
             Services.Logger.WriteLine($"TelemetryDB initialized: {dbPath}");
+            // Populate global status LEDs and waypoints from DB at startup
+            Dispatcher.BeginInvoke(LoadWaypointsFromDb);
             // Populate global status LEDs from DB history immediately on startup (no connection required)
             Task.Run(RefreshSignalAnalysis);
         }
@@ -339,6 +359,20 @@ public partial class MainWindow : Window
             // Signal Analysis Windows
             WeatherHoursBox.Text = settings.SignalWeatherWindowHours.ToString();
             AntennaDaysBox.Text  = settings.SignalAntennaWindowDays.ToString();
+
+            // Position History
+            foreach (System.Windows.Controls.ComboBoxItem item in PositionHistoryComboBox.Items)
+            {
+                if (item.Tag is string tag && tag == settings.PositionHistoryHours.ToString())
+                {
+                    PositionHistoryComboBox.SelectedItem = item;
+                    break;
+                }
+            }
+
+            // Time Sync
+            if (AutoTimeSyncCheckBox != null) AutoTimeSyncCheckBox.IsChecked = settings.AutoTimeSyncOnConnect;
+            if (TimeSyncDriftBox != null) TimeSyncDriftBox.Text = settings.TimeSyncDriftThresholdSeconds.ToString();
         }
         catch (Exception ex)
         {
@@ -516,7 +550,7 @@ public partial class MainWindow : Window
                 var dist = Math.Sqrt(Math.Pow(screenPos.X - pinScreen.X, 2) + Math.Pow(screenPos.Y - pinScreen.Y, 2));
                 if (dist < minDist)
                 {
-                    hitNode = _nodes.FirstOrDefault(n => n.NodeId == nodeId);
+                    hitNode = _allNodes.FirstOrDefault(n => n.NodeId == nodeId);
                     minDist = dist;
                 }
             }
@@ -641,6 +675,11 @@ public partial class MainWindow : Window
                 var setPosItem = new MenuItem { Header = string.Format(Loc("StrSetMyPosition"), $"{clickLat:F4}", $"{clickLon:F4}") };
                 setPosItem.Click += (s, ev) => SetMyPosition(clickLat, clickLon);
                 menu.Items.Add(setPosItem);
+
+                menu.Items.Add(new Separator());
+                var wpItem = new MenuItem { Header = "📍 Waypoint erstellen…" };
+                wpItem.Click += (s, ev) => CreateWaypointAt(clickLat, clickLon);
+                menu.Items.Add(wpItem);
             }
 
             menu.PlacementTarget = MapControl;
@@ -669,7 +708,7 @@ public partial class MainWindow : Window
                 var dist = Math.Sqrt(Math.Pow(screenPos.X - pinScreen.X, 2) + Math.Pow(screenPos.Y - pinScreen.Y, 2));
                 if (dist < minDist)
                 {
-                    hitNode = _nodes.FirstOrDefault(n => n.NodeId == nodeId);
+                    hitNode = _allNodes.FirstOrDefault(n => n.NodeId == nodeId);
                     minDist = dist;
                 }
             }
@@ -679,16 +718,69 @@ public partial class MainWindow : Window
                 var km = HaversineKm(_currentSettings.MyLatitude, _currentSettings.MyLongitude,
                                      hitNode.Latitude.Value, hitNode.Longitude.Value);
                 MapStatusText.Text = $"{hitNode.ShortName} ({hitNode.Id}): {km:F2} km Entfernung | Last seen: {hitNode.LastSeen}";
+                return;
             }
-            else
+
+            // T3: Check for traceroute segment hits
+            SegmentHitTarget? hitSeg = null;
+            double minSegDist = 28;
+            foreach (var segs in _tracerouteSegmentHits.Values)
             {
-                MapStatusText.Text = string.Empty;
+                foreach (var seg in segs)
+                {
+                    var segScreen = MapControl.Map.Navigator.Viewport.WorldToScreen(seg.Midpoint);
+                    var d = Math.Sqrt(Math.Pow(screenPos.X - segScreen.X, 2) + Math.Pow(screenPos.Y - segScreen.Y, 2));
+                    if (d < minSegDist) { hitSeg = seg; minSegDist = d; }
+                }
             }
+
+            if (hitSeg != null)
+            {
+                ShowTracerouteSegmentPopup(hitSeg);
+                return;
+            }
+
+            MapStatusText.Text = string.Empty;
         }
         catch (Exception ex)
         {
             Services.Logger.WriteLine($"ERROR map left-click: {ex.Message}");
         }
+    }
+
+    private void ShowTracerouteSegmentPopup(SegmentHitTarget seg)
+    {
+        string NodeLabel(uint id)
+        {
+            if (id == _myNodeId) return "Ich";
+            var n = _nodes.FirstOrDefault(x => x.NodeId == id);
+            return n?.ShortName is { Length: > 0 } s ? s : $"!{id:x4}";
+        }
+
+        string fromLabel = NodeLabel(seg.FromId);
+        string toLabel   = NodeLabel(seg.ToId);
+        string header    = seg.IsMqtt ? $"⚡ {fromLabel} → {toLabel} (MQTT)" : $"{fromLabel} → {toLabel}";
+
+        var sb = new System.Text.StringBuilder(header);
+
+        if (!seg.IsMqtt && _db != null)
+        {
+            if (seg.CurrentSnr.HasValue)
+                sb.Append($" | Aktuell: {seg.CurrentSnr.Value:F1} dB");
+
+            var stats = _db.GetSegmentSnrStats(seg.FromId, seg.ToId, days: 30);
+            if (stats != null)
+                sb.Append($" | 30d Min/Avg/Max: {stats.Min:F1}/{stats.Avg:F1}/{stats.Max:F1} dB ({stats.Count}×)");
+
+            // T6: Open SNR chart popup
+            var points = _db.GetSegmentSnrTimeSeries(seg.FromId, seg.ToId, days: 30);
+            var win = new SegmentSnrWindow(fromLabel, toLabel, points, stats,
+                _currentSettings.MyLatitude, _currentSettings.MyLongitude)
+            { Owner = this };
+            win.Show();
+        }
+
+        MapStatusText.Text = sb.ToString();
     }
 
     private static double HaversineKm(double lat1, double lon1, double lat2, double lon2)
@@ -1219,6 +1311,9 @@ public partial class MainWindow : Window
                     try
                     {
                         await _protocolService.InitializeAsync();
+                        if (_currentSettings.AutoTimeSyncOnConnect)
+                            await _protocolService.SendTimeSyncAsync();
+                        StartTimeSyncTimer();
                         Dispatcher.BeginInvoke(() =>
                         {
                             if (!(_connectionService?.IsConnected == true)) return;
@@ -1656,7 +1751,10 @@ public partial class MainWindow : Window
                                      : PskAskRadio.IsChecked  == true ? Services.PskMismatchAction.Ask
                                      : Services.PskMismatchAction.Overwrite,
                 SignalWeatherWindowHours: int.TryParse(WeatherHoursBox.Text, out var swh) ? Math.Max(1, swh) : 6,
-                SignalAntennaWindowDays: int.TryParse(AntennaDaysBox.Text, out var sad) ? Math.Max(1, sad) : 7
+                SignalAntennaWindowDays: int.TryParse(AntennaDaysBox.Text, out var sad) ? Math.Max(1, sad) : 7,
+                PositionHistoryHours: int.TryParse((PositionHistoryComboBox.SelectedItem as System.Windows.Controls.ComboBoxItem)?.Tag as string, out var phh) ? phh : 24,
+                AutoTimeSyncOnConnect: AutoTimeSyncCheckBox?.IsChecked == true,
+                TimeSyncDriftThresholdSeconds: int.TryParse(TimeSyncDriftBox?.Text, out var tsd) ? Math.Max(60, tsd) : 300
             );
             _currentSettings = settings;
             SettingsService.Save(settings);
@@ -1801,6 +1899,9 @@ public partial class MainWindow : Window
                     try
                     {
                         await _protocolService.InitializeAsync();
+                        if (_currentSettings.AutoTimeSyncOnConnect)
+                            await _protocolService.SendTimeSyncAsync();
+                        StartTimeSyncTimer();
                         Dispatcher.BeginInvoke(() =>
                         {
                             if (!(_connectionService?.IsConnected == true)) return;
@@ -3211,114 +3312,185 @@ public partial class MainWindow : Window
 
     private void ShowPathForNode(NodeInfo node)
     {
-        if (!LocationLogger.HasLog(node.NodeId))
-        {
-            MessageBox.Show($"Kein Standort-Log für {node.Name} vorhanden.\n\nBitte Standort-Logging in den Einstellungen aktivieren.", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
-            return;
-        }
+        // Prefer DB; fall back to CSV if DB empty
+        var dbEntries = _db?.GetNodePositionHistory(node.NodeId, _currentSettings.PositionHistoryHours)
+                        ?? new List<Services.TelemetryDatabaseService.NodePositionEntry>();
 
-        var entries = LocationLogger.ReadLog(node.NodeId);
-        if (entries.Count < 2)
+        List<(double Lat, double Lon, double? Alt, float? Track, float? Speed, DateTime Time)> points;
+        if (dbEntries.Count >= 2)
         {
-            MessageBox.Show("Nicht genug Einträge für einen Pfad (mindestens 2 Punkte benötigt).", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
-            return;
+            points = dbEntries.Select(e => (e.Lat, e.Lon, e.Alt, e.Track, e.Speed,
+                DateTimeOffset.FromUnixTimeSeconds(e.Timestamp).LocalDateTime)).ToList();
+        }
+        else
+        {
+            // Fall back to CSV
+            var csvEntries = LocationLogger.ReadLog(node.NodeId);
+            if (csvEntries.Count < 2)
+            {
+                MessageBox.Show("Nicht genug Einträge für einen Pfad (mindestens 2 Punkte benötigt).\n\nPositions-Logging ist aktiv und speichert bei jeder empfangenen GPS-Position.",
+                    "Info", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+            points = csvEntries.Select(e => (e.Latitude, e.Longitude, e.Altitude, e.GroundTrack, e.GroundSpeed, e.Timestamp)).ToList();
         }
 
         try
         {
-            // Remove existing path layer for this node
+            // Remove existing path layer
             if (_pathLayers.TryGetValue(node.NodeId, out var oldLayer))
             {
                 _map?.Layers.Remove(oldLayer);
                 _pathLayers.Remove(node.NodeId);
             }
 
-            // Determine color — same default as node pin (Red)
-            Mapsui.Styles.Color lineColor = Mapsui.Styles.Color.Red;
+            // Base color from node color or default red
+            Mapsui.Styles.Color baseColor = Mapsui.Styles.Color.Red;
             if (!string.IsNullOrEmpty(node.ColorHex))
             {
                 try
                 {
                     var wpfColor = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(node.ColorHex);
-                    lineColor = new Mapsui.Styles.Color(wpfColor.R, wpfColor.G, wpfColor.B, wpfColor.A);
+                    baseColor = new Mapsui.Styles.Color(wpfColor.R, wpfColor.G, wpfColor.B);
                 }
                 catch { }
             }
 
             var features = new List<IFeature>();
+            int n = points.Count;
 
-            // Convert to world coordinates
-            var coords = entries
-                .Select(p => SphericalMercator.FromLonLat(p.Longitude, p.Latitude))
+            // World coords
+            var coords = points
+                .Select(p => SphericalMercator.FromLonLat(p.Lon, p.Lat))
                 .Select(c => new MPoint(c.x, c.y))
                 .ToList();
 
-            // LineString via NetTopologySuite (Mapsui.Nts) → draws the connecting line
-            var ntsCoords = coords.Select(c => new Coordinate(c.X, c.Y)).ToArray();
-            var lineGeometry = new NetTopologySuite.Geometries.LineString(ntsCoords);
-            var lineFeature = new GeometryFeature(lineGeometry);
-            lineFeature.Styles.Add(new VectorStyle
+            // Gradient segments: oldest = low alpha, newest = full alpha
+            for (int i = 0; i < n - 1; i++)
             {
-                Line = new Mapsui.Styles.Pen(lineColor, 3),
-                Fill = null
-            });
-            features.Add(lineFeature);
-
-            // Point + label features for each entry
-            for (int i = 0; i < entries.Count; i++)
-            {
-                var f = new PointFeature(coords[i]);
-                f.Styles.Add(new SymbolStyle
-                {
-                    SymbolType = SymbolType.Ellipse,
-                    Fill = new Mapsui.Styles.Brush(lineColor),
-                    Outline = new Mapsui.Styles.Pen(Mapsui.Styles.Color.White, 1),
-                    SymbolScale = 0.25
-                });
-                f.Styles.Add(new LabelStyle
-                {
-                    Text = $"{entries[i].Name} {entries[i].Timestamp:HH:mm}",
-                    ForeColor = Mapsui.Styles.Color.Black,
-                    BackColor = new Mapsui.Styles.Brush(Mapsui.Styles.Color.White),
-                    HorizontalAlignment = LabelStyle.HorizontalAlignmentEnum.Left,
-                    VerticalAlignment = LabelStyle.VerticalAlignmentEnum.Center,
-                    Offset = new Offset(8, 0),
-                    Font = new Font { Size = 9 }
-                });
-                features.Add(f);
+                double t = n > 2 ? (double)i / (n - 2) : 1.0;
+                int alpha = (int)(80 + t * 175);  // 80 (oldest) → 255 (newest)
+                var segColor = new Mapsui.Styles.Color(baseColor.R, baseColor.G, baseColor.B, alpha);
+                var segCoords = new[] { new Coordinate(coords[i].X, coords[i].Y), new Coordinate(coords[i + 1].X, coords[i + 1].Y) };
+                var segLine = new GeometryFeature(new NetTopologySuite.Geometries.LineString(segCoords));
+                segLine.Styles.Add(new VectorStyle { Line = new Mapsui.Styles.Pen(segColor, 3), Fill = null });
+                features.Add(segLine);
             }
 
-            var pathLayer = new MemoryLayer($"Path_{node.NodeId}")
+            // Arrow markers with direction, max 30 evenly distributed
+            const int MaxArrows = 30;
+            var arrowIndices = n <= MaxArrows
+                ? Enumerable.Range(0, n).ToList()
+                : Enumerable.Range(0, MaxArrows).Select(i => i * (n - 1) / (MaxArrows - 1)).Distinct().ToList();
+
+            foreach (int i in arrowIndices)
             {
-                Features = features,
-                Style = null
-            };
+                var pt = points[i];
+                double t = n > 1 ? (double)i / (n - 1) : 1.0;
+                int alpha = (int)(80 + t * 175);
+                var arrowColor = new Mapsui.Styles.Color(baseColor.R, baseColor.G, baseColor.B, alpha);
+
+                // Bearing: use GroundTrack if available, else calculate from next point
+                double rotation = 0;
+                if (pt.Track.HasValue)
+                {
+                    rotation = pt.Track.Value;
+                }
+                else if (i < n - 1)
+                {
+                    var next = points[i + 1];
+                    rotation = BearingDeg(pt.Lat, pt.Lon, next.Lat, next.Lon);
+                }
+                else if (i > 0)
+                {
+                    var prev = points[i - 1];
+                    rotation = BearingDeg(prev.Lat, prev.Lon, pt.Lat, pt.Lon);
+                }
+
+                string speedStr = pt.Speed.HasValue ? $"\n{pt.Speed.Value * 3.6:F0} km/h" : "";
+                string trackStr = pt.Track.HasValue ? $"  {pt.Track.Value:F0}°" : "";
+                string tooltip  = $"{pt.Time:dd.MM. HH:mm}{speedStr}{trackStr}";
+                if (pt.Alt.HasValue) tooltip += $"\n{pt.Alt.Value:F0} m";
+
+                var arrow = new PointFeature(coords[i]);
+                arrow.Styles.Add(new SymbolStyle
+                {
+                    SymbolType    = SymbolType.Triangle,
+                    Fill          = new Mapsui.Styles.Brush(arrowColor),
+                    Outline       = new Mapsui.Styles.Pen(Mapsui.Styles.Color.White, 1),
+                    SymbolScale   = 0.3,
+                    SymbolRotation = rotation
+                });
+                arrow["tooltip"] = tooltip;
+                features.Add(arrow);
+            }
+
+            var pathLayer = new MemoryLayer($"Path_{node.NodeId}") { Features = features, Style = null };
             _pathLayers[node.NodeId] = pathLayer;
             _map?.Layers.Add(pathLayer);
 
-            // Switch to map tab and zoom to fit the full path extent
+            // Zoom to fit
             MainTabs.SelectedIndex = 4;
-            var minX = coords.Min(c => c.X);
-            var maxX = coords.Max(c => c.X);
-            var minY = coords.Min(c => c.Y);
-            var maxY = coords.Max(c => c.Y);
-            var pathCenter = new MPoint((minX + maxX) / 2, (minY + maxY) / 2);
-            var extentSize = Math.Max(maxX - minX, maxY - minY);
-            // Add 30% padding; fall back to ~500m radius if all points are clustered
-            var paddedSize = Math.Max(extentSize * 1.3, 1000.0);
-            // resolution = meters-per-pixel; assume ~800px viewport width
-            var resolution = Math.Max(paddedSize / 800.0, 10.0);
-            _map?.Navigator.CenterOnAndZoomTo(pathCenter, resolution);
+            var minX = coords.Min(c => c.X); var maxX = coords.Max(c => c.X);
+            var minY = coords.Min(c => c.Y); var maxY = coords.Max(c => c.Y);
+            var paddedSize = Math.Max(Math.Max(maxX - minX, maxY - minY) * 1.3, 1000.0);
+            _map?.Navigator.CenterOnAndZoomTo(new MPoint((minX + maxX) / 2, (minY + maxY) / 2),
+                Math.Max(paddedSize / 800.0, 10.0));
             MapControl.Refresh();
 
             HidePathMenuItem.Visibility = Visibility.Visible;
-            Services.Logger.WriteLine($"Path layer added for {node.Name}: {entries.Count} points");
+            Services.Logger.WriteLine($"Path layer for {node.Name}: {n} points (source: {(dbEntries.Count >= 2 ? "DB" : "CSV")})");
         }
         catch (Exception ex)
         {
             Services.Logger.WriteLine($"ERROR showing path: {ex.Message}");
             MessageBox.Show($"Fehler beim Anzeigen des Pfads: {ex.Message}", "Fehler", MessageBoxButton.OK, MessageBoxImage.Error);
         }
+    }
+
+    private static double BearingDeg(double lat1, double lon1, double lat2, double lon2)
+    {
+        var dLon = (lon2 - lon1) * Math.PI / 180;
+        var lat1R = lat1 * Math.PI / 180;
+        var lat2R = lat2 * Math.PI / 180;
+        var y = Math.Sin(dLon) * Math.Cos(lat2R);
+        var x = Math.Cos(lat1R) * Math.Sin(lat2R) - Math.Sin(lat1R) * Math.Cos(lat2R) * Math.Cos(dLon);
+        return (Math.Atan2(y, x) * 180 / Math.PI + 360) % 360;
+    }
+
+    /// <summary>
+    /// Builds a zigzag (lightning bolt) polyline between two Mercator points.
+    /// Used to visualise MQTT hops in traceroutes (Visio Dial-in style).
+    /// </summary>
+    private static Coordinate[] BuildMqttZigzag(MPoint from, MPoint to, int peaks = 5)
+    {
+        double dx = to.X - from.X;
+        double dy = to.Y - from.Y;
+        double len = Math.Sqrt(dx * dx + dy * dy);
+        if (len < 1) return new[] { new Coordinate(from.X, from.Y), new Coordinate(to.X, to.Y) };
+
+        // Unit vector along segment and perpendicular normal
+        double ux = dx / len, uy = dy / len;
+        double nx = -uy,      ny =  ux;
+
+        // Amplitude: 8% of segment length
+        double amp = len * 0.08;
+
+        // Build zigzag points: from → peaks alternating sides → to
+        int totalPts = peaks * 2 + 2;
+        var coords = new Coordinate[totalPts];
+        coords[0] = new Coordinate(from.X, from.Y);
+
+        for (int k = 0; k < peaks * 2; k++)
+        {
+            double t   = (k + 1.0) / (peaks * 2 + 1);
+            double side = (k % 2 == 0) ? amp : -amp;
+            double px  = from.X + ux * len * t + nx * side;
+            double py  = from.Y + uy * len * t + ny * side;
+            coords[k + 1] = new Coordinate(px, py);
+        }
+        coords[totalPts - 1] = new Coordinate(to.X, to.Y);
+        return coords;
     }
 
     private void HidePathForNode(NodeInfo node)
@@ -3525,6 +3697,8 @@ public partial class MainWindow : Window
             _map?.Layers.Remove(oldLayer);
             _tracerouteLayers.Remove(layerKey);
         }
+        // Clear old segment hit targets for this layer (rebuilt below)
+        _tracerouteSegmentHits[layerKey] = new List<SegmentHitTarget>();
 
         var orderedIds = new List<uint> { result.SourceNodeId == 0 ? _myNodeId : result.SourceNodeId };
         orderedIds.AddRange(result.RouteForward);
@@ -3533,35 +3707,79 @@ public partial class MainWindow : Window
         var features = new List<IFeature>();
         MPoint? lastKnownPoint = null;
 
+        const int MqttSentinelRaw = -128; // raw SnrTowards = -128 → -32 dB = MQTT hop
+
         for (int i = 0; i < orderedIds.Count - 1; i++)
         {
             uint fromId = orderedIds[i];
-            uint toId = orderedIds[i + 1];
+            uint toId   = orderedIds[i + 1];
 
             bool hasFrom = positions.TryGetValue(fromId, out var fromPos);
-            bool hasTo = positions.TryGetValue(toId, out var toPos);
+            bool hasTo   = positions.TryGetValue(toId,   out var toPos);
+            bool isMqtt  = (result.IsViaMqtt && result.SnrTowards.Count == 0)
+                         || (result.SnrTowards.Count > i && result.SnrTowards[i] == MqttSentinelRaw);
 
             if (hasFrom && hasTo)
             {
                 var ptFrom = SphericalMercator.FromLonLat(fromPos.Lon, fromPos.Lat);
-                var ptTo = SphericalMercator.FromLonLat(toPos.Lon, toPos.Lat);
-                var coords = new[] { new Coordinate(ptFrom.x, ptFrom.y), new Coordinate(ptTo.x, ptTo.y) };
-                var line = new GeometryFeature(new NetTopologySuite.Geometries.LineString(coords));
-                line.Styles.Add(new VectorStyle { Line = new Mapsui.Styles.Pen(color, 2.5), Fill = null });
-                features.Add(line);
-                lastKnownPoint = new MPoint(ptTo.x, ptTo.y);
+                var ptTo   = SphericalMercator.FromLonLat(toPos.Lon,   toPos.Lat);
+                var mFrom  = new MPoint(ptFrom.x, ptFrom.y);
+                var mTo    = new MPoint(ptTo.x,   ptTo.y);
+
+                float? segSnr = (!isMqtt && result.SnrTowards.Count > i) ? result.SnrTowards[i] / 4f : null;
+
+                if (isMqtt)
+                {
+                    // ⚡ Zickzack-Blitzlinie für MQTT-Hops (statt gerader Linie)
+                    var zigCoords = BuildMqttZigzag(mFrom, mTo);
+                    var zigLine = new GeometryFeature(new NetTopologySuite.Geometries.LineString(zigCoords));
+                    zigLine.Styles.Add(new VectorStyle { Line = new Mapsui.Styles.Pen(color, 2.5), Fill = null });
+                    features.Add(zigLine);
+                    // Track midpoint for MQTT segments too (T3)
+                    var midMqtt = new MPoint((ptFrom.x + ptTo.x) / 2, (ptFrom.y + ptTo.y) / 2);
+                    _tracerouteSegmentHits[layerKey].Add(new SegmentHitTarget(midMqtt, fromId, toId, null, true));
+                }
+                else
+                {
+                    // Normale Linie
+                    var segCoords = new[] { new Coordinate(ptFrom.x, ptFrom.y), new Coordinate(ptTo.x, ptTo.y) };
+                    var line = new GeometryFeature(new NetTopologySuite.Geometries.LineString(segCoords));
+                    line.Styles.Add(new VectorStyle { Line = new Mapsui.Styles.Pen(color, 2.5), Fill = null });
+                    features.Add(line);
+
+                    // Richtungspfeil auf Segmentmitte (T2)
+                    var midX = (ptFrom.x + ptTo.x) / 2;
+                    var midY = (ptFrom.y + ptTo.y) / 2;
+                    var midPt = new MPoint(midX, midY);
+                    // Atan2 gibt Winkel Ost=0 CCW; Mapsui-Rotation: 0=Norden CW → konvertieren
+                    var bearing    = Math.Atan2(ptTo.y - ptFrom.y, ptTo.x - ptFrom.x) * 180 / Math.PI;
+                    var mapRotation = (90 - bearing + 360) % 360;
+                    var arrow = new PointFeature(midPt);
+                    arrow.Styles.Add(new SymbolStyle
+                    {
+                        SymbolType     = SymbolType.Triangle,
+                        Fill           = new Mapsui.Styles.Brush(color),
+                        Outline        = new Mapsui.Styles.Pen(Mapsui.Styles.Color.White, 1),
+                        SymbolScale    = 0.25,
+                        SymbolRotation = mapRotation
+                    });
+                    features.Add(arrow);
+                    // Track midpoint for click detection (T3)
+                    _tracerouteSegmentHits[layerKey].Add(new SegmentHitTarget(midPt, fromId, toId, segSnr, false));
+                }
+                lastKnownPoint = mTo;
             }
             else if (hasFrom && !hasTo)
             {
                 var ptFrom = SphericalMercator.FromLonLat(fromPos.Lon, fromPos.Lat);
-                var start = new MPoint(ptFrom.x, ptFrom.y);
+                var start  = new MPoint(ptFrom.x, ptFrom.y);
                 features.AddRange(MakeDashedLine(start, null, "?", color));
                 lastKnownPoint = start;
             }
             else if (!hasFrom && hasTo)
             {
                 var ptTo = SphericalMercator.FromLonLat(toPos.Lon, toPos.Lat);
-                var end = new MPoint(ptTo.x, ptTo.y);
+                var end  = new MPoint(ptTo.x, ptTo.y);
                 features.AddRange(MakeDashedLine(lastKnownPoint, end, "?", color));
                 lastKnownPoint = end;
             }
@@ -3722,6 +3940,62 @@ public partial class MainWindow : Window
         }
     }
 
+    private void MapLoadTracerouteFromDb_Click(object sender, RoutedEventArgs e)
+    {
+        if (_db == null) { MessageBox.Show("Datenbank nicht verfügbar.", "Traceroute aus DB", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
+
+        int days = 7;
+        if (TracerouteAgeFilterCombo.SelectedItem is System.Windows.Controls.ComboBoxItem ci && int.TryParse(ci.Tag?.ToString(), out var d))
+            days = d;
+
+        var traceroutes = _db.GetRecentTracerouteResults(days);
+        if (traceroutes.Count == 0) { MessageBox.Show($"Keine Traceroutes in den letzten {(days == 0 ? "∞" : days.ToString())} Tagen.", "Traceroute aus DB", MessageBoxButton.OK, MessageBoxImage.Information); return; }
+
+        // T5: node-pair deduplication (only keep newest per A↔B pair)
+        bool dedupe = TracerouteDedupeCheckBox?.IsChecked == true;
+        if (dedupe)
+        {
+            var seen = new HashSet<string>();
+            var deduped = new List<Models.TracerouteResult>();
+            foreach (var tr in traceroutes) // already ordered newest-first
+            {
+                uint a = Math.Min(tr.SourceNodeId, tr.DestinationNodeId);
+                uint b = Math.Max(tr.SourceNodeId, tr.DestinationNodeId);
+                string key = $"{a}_{b}";
+                if (seen.Add(key)) deduped.Add(tr);
+            }
+            traceroutes = deduped;
+        }
+
+        // Build position + name lookup from known nodes
+        var positions = _nodes
+            .Where(n => n.Latitude.HasValue && n.Longitude.HasValue)
+            .ToDictionary(n => n.NodeId, n => (Lat: n.Latitude!.Value, Lon: n.Longitude!.Value));
+        var nodeNames = _nodes.ToDictionary(n => n.NodeId, n => string.IsNullOrEmpty(n.ShortName) ? $"!{n.NodeId:x4}" : n.ShortName);
+
+        int drawn = 0;
+        foreach (var tr in traceroutes)
+        {
+            string layerKey = $"db_{tr.RequestId}_{tr.SourceNodeId:x}_{tr.DestinationNodeId:x}";
+            if (_tracerouteLayers.ContainsKey(layerKey)) continue; // already on map
+
+            var color = TracerouteColorPalette[_tracerouteColorIndex % TracerouteColorPalette.Length];
+            _tracerouteColorIndex++;
+            string ts = tr.ReceivedAt.ToString("dd.MM HH:mm");
+            string destName = nodeNames.TryGetValue(tr.DestinationNodeId, out var dn) ? dn : $"!{tr.DestinationNodeId:x4}";
+            DrawTracerouteLayer(tr, $"{destName} ({ts})", positions, nodeNames, color, layerKey, zoomToFit: false);
+            drawn++;
+        }
+
+        if (drawn == 0)
+            MapStatusText.Text = "Alle DB-Traceroutes bereits auf der Karte.";
+        else
+        {
+            MainTabs.SelectedIndex = 4;
+            MapStatusText.Text = $"{drawn} Traceroute(s) aus DB geladen ({days}d).";
+        }
+    }
+
     /// <summary>
     /// Simulates a dashed line between two map points (or a "?" marker if toPoint is null).
     /// Draws alternating short LineString segments using the traceroute's assigned color.
@@ -3772,6 +4046,7 @@ public partial class MainWindow : Window
             _map?.Layers.Remove(layer);
             _tracerouteLayers.Remove(layerKey);
             _tracerouteNames.Remove(layerKey);
+            _tracerouteSegmentHits.Remove(layerKey);
             // Keep color in _tracerouteColors so re-plotting reuses the same color
             MapControl.Refresh();
             UpdateTracerouteLegend();
@@ -3782,6 +4057,12 @@ public partial class MainWindow : Window
     /// <summary>Called by TracerouteWindow's ClearFromMapRequested (passes uint destId).</summary>
     private void ClearLiveTracerouteFromMap(uint destinationNodeId)
         => ClearTracerouteFromMap($"live_{destinationNodeId:x8}");
+
+    private void ClearAllTraceroutes_Click(object sender, RoutedEventArgs e)
+    {
+        foreach (var key in _tracerouteLayers.Keys.ToList())
+            ClearTracerouteFromMap(key);
+    }
 
     private void UpdateTracerouteLegend()
     {
@@ -3886,6 +4167,128 @@ public partial class MainWindow : Window
     {
         // Already handled in HandleTelemetryPacket via NodeInfoReceived – no extra UI update needed here.
         // This event is available for future consumers (e.g. live tile updates).
+    }
+
+    private void OnTimeDriftDetected(object? sender, int driftSeconds)
+    {
+        Services.Logger.WriteLine($"Auto time sync triggered (drift={driftSeconds}s)");
+        _ = _protocolService.SendTimeSyncAsync();
+    }
+
+    private void StartTimeSyncTimer()
+    {
+        _timeSyncTimer?.Dispose();
+        _timeSyncTimer = new System.Threading.Timer(async _ =>
+        {
+            if (_connectionService?.IsConnected == true)
+            {
+                Services.Logger.WriteLine("Scheduled 12h time sync");
+                await _protocolService.SendTimeSyncAsync();
+            }
+        }, null, TimeSpan.FromHours(12), TimeSpan.FromHours(12));
+    }
+
+    private void OnWaypointReceived(object? sender, TelemetryDatabaseService.WaypointEntry wp)
+    {
+        Dispatcher.BeginInvoke(() =>
+        {
+            var existing = _waypoints.FirstOrDefault(w => w.Id == wp.Id);
+            if (existing != null) _waypoints.Remove(existing);
+            _waypoints.Add(wp);
+            RefreshWaypointLayer();
+        });
+    }
+
+    private void RefreshWaypointLayer()
+    {
+        if (_map == null) return;
+
+        if (_waypointLayer != null)
+            _map.Layers.Remove(_waypointLayer);
+
+        var features = new List<IFeature>();
+        foreach (var wp in _waypoints)
+        {
+            var pt = SphericalMercator.FromLonLat(wp.Longitude, wp.Latitude);
+            var mpt = new MPoint(pt.x, pt.y);
+
+            // Icon: use emoji char if available, else 📍
+            string iconText = wp.Icon > 0 ? char.ConvertFromUtf32((int)wp.Icon) : "📍";
+
+            var pin = new PointFeature(mpt);
+            pin.Styles.Add(new SymbolStyle
+            {
+                SymbolType  = SymbolType.Ellipse,
+                Fill        = new Mapsui.Styles.Brush(new Mapsui.Styles.Color(255, 165, 0, 220)),
+                Outline     = new Mapsui.Styles.Pen(Mapsui.Styles.Color.White, 1.5f),
+                SymbolScale = 0.18,
+            });
+            pin.Styles.Add(new LabelStyle
+            {
+                Text                = $"{iconText} {wp.Name}",
+                ForeColor           = Mapsui.Styles.Color.Black,
+                BackColor           = new Mapsui.Styles.Brush(new Mapsui.Styles.Color(255, 255, 255, 190)),
+                HorizontalAlignment = LabelStyle.HorizontalAlignmentEnum.Left,
+                VerticalAlignment   = LabelStyle.VerticalAlignmentEnum.Center,
+                Offset              = new Offset(10, 0),
+                Font                = new Font { Size = 9 },
+            });
+            features.Add(pin);
+        }
+
+        _waypointLayer = new MemoryLayer("Waypoints") { Features = features, Style = null };
+        _map.Layers.Add(_waypointLayer);
+        MapControl.Refresh();
+    }
+
+    private void LoadWaypointsFromDb()
+    {
+        if (_db == null) return;
+        var wps = _db.GetAllWaypoints(excludeExpired: true);
+        _waypoints.Clear();
+        _waypoints.AddRange(wps);
+        RefreshWaypointLayer();
+        Services.Logger.WriteLine($"Loaded {wps.Count} waypoints from DB.");
+    }
+
+    private async void CreateWaypointAt(double lat, double lon)
+    {
+        var dlg = new WaypointCreateDialog(lat, lon) { Owner = this };
+        if (dlg.ShowDialog() != true) return;
+
+        uint expireUnix = dlg.ExpireHours > 0
+            ? (uint)DateTimeOffset.UtcNow.AddHours(dlg.ExpireHours).ToUnixTimeSeconds()
+            : 0;
+
+        var entry = new TelemetryDatabaseService.WaypointEntry(
+            Id:          (uint)Random.Shared.Next(1, int.MaxValue),
+            Name:        dlg.WaypointName,
+            Description: dlg.WaypointDescription,
+            Latitude:    lat,
+            Longitude:   lon,
+            Expire:      expireUnix > 0 ? expireUnix : null,
+            LockedTo:    null,  // 0 = anyone can edit (don't lock to sender)
+            Icon:        dlg.WaypointIcon,
+            FromNode:    _myNodeId,
+            ReceivedAt:  DateTime.Now);
+
+        _db?.UpsertWaypoint(entry);
+        _waypoints.Add(entry);
+        RefreshWaypointLayer();
+
+        if (dlg.SendToMesh && _connectionService?.IsConnected == true)
+            await _protocolService.SendWaypointAsync(entry);
+
+        MapStatusText.Text = dlg.SendToMesh
+            ? $"Waypoint \"{entry.Name}\" erstellt und gesendet."
+            : $"Waypoint \"{entry.Name}\" erstellt (nur lokal).";
+    }
+
+    private async void TimeSyncManual_Click(object sender, RoutedEventArgs e)
+    {
+        if (_connectionService?.IsConnected != true) return;
+        bool ok = await _protocolService.SendTimeSyncAsync();
+        MapStatusText.Text = ok ? "Zeitsynchronisation gesendet." : "Zeitsynchronisation fehlgeschlagen.";
     }
 
     private void OnNodeKeyMismatch(object? sender, Services.NodeKeyMismatchEventArgs e)

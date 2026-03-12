@@ -9,6 +9,8 @@ message Position {
   sfixed32 longitude_i = 2;
   int32 altitude = 3;
   fixed32 time = 4;
+  uint32 ground_speed = 14;   // m/s
+  uint32 ground_track = 15;   // degrees * 100000 (0=North, clockwise)
 }
 
 message User {
@@ -551,4 +553,16 @@ enum GpsCoordinateFormat {
   MGRS = 3;
   OLC = 4;
   OSGR = 5;
+}
+
+/// Waypoint message (PortNum = WAYPOINT_APP = 8) – field numbers match official Meshtastic protobufs
+message Waypoint {
+  uint32            id           = 1;  // Unique waypoint ID
+  optional sfixed32 latitude_i  = 2;  // Latitude * 1e7
+  optional sfixed32 longitude_i = 3;  // Longitude * 1e7
+  uint32            expire       = 4;  // Unix timestamp when expires (0 = never)
+  uint32            locked_to    = 5;  // NodeId that can edit (0 = anyone)
+  string            name         = 6;  // Short name (max 30 chars)
+  string            description  = 7;  // Description (max 100 chars)
+  fixed32           icon         = 8;  // Unicode codepoint (0 = default)
 }

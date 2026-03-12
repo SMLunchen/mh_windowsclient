@@ -31,7 +31,10 @@ public record AppSettings(
     int TelemetryRetentionDays,              // 0=unlimited, 30/90/365
     PskMismatchAction NodeKeyMismatchAction, // Warn / Overwrite / Ask
     int SignalWeatherWindowHours,            // Short analysis window for weather detection (default 6h)
-    int SignalAntennaWindowDays);            // Long analysis window for antenna trend (default 7d)
+    int SignalAntennaWindowDays,             // Long analysis window for antenna trend (default 7d)
+    int PositionHistoryHours,                // Hours of position history to show on map (0=unlimited, default 24)
+    bool AutoTimeSyncOnConnect,              // Send time sync packet after connection init
+    int TimeSyncDriftThresholdSeconds);      // Trigger time sync if rx_time drifts more than N seconds (default 300)
 
 public static class SettingsService
 {
@@ -65,7 +68,10 @@ public static class SettingsService
             90,                             // TelemetryRetentionDays default 90
             PskMismatchAction.Overwrite,    // NodeKeyMismatchAction default Overwrite
             6,                              // SignalWeatherWindowHours default 6h
-            7);                             // SignalAntennaWindowDays default 7d
+            7,                              // SignalAntennaWindowDays default 7d
+            24,                             // PositionHistoryHours default 24h
+            true,                           // AutoTimeSyncOnConnect default on
+            300);                           // TimeSyncDriftThresholdSeconds default 5min
 
         try
         {
@@ -176,7 +182,10 @@ public static class SettingsService
                 TelemetryRetentionDays: values.TryGetValue("TelemetryRetentionDays", out var trd) && int.TryParse(trd, out var trdInt) ? trdInt : defaults.TelemetryRetentionDays,
                 NodeKeyMismatchAction: values.TryGetValue("NodeKeyMismatchAction", out var pkm) && Enum.TryParse(pkm, out PskMismatchAction pkmVal) ? pkmVal : defaults.NodeKeyMismatchAction,
                 SignalWeatherWindowHours: values.TryGetValue("SignalWeatherWindowHours", out var swh) && int.TryParse(swh, out var swhInt) ? swhInt : defaults.SignalWeatherWindowHours,
-                SignalAntennaWindowDays: values.TryGetValue("SignalAntennaWindowDays", out var sad) && int.TryParse(sad, out var sadInt) ? sadInt : defaults.SignalAntennaWindowDays
+                SignalAntennaWindowDays: values.TryGetValue("SignalAntennaWindowDays", out var sad) && int.TryParse(sad, out var sadInt) ? sadInt : defaults.SignalAntennaWindowDays,
+                PositionHistoryHours: values.TryGetValue("PositionHistoryHours", out var phh) && int.TryParse(phh, out var phhInt) ? phhInt : defaults.PositionHistoryHours,
+                AutoTimeSyncOnConnect: !values.TryGetValue("AutoTimeSyncOnConnect", out var ats) || !bool.TryParse(ats, out var atsBool) || atsBool,
+                TimeSyncDriftThresholdSeconds: values.TryGetValue("TimeSyncDriftThresholdSeconds", out var tsd) && int.TryParse(tsd, out var tsdInt) ? tsdInt : defaults.TimeSyncDriftThresholdSeconds
             );
         }
         catch (Exception ex)
@@ -216,7 +225,10 @@ public static class SettingsService
                 $"TelemetryRetentionDays={settings.TelemetryRetentionDays}",
                 $"NodeKeyMismatchAction={(int)settings.NodeKeyMismatchAction}",
                 $"SignalWeatherWindowHours={settings.SignalWeatherWindowHours}",
-                $"SignalAntennaWindowDays={settings.SignalAntennaWindowDays}"
+                $"SignalAntennaWindowDays={settings.SignalAntennaWindowDays}",
+                $"PositionHistoryHours={settings.PositionHistoryHours}",
+                $"AutoTimeSyncOnConnect={settings.AutoTimeSyncOnConnect}",
+                $"TimeSyncDriftThresholdSeconds={settings.TimeSyncDriftThresholdSeconds}"
             };
 
             // Save node colors

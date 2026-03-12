@@ -49,6 +49,12 @@ public class MeshtasticProtocolService
     public event EventHandler<TracerouteResult>? TracerouteReceived;
     public event EventHandler<(uint ReplyId, string Emoji, uint FromId)>? ReactionReceived;
     public event EventHandler<(uint NodeId, float BatteryPercent, float Voltage)>? DeviceTelemetryReceived;
+    /// <summary>Fired when rx_time of a received packet differs from local UTC by more than <see cref="TimeDriftThresholdSeconds"/>.</summary>
+    public event EventHandler<int>? TimeDriftDetected;  // arg: observed drift in seconds
+    public event EventHandler<TelemetryDatabaseService.WaypointEntry>? WaypointReceived;
+    public int TimeDriftThresholdSeconds { get; set; } = 300; // 5 minutes
+
+    private DateTime _lastDriftCheck = DateTime.MinValue;
 
     private TelemetryDatabaseService? _db;
     private NodeKeyService? _nodeKeyService;
@@ -775,6 +781,19 @@ public class MeshtasticProtocolService
 
     private void HandleMeshPacket(MeshPacket packet)
     {
+        // Drift detection: compare node's rx_time with our local UTC clock
+        if (!_isInitializing && packet.RxTime > 0)
+        {
+            long localUnix = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            int drift = (int)(localUnix - packet.RxTime);
+            if (Math.Abs(drift) > TimeDriftThresholdSeconds && (DateTime.UtcNow - _lastDriftCheck).TotalMinutes > 30)
+            {
+                _lastDriftCheck = DateTime.UtcNow;
+                Logger.WriteLine($"Time drift detected: {drift}s (local={localUnix}, rx_time={packet.RxTime})");
+                TimeDriftDetected?.Invoke(this, drift);
+            }
+        }
+
         if (packet.PayloadVariantCase == MeshPacket.PayloadVariantOneofCase.Decoded)
         {
             var data = packet.Decoded;
@@ -912,6 +931,10 @@ public class MeshtasticProtocolService
             case 70: // TRACEROUTE_APP
                 HandleTraceroutePacket(packet, data);
                 break;
+
+            case 8: // WAYPOINT_APP
+                HandleWaypointPacket(packet, data);
+                break;
         }
     }
 
@@ -982,6 +1005,44 @@ public class MeshtasticProtocolService
         catch (Exception ex)
         {
             Logger.WriteLine($"ERROR: Text message handling failed: {ex.Message}");
+        }
+    }
+
+    private void HandleWaypointPacket(MeshPacket packet, Data data)
+    {
+        try
+        {
+            var wp = Waypoint.Parser.ParseFrom(data.Payload);
+            // id=0 with empty payload can be a delete signal – ignore
+            if (wp.Id == 0) return;
+
+            bool isDelete = wp.LatitudeI == 0 && wp.LongitudeI == 0 && string.IsNullOrEmpty(wp.Name);
+            if (isDelete)
+            {
+                _db?.DeleteWaypoint(wp.Id);
+                Logger.WriteLine($"Waypoint deleted: id={wp.Id}");
+                return;
+            }
+
+            var entry = new TelemetryDatabaseService.WaypointEntry(
+                Id:          wp.Id,
+                Name:        string.IsNullOrEmpty(wp.Name) ? $"WP-{wp.Id}" : wp.Name,
+                Description: wp.Description,
+                Latitude:    wp.LatitudeI / 1e7,
+                Longitude:   wp.LongitudeI / 1e7,
+                Expire:      wp.Expire > 0 ? wp.Expire : null,
+                LockedTo:    wp.LockedTo > 0 ? wp.LockedTo : null,
+                Icon:        wp.Icon,
+                FromNode:    packet.From,
+                ReceivedAt:  DateTime.Now);
+
+            _db?.UpsertWaypoint(entry);
+            Logger.WriteLine($"Waypoint received: id={wp.Id}, name={entry.Name}, lat={entry.Latitude:F6}, lon={entry.Longitude:F6}");
+            WaypointReceived?.Invoke(this, entry);
+        }
+        catch (Exception ex)
+        {
+            Logger.WriteLine($"HandleWaypointPacket error: {ex.Message}");
         }
     }
 
@@ -1257,18 +1318,25 @@ public class MeshtasticProtocolService
 
             ModelNodeInfo? nodeToFire = null;
             bool shouldFireEvent;
+            bool hasGpsFix = position.LatitudeI != 0 || position.LongitudeI != 0;
 
-            Logger.WriteLine($"Position packet from !{packet.From:x8}: LatI={position.LatitudeI}, LonI={position.LongitudeI}, Alt={position.Altitude}");
+            // Decode ground_track: proto stores degrees * 100000, convert to 0–360°
+            float? groundTrack = position.GroundTrack > 0 ? position.GroundTrack / 100000f : null;
+            float? groundSpeed = position.GroundSpeed > 0 ? (float)position.GroundSpeed : null;
+
+            Logger.WriteLine($"Position packet from !{packet.From:x8}: LatI={position.LatitudeI}, LonI={position.LongitudeI}, Alt={position.Altitude}, Speed={groundSpeed}, Track={groundTrack}");
 
             lock (_dataLock)
             {
                 if (_knownNodes.TryGetValue(packet.From, out var nodeInfo))
                 {
-                    if (position.LatitudeI != 0 || position.LongitudeI != 0)
+                    if (hasGpsFix)
                     {
-                        nodeInfo.Latitude = position.LatitudeI / 1e7;
-                        nodeInfo.Longitude = position.LongitudeI / 1e7;
-                        nodeInfo.Altitude = position.Altitude;
+                        nodeInfo.Latitude    = position.LatitudeI / 1e7;
+                        nodeInfo.Longitude   = position.LongitudeI / 1e7;
+                        nodeInfo.Altitude    = position.Altitude;
+                        nodeInfo.GroundSpeed = groundSpeed;
+                        nodeInfo.GroundTrack = groundTrack;
                         Logger.WriteLine($"  Position updated: lat={nodeInfo.Latitude:F6}, lon={nodeInfo.Longitude:F6}");
                     }
                     else
@@ -1286,6 +1354,19 @@ public class MeshtasticProtocolService
                     Logger.WriteLine($"  Node !{packet.From:x8} unknown, position discarded");
                     shouldFireEvent = false;
                 }
+            }
+
+            // Write position to DB (CSV logging stays in MainWindow via NodeInfoReceived)
+            if (hasGpsFix && nodeToFire != null)
+            {
+                _db?.InsertNodePosition(
+                    nodeToFire.NodeId,
+                    nodeToFire.Latitude!.Value,
+                    nodeToFire.Longitude!.Value,
+                    nodeToFire.Altitude,
+                    groundSpeed,
+                    groundTrack,
+                    DateTimeOffset.UtcNow.ToUnixTimeSeconds());
             }
 
             // Nur Events feuern wenn NICHT initialisierend (außerhalb des Locks!)
@@ -2165,5 +2246,82 @@ public class MeshtasticProtocolService
             sb.Append(data[i].ToString("X2"));
         }
         return sb.ToString();
+    }
+
+    /// <summary>
+    /// Broadcasts a Waypoint to the mesh (channel 0).
+    /// </summary>
+    public async Task<bool> SendWaypointAsync(TelemetryDatabaseService.WaypointEntry wp)
+    {
+        if (_myNodeId == 0) return false;
+        try
+        {
+            var waypointProto = new Waypoint
+            {
+                Id          = wp.Id,
+                LatitudeI   = (int)(wp.Latitude  * 1e7),
+                LongitudeI  = (int)(wp.Longitude * 1e7),
+                Name        = wp.Name,
+                Description = wp.Description ?? string.Empty,
+                Icon        = wp.Icon,
+                Expire      = wp.Expire ?? 0,
+            };
+
+            var meshPacket = new MeshPacket
+            {
+                From = _myNodeId,
+                To   = 0xFFFFFFFF, // broadcast
+                Decoded = new Data
+                {
+                    Portnum = 8, // WAYPOINT_APP
+                    Payload = waypointProto.ToByteString(),
+                },
+                Id       = (uint)Random.Shared.Next(),
+                HopLimit = 3,
+                Channel  = 0,
+            };
+            await SendToRadioAsync(new ToRadio { Packet = meshPacket });
+            Logger.WriteLine($"Waypoint sent: id={wp.Id}, name={wp.Name}");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Logger.WriteLine($"SendWaypointAsync failed: {ex.Message}");
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Sends current Unix time to the connected node via a Position packet with only the time field set.
+    /// This causes the firmware to update its internal RTC.
+    /// Returns true if the packet was sent successfully.
+    /// </summary>
+    public async Task<bool> SendTimeSyncAsync()
+    {
+        if (_myNodeId == 0) return false;
+        try
+        {
+            uint nowUnix = (uint)DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            var position = new Position { Time = nowUnix };
+            var meshPacket = new MeshPacket
+            {
+                From = _myNodeId,
+                To   = _myNodeId,
+                Decoded = new Data
+                {
+                    Portnum = 3, // POSITION_APP
+                    Payload = position.ToByteString(),
+                },
+                Id = (uint)Random.Shared.Next(),
+            };
+            await SendToRadioAsync(new ToRadio { Packet = meshPacket });
+            Logger.WriteLine($"Time sync sent: {nowUnix} ({DateTimeOffset.UtcNow:yyyy-MM-dd HH:mm:ss} UTC)");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Logger.WriteLine($"Time sync failed: {ex.Message}");
+            return false;
+        }
     }
 }
