@@ -594,4 +594,10 @@ Grün ≤15% | Gelb 15–25% | Rot &gt;25% | Grau = keine Airtime-Daten</sys:Str
     <sys:String x:Key="StrActiveChannelStatus">Aktiver Kanal: {0}</sys:String>
     <sys:String x:Key="StrPortsRefreshed">Ports aktualisiert</sys:String>
 
+    <!-- Message reply -->
+    <sys:String x:Key="StrReplyMessage">↩ Antworten</sys:String>
+    <sys:String x:Key="StrReplyPrefix">&gt; {0} ({1}): {2}</sys:String>
+    <sys:String x:Key="StrReplyingTo">↳ Antwort auf {0}: {1}</sys:String>
+    <sys:String x:Key="StrCancelReply">✕ Abbrechen</sys:String>
+
 </ResourceDictionary>

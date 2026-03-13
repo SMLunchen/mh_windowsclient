@@ -128,6 +128,8 @@ public partial class MainWindow : Window
     };
     // Map from packet-ID → MessageItem (for attaching reactions)
     private readonly Dictionary<uint, MessageItem> _messageById = new();
+    // Currently pending reply (set by context menu "Reply")
+    private MessageItem? _replyToMessage;
 
     // Telemetry DB
     private TelemetryDatabaseService? _db;
@@ -1553,7 +1555,12 @@ public partial class MainWindow : Window
             SendButton.IsEnabled = false;
 
             // Sende Nachricht mit dem aktiven Kanal
-            uint sentId = await _protocolService.SendTextMessageAsync(message, 0xFFFFFFFF, (uint)_activeChannelIndex);
+            var replyTarget = _replyToMessage;
+            uint sentId = await _protocolService.SendTextMessageAsync(message, 0xFFFFFFFF, (uint)_activeChannelIndex, replyTarget?.Id ?? 0);
+
+            // Clear reply state
+            _replyToMessage = null;
+            ReplyIndicatorPanel.Visibility = Visibility.Collapsed;
 
             // Zeige gesendete Nachricht in der Liste
             var activeChannel = _channels.FirstOrDefault(c => c.Index == _activeChannelIndex);
@@ -1567,7 +1574,10 @@ public partial class MainWindow : Window
                 Message = message,
                 Channel = _activeChannelIndex.ToString(),
                 ChannelName = channelName,
-                IsViaMqtt = false
+                IsViaMqtt = false,
+                ReplyId = replyTarget?.Id ?? 0,
+                ReplyFromName = replyTarget?.From ?? string.Empty,
+                ReplyPreview = replyTarget?.Message?.Length > 60 ? replyTarget.Message[..60] + "…" : replyTarget?.Message ?? string.Empty
             };
             _allMessages.Add(sentMessage);
             if (sentId != 0) _messageById[sentId] = sentMessage;
@@ -2164,6 +2174,13 @@ public partial class MainWindow : Window
                     message.SenderShortName = senderNode.ShortName;
                     message.SenderColorHex = senderNode.ColorHex;
                     message.SenderNote = senderNode.Note;
+                }
+
+                // Populate reply preview from original message
+                if (message.ReplyId != 0 && _messageById.TryGetValue(message.ReplyId, out var origMsg))
+                {
+                    message.ReplyFromName = origMsg.From;
+                    message.ReplyPreview = origMsg.Message?.Length > 60 ? origMsg.Message[..60] + "…" : origMsg.Message ?? string.Empty;
                 }
 
                 // Speichere in ungefilterte Liste und ID-Lookup
@@ -4811,5 +4828,23 @@ public partial class MainWindow : Window
     private void DmMessageContextMenu_React_Click(object sender, RoutedEventArgs e)
     {
         // Forwarded from DirectMessagesWindow - handled there via EmojiPickerRequested
+    }
+
+    private void MessageContextMenu_Reply_Click(object sender, RoutedEventArgs e)
+    {
+        if (MessageListView.SelectedItem is not MessageItem msg) return;
+        _replyToMessage = msg;
+        var preview = msg.Message?.Length > 60 ? msg.Message[..60] + "…" : msg.Message ?? string.Empty;
+        ReplyIndicatorText.Text = string.Format(Loc("StrReplyingTo"), msg.From, preview);
+        ReplyIndicatorPanel.Visibility = Visibility.Visible;
+        MessageTextBox.Clear();
+        MessageTextBox.Focus();
+        if (MainTabs.SelectedIndex != 0) MainTabs.SelectedIndex = 0;
+    }
+
+    private void CancelReply_Click(object sender, RoutedEventArgs e)
+    {
+        _replyToMessage = null;
+        ReplyIndicatorPanel.Visibility = Visibility.Collapsed;
     }
 }

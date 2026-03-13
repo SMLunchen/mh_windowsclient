@@ -998,7 +998,8 @@ public class MeshtasticProtocolService
                 ToId = packet.To,
                 Message = messageText,
                 Channel = FormatChannelDisplay(packet.Channel),
-                IsViaMqtt = packet.ViaMqtt
+                IsViaMqtt = packet.ViaMqtt,
+                ReplyId = data.ReplyId
             };
 
             MessageReceived?.Invoke(this, messageItem);
@@ -1540,7 +1541,7 @@ public class MeshtasticProtocolService
         }
     }
 
-    public async Task<uint> SendTextMessageAsync(string text, uint destinationId = 0xFFFFFFFF, uint channel = 0)
+    public async Task<uint> SendTextMessageAsync(string text, uint destinationId = 0xFFFFFFFF, uint channel = 0, uint replyId = 0)
     {
         try
         {
@@ -1553,7 +1554,8 @@ public class MeshtasticProtocolService
                 Decoded = new Data
                 {
                     Portnum = 1, // TEXT_MESSAGE_APP
-                    Payload = ByteString.CopyFromUtf8(text)
+                    Payload = ByteString.CopyFromUtf8(text),
+                    ReplyId = replyId
                 },
                 Id = packetId,
                 WantAck = false,

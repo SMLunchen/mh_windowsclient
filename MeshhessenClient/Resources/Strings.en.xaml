@@ -594,4 +594,10 @@ Green ≤15% | Yellow 15–25% | Red &gt;25% | Gray = no airtime data</sys:Strin
     <sys:String x:Key="StrActiveChannelStatus">Active channel: {0}</sys:String>
     <sys:String x:Key="StrPortsRefreshed">Ports refreshed</sys:String>
 
+    <!-- Message reply -->
+    <sys:String x:Key="StrReplyMessage">↩ Reply</sys:String>
+    <sys:String x:Key="StrReplyPrefix">&gt; {0} ({1}): {2}</sys:String>
+    <sys:String x:Key="StrReplyingTo">↳ Replying to {0}: {1}</sys:String>
+    <sys:String x:Key="StrCancelReply">✕ Cancel</sys:String>
+
 </ResourceDictionary>
