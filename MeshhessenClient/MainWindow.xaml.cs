@@ -62,6 +62,7 @@ public partial class MainWindow : Window
     private readonly List<IFeature> _nodeFeatures = new();
     private readonly List<IFeature> _myPosFeatures = new();
     private readonly Dictionary<uint, MPoint> _nodePinPositions = new();
+    private readonly Dictionary<uint, MPoint> _waypointPinPositions = new();
     private readonly Dictionary<uint, MemoryLayer> _pathLayers = new();
     private AppSettings _currentSettings = new(
         false,
@@ -107,6 +108,7 @@ public partial class MainWindow : Window
     // Segment midpoints for click detection (T3)
     private record SegmentHitTarget(MPoint Midpoint, uint FromId, uint ToId, float? CurrentSnr, bool IsMqtt);
     private readonly Dictionary<string, List<SegmentHitTarget>> _tracerouteSegmentHits = new();
+    private System.Windows.Point _mapMouseDownPos; // For drag vs click detection
 
     // Waypoints map layer (W1+W2)
     private MemoryLayer? _waypointLayer;
@@ -180,6 +182,7 @@ public partial class MainWindow : Window
         _protocolService.DeviceTelemetryReceived += OnDeviceTelemetryReceived;
         _protocolService.TimeDriftDetected += OnTimeDriftDetected;
         _protocolService.WaypointReceived  += OnWaypointReceived;
+        _protocolService.WaypointDeleted   += (s, id) => Dispatcher.Invoke(() => OnWaypointDeleted(id));
 
         // LoadRegions / LoadModemPresets removed — now displayed as read-only TextBlocks in Settings right column
 
@@ -405,7 +408,11 @@ public partial class MainWindow : Window
 
             MapControl.Map = _map;
             MapControl.MouseRightButtonUp += MapControl_RightClick;
-            MapControl.MouseLeftButtonUp += MapControl_LeftClick;
+            // PreviewMouseLeftButtonDown fires before Mapsui starts pan tracking.
+            // Mark handled on segment hit → Mapsui never starts pan, map stays put.
+            MapControl.PreviewMouseLeftButtonDown += MapControl_LeftClick_Preview;
+            // MouseMove: cursor feedback when hovering near a segment
+            MapControl.MouseMove += MapControl_MouseMoveSegmentHover;
 
             // Karte auf eigenen Standort zentrieren
             var center = SphericalMercator.FromLonLat(_currentSettings.MyLongitude, _currentSettings.MyLatitude);
@@ -555,6 +562,20 @@ public partial class MainWindow : Window
                 }
             }
 
+            // Waypoint hit-test
+            TelemetryDatabaseService.WaypointEntry? hitWaypoint = null;
+            double minWpDist = 30;
+            foreach (var (wpId, wpWorld) in _waypointPinPositions)
+            {
+                var wpScreen = MapControl.Map.Navigator.Viewport.WorldToScreen(wpWorld);
+                var dist = Math.Sqrt(Math.Pow(screenPos.X - wpScreen.X, 2) + Math.Pow(screenPos.Y - wpScreen.Y, 2));
+                if (dist < minWpDist)
+                {
+                    hitWaypoint = _waypoints.FirstOrDefault(w => w.Id == wpId);
+                    minWpDist = dist;
+                }
+            }
+
             var menu = new ContextMenu();
 
             if (hitNode != null)
@@ -666,6 +687,26 @@ public partial class MainWindow : Window
                 };
                 menu.Items.Add(traceItem);
             }
+            else if (hitWaypoint != null)
+            {
+                var wp = hitWaypoint;
+                var wpNameItem = new MenuItem { Header = $"📍 {wp.Name}", IsEnabled = false };
+                menu.Items.Add(wpNameItem);
+                menu.Items.Add(new Separator());
+                var deleteWpItem = new MenuItem { Header = Loc("StrDeleteWaypoint") };
+                deleteWpItem.Click += async (s, ev) =>
+                {
+                    _waypoints.Remove(wp);
+                    _db?.DeleteWaypoint(wp.Id);
+                    RefreshWaypointLayer();
+                    if (_connectionService?.IsConnected == true)
+                    {
+                        var deleteWp = wp with { Expire = 1 };
+                        await _protocolService.SendWaypointAsync(deleteWp);
+                    }
+                };
+                menu.Items.Add(deleteWpItem);
+            }
             else
             {
                 var lonLat = SphericalMercator.ToLonLat(worldPos.X, worldPos.Y);
@@ -677,7 +718,7 @@ public partial class MainWindow : Window
                 menu.Items.Add(setPosItem);
 
                 menu.Items.Add(new Separator());
-                var wpItem = new MenuItem { Header = "📍 Waypoint erstellen…" };
+                var wpItem = new MenuItem { Header = Loc("StrCreateWaypoint") };
                 wpItem.Click += (s, ev) => CreateWaypointAt(clickLat, clickLon);
                 menu.Items.Add(wpItem);
             }
@@ -690,6 +731,74 @@ public partial class MainWindow : Window
         {
             Services.Logger.WriteLine($"ERROR map right-click: {ex.Message}");
         }
+    }
+
+    // Fires on PreviewMouseLeftButtonDown — before Mapsui starts pan tracking.
+    // If a segment is hit, mark e.Handled = true so Mapsui never pans the map.
+    private void MapControl_LeftClick_Preview(object sender, MouseButtonEventArgs e)
+    {
+        try
+        {
+            if (MapControl.Map == null || _tracerouteSegmentHits.Count == 0) return;
+            var screenPos = e.GetPosition(MapControl);
+            var viewport = MapControl.Map.Navigator.Viewport;
+            var worldClick = viewport.ScreenToWorld(screenPos.X, screenPos.Y);
+            double thresholdWorld = 35.0 * viewport.Resolution;
+
+            SegmentHitTarget? hitSeg = null;
+            double minD = double.MaxValue;
+            foreach (var segs in _tracerouteSegmentHits.Values)
+                foreach (var seg in segs)
+                {
+                    var dx = worldClick.X - seg.Midpoint.X;
+                    var dy = worldClick.Y - seg.Midpoint.Y;
+                    var d = Math.Sqrt(dx * dx + dy * dy);
+                    if (d < thresholdWorld && d < minD) { hitSeg = seg; minD = d; }
+                }
+
+            if (hitSeg != null)
+            {
+                e.Handled = true; // Prevent Mapsui from starting pan
+                ShowTracerouteSegmentPopup(hitSeg);
+            }
+        }
+        catch (Exception ex) { Services.Logger.WriteLine($"ERROR map preview click: {ex.Message}"); }
+    }
+
+    // MouseMove: change cursor and show status info when hovering near a segment
+    private void MapControl_MouseMoveSegmentHover(object sender, MouseEventArgs e)
+    {
+        try
+        {
+            if (MapControl.Map == null || _tracerouteSegmentHits.Count == 0)
+            {
+                MapControl.Cursor = Cursors.Arrow;
+                return;
+            }
+            var screenPos = e.GetPosition(MapControl);
+            var viewport = MapControl.Map.Navigator.Viewport;
+            var worldPos = viewport.ScreenToWorld(screenPos.X, screenPos.Y);
+            double thresholdWorld = 28.0 * viewport.Resolution;
+
+            foreach (var segs in _tracerouteSegmentHits.Values)
+                foreach (var seg in segs)
+                {
+                    var dx = worldPos.X - seg.Midpoint.X;
+                    var dy = worldPos.Y - seg.Midpoint.Y;
+                    if (Math.Sqrt(dx * dx + dy * dy) < thresholdWorld)
+                    {
+                        MapControl.Cursor = Cursors.Hand;
+                        string snrInfo = seg.CurrentSnr.HasValue ? $" | SNR: {seg.CurrentSnr.Value:F1} dB" : "";
+                        string type = seg.IsMqtt ? "⚡ MQTT" : "LoRa";
+                        string from = seg.FromId == _myNodeId ? Loc("StrMe") : (_allNodes.FirstOrDefault(n => n.NodeId == seg.FromId)?.ShortName ?? $"!{seg.FromId:x4}");
+                        string to   = seg.ToId   == _myNodeId ? Loc("StrMe") : (_allNodes.FirstOrDefault(n => n.NodeId == seg.ToId  )?.ShortName ?? $"!{seg.ToId  :x4}");
+                        MapStatusText.Text = $"{type}: {from} → {to}{snrInfo} — {Loc("StrLegendSnrHint")}";
+                        return;
+                    }
+                }
+            MapControl.Cursor = Cursors.Arrow;
+        }
+        catch { }
     }
 
     private void MapControl_LeftClick(object sender, MouseButtonEventArgs e)
@@ -717,20 +826,25 @@ public partial class MainWindow : Window
             {
                 var km = HaversineKm(_currentSettings.MyLatitude, _currentSettings.MyLongitude,
                                      hitNode.Latitude.Value, hitNode.Longitude.Value);
-                MapStatusText.Text = $"{hitNode.ShortName} ({hitNode.Id}): {km:F2} km Entfernung | Last seen: {hitNode.LastSeen}";
+                MapStatusText.Text = string.Format(Loc("StrNodeDistanceStatus"), hitNode.ShortName, hitNode.Id, km, hitNode.LastSeen);
                 return;
             }
 
-            // T3: Check for traceroute segment hits
+            // T3: Check for traceroute segment hits (world-space comparison, DPI-independent)
             SegmentHitTarget? hitSeg = null;
-            double minSegDist = 28;
+            double minSegDist = double.MaxValue;
+            var viewport = MapControl.Map.Navigator.Viewport;
+            var worldClick = viewport.ScreenToWorld(screenPos.X, screenPos.Y);
+            // Convert 40px threshold to world units using current resolution
+            double thresholdWorld = 40.0 * viewport.Resolution;
             foreach (var segs in _tracerouteSegmentHits.Values)
             {
                 foreach (var seg in segs)
                 {
-                    var segScreen = MapControl.Map.Navigator.Viewport.WorldToScreen(seg.Midpoint);
-                    var d = Math.Sqrt(Math.Pow(screenPos.X - segScreen.X, 2) + Math.Pow(screenPos.Y - segScreen.Y, 2));
-                    if (d < minSegDist) { hitSeg = seg; minSegDist = d; }
+                    var dx = worldClick.X - seg.Midpoint.X;
+                    var dy = worldClick.Y - seg.Midpoint.Y;
+                    var d = Math.Sqrt(dx * dx + dy * dy);
+                    if (d < thresholdWorld && d < minSegDist) { hitSeg = seg; minSegDist = d; }
                 }
             }
 
@@ -752,8 +866,8 @@ public partial class MainWindow : Window
     {
         string NodeLabel(uint id)
         {
-            if (id == _myNodeId) return "Ich";
-            var n = _nodes.FirstOrDefault(x => x.NodeId == id);
+            if (id == _myNodeId) return Loc("StrMe");
+            var n = _allNodes.FirstOrDefault(x => x.NodeId == id);
             return n?.ShortName is { Length: > 0 } s ? s : $"!{id:x4}";
         }
 
@@ -984,7 +1098,7 @@ public partial class MainWindow : Window
         if (ActiveChannelComboBox.SelectedItem is ChannelInfo channel)
         {
             _activeChannelIndex = channel.Index;
-            UpdateStatusBar($"Aktiver Kanal: {channel.Name}");
+            UpdateStatusBar(string.Format(Loc("StrActiveChannelStatus"), channel.Name));
         }
     }
 
@@ -1009,7 +1123,7 @@ public partial class MainWindow : Window
     private void RefreshPorts_Click(object sender, RoutedEventArgs e)
     {
         RefreshPorts();
-        UpdateStatusBar("Ports aktualisiert");
+        UpdateStatusBar(Loc("StrPortsRefreshed"));
     }
 
     private void ConnectionTypeRadio_Changed(object sender, RoutedEventArgs e)
@@ -1091,7 +1205,7 @@ public partial class MainWindow : Window
         {
             Services.Logger.WriteLine($"[BLE] ERROR scanning Bluetooth: {ex.Message}");
             Services.Logger.WriteLine($"[BLE] Stack trace: {ex.StackTrace}");
-            MessageBox.Show($"Bluetooth-Scan fehlgeschlagen: {ex.Message}", "Fehler", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show(string.Format(Loc("StrBtScanFailed"), ex.Message), Loc("StrError"), MessageBoxButton.OK, MessageBoxImage.Error);
         }
         finally
         {
@@ -1335,7 +1449,7 @@ public partial class MainWindow : Window
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Verbindung fehlgeschlagen: {ex.Message}", "Fehler", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(string.Format(Loc("StrConnectFailed"), ex.Message), Loc("StrError"), MessageBoxButton.OK, MessageBoxImage.Error);
                 UpdateStatusBar(Loc("StrConnectionFailed"));
                 SetConnectionStatus(ConnectionStatus.Error);
                 ConnectButton.IsEnabled = true;
@@ -1449,7 +1563,7 @@ public partial class MainWindow : Window
             {
                 Id = sentId,
                 Time = DateTime.Now.ToString("HH:mm:ss"),
-                From = "Ich",
+                From = Loc("StrMe"),
                 Message = message,
                 Channel = _activeChannelIndex.ToString(),
                 ChannelName = channelName,
@@ -1461,10 +1575,10 @@ public partial class MainWindow : Window
             MessageListView.ScrollIntoView(sentMessage);
 
             // Log die gesendete Nachricht
-            Services.MessageLogger.LogChannelMessage(_activeChannelIndex, channelName, "Ich", message, false);
+            Services.MessageLogger.LogChannelMessage(_activeChannelIndex, channelName, Loc("StrMe"), message, false);
 
             MessageTextBox.Clear();
-            UpdateStatusBar($"Nachricht gesendet (Kanal {_activeChannelIndex})");
+            UpdateStatusBar(string.Format(Loc("StrMsgSentChannel"), _activeChannelIndex));
         }
         catch (Exception ex)
         {
@@ -1767,7 +1881,7 @@ public partial class MainWindow : Window
             _protocolService.SetDebugSerial(settings.DebugSerial);
             _protocolService.SetDebugDevice(settings.DebugDevice);
             BluetoothConnectionService.SetDebugEnabled(settings.DebugBluetooth);
-            MessageBox.Show("Einstellungen gespeichert.", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show(Loc("StrSettingsSaved"), Loc("StrSettingsSavedTitle"), MessageBoxButton.OK, MessageBoxImage.Information);
         }
         catch (Exception ex)
         {
@@ -2219,6 +2333,7 @@ public partial class MainWindow : Window
 
                 // Speichere eigene Node-ID für DM-Fenster
                 _myNodeId = deviceInfo.NodeId;
+                OwnNodeIdText.Text = $"!{_myNodeId:x8}";
 
                 // Set hardware model and firmware version
                 HardwareModelText.Text = deviceInfo.HardwareModel;
@@ -2253,7 +2368,7 @@ public partial class MainWindow : Window
                     });
                 }
 
-                UpdateStatusBar($"Eigene Node-ID: {deviceInfo.NodeIdHex}");
+                // OwnNodeIdText is already set above; no need to overwrite the main status bar
             }
             catch (Exception ex)
             {
@@ -2550,7 +2665,7 @@ public partial class MainWindow : Window
             // Prüfe ob eigener Knoten
             if (selectedNode.NodeId == _myNodeId)
             {
-                MessageBox.Show("Sie können keine DM an sich selbst senden.", "Hinweis", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(Loc("StrNoDmToSelf"), Loc("StrHint"), MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
@@ -2814,11 +2929,20 @@ public partial class MainWindow : Window
         return _allNodes.FirstOrDefault(n => n.NodeId == msg.FromId);
     }
 
+    private void MessageContextMenu_CopyMessage_Click(object sender, RoutedEventArgs e)
+    {
+        if (MessageListView.SelectedItem is MessageItem msg)
+        {
+            try { System.Windows.Clipboard.SetText(msg.Message ?? string.Empty); }
+            catch { }
+        }
+    }
+
     private void MessageContextMenu_SendDm_Click(object sender, RoutedEventArgs e)
     {
         var node = GetNodeFromSelectedMessage();
         if (node == null) { MessageBox.Show("Node nicht gefunden.", "Hinweis", MessageBoxButton.OK, MessageBoxImage.Information); return; }
-        if (node.NodeId == _myNodeId) { MessageBox.Show("Sie können keine DM an sich selbst senden.", "Hinweis", MessageBoxButton.OK, MessageBoxImage.Information); return; }
+        if (node.NodeId == _myNodeId) { MessageBox.Show(Loc("StrNoDmToSelf"), Loc("StrHint"), MessageBoxButton.OK, MessageBoxImage.Information); return; }
         OpenDmToNode(node);
     }
 
@@ -3473,8 +3597,8 @@ public partial class MainWindow : Window
         double ux = dx / len, uy = dy / len;
         double nx = -uy,      ny =  ux;
 
-        // Amplitude: 8% of segment length
-        double amp = len * 0.08;
+        // Amplitude: 3% of segment length
+        double amp = len * 0.03;
 
         // Build zigzag points: from → peaks alternating sides → to
         int totalPts = peaks * 2 + 2;
@@ -3633,7 +3757,7 @@ public partial class MainWindow : Window
                 positions[_myNodeId] = (_currentSettings.MyLatitude, _currentSettings.MyLongitude);
 
             var nodeNames = _allNodes.ToDictionary(n => n.NodeId, n => n.LongName);
-            nodeNames[_myNodeId] = "Ich";
+            nodeNames[_myNodeId] = Loc("StrMe");
 
             string destName = nodeNames.TryGetValue(result.DestinationNodeId, out var dn)
                 ? dn : $"!{result.DestinationNodeId:x8}";
@@ -3659,7 +3783,7 @@ public partial class MainWindow : Window
 
         // Build node names from live data
         var nodeNames = _allNodes.ToDictionary(n => n.NodeId, n => n.LongName);
-        nodeNames[_myNodeId] = "Ich";
+        nodeNames[_myNodeId] = Loc("StrMe");
 
         // Live routes get a stable key per destination (new measurement replaces old on map)
         string layerKey = $"live_{result.DestinationNodeId:x8}";
@@ -3716,7 +3840,7 @@ public partial class MainWindow : Window
 
             bool hasFrom = positions.TryGetValue(fromId, out var fromPos);
             bool hasTo   = positions.TryGetValue(toId,   out var toPos);
-            bool isMqtt  = (result.IsViaMqtt && result.SnrTowards.Count == 0)
+            bool isMqtt  = result.IsViaMqtt
                          || (result.SnrTowards.Count > i && result.SnrTowards[i] == MqttSentinelRaw);
 
             if (hasFrom && hasTo)
@@ -3732,8 +3856,14 @@ public partial class MainWindow : Window
                 {
                     // ⚡ Zickzack-Blitzlinie für MQTT-Hops (statt gerader Linie)
                     var zigCoords = BuildMqttZigzag(mFrom, mTo);
-                    var zigLine = new GeometryFeature(new NetTopologySuite.Geometries.LineString(zigCoords));
-                    zigLine.Styles.Add(new VectorStyle { Line = new Mapsui.Styles.Pen(color, 2.5), Fill = null });
+                    var zigGeom = new NetTopologySuite.Geometries.LineString(zigCoords);
+
+                    var zigBorder = new GeometryFeature(zigGeom);
+                    zigBorder.Styles.Add(new VectorStyle { Line = new Mapsui.Styles.Pen(Mapsui.Styles.Color.Black, 4.5), Fill = null });
+                    features.Add(zigBorder);
+
+                    var zigLine = new GeometryFeature(zigGeom);
+                    zigLine.Styles.Add(new VectorStyle { Line = new Mapsui.Styles.Pen(new Mapsui.Styles.Color(255, 220, 0, 255), 2.5), Fill = null });
                     features.Add(zigLine);
                     // Track midpoint for MQTT segments too (T3)
                     var midMqtt = new MPoint((ptFrom.x + ptTo.x) / 2, (ptFrom.y + ptTo.y) / 2);
@@ -3764,6 +3894,16 @@ public partial class MainWindow : Window
                         SymbolRotation = mapRotation
                     });
                     features.Add(arrow);
+                    // Visible click indicator for T3 segment hit (small semi-transparent circle)
+                    var clickDot = new PointFeature(midPt);
+                    clickDot.Styles.Add(new SymbolStyle
+                    {
+                        SymbolType  = SymbolType.Ellipse,
+                        Fill        = new Mapsui.Styles.Brush(new Mapsui.Styles.Color(color.R, color.G, color.B, 160)),
+                        Outline     = new Mapsui.Styles.Pen(Mapsui.Styles.Color.White, 1.2f),
+                        SymbolScale = 0.35,
+                    });
+                    features.Add(clickDot);
                     // Track midpoint for click detection (T3)
                     _tracerouteSegmentHits[layerKey].Add(new SegmentHitTarget(midPt, fromId, toId, segSnr, false));
                 }
@@ -3799,7 +3939,7 @@ public partial class MainWindow : Window
             var pt = SphericalMercator.FromLonLat(pos.Lon, pos.Lat);
             var mpt = new MPoint(pt.x, pt.y);
 
-            string label = nodeId == _myNodeId ? "Ich" : $"!{nodeId:x4}";
+            string label = nodeId == _myNodeId ? Loc("StrMe") : $"!{nodeId:x4}";
             if (nodeNames.TryGetValue(nodeId, out var nm)) label = nm;
 
             var pin = new PointFeature(mpt);
@@ -4064,6 +4204,11 @@ public partial class MainWindow : Window
             ClearTracerouteFromMap(key);
     }
 
+    private void MapLegendClose_Click(object sender, RoutedEventArgs e)
+    {
+        MapLegendBorder.Visibility = Visibility.Collapsed;
+    }
+
     private void UpdateTracerouteLegend()
     {
         TracerouteLegendItems.Items.Clear();
@@ -4199,6 +4344,15 @@ public partial class MainWindow : Window
         });
     }
 
+    private void OnWaypointDeleted(uint id)
+    {
+        var existing = _waypoints.FirstOrDefault(w => w.Id == id);
+        if (existing == null) return;
+        _waypoints.Remove(existing);
+        _db?.DeleteWaypoint(id);
+        RefreshWaypointLayer();
+    }
+
     private void RefreshWaypointLayer()
     {
         if (_map == null) return;
@@ -4221,7 +4375,7 @@ public partial class MainWindow : Window
                 SymbolType  = SymbolType.Ellipse,
                 Fill        = new Mapsui.Styles.Brush(new Mapsui.Styles.Color(255, 165, 0, 220)),
                 Outline     = new Mapsui.Styles.Pen(Mapsui.Styles.Color.White, 1.5f),
-                SymbolScale = 0.18,
+                SymbolScale = 0.55,
             });
             pin.Styles.Add(new LabelStyle
             {
@@ -4231,13 +4385,22 @@ public partial class MainWindow : Window
                 HorizontalAlignment = LabelStyle.HorizontalAlignmentEnum.Left,
                 VerticalAlignment   = LabelStyle.VerticalAlignmentEnum.Center,
                 Offset              = new Offset(10, 0),
-                Font                = new Font { Size = 9 },
+                Font                = new Mapsui.Styles.Font { FontFamily = "Segoe UI Emoji", Size = 11 },
             });
             features.Add(pin);
         }
 
         _waypointLayer = new MemoryLayer("Waypoints") { Features = features, Style = null };
         _map.Layers.Add(_waypointLayer);
+
+        // Populate waypoint pin positions for hit testing
+        _waypointPinPositions.Clear();
+        foreach (var wp in _waypoints)
+        {
+            var pt = SphericalMercator.FromLonLat(wp.Longitude, wp.Latitude);
+            _waypointPinPositions[wp.Id] = new MPoint(pt.x, pt.y);
+        }
+
         MapControl.Refresh();
     }
 
@@ -4280,7 +4443,7 @@ public partial class MainWindow : Window
             await _protocolService.SendWaypointAsync(entry);
 
         MapStatusText.Text = dlg.SendToMesh
-            ? $"Waypoint \"{entry.Name}\" erstellt und gesendet."
+            ? string.Format(Loc("StrWpCreatedStatus"), entry.Name)
             : $"Waypoint \"{entry.Name}\" erstellt (nur lokal).";
     }
 
@@ -4288,7 +4451,7 @@ public partial class MainWindow : Window
     {
         if (_connectionService?.IsConnected != true) return;
         bool ok = await _protocolService.SendTimeSyncAsync();
-        MapStatusText.Text = ok ? "Zeitsynchronisation gesendet." : "Zeitsynchronisation fehlgeschlagen.";
+        MapStatusText.Text = ok ? Loc("StrTimeSyncSent") : Loc("StrTimeSyncFailed");
     }
 
     private void OnNodeKeyMismatch(object? sender, Services.NodeKeyMismatchEventArgs e)
@@ -4333,23 +4496,18 @@ public partial class MainWindow : Window
 
                 // Global 4-LED signal status strip
                 LedFill(GlobalWeatherLed, analysis.WeatherLed,
-                    $"Wetter-Effekt: {analysis.DecliningNeighbors} von {analysis.TotalNeighbors} Nodes " +
-                    "zeigen gleichzeitigen kurzfristigen SNR-Abfall.\n" +
-                    "Mehrere Nodes gleichzeitig fallend → wahrscheinlich Wetter / atmosphärische Effekte.");
+                    string.Format(Loc("StrLedWeatherEffect"), analysis.DecliningNeighbors, analysis.TotalNeighbors));
                 LedFill(GlobalAntennaLed, analysis.AntennaLed,
-                    $"Eigene Antenne: Langfristiger SNR-Trend aller Nachbarn: " +
-                    $"{analysis.AvgLongSlope:+0.00;-0.00;0.00} dB/Tag.\n" +
-                    "Alle Nachbarn gemeinsam langfristig fallend → mögliches Problem mit eigener Antenne oder Position.");
+                    analysis.AvgLongSlope > 0.2f ? string.Format(Loc("StrLedAntennaUp"), analysis.AvgLongSlope)
+                  : analysis.AvgLongSlope < -0.2f ? string.Format(Loc("StrLedAntennaDown"), analysis.AvgLongSlope)
+                  : Loc("StrLedAntennaFlat"));
                 LedFill(GlobalNeighborLed, analysis.NeighborLed,
                     string.IsNullOrEmpty(analysis.ProblemNeighborName)
-                    ? "Kein einzelnes Nachbar-Problem erkannt. Alle Verbindungen ähnlich stabil."
-                    : $"Node '{analysis.ProblemNeighborName}' zeigt signifikant schlechteren SNR\n" +
-                      "als die anderen Nachbarn → mögliches Problem bei diesem einzelnen Node.");
+                    ? Loc("StrLedAllGoodNeighbor")
+                    : string.Format(Loc("StrLedNeighborProblem"), analysis.ProblemNeighborName));
                 LedFill(GlobalPathLed, analysis.PathLed,
-                    $"Pfad-Stabilität (aus Traceroute-Daten):\n" +
-                    $"  Hop-Kosten: {analysis.HopCost:0.00}  (0 = optimal, 1 = schlecht)\n" +
-                    $"  Route-Änderungen: {analysis.RouteChangeRate:0.00}/h\n" +
-                    "(Nur aussagekräftig, wenn Traceroutes aufgezeichnet wurden.)");
+                    string.Format(Loc("StrLedPathStability"), analysis.RouteChangeRate,
+                        $"Hop-Kosten: {analysis.HopCost:0.00}"));
 
                 // Update per-node signal trend colors from analysis trends
                 var trendDict = analysis.Trends.ToDictionary(t => t.NeighborId);
@@ -4370,50 +4528,59 @@ public partial class MainWindow : Window
                     up:   analysis.TotalNeighbors > 0 && analysis.DecliningNeighbors == 0,
                     down: analysis.TotalNeighbors > 0 && analysis.DecliningNeighbors >= Math.Max(1, analysis.TotalNeighbors * 0.25),
                     noData: analysis.TotalNeighbors == 0,
-                    upTip:   "↑ Kein Wettereffekt erkennbar.\nAlle Nachbarn zeigen stabile Kurzzeit-SNR. Günstige atmosphärische Bedingungen für LoRa.",
-                    flatTip: $"→ Vereinzelte SNR-Schwankungen ({analysis.DecliningNeighbors}/{analysis.TotalNeighbors} Nodes leicht fallend).\nNoch kein klarer Wettereffekt, aber Entwicklung beobachten.",
-                    downTip: $"↓ Wettereffekt wahrscheinlich: {analysis.DecliningNeighbors} von {analysis.TotalNeighbors} Nodes zeigen gleichzeitig fallende Kurzzeit-SNR.\nLoRa reagiert empfindlich auf Luftfeuchtigkeit, Regen und Temperaturinversionen – alle Verbindungen sind betroffen.");
+                    upTip:   Loc("StrArrowWeatherUp"),
+                    flatTip: string.Format(Loc("StrArrowWeatherFlat"), analysis.DecliningNeighbors, analysis.TotalNeighbors),
+                    downTip: string.Format(Loc("StrArrowWeatherDown"), analysis.DecliningNeighbors, analysis.TotalNeighbors));
 
                 float snrSlope = analysis.AvgLongSlope; // dB/day
                 SetTopArrow(GlobalAntennaArrow,
                     up:   snrSlope >  0.2f,
                     down: snrSlope < -0.2f,
                     noData: analysis.TotalNeighbors == 0,
-                    upTip:   $"↑ SNR-Langzeittrend: {snrSlope:+0.00} dB/Tag (Ø {analysis.TotalNeighbors} Nachbarn).\nDie Empfangsqualität verbessert sich langfristig – eigene Antenne und Position sind gut.",
-                    flatTip: $"→ SNR-Langzeittrend: {snrSlope:+0.00;-0.00} dB/Tag (Ø {analysis.TotalNeighbors} Nachbarn).\nStabile Verbindungsqualität, kein signifikanter Trend erkennbar.",
-                    downTip: $"↓ SNR-Langzeittrend: {snrSlope:+0.00;-0.00} dB/Tag (Ø {analysis.TotalNeighbors} Nachbarn).\nDie Empfangsqualität sinkt langfristig über ALLE Nachbarn gleichzeitig – mögliche Ursache: eigene Antenne beschädigt/verdreht, neuer Störsender oder geänderte Node-Position.");
+                    upTip:   string.Format(Loc("StrArrowAntennaUp"), snrSlope, analysis.TotalNeighbors),
+                    flatTip: string.Format(Loc("StrArrowAntennaFlat"), snrSlope, analysis.TotalNeighbors),
+                    downTip: string.Format(Loc("StrArrowAntennaDown"), snrSlope, analysis.TotalNeighbors));
 
                 bool hasNeighborProblem = analysis.ProblemNeighborId.HasValue;
                 SetTopArrow(GlobalNeighborArrow,
                     up:   !hasNeighborProblem && analysis.TotalNeighbors > 0,
                     down: hasNeighborProblem,
                     noData: analysis.TotalNeighbors == 0,
-                    upTip:   "↑ Alle Nachbar-Nodes zeigen ähnliche SNR-Werte.\nKein einzelner Ausreißer erkannt – das Mesh ist homogen verbunden.",
-                    flatTip: "→ Leichte Unterschiede zwischen Nachbarn, aber kein klares Problem-Node.",
-                    downTip: $"↓ Node '{analysis.ProblemNeighborName}' zeigt deutlich schlechtere Kurzzeit-SNR als alle anderen Nachbarn.\nMögliche Ursache: Problem bei diesem Node (Antenne, Einbauort, Hardware) – nicht das gesamte Mesh ist betroffen.");
+                    upTip:   Loc("StrArrowNeighborUp"),
+                    flatTip: Loc("StrArrowNeighborFlat"),
+                    downTip: string.Format(Loc("StrArrowNeighborDown"), analysis.ProblemNeighborName));
 
                 SetTopArrow(GlobalPathArrow,
                     up:   analysis.HopCost < 0.2f && analysis.RouteChangeRate < 1f,
                     down: analysis.HopCost > 0.5f || analysis.RouteChangeRate > 3f,
                     noData: analysis.HopCost == 0f && analysis.RouteChangeRate == 0f,
-                    upTip:   $"↑ Gute Pfadqualität: Hop-Kosten {analysis.HopCost:0.00} (niedrig = gut), Route-Änderungen {analysis.RouteChangeRate:0.00}/h.\nStabile Routing-Pfade mit guter SNR-Qualität auf allen Hops.",
-                    flatTip: $"→ Mittlere Pfadqualität: Hop-Kosten {analysis.HopCost:0.00}, Route-Änderungen {analysis.RouteChangeRate:0.00}/h.\nEinige Pfade sind suboptimal oder wechseln gelegentlich.",
-                    downTip: $"↓ Schlechte Pfadqualität: Hop-Kosten {analysis.HopCost:0.00} (hoch), Route-Änderungen {analysis.RouteChangeRate:0.00}/h.\nPfade werden häufig gewechselt oder haben schlechte SNR auf den Hops – Mesh-Topologie ist instabil.");
+                    upTip:   string.Format(Loc("StrArrowPathUp"), analysis.HopCost, analysis.RouteChangeRate),
+                    flatTip: string.Format(Loc("StrArrowPathFlat"), analysis.HopCost, analysis.RouteChangeRate),
+                    downTip: string.Format(Loc("StrArrowPathDown"), analysis.HopCost, analysis.RouteChangeRate));
 
                 // Mesh Health: Empfangsrate-Pfeil
                 bool   rxIsDay = Services.SunriseSunsetService.IsDay(DateTime.UtcNow, _currentSettings.MyLatitude, _currentSettings.MyLongitude);
                 float  rxBase  = rxIsDay ? health.DayRxPerHour : health.NightRxPerHour;
-                string rxPeriod = rxIsDay ? "Tag" : "Nacht";
+                string rxPeriod = rxIsDay ? Loc("StrTelDayLabel") : Loc("StrTelNightLabel");
                 SetTopArrow(GlobalRxTrendArrow,
                     up:   health.RxScore >= 0.8f,
                     down: health.RxScore <  0.5f,
                     noData: rxBase == 0f,
-                    upTip:   $"↑ Empfangsrate normal: {health.CurrentRxPerHour:0.0} Pkts/h ({health.RxScore*100:0}% der {rxPeriod}-Baseline {rxBase:0.0} Pkts/h).\nDas Mesh sendet so viel wie erwartet – gute Erreichbarkeit.",
-                    flatTip: $"→ Empfangsrate leicht unter Erwartung: {health.CurrentRxPerHour:0.0} Pkts/h ({health.RxScore*100:0}% der {rxPeriod}-Baseline {rxBase:0.0} Pkts/h).\nWeniger Pakete als üblich, aber noch kein kritischer Rückgang.",
-                    downTip: $"↓ Empfangsrate deutlich unter Erwartung: {health.CurrentRxPerHour:0.0} Pkts/h ({health.RxScore*100:0}% der {rxPeriod}-Baseline {rxBase:0.0} Pkts/h).\nMögliche Ursachen: Nodes offline, Kanalüberlastung, oder Verbindungsabbrüche im Mesh.");
+                    upTip:   string.Format(Loc("StrArrowRxUp"),   health.CurrentRxPerHour, (int)(health.RxScore * 100), rxPeriod, rxBase),
+                    flatTip: string.Format(Loc("StrArrowRxFlat"), health.CurrentRxPerHour, (int)(health.RxScore * 100), rxPeriod, rxBase),
+                    downTip: string.Format(Loc("StrArrowRxDown"), health.CurrentRxPerHour, (int)(health.RxScore * 100), rxPeriod, rxBase));
 
                 // Update mesh health in status strip
-                LedFill(GlobalMeshHealthLed, health.State, health.Summary);
+                // Mesh Health: full detail summary with localized labels
+                var meshSummary =
+                    $"Mesh Health Score: {health.Score:0}%\n" +
+                    string.Format(Loc("StrMeshSumPathCost"), health.AvgPathCost) + "\n" +
+                    string.Format(Loc("StrMeshSumRouteChange"), health.RouteChangeRate) + "\n" +
+                    string.Format(Loc("StrMeshSumRxBaseline"), health.DayRxPerHour > 0 ? Loc("StrTelDayLabel") : Loc("StrTelNightLabel"),
+                        health.DayRxPerHour > 0 ? health.DayRxPerHour : health.NightRxPerHour) + "\n" +
+                    string.Format(Loc("StrMeshSumRxCurrent"), health.CurrentRxPerHour, (int)(health.RxScore * 100)) + "\n" +
+                    string.Format(Loc("StrMeshSumChanUtil"), health.ChannelUtilization);
+                LedFill(GlobalMeshHealthLed, health.State, meshSummary);
                 GlobalMeshHealthText.Text = health.Score > 0 ? $"{health.Score:0}%" : "–";
             });
         }

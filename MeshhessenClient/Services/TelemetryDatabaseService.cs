@@ -1092,13 +1092,23 @@ LIMIT 50";
         float rxScore   = expected > 0 ? Math.Min(1f, currentRxPerHour / expected) : 1f;
         float rxPenalty = 1f - rxScore;
 
-        // 2. Channel utilization (average across all nodes)
+        // 2. Channel utilization: latest value per node, then average across nodes
         float channelUtil = 0f;
         using (var con = Open())
         {
             using var cmd = con.CreateCommand();
-            cmd.CommandText = "SELECT AVG(channel_utilization) FROM device_telemetry WHERE timestamp>=$s AND channel_utilization IS NOT NULL";
-            cmd.Parameters.AddWithValue("$s", since);
+            // Subquery picks the channel_utilization from the most-recent row per node
+            cmd.CommandText = @"
+SELECT AVG(channel_utilization) FROM (
+    SELECT channel_utilization
+    FROM device_telemetry d1
+    WHERE channel_utilization IS NOT NULL
+      AND timestamp = (
+          SELECT MAX(timestamp) FROM device_telemetry d2
+          WHERE d2.node_id = d1.node_id AND d2.channel_utilization IS NOT NULL
+      )
+    GROUP BY node_id
+)";
             var val = cmd.ExecuteScalar();
             if (val != null && val != DBNull.Value) channelUtil = (float)(double)val;
         }

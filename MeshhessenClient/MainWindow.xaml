@@ -228,27 +228,94 @@
                 Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}"
                 UseLayoutRounding="True"
                 Padding="12,5">
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                <TextBlock Text="Netz:" FontSize="11" Opacity="0.6" VerticalAlignment="Center" Margin="0,0,8,0"
-                           ToolTip="Globale Signalanalyse aller Nodes (wird alle 10 min aktualisiert, startet 60s nach Verbindung)."/>
-                <Ellipse x:Name="GlobalWeatherLed"  Width="12" Height="12" Fill="#757575" Margin="0,0,2,0" SnapsToDevicePixels="True" VerticalAlignment="Center"/>
-                <TextBlock x:Name="GlobalWeatherArrow"  Text="" FontSize="11" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                <Ellipse x:Name="GlobalAntennaLed"  Width="12" Height="12" Fill="#757575" Margin="0,0,2,0" SnapsToDevicePixels="True" VerticalAlignment="Center"/>
-                <TextBlock x:Name="GlobalAntennaArrow"  Text="" FontSize="11" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                <Ellipse x:Name="GlobalNeighborLed" Width="12" Height="12" Fill="#757575" Margin="0,0,2,0" SnapsToDevicePixels="True" VerticalAlignment="Center"/>
-                <TextBlock x:Name="GlobalNeighborArrow" Text="" FontSize="11" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                <Ellipse x:Name="GlobalPathLed"     Width="12" Height="12" Fill="#757575" Margin="0,0,2,0" SnapsToDevicePixels="True" VerticalAlignment="Center"/>
-                <TextBlock x:Name="GlobalPathArrow"     Text="" FontSize="11" VerticalAlignment="Center" Margin="0,0,14,0"/>
-                <Rectangle Width="1" Height="16" Fill="{DynamicResource SystemControlForegroundBaseLowBrush}" Margin="0,0,14,0" SnapsToDevicePixels="True"/>
-                <TextBlock Text="Mesh Health:" FontSize="11" Opacity="0.6" VerticalAlignment="Center" Margin="0,0,6,0"
-                           ToolTip="Globale Mesh-Gesundheit (0–100%) basierend auf Pfad-Kosten, Route-Änderungen, Empfangsrate und Kanalauslastung."/>
-                <Ellipse x:Name="GlobalMeshHealthLed" Width="12" Height="12" Fill="#757575"
-                         VerticalAlignment="Center" Margin="0,0,5,0" SnapsToDevicePixels="True"/>
-                <TextBlock x:Name="GlobalMeshHealthText" Text="–" FontWeight="SemiBold" FontSize="12"
-                           VerticalAlignment="Center"/>
-                <TextBlock x:Name="GlobalRxTrendArrow" Text="" FontSize="11"
-                           VerticalAlignment="Center" Margin="4,0,0,0"/>
-            </StackPanel>
+            <Grid VerticalAlignment="Center">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- "Netz:" label -->
+                <TextBlock Grid.Column="0" Text="{DynamicResource StrNetStatus}" FontSize="11" Opacity="0.6"
+                           VerticalAlignment="Center" Margin="0,0,10,0" ToolTip="{DynamicResource StrNetTooltip}"/>
+
+                <!-- Column: Wetter / Kurzzeit-SNR -->
+                <StackPanel Grid.Column="1" Orientation="Vertical" Margin="0,0,6,0" VerticalAlignment="Center">
+                    <TextBlock Text="{DynamicResource StrHdrWeather}" FontSize="9" Opacity="0.55"
+                               HorizontalAlignment="Center" Margin="0,0,0,1"/>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <Ellipse x:Name="GlobalWeatherLed" Width="11" Height="11" Fill="#757575"
+                                 Margin="0,0,2,0" SnapsToDevicePixels="True" VerticalAlignment="Center"
+                                 ToolTip="{DynamicResource StrWeatherLedTooltip}"/>
+                        <TextBlock x:Name="GlobalWeatherArrow" Text="" FontSize="11" VerticalAlignment="Center"
+                                   ToolTip="{DynamicResource StrWeatherLedTooltip}"/>
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- Column: LZ / Langzeit-Antenne -->
+                <StackPanel Grid.Column="2" Orientation="Vertical" Margin="0,0,6,0" VerticalAlignment="Center">
+                    <TextBlock Text="{DynamicResource StrHdrAntenna}" FontSize="9" Opacity="0.55"
+                               HorizontalAlignment="Center" Margin="0,0,0,1"/>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <Ellipse x:Name="GlobalAntennaLed" Width="11" Height="11" Fill="#757575"
+                                 Margin="0,0,2,0" SnapsToDevicePixels="True" VerticalAlignment="Center"
+                                 ToolTip="{DynamicResource StrAntennaLedTooltip}"/>
+                        <TextBlock x:Name="GlobalAntennaArrow" Text="" FontSize="11" VerticalAlignment="Center"
+                                   ToolTip="{DynamicResource StrAntennaLedTooltip}"/>
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- Column: NB / Nachbarn -->
+                <StackPanel Grid.Column="3" Orientation="Vertical" Margin="0,0,6,0" VerticalAlignment="Center">
+                    <TextBlock Text="{DynamicResource StrHdrNeighbor}" FontSize="9" Opacity="0.55"
+                               HorizontalAlignment="Center" Margin="0,0,0,1"/>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <Ellipse x:Name="GlobalNeighborLed" Width="11" Height="11" Fill="#757575"
+                                 Margin="0,0,2,0" SnapsToDevicePixels="True" VerticalAlignment="Center"
+                                 ToolTip="{DynamicResource StrNeighborLedTooltip}"/>
+                        <TextBlock x:Name="GlobalNeighborArrow" Text="" FontSize="11" VerticalAlignment="Center"
+                                   ToolTip="{DynamicResource StrNeighborLedTooltip}"/>
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- Column: PS / Pfadstabilität -->
+                <StackPanel Grid.Column="4" Orientation="Vertical" Margin="0,0,10,0" VerticalAlignment="Center">
+                    <TextBlock Text="{DynamicResource StrHdrPath}" FontSize="9" Opacity="0.55"
+                               HorizontalAlignment="Center" Margin="0,0,0,1"/>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <Ellipse x:Name="GlobalPathLed" Width="11" Height="11" Fill="#757575"
+                                 Margin="0,0,2,0" SnapsToDevicePixels="True" VerticalAlignment="Center"
+                                 ToolTip="{DynamicResource StrPathLedTooltip}"/>
+                        <TextBlock x:Name="GlobalPathArrow" Text="" FontSize="11" VerticalAlignment="Center"
+                                   ToolTip="{DynamicResource StrPathLedTooltip}"/>
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- Separator -->
+                <Rectangle Grid.Column="5" Width="1" Height="20"
+                           Fill="{DynamicResource SystemControlForegroundBaseLowBrush}"
+                           Margin="0,0,10,0" SnapsToDevicePixels="True" VerticalAlignment="Center"/>
+
+                <!-- Column: Mesh Health -->
+                <StackPanel Grid.Column="6" Orientation="Vertical" VerticalAlignment="Center">
+                    <TextBlock Text="{DynamicResource StrMeshHealthLabel}" FontSize="9" Opacity="0.55"
+                               HorizontalAlignment="Center" Margin="0,0,0,1"
+                               ToolTip="{DynamicResource StrMeshHealthTooltip}"/>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <Ellipse x:Name="GlobalMeshHealthLed" Width="11" Height="11" Fill="#757575"
+                                 VerticalAlignment="Center" Margin="0,0,4,0" SnapsToDevicePixels="True"
+                                 ToolTip="{DynamicResource StrMeshHealthTooltip}"/>
+                        <TextBlock x:Name="GlobalMeshHealthText" Text="–" FontWeight="SemiBold" FontSize="12"
+                                   VerticalAlignment="Center"/>
+                        <TextBlock x:Name="GlobalRxTrendArrow" Text="" FontSize="11"
+                                   VerticalAlignment="Center" Margin="3,0,0,0"/>
+                    </StackPanel>
+                </StackPanel>
+            </Grid>
         </Border>
 
         <!-- Main Content Area -->
@@ -351,6 +418,8 @@
                         </ListView.View>
                         <ListView.ContextMenu>
                             <ContextMenu>
+                                <MenuItem Header="{DynamicResource StrCopyMessage}" Click="MessageContextMenu_CopyMessage_Click"/>
+                                <Separator/>
                                 <MenuItem Header="{DynamicResource StrSendDm}" Click="MessageContextMenu_SendDm_Click"/>
                                 <MenuItem Header="{DynamicResource StrNodeInfo}" Click="MessageContextMenu_NodeInfo_Click"/>
                                 <MenuItem Header="{DynamicResource StrShowOnMap}" Click="MessageContextMenu_ShowOnMap_Click"/>
@@ -572,15 +641,15 @@
                                                 <Ellipse Width="10" Height="10" Margin="1,0"
                                                          SnapsToDevicePixels="True"
                                                          Fill="{Binding SignalQualityColor, Converter={StaticResource HexToColorConverter}}"
-                                                         ToolTip="SNR-Qualität (aktuell): Grün ≥5dB | Gelb -5…5dB | Rot &lt;-5dB"/>
+                                                         ToolTip="{DynamicResource StrNodeSnrQualityTooltip}"/>
                                                 <Ellipse Width="10" Height="10" Margin="1,0"
                                                          SnapsToDevicePixels="True"
                                                          Fill="{Binding SignalTrendColor, Converter={StaticResource HexToColorConverter}}"
-                                                         ToolTip="SNR-Trend (kurzfristig): Grün=stabil/steigend | Gelb=leicht fallend | Rot=stark fallend"/>
+                                                         ToolTip="{DynamicResource StrNodeSnrTrendTooltip}"/>
                                                 <Ellipse Width="10" Height="10" Margin="1,0"
                                                          SnapsToDevicePixels="True"
                                                          Fill="{Binding BatteryStatusColor, Converter={StaticResource HexToColorConverter}}"
-                                                         ToolTip="Batteriestatus: Grün ≥50% | Gelb 20–50% | Rot &lt;20%"/>
+                                                         ToolTip="{DynamicResource StrNodeBatteryTooltip}"/>
                                             </StackPanel>
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
@@ -791,11 +860,11 @@
                             </GroupBox>
 
                             <!-- g) Signalanalyse-Fenster -->
-                            <GroupBox Header="Signalanalyse-Fenster" Margin="0,0,0,16">
+                            <GroupBox Header="{DynamicResource StrSignalAnalysisGroup}" Margin="0,0,0,16">
                                 <StackPanel Margin="10">
                                     <TextBlock FontStyle="Italic" Foreground="Gray" TextWrapping="Wrap"
                                                FontSize="11" Margin="0,0,0,8"
-                                               Text="Zeitfenster für die SNR-Trendberechnung (Ampel in Telemetrie-Fenster und Node-Liste)."/>
+                                               Text="{DynamicResource StrSignalAnalysisHint}"/>
                                     <Grid>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="180"/>
@@ -806,12 +875,12 @@
                                             <RowDefinition Height="28"/>
                                             <RowDefinition Height="28"/>
                                         </Grid.RowDefinitions>
-                                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Wetter-Fenster (Stunden):" VerticalAlignment="Center" FontSize="11"/>
+                                        <TextBlock Grid.Row="0" Grid.Column="0" Text="{DynamicResource StrSignalWeatherHours}" VerticalAlignment="Center" FontSize="11"/>
                                         <TextBox  Grid.Row="0" Grid.Column="1" x:Name="WeatherHoursBox" Margin="0,2,8,2" VerticalAlignment="Center"/>
-                                        <TextBlock Grid.Row="0" Grid.Column="2" Text="Std. (kurzfristig)" FontSize="11" Opacity="0.6" VerticalAlignment="Center"/>
-                                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Antennen-Fenster (Tage):" VerticalAlignment="Center" FontSize="11"/>
+                                        <TextBlock Grid.Row="0" Grid.Column="2" Text="{DynamicResource StrSignalWeatherUnit}" FontSize="11" Opacity="0.6" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Row="1" Grid.Column="0" Text="{DynamicResource StrSignalAntennasDays}" VerticalAlignment="Center" FontSize="11"/>
                                         <TextBox  Grid.Row="1" Grid.Column="1" x:Name="AntennaDaysBox" Margin="0,2,8,2" VerticalAlignment="Center"/>
-                                        <TextBlock Grid.Row="1" Grid.Column="2" Text="Tage (langfristig)" FontSize="11" Opacity="0.6" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Row="1" Grid.Column="2" Text="{DynamicResource StrSignalAntennaUnit}" FontSize="11" Opacity="0.6" VerticalAlignment="Center"/>
                                     </Grid>
                                 </StackPanel>
                             </GroupBox>
@@ -828,34 +897,34 @@
                             </GroupBox>
 
                             <!-- h2) Positionsverlauf -->
-                            <GroupBox Header="Positionsverlauf auf Karte" Margin="0,0,0,16">
+                            <GroupBox Header="{DynamicResource StrPositionHistoryGroup}" Margin="0,0,0,16">
                                 <StackPanel Margin="10">
                                     <TextBlock FontStyle="Italic" Foreground="Gray" TextWrapping="Wrap" FontSize="11" Margin="0,0,0,8"
-                                               Text="Zeitfenster für den Positionsverlauf (📍 Pfad anzeigen) auf der Karte. DB und CSV werden parallel geschrieben."/>
+                                               Text="{DynamicResource StrPositionHistoryHint}"/>
                                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        <TextBlock Text="Verlauf zeigen:" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="11"/>
+                                        <TextBlock Text="{DynamicResource StrPositionHistoryShow}" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="11"/>
                                         <ComboBox x:Name="PositionHistoryComboBox" Width="160" FontSize="11">
-                                            <ComboBoxItem Content="6 Stunden"    Tag="6"/>
-                                            <ComboBoxItem Content="24 Stunden"   Tag="24"  IsSelected="True"/>
-                                            <ComboBoxItem Content="7 Tage"       Tag="168"/>
-                                            <ComboBoxItem Content="30 Tage"      Tag="720"/>
-                                            <ComboBoxItem Content="Unbegrenzt"   Tag="0"/>
+                                            <ComboBoxItem Content="{DynamicResource StrPosHistory6h}"        Tag="6"/>
+                                            <ComboBoxItem Content="{DynamicResource StrPosHistory24h}"       Tag="24"  IsSelected="True"/>
+                                            <ComboBoxItem Content="{DynamicResource StrPosHistory7d}"        Tag="168"/>
+                                            <ComboBoxItem Content="{DynamicResource StrPosHistory30d}"       Tag="720"/>
+                                            <ComboBoxItem Content="{DynamicResource StrPosHistoryUnlimited}" Tag="0"/>
                                         </ComboBox>
                                     </StackPanel>
                                 </StackPanel>
                             </GroupBox>
 
                             <!-- h3) Zeitsynchronisation -->
-                            <GroupBox Header="Zeitsynchronisation" Margin="0,0,0,16">
+                            <GroupBox Header="{DynamicResource StrTimeSyncGroup}" Margin="0,0,0,16">
                                 <StackPanel Margin="10">
                                     <CheckBox x:Name="AutoTimeSyncCheckBox" IsChecked="True" Margin="0,0,0,6"
-                                              Content="Uhrzeit automatisch beim Verbinden synchronisieren"/>
+                                              Content="{DynamicResource StrAutoTimeSyncLabel}"/>
                                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,4">
-                                        <TextBlock Text="Drift-Schwelle (Sek.):" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="11"/>
+                                        <TextBlock Text="{DynamicResource StrTimeSyncDriftLabel}" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="11"/>
                                         <TextBox x:Name="TimeSyncDriftBox" Width="60" Text="300" FontSize="11"/>
-                                        <TextBlock Text="(0 = kein Drift-Check)" VerticalAlignment="Center" Margin="8,0,0,0" FontSize="10" Foreground="Gray"/>
+                                        <TextBlock Text="{DynamicResource StrTimeSyncDriftZero}" VerticalAlignment="Center" Margin="8,0,0,0" FontSize="10" Foreground="Gray"/>
                                     </StackPanel>
-                                    <Button Content="⏱ Jetzt synchronisieren" HorizontalAlignment="Left"
+                                    <Button Content="{DynamicResource StrTimeSyncNow}" HorizontalAlignment="Left"
                                             Padding="8,3" FontSize="11"
                                             Click="TimeSyncManual_Click"/>
                                 </StackPanel>
@@ -956,30 +1025,30 @@
                                     Click="MapZoomIn_Click" ToolTip="Zoom In"/>
                             <Button Content="-" Width="32" Height="32" Margin="0,0,10,0"
                                     Click="MapZoomOut_Click" ToolTip="Zoom Out"/>
-                            <Button Content="📂 Traceroute laden" Height="28" Margin="0,0,6,0"
+                            <Button Content="{DynamicResource StrLoadTraceroute}" Height="28" Margin="0,0,6,0"
                                     Padding="8,2"
                                     Click="MapLoadTraceroute_Click"
-                                    ToolTip="Gespeicherte Traceroute(s) auf der Karte anzeigen"/>
+                                    ToolTip="{DynamicResource StrLoadTracerouteTooltip}"/>
                             <ComboBox x:Name="TracerouteAgeFilterCombo" Height="28" Width="70"
-                                      Margin="0,0,4,0" ToolTip="Traceroutes aus DB: Zeitraum">
+                                      Margin="0,0,4,0" ToolTip="{DynamicResource StrTracerouteDbTimeTooltip}">
                                 <ComboBoxItem Content="3d"  Tag="3"   />
                                 <ComboBoxItem Content="7d"  Tag="7"   IsSelected="True"/>
                                 <ComboBoxItem Content="14d" Tag="14"  />
                                 <ComboBoxItem Content="30d" Tag="30"  />
                                 <ComboBoxItem Content="90d" Tag="90"  />
-                                <ComboBoxItem Content="Alle" Tag="0"  />
+                                <ComboBoxItem Content="{DynamicResource StrAllTimeRange}" Tag="0"  />
                             </ComboBox>
-                            <Button Content="🗄 Aus DB" Height="28" Padding="8,2" Margin="0,0,6,0"
+                            <Button Content="{DynamicResource StrLoadFromDb}" Height="28" Padding="8,2" Margin="0,0,6,0"
                                     Click="MapLoadTracerouteFromDb_Click"
-                                    ToolTip="Traceroutes aus Datenbank für den gewählten Zeitraum laden"/>
+                                    ToolTip="{DynamicResource StrLoadFromDbTooltip}"/>
                             <CheckBox x:Name="TracerouteDedupeCheckBox" VerticalAlignment="Center"
                                       IsChecked="True" Margin="0,0,6,0"
-                                      ToolTip="Nur neueste Traceroute pro Node-Paar anzeigen (Deduplizierung)">
+                                      ToolTip="{DynamicResource StrDedupeTooltip}">
                                 <TextBlock Text="Dedupe" FontSize="11"/>
                             </CheckBox>
-                            <Button Content="🗑 Alle" Height="28" Padding="8,2" Margin="0,0,0,0"
+                            <Button Content="{DynamicResource StrRemoveAllTraceroutes}" Height="28" Padding="8,2" Margin="0,0,0,0"
                                     Click="ClearAllTraceroutes_Click"
-                                    ToolTip="Alle Traceroutes von der Karte entfernen"/>
+                                    ToolTip="{DynamicResource StrRemoveAllTooltip}"/>
                         </StackPanel>
                         <TextBlock x:Name="MapStatusText" Grid.Column="1" VerticalAlignment="Center" Foreground="Gray" FontStyle="Italic"/>
                     </Grid>
@@ -1003,7 +1072,43 @@
                             </StackPanel>
                         </Border>
 
-                        <!-- Copyright Hinweis rechts unten -->
+                        <!-- Map Line Types Legend (top-right overlay) -->
+                    <Border x:Name="MapLegendBorder" HorizontalAlignment="Right" VerticalAlignment="Top"
+                            Margin="0,8,8,0" Padding="8,6" CornerRadius="6"
+                            Background="#CC000000" BorderBrush="#44FFFFFF" BorderThickness="1"
+                            Panel.ZIndex="10">
+                        <StackPanel>
+                            <DockPanel>
+                                <Button DockPanel.Dock="Right" Content="✕" Width="18" Height="18"
+                                        Padding="0" FontSize="10" Margin="6,0,0,0"
+                                        Click="MapLegendClose_Click"/>
+                                <TextBlock Text="{DynamicResource StrLegendTitle}"
+                                           FontWeight="Bold" Foreground="White" FontSize="11"/>
+                            </DockPanel>
+                            <!-- Normal hop line: solid gray -->
+                            <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                <Line X1="0" Y1="5" X2="30" Y2="5" Stroke="Gray" StrokeThickness="2" Width="30" Height="10"/>
+                                <TextBlock Text="{DynamicResource StrLegendNormalHop}" Foreground="White" FontSize="10" Margin="6,0,0,0" VerticalAlignment="Center"/>
+                            </StackPanel>
+                            <!-- MQTT dashed: yellow -->
+                            <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
+                                <Line X1="0" Y1="5" X2="30" Y2="5" Stroke="Yellow" StrokeThickness="2"
+                                      StrokeDashArray="3,2" Width="30" Height="10"/>
+                                <TextBlock Text="{DynamicResource StrLegendMqttHop}" Foreground="White" FontSize="10" Margin="6,0,0,0" VerticalAlignment="Center"/>
+                            </StackPanel>
+                            <!-- Unknown dashed: dashed gray -->
+                            <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
+                                <Line X1="0" Y1="5" X2="30" Y2="5" Stroke="Gray" StrokeThickness="2"
+                                      StrokeDashArray="4,3" Width="30" Height="10"/>
+                                <TextBlock Text="{DynamicResource StrLegendUnknownHop}" Foreground="White" FontSize="10" Margin="6,0,0,0" VerticalAlignment="Center"/>
+                            </StackPanel>
+                            <!-- SNR click hint -->
+                            <TextBlock Text="{DynamicResource StrLegendSnrHint}" Foreground="#AAAAAA" FontSize="9"
+                                       Margin="0,4,0,0" TextWrapping="Wrap" MaxWidth="160"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Copyright Hinweis rechts unten -->
                         <TextBlock x:Name="MapCopyrightText"
                                    HorizontalAlignment="Right"
                                    VerticalAlignment="Bottom"
@@ -1185,11 +1290,13 @@
                           Text="{DynamicResource StrReady}"
                           VerticalAlignment="Center"/>
 
-                <TextBlock x:Name="PacketCountText"
-                          Grid.Column="1"
-                          Text="Pakete: 0"
-                          Margin="0,0,20,0"
-                          VerticalAlignment="Center"/>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,20,0">
+                    <TextBlock x:Name="PacketCountText"
+                              Text="Pakete: 0"
+                              VerticalAlignment="Center"/>
+                    <TextBlock Text="{DynamicResource StrOwnNodeIdLabel}" Margin="10,0,0,0" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="OwnNodeIdText" Margin="4,0,0,0" Text="-" VerticalAlignment="Center"/>
+                </StackPanel>
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
                     <!-- Update hint: shown when a newer release is detected -->

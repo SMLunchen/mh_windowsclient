@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ui="http://schemas.modernwpf.com/2019"
         ui:WindowHelper.UseModernWindowStyle="True"
-        Title="Traceroute"
+        Title="{DynamicResource StrTrTitle}"
         Width="560" Height="460"
         MinWidth="420" MinHeight="300"
         WindowStartupLocation="CenterOwner"
@@ -35,7 +35,7 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <TextBlock x:Name="StatusText" Grid.Column="0"
-                           Text="Noch keine Traceroute angefragt." FontSize="11" VerticalAlignment="Center"/>
+                           Text="{DynamicResource StrTrNoRequest}" FontSize="11" VerticalAlignment="Center"/>
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                     <TextBlock x:Name="HopCountText" FontSize="11" Margin="0,0,8,0" Opacity="0.7"/>
                     <Border x:Name="MqttIndicator" Background="#FF8000" CornerRadius="3"
@@ -65,17 +65,17 @@
             <TextBlock x:Name="LastResultText" Grid.Column="0"
                        VerticalAlignment="Center" FontSize="11" Opacity="0.55"/>
             <Button x:Name="ClearMapButton" Grid.Column="1"
-                    Content="🗑️ Von Karte entfernen"
+                    Content="{DynamicResource StrTrRemoveFromMap}"
                     Margin="0,0,8,0" Padding="10,6"
                     IsEnabled="False"
                     Click="ClearMapButton_Click"/>
             <Button x:Name="PlotOnMapButton" Grid.Column="2"
-                    Content="🗺️ Auf Karte zeigen"
+                    Content="{DynamicResource StrTrShowOnMap}"
                     Margin="0,0,8,0" Padding="10,6"
                     IsEnabled="False"
                     Click="PlotOnMapButton_Click"/>
             <Button x:Name="RequestButton" Grid.Column="3"
-                    Content="📡 Traceroute starten"
+                    Content="{DynamicResource StrTrStart}"
                     Padding="10,6"
                     Click="RequestButton_Click"/>
         </Grid>

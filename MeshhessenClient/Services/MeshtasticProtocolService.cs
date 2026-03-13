@@ -52,6 +52,7 @@ public class MeshtasticProtocolService
     /// <summary>Fired when rx_time of a received packet differs from local UTC by more than <see cref="TimeDriftThresholdSeconds"/>.</summary>
     public event EventHandler<int>? TimeDriftDetected;  // arg: observed drift in seconds
     public event EventHandler<TelemetryDatabaseService.WaypointEntry>? WaypointReceived;
+    public event EventHandler<uint>? WaypointDeleted;
     public int TimeDriftThresholdSeconds { get; set; } = 300; // 5 minutes
 
     private DateTime _lastDriftCheck = DateTime.MinValue;
@@ -1016,11 +1017,13 @@ public class MeshtasticProtocolService
             // id=0 with empty payload can be a delete signal – ignore
             if (wp.Id == 0) return;
 
-            bool isDelete = wp.LatitudeI == 0 && wp.LongitudeI == 0 && string.IsNullOrEmpty(wp.Name);
+            bool isDelete = (wp.LatitudeI == 0 && wp.LongitudeI == 0 && string.IsNullOrEmpty(wp.Name))
+                         || wp.Expire == 1;
             if (isDelete)
             {
                 _db?.DeleteWaypoint(wp.Id);
                 Logger.WriteLine($"Waypoint deleted: id={wp.Id}");
+                WaypointDeleted?.Invoke(this, wp.Id);
                 return;
             }
 

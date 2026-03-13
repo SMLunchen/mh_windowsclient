@@ -19,11 +19,11 @@ public partial class SegmentSnrWindow : Window
     {
         InitializeComponent();
 
-        TitleText.Text = $"SNR-Verlauf: {fromLabel} → {toLabel}";
+        TitleText.Text = $"SNR: {fromLabel} → {toLabel}";
 
         if (points.Count == 0)
         {
-            StatusText.Text = "Keine historischen SNR-Daten für dieses Segment in der DB.";
+            StatusText.Text = "No historical SNR data for this segment in DB.";
             return;
         }
 
@@ -106,8 +106,8 @@ public partial class SegmentSnrWindow : Window
 
         // Status line with stats
         if (stats != null)
-            StatusText.Text = $"{points.Count} Messpunkte | Min: {stats.Min:F1} dB | Avg: {stats.Avg:F1} dB | Max: {stats.Max:F1} dB  (blau = Nacht)";
+            StatusText.Text = $"{points.Count} samples | Min: {stats.Min:F1} dB | Avg: {stats.Avg:F1} dB | Max: {stats.Max:F1} dB  (blue = night)";
         else
-            StatusText.Text = $"{points.Count} Messpunkte  (blau = Nacht)";
+            StatusText.Text = $"{points.Count} samples  (blue = night)";
     }
 }

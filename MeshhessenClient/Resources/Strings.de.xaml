@@ -275,6 +275,173 @@
     <sys:String x:Key="StrAlertConfirmTextDm">Möchten Sie wirklich einen NOTRUF (Alert Bell) senden?{0}{0}Dies wird als wichtige Benachrichtigung gesendet!</sys:String>
     <sys:String x:Key="StrDeleteChannelConfirm">Kanal '{0}' (Index {1}) wirklich löschen?</sys:String>
 
+    <!-- New features: traceroute, waypoints, time sync, translations -->
+    <sys:String x:Key="StrCopyMessage">📋 Nachricht kopieren</sys:String>
+    <sys:String x:Key="StrDeleteWaypoint">🗑 Waypoint löschen</sys:String>
+    <sys:String x:Key="StrCreateWaypoint">📍 Waypoint erstellen…</sys:String>
+    <sys:String x:Key="StrNetStatus">Netz:</sys:String>
+    <sys:String x:Key="StrNetTooltip">Globale Signalanalyse aller Nodes (wird alle 10 min aktualisiert, startet 60s nach Verbindung).</sys:String>
+    <sys:String x:Key="StrNodesTooltip">Nodes, die aktuell im Netz empfangen wurden.</sys:String>
+    <sys:String x:Key="StrMyNodeId">Meine ID: {0}</sys:String>
+    <sys:String x:Key="StrTelemetryWindowTitle">Telemetrie</sys:String>
+    <sys:String x:Key="StrPlotWindowTitle">Telemetrie-Plot</sys:String>
+    <sys:String x:Key="StrPlotExportPng">💾 Als PNG exportieren</sys:String>
+    <sys:String x:Key="StrPlotNodes">Nodes</sys:String>
+    <sys:String x:Key="StrPlotMetric">Metrik</sys:String>
+    <sys:String x:Key="StrPlotTimeRange">Zeitraum</sys:String>
+    <sys:String x:Key="StrPlotView">Ansicht</sys:String>
+    <sys:String x:Key="StrPlotRaw">Rohdaten</sys:String>
+    <sys:String x:Key="StrPlotMovAvg1h">Gleit. Mittelwert (1h)</sys:String>
+    <sys:String x:Key="StrPlotMovAvg6h">Gleit. Mittelwert (6h)</sys:String>
+    <sys:String x:Key="StrPlotMovAvg24h">Gleit. Mittelwert (24h)</sys:String>
+    <sys:String x:Key="StrSignalAnalysisGroup">Signal-Analyse</sys:String>
+    <sys:String x:Key="StrSignalWeatherHours">Kurzfristfenster (Wetter, Stunden):</sys:String>
+    <sys:String x:Key="StrSignalAntennasDays">Langzeitfenster (Antenne, Tage):</sys:String>
+    <sys:String x:Key="StrTimeSyncGroup">Zeitsynchronisation</sys:String>
+    <sys:String x:Key="StrAutoTimeSyncLabel">Auto-Sync bei Verbindung</sys:String>
+    <sys:String x:Key="StrTimeSyncDriftLabel">Sync-Schwellwert (Sekunden):</sys:String>
+    <sys:String x:Key="StrTimeSyncNow">⏱ Jetzt synchronisieren</sys:String>
+    <sys:String x:Key="StrPkiKeyAvailable">🔑 PKI-Entschlüsselung möglich</sys:String>
+    <sys:String x:Key="StrPkiKeyUnavailable">PKI-Schlüssel nicht bekannt</sys:String>
+    <sys:String x:Key="StrTelSignal">Signal</sys:String>
+    <sys:String x:Key="StrTelEnergy">Energie</sys:String>
+    <sys:String x:Key="StrTelTrend">Trend</sys:String>
+    <sys:String x:Key="StrTelChannel">Kanal</sys:String>
+    <sys:String x:Key="StrTelNeighbors">👥 Nachbarn</sys:String>
+    <sys:String x:Key="StrTelTabSignal">📶 Signal</sys:String>
+    <sys:String x:Key="StrTelTabPower">🔋 Power</sys:String>
+    <sys:String x:Key="StrTelTabRouting">📡 Routing</sys:String>
+    <sys:String x:Key="StrTelTabAirtime">📡 Airtime</sys:String>
+    <sys:String x:Key="StrMeshHealthLabel">Mesh Health:</sys:String>
+    <sys:String x:Key="StrMeshHealthTooltip">Globale Mesh-Gesundheit (0–100%) basierend auf Pfad-Kosten, Route-Änderungen, Empfangsrate und Kanalauslastung. Kanalauslastung ist ein gleitender Durchschnitt des Firmware-Counters.</sys:String>
+
+    <!-- Map toolbar traceroute -->
+    <sys:String x:Key="StrLoadTraceroute">📂 Traceroute laden</sys:String>
+    <sys:String x:Key="StrLoadTracerouteTooltip">Gespeicherte Traceroute(s) auf der Karte anzeigen</sys:String>
+    <sys:String x:Key="StrTracerouteDbTimeTooltip">Traceroutes aus DB: Zeitraum</sys:String>
+    <sys:String x:Key="StrLoadFromDb">🗄 Aus DB</sys:String>
+    <sys:String x:Key="StrLoadFromDbTooltip">Traceroutes aus Datenbank für den gewählten Zeitraum laden</sys:String>
+    <sys:String x:Key="StrDedupeTooltip">Nur neueste Traceroute pro Node-Paar anzeigen (Deduplizierung)</sys:String>
+    <sys:String x:Key="StrRemoveAllTraceroutes">🗑 Alle</sys:String>
+    <sys:String x:Key="StrRemoveAllTooltip">Alle Traceroutes von der Karte entfernen</sys:String>
+    <sys:String x:Key="StrAllTimeRange">Alle</sys:String>
+    <!-- Settings tab - position history -->
+    <sys:String x:Key="StrPositionHistoryGroup">Positionsverlauf auf Karte</sys:String>
+    <sys:String x:Key="StrPositionHistoryHint">Zeitfenster für den Positionsverlauf (📍 Pfad anzeigen) auf der Karte. DB und CSV werden parallel geschrieben.</sys:String>
+    <sys:String x:Key="StrPositionHistoryShow">Verlauf zeigen:</sys:String>
+    <sys:String x:Key="StrPosHistory6h">6 Stunden</sys:String>
+    <sys:String x:Key="StrPosHistory24h">24 Stunden</sys:String>
+    <sys:String x:Key="StrPosHistory7d">7 Tage</sys:String>
+    <sys:String x:Key="StrPosHistory30d">30 Tage</sys:String>
+    <sys:String x:Key="StrPosHistoryUnlimited">Unbegrenzt</sys:String>
+    <!-- Settings tab - signal analysis hints -->
+    <sys:String x:Key="StrSignalAnalysisHint">Zeitfenster für die SNR-Trendberechnung (Ampel in Telemetrie-Fenster und Node-Liste).</sys:String>
+    <sys:String x:Key="StrSignalWeatherUnit">Std. (kurzfristig)</sys:String>
+    <sys:String x:Key="StrSignalAntennaUnit">Tage (langfristig)</sys:String>
+    <!-- Settings tab - time sync -->
+    <sys:String x:Key="StrTimeSyncDriftZero">(0 = kein Drift-Check)</sys:String>
+    <!-- Settings saved dialog -->
+    <sys:String x:Key="StrSettingsSaved">Einstellungen gespeichert.</sys:String>
+    <sys:String x:Key="StrSettingsSavedTitle">Info</sys:String>
+    <!-- Telemetry window -->
+    <sys:String x:Key="StrTelTimeRange">Zeitraum:</sys:String>
+    <sys:String x:Key="StrTel7d">7 Tage</sys:String>
+    <sys:String x:Key="StrTel14d">14 Tage</sys:String>
+    <sys:String x:Key="StrTel30d">30 Tage</sys:String>
+    <sys:String x:Key="StrTelAll">Gesamt</sys:String>
+    <sys:String x:Key="StrTelOpenPlot">📈 Im Plot öffnen</sys:String>
+    <sys:String x:Key="StrTelSnrSection">SNR (Empfangsqualität)</sys:String>
+    <sys:String x:Key="StrTelDayLabel">Tag</sys:String>
+    <sys:String x:Key="StrTelNightLabel">Nacht</sys:String>
+    <sys:String x:Key="StrTelSnrMedian">SNR Median</sys:String>
+    <sys:String x:Key="StrTelRssiMedian">RSSI Median</sys:String>
+    <sys:String x:Key="StrTelSnrDelta">SNR Δ Nacht−Tag</sys:String>
+    <sys:String x:Key="StrTelRssiDelta">RSSI Δ Nacht−Tag</sys:String>
+    <sys:String x:Key="StrTelFullRange">Gesamtbereich</sys:String>
+    <sys:String x:Key="StrTelSnrMinMax">SNR Min / Max</sys:String>
+    <sys:String x:Key="StrTelSnrVariance">SNR Varianz</sys:String>
+    <sys:String x:Key="StrTelPacketsTotal">Pakete gesamt</sys:String>
+    <sys:String x:Key="StrTelBatterySection">Batterie &amp; Spannung</sys:String>
+    <sys:String x:Key="StrTelBatteryAvg">Batterie Ø</sys:String>
+    <sys:String x:Key="StrTelBatteryNight">Batterie Nacht-Differenz</sys:String>
+    <sys:String x:Key="StrTelVoltageAvg">Spannung Ø</sys:String>
+    <sys:String x:Key="StrTelVoltageNight">Spannung Nacht-Differenz</sys:String>
+    <sys:String x:Key="StrTelVoltageMinMax">Spannung Min / Max</sys:String>
+    <sys:String x:Key="StrTelUptime">Uptime (zuletzt)</sys:String>
+    <sys:String x:Key="StrTelReadingsTotal">Messwerte gesamt</sys:String>
+    <sys:String x:Key="StrTelChannelSection">Kanalauslastung</sys:String>
+    <sys:String x:Key="StrTelChanUtilAvg">Channel Util Ø</sys:String>
+    <sys:String x:Key="StrTelChanUtilMax">Channel Util Max</sys:String>
+    <sys:String x:Key="StrTelAirTxAvg">Air TX Util Ø</sys:String>
+    <sys:String x:Key="StrTelAirTxMax">Air TX Util Max</sys:String>
+    <sys:String x:Key="StrTelHopSection">Hop-Analyse</sys:String>
+    <sys:String x:Key="StrTelHopsAvg">Hops Ø / Min / Max</sys:String>
+    <sys:String x:Key="StrTelAckRate">ACK-Erfolgsrate</sys:String>
+    <sys:String x:Key="StrTelAckReqRcv">ACK angefordert / erhalten</sys:String>
+    <sys:String x:Key="StrTelUniqueRelays">Unique Relay-Nodes</sys:String>
+    <sys:String x:Key="StrTelHopDist">Hop-Verteilung</sys:String>
+    <sys:String x:Key="StrTelPathSection">Pfad-Analyse (Traceroute)</sys:String>
+    <sys:String x:Key="StrTelHopCost">Hop-Kosten</sys:String>
+    <sys:String x:Key="StrTelRouteChanges">Route-Änderungen/h</sys:String>
+    <sys:String x:Key="StrTelTracerouteSamples">Traceroute-Stichproben</sys:String>
+    <sys:String x:Key="StrTelLastSeen">Letzte Sichtung</sys:String>
+    <!-- Plot window -->
+    <sys:String x:Key="StrPlotBattery">Batterie (%)</sys:String>
+    <sys:String x:Key="StrPlotVoltage">Spannung (V)</sys:String>
+    <sys:String x:Key="StrPlot7d">7 Tage</sys:String>
+    <sys:String x:Key="StrPlot14d">14 Tage</sys:String>
+    <sys:String x:Key="StrPlot30d">30 Tage</sys:String>
+    <sys:String x:Key="StrPlotAll">Gesamt</sys:String>
+    <sys:String x:Key="StrPlotRefresh">Aktualisieren</sys:String>
+
+    <!-- Own Node ID -->
+    <sys:String x:Key="StrOwnNodeIdLabel">Eigene Node-ID:</sys:String>
+
+    <!-- LED tooltips -->
+    <sys:String x:Key="StrWeatherLedTooltip">Signal-Wetter: Kurzzeit-SNR/RSSI-Trend aller Nodes (letzte 6h)</sys:String>
+    <sys:String x:Key="StrAntennaLedTooltip">Antennen-Gesundheit: Langzeit-SNR-Trend aller Nodes (letzte 7 Tage)</sys:String>
+    <sys:String x:Key="StrNeighborLedTooltip">Nachbar-Qualität: Durchschnittliche Verbindungsqualität zu Nachbar-Nodes</sys:String>
+    <sys:String x:Key="StrPathLedTooltip">Routen-Stabilität: Häufigkeit von Routenänderungen im Mesh</sys:String>
+
+    <!-- Traceroute Window -->
+    <sys:String x:Key="StrTrTitle">Traceroute</sys:String>
+    <sys:String x:Key="StrTrNoRequest">Noch keine Traceroute angefragt.</sys:String>
+    <sys:String x:Key="StrTrRemoveFromMap">🗑️ Von Karte entfernen</sys:String>
+    <sys:String x:Key="StrTrShowOnMap">🗺️ Auf Karte zeigen</sys:String>
+    <sys:String x:Key="StrTrStart">📡 Traceroute starten</sys:String>
+    <sys:String x:Key="StrTrLastResult">Letzte Antwort:</sys:String>
+    <sys:String x:Key="StrTrDistance">Entfernung</sys:String>
+    <sys:String x:Key="StrTrResultReceived">Ergebnis empfangen</sys:String>
+    <sys:String x:Key="StrTrHop">Hop</sys:String>
+    <sys:String x:Key="StrTrSnr">SNR</sys:String>
+    <sys:String x:Key="StrTrNoData">Keine Daten</sys:String>
+    <sys:String x:Key="StrTrUnknownNode">Unbekannter Node</sys:String>
+
+    <!-- Waypoint Dialog -->
+    <sys:String x:Key="StrWpTitle">Waypoint erstellen</sys:String>
+    <sys:String x:Key="StrWpName">Name:</sys:String>
+    <sys:String x:Key="StrWpDescription">Beschreibung:</sys:String>
+    <sys:String x:Key="StrWpIcon">Icon (Emoji):</sys:String>
+    <sys:String x:Key="StrWpExpiry">Ablauf (h):</sys:String>
+    <sys:String x:Key="StrWpExpiryHint">  0 = kein Ablauf</sys:String>
+    <sys:String x:Key="StrWpBroadcast">Im Mesh senden (an alle verbundenen Nodes)</sys:String>
+    <sys:String x:Key="StrWpCreate">Erstellen</sys:String>
+    <sys:String x:Key="StrWpCancel">Abbrechen</sys:String>
+
+    <!-- Map Legend -->
+    <sys:String x:Key="StrLegendTitle">Legende</sys:String>
+    <sys:String x:Key="StrLegendNormalHop">Normaler LoRa-Hop</sys:String>
+    <sys:String x:Key="StrLegendMqttHop">Via MQTT (Blitz)</sys:String>
+    <sys:String x:Key="StrLegendUnknownHop">Unbekannte Route (gestrichelt)</sys:String>
+    <sys:String x:Key="StrLegendSnrHint">Klick auf Segment → SNR-Popup</sys:String>
+
+    <!-- Waypoint status -->
+    <sys:String x:Key="StrWpCreatedStatus">Waypoint {0} erstellt und gesendet.</sys:String>
+
+    <!-- Tile download -->
+    <sys:String x:Key="StrTdConnectTimeout">Verbindung zum Gerät unterbrochen (Timeout).</sys:String>
+    <sys:String x:Key="StrNodeDistance">Entfernung</sys:String>
+
     <!-- Info tab library descriptions -->
     <sys:String x:Key="StrOsmData">Kartendaten © OpenStreetMap-Mitwirkende</sys:String>
     <sys:String x:Key="StrOsmTopoData">Kartendarstellung © OpenTopoMap</sys:String>
@@ -284,5 +451,147 @@
     <sys:String x:Key="StrModernWpfDesc">Fluent Design UI-Theming für WPF</sys:String>
     <sys:String x:Key="StrProtobufDesc">Protokoll-Serialisierung für Meshtastic-Kommunikation</sys:String>
     <sys:String x:Key="StrLicense">Lizenz</sys:String>
+
+    <!-- Status bar channel/sent messages -->
+    <sys:String x:Key="StrMsgSentChannel">Nachricht gesendet (Kanal {0})</sys:String>
+    <sys:String x:Key="StrActiveChannel">aktiver Kanal</sys:String>
+    <sys:String x:Key="StrNodeDistanceStatus">{0} ({1}): {2:F2} km Entfernung | Letzte Sichtung: {3}</sys:String>
+
+    <!-- LED tooltip dynamic content -->
+    <sys:String x:Key="StrLedWeatherEffect">Wetter-Effekt: {0} von {1} Nodes zeigen gleichzeitigen kurzfristigen SNR-Abfall.\nMehrere Nodes gleichzeitig fallend → wahrscheinlich Wetter / atmosphärische Effekte.</sys:String>
+    <sys:String x:Key="StrLedNeighborProblem">Node '{0}' zeigt signifikant schlechteren SNR als die anderen Nachbarn → mögliches Hardware-/Positionsproblem bei diesem Node.</sys:String>
+    <sys:String x:Key="StrLedAllGoodNeighbor">Alle Nachbar-Nodes zeigen ähnliche SNR-Werte → kein einzelner Ausreißer erkennbar.</sys:String>
+    <sys:String x:Key="StrLedAntennaUp">↑ SNR-Langzeittrend: {0:+0.00} dB/Tag – langfristig steigend – eigene Antenne und Position sind gut.</sys:String>
+    <sys:String x:Key="StrLedAntennaFlat">→ SNR-Langzeittrend: kein signifikanter Trend erkennbar.</sys:String>
+    <sys:String x:Key="StrLedAntennaDown">↓ SNR-Langzeittrend: {0:+0.00} dB/Tag – langfristig fallend über ALLE Nachbarn gleichzeitig → Antenne/Position prüfen.</sys:String>
+    <sys:String x:Key="StrLedPathStability">Pfad-Stabilität (aus Traceroute-Daten): {0:0.00} Änderungen/h – {1}</sys:String>
+    <sys:String x:Key="StrLedRxUp">↑ Empfangsrate normal: {0:0.0} Pkts/h</sys:String>
+    <sys:String x:Key="StrLedRxFlat">→ Empfangsrate leicht unter Erwartung: {0:0.0} Pkts/h</sys:String>
+    <sys:String x:Key="StrLedRxDown">↓ Empfangsrate deutlich unter Erwartung: {0:0.0} Pkts/h</sys:String>
+    <sys:String x:Key="StrLedChanUtil">Kanalauslastung: {0:0.1}%</sys:String>
+    <sys:String x:Key="StrLedMeshScore">Mesh-Score: {0:0}/100 – erstellt aus Signal, Akku, Kanal &amp; Routing-Daten</sys:String>
+
+    <!-- Traceroute window positions -->
+    <sys:String x:Key="StrTrHopsPositions">{0} Hops · {1} Positionen bekannt</sys:String>
+
+    <!-- TelemetryWindow footer -->
+    <sys:String x:Key="StrTelFooterInfo">Auswertung der letzten {0}</sys:String>
+
+    <!-- TelemetryWindow tooltip texts (inline) -->
+    <sys:String x:Key="StrTtSnrPackets">Anzahl der im gewählten Zeitraum empfangenen Pakete dieses Nodes.</sys:String>
+    <sys:String x:Key="StrTtSnrDayNight">Differenz des SNR-Medians (Nacht − Tag) in dB. Positiv = nachts besser (weniger Störungen).</sys:String>
+    <sys:String x:Key="StrTtRssiDayNight">Differenz des RSSI-Medians (Nacht − Tag) in dBm. Positiv = nachts besser empfangen.</sys:String>
+    <sys:String x:Key="StrTtVoltageMinMax">Niedrigste und höchste gemessene Spannung im gewählten Zeitraum.</sys:String>
+    <sys:String x:Key="StrTtReadings">Anzahl der gespeicherten Gerätemetrik-Einträge im gewählten Zeitraum.</sys:String>
+    <sys:String x:Key="StrTtChanUtilAvg">Durchschnittliche Kanalauslastung in % (channel_util). Maximale Kanalauslastung im gewählten Zeitraum.</sys:String>
+    <sys:String x:Key="StrTtChanUtilMax">Maximale Kanalauslastung im gewählten Zeitraum.</sys:String>
+    <sys:String x:Key="StrTtAirTxAvg">Durchschnittliche Sendezeit-Auslastung in % (air_util_tx). Anteil der Zeit, in der dieser Node selbst sendet.</sys:String>
+    <sys:String x:Key="StrTtAirTxMax">Maximale Sendezeit-Auslastung im gewählten Zeitraum.</sys:String>
+    <sys:String x:Key="StrTtHopsAvg">Durchschnittliche, minimale und maximale Hop-Anzahl der empfangenen Pakete in diesem Zeitraum.</sys:String>
+    <sys:String x:Key="StrTtAckReq">Absolute Anzahl der ACK-angeforderten Pakete im gewählten Zeitraum.</sys:String>
+    <sys:String x:Key="StrTtAckRate">Anteil der bestätigten ACK-Pakete an den angeforderten ACKs (Pakete mit want_ack=true).</sys:String>
+    <sys:String x:Key="StrTtRelays">Anzahl der verschiedenen Nodes, die Pakete für diesen Node weitergeleitet haben.</sys:String>
+    <sys:String x:Key="StrTtRoutingTotal">Gesamtzahl der im gewählten Zeitraum aufgezeichneten Routing-Pakete.</sys:String>
+    <sys:String x:Key="StrTtTracerouteSamples">Anzahl der für diese Berechnung ausgewerteten Traceroute-Hop-Einträge.</sys:String>
+    <sys:String x:Key="StrTtTracerouteOnly">Nur verfügbar, wenn Traceroutes für diesen Node aufgezeichnet wurden.</sys:String>
+    <sys:String x:Key="StrTtNeighborSection">Nodes, von denen unser Knoten Signale direkt empfangen hat (packet_rx). Zeigt die Empfangsqualität aus unserer Perspektive.</sys:String>
+
+    <!-- Tile download -->
+    <sys:String x:Key="StrTdEstimateNone">Geschätzte Tiles: –</sys:String>
+    <sys:String x:Key="StrTdEstimateCount">Geschätzte Tiles: ~{0:N0}</sys:String>
+
+    <!-- Connect error -->
+    <sys:String x:Key="StrConnectTimeout">Verbindungsversuch abgebrochen (Timeout). Bitte erneut verbinden.</sys:String>
+
+    <!-- Node list signal tooltips -->
+    <sys:String x:Key="StrNodeSnrQualityTooltip">Signal-Indikatoren: SNR-Qualität | SNR-Trend | Batterie. Grün=gut, Gelb=mittel, Rot=schlecht.</sys:String>
+    <sys:String x:Key="StrNodeSnrTrendTooltip">SNR-Trend (kurzfristig): Grün=stabil/steigend, Gelb=leicht fallend, Rot=stark fallend.</sys:String>
+    <sys:String x:Key="StrNodeBatteryTooltip">Batteriestatus: Grün ≥50% | Gelb 20–50% | Rot &lt;20%</sys:String>
+
+    <!-- Own node label -->
+    <sys:String x:Key="StrMe">Ich</sys:String>
+
+    <!-- Connection error messages -->
+    <sys:String x:Key="StrConnectFailed">Verbindungsversuch fehlgeschlagen: {0}</sys:String>
+    <sys:String x:Key="StrBtScanFailed">Bluetooth-Scan fehlgeschlagen: {0}</sys:String>
+    <sys:String x:Key="StrTimeSyncSent">Zeitsynchronisation gesendet.</sys:String>
+    <sys:String x:Key="StrTimeSyncFailed">Zeitsynchronisation fehlgeschlagen.</sys:String>
+
+    <!-- Rich LED arrow tooltips -->
+    <sys:String x:Key="StrArrowWeatherUp">↑ Kein Wettereffekt erkennbar.
+Alle Nachbarn zeigen stabile Kurzzeit-SNR. Günstige atmosphärische Bedingungen für LoRa.</sys:String>
+    <sys:String x:Key="StrArrowWeatherFlat">→ Vereinzelte SNR-Schwankungen ({0}/{1} Nodes leicht fallend).
+Noch kein klarer Wettereffekt, aber Entwicklung beobachten.</sys:String>
+    <sys:String x:Key="StrArrowWeatherDown">↓ Wettereffekt wahrscheinlich: {0} von {1} Nodes zeigen gleichzeitig fallende Kurzzeit-SNR.
+LoRa reagiert empfindlich auf Luftfeuchtigkeit, Regen und Temperaturinversionen – alle Verbindungen sind betroffen.</sys:String>
+    <sys:String x:Key="StrArrowAntennaUp">↑ SNR-Langzeittrend: {0:+0.00} dB/Tag (Ø {1} Nachbarn).
+Die Empfangsqualität verbessert sich langfristig – eigene Antenne und Position sind gut.</sys:String>
+    <sys:String x:Key="StrArrowAntennaFlat">→ SNR-Langzeittrend: {0:+0.00;-0.00} dB/Tag (Ø {1} Nachbarn).
+Stabile Verbindungsqualität, kein signifikanter Trend erkennbar.</sys:String>
+    <sys:String x:Key="StrArrowAntennaDown">↓ SNR-Langzeittrend: {0:+0.00;-0.00} dB/Tag (Ø {1} Nachbarn).
+Die Empfangsqualität sinkt langfristig über ALLE Nachbarn gleichzeitig – mögliche Ursache: eigene Antenne beschädigt/verdreht, neuer Störsender oder geänderte Node-Position.</sys:String>
+    <sys:String x:Key="StrArrowNeighborUp">↑ Alle Nachbar-Nodes zeigen ähnliche SNR-Werte.
+Kein einzelner Ausreißer erkannt – das Mesh ist homogen verbunden.</sys:String>
+    <sys:String x:Key="StrArrowNeighborFlat">→ Leichte Unterschiede zwischen Nachbarn, aber kein klares Problem-Node.</sys:String>
+    <sys:String x:Key="StrArrowNeighborDown">↓ Node '{0}' zeigt deutlich schlechtere Kurzzeit-SNR als alle anderen Nachbarn.
+Mögliche Ursache: Problem bei diesem Node (Antenne, Einbauort, Hardware) – nicht das gesamte Mesh ist betroffen.</sys:String>
+    <sys:String x:Key="StrArrowPathUp">↑ Gute Pfadqualität: Hop-Kosten {0:0.00} (niedrig = gut), Route-Änderungen {1:0.00}/h.
+Stabile Routing-Pfade mit guter SNR-Qualität auf allen Hops.</sys:String>
+    <sys:String x:Key="StrArrowPathFlat">→ Mittlere Pfadqualität: Hop-Kosten {0:0.00}, Route-Änderungen {1:0.00}/h.
+Einige Pfade sind suboptimal oder wechseln gelegentlich.</sys:String>
+    <sys:String x:Key="StrArrowPathDown">↓ Schlechte Pfadqualität: Hop-Kosten {0:0.00} (hoch), Route-Änderungen {1:0.00}/h.
+Pfade werden häufig gewechselt oder haben schlechte SNR auf den Hops – Mesh-Topologie ist instabil.</sys:String>
+    <sys:String x:Key="StrArrowRxUp">↑ Empfangsrate normal: {0:0.0} Pkts/h ({1}% der {2}-Baseline {3:0.0} Pkts/h).
+Das Mesh sendet so viel wie erwartet – gute Erreichbarkeit.</sys:String>
+    <sys:String x:Key="StrArrowRxFlat">→ Empfangsrate leicht unter Erwartung: {0:0.0} Pkts/h ({1}% der {2}-Baseline {3:0.0} Pkts/h).
+Weniger Pakete als üblich, aber noch kein kritischer Rückgang.</sys:String>
+    <sys:String x:Key="StrArrowRxDown">↓ Empfangsrate deutlich unter Erwartung: {0:0.0} Pkts/h ({1}% der {2}-Baseline {3:0.0} Pkts/h).
+Mögliche Ursachen: Nodes offline, Kanalüberlastung, oder Verbindungsabbrüche im Mesh.</sys:String>
+
+    <!-- Telemetry window LED labels and misc -->
+    <sys:String x:Key="StrTelLedSignalLabel">Empfangsqualität</sys:String>
+    <sys:String x:Key="StrTelLedTrendLabel">SNR-Trend</sys:String>
+    <sys:String x:Key="StrTelLedBatteryLabel">Batterie</sys:String>
+    <sys:String x:Key="StrTelLedChanLabel">Kanalauslastung</sys:String>
+    <sys:String x:Key="StrTelPacketsLabel">Pakete:</sys:String>
+    <sys:String x:Key="StrTelLowestLabel">Niedrigster Wert</sys:String>
+    <sys:String x:Key="StrTelCombinedScore">Kombinierter Score</sys:String>
+    <sys:String x:Key="StrTelRouteChangesLabel">Routenwechsel</sys:String>
+    <sys:String x:Key="StrTtSnrMinMax">Niedrigster und höchster gemessener SNR-Wert im gewählten Zeitraum.</sys:String>
+    <sys:String x:Key="StrTtRssiMinMax">Niedrigster und höchster gemessener RSSI-Wert im gewählten Zeitraum.</sys:String>
+    <sys:String x:Key="StrTelRssiMinMax">RSSI Min / Max</sys:String>
+    <sys:String x:Key="StrTtHopCost">Kombiniertes Pfadqualitäts-Maß (0 = optimal, 1 = schlechtester Pfad).&#xa;Basiert auf SNR-Median und -Varianz der Traceroute-Hops.&#xa;Niedrig = gute, stabile Verbindungsqualität auf dem Pfad.</sys:String>
+    <sys:String x:Key="StrTtRouteChangeRate">Wie oft wechselt der Routing-Pfad zum selben Ziel pro Stunde.&#xa;Hohe Rate = instabile Mesh-Topologie, häufige Umwege.&#xa;0 = konstanter stabiler Pfad.</sys:String>
+    <sys:String x:Key="StrTelSignalLedTooltip">SNR-Empfangsqualität (Median tags): {0}
+Grün ≥5 dB | Gelb -5…5 dB | Rot &lt;-5 dB</sys:String>
+    <sys:String x:Key="StrTelBatteryLedTooltip">Batterie {0}: {1}
+Grün ≥50% | Gelb 20–50% | Rot &lt;20% | Grau = keine Telemetrie-Daten</sys:String>
+    <sys:String x:Key="StrTelBatteryPeriodDay">Tages-Ø</sys:String>
+    <sys:String x:Key="StrTelBatteryPeriodNight">Nacht-Ø (kein Tages-Wert)</sys:String>
+    <sys:String x:Key="StrTelTrendLedTooltipNoData">SNR-Trend: zu wenige Datenpunkte (min. 5 benötigt).</sys:String>
+    <sys:String x:Key="StrTelTrendLedTooltip">SNR-Trend (kurzfristig, {0}h): {1} dB/h
+SNR-Trend (langfristig, {2}d): {3} dB/Tag
+Grün = stabil/steigend | Gelb = leicht fallend | Rot = stark fallend</sys:String>
+    <sys:String x:Key="StrTelChanLedTooltip">Kanalauslastung (Max): {0}
+Grün ≤15% | Gelb 15–25% | Rot &gt;25% | Grau = keine Airtime-Daten</sys:String>
+
+    <!-- Mesh Health summary lines -->
+    <sys:String x:Key="StrMeshSumPathCost">Pfad-Kosten (Ø): {0:0.00}</sys:String>
+    <sys:String x:Key="StrMeshSumRouteChange">Route-Änderungen: {0:0.00}/h</sys:String>
+    <sys:String x:Key="StrMeshSumRxBaseline">Empfangsrate ({0}-Baseline): {1:0.0} Pkts/h</sys:String>
+    <sys:String x:Key="StrMeshSumRxCurrent">Empfangsrate aktuell: {0:0.0} Pkts/h ({1}%)</sys:String>
+    <sys:String x:Key="StrMeshSumChanUtil">Kanalauslastung (Ø): {0:0.1}%</sys:String>
+
+    <!-- Status strip column headers -->
+    <sys:String x:Key="StrHdrWeather">Wetter/KT</sys:String>
+    <sys:String x:Key="StrHdrAntenna">LZ-SNR</sys:String>
+    <sys:String x:Key="StrHdrNeighbor">NB</sys:String>
+    <sys:String x:Key="StrHdrPath">PS</sys:String>
+
+    <!-- DM / Channel / Port strings -->
+    <sys:String x:Key="StrNoDmToSelf">Sie können keine DM an sich selbst senden.</sys:String>
+    <sys:String x:Key="StrHint">Hinweis</sys:String>
+    <sys:String x:Key="StrActiveChannelStatus">Aktiver Kanal: {0}</sys:String>
+    <sys:String x:Key="StrPortsRefreshed">Ports aktualisiert</sys:String>
 
 </ResourceDictionary>

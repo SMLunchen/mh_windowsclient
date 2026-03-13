@@ -45,7 +45,7 @@ public static class SettingsService
         var defaults = new AppSettings(
             false,
             string.Empty,
-            true,
+            false,
             50.9,
             9.5,
             string.Empty,
@@ -159,7 +159,7 @@ public static class SettingsService
             return new AppSettings(
                 DarkMode: values.TryGetValue("DarkMode", out var dm) && bool.TryParse(dm, out var dmBool) ? dmBool : defaults.DarkMode,
                 StationName: values.TryGetValue("StationName", out var sn) ? sn : defaults.StationName,
-                ShowEncryptedMessages: !values.TryGetValue("ShowEncryptedMessages", out var se) || !bool.TryParse(se, out var seBool) || seBool,
+                ShowEncryptedMessages: values.TryGetValue("ShowEncryptedMessages", out var se) && bool.TryParse(se, out var seBool) && seBool,
                 MyLatitude: values.TryGetValue("MyLatitude", out var lat) && double.TryParse(lat, NumberStyles.Float, CultureInfo.InvariantCulture, out var latVal) ? latVal : defaults.MyLatitude,
                 MyLongitude: values.TryGetValue("MyLongitude", out var lon) && double.TryParse(lon, NumberStyles.Float, CultureInfo.InvariantCulture, out var lonVal) ? lonVal : defaults.MyLongitude,
                 LastComPort: lastComPort,
