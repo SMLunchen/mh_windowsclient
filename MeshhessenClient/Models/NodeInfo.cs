@@ -15,6 +15,8 @@ public class NodeInfo
     public double? Latitude { get; set; }
     public double? Longitude { get; set; }
     public int? Altitude { get; set; }
+    public float? GroundSpeed { get; set; }  // m/s
+    public float? GroundTrack { get; set; }  // degrees 0–360 (0=North, clockwise)
     public string ColorHex { get; set; } = string.Empty;  // Empty = no color, otherwise #RRGGBB
     public string Note { get; set; } = string.Empty;      // User note
     public bool IsPinned { get; set; }                    // Pinned to top of node list

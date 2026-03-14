@@ -9,6 +9,9 @@ namespace MeshhessenClient;
 
 public partial class TelemetryWindow : Window
 {
+    private static string Loc(string key) =>
+        Application.Current?.Resources[key] as string ?? key;
+
     private static readonly SolidColorBrush DefaultBrush = new(System.Windows.Media.Color.FromRgb(0xAA, 0xAA, 0xAA));
     private readonly NodeInfo _node;
     private readonly TelemetryDatabaseService _db;
@@ -66,9 +69,9 @@ public partial class TelemetryWindow : Window
             var routing   = _db.GetRoutingStats(_node.NodeId, _days);
             var neighbors = _db.GetNeighborStats(_node.NodeId, _days, _nodeNames);
 
-            string rangeName = _days == 0 ? "gesamt" : $"letzten {_days} Tage";
-            FooterInfoText.Text = $"Auswertung der {rangeName}";
-            DataCountText.Text  = $"({signal.TotalPackets} Pakete)";
+            string rangeName = _days == 0 ? Loc("StrTelAll") : $"{_days}d";
+            FooterInfoText.Text = string.Format(Loc("StrTelFooterInfo"), rangeName);
+            DataCountText.Text  = $"({signal.TotalPackets} {Loc("StrTelPacketsLabel")})";
 
             // ── Per-Node Status Ampel (Signal / Energie / ACK / Kanal) ──
             var signalLed = signal.DaySnrMedian switch
@@ -79,8 +82,7 @@ public partial class TelemetryWindow : Window
                 _      => LedState.Alert
             };
             SetLed(NodeSignalLed, signalLed,
-                $"SNR-Empfangsqualität (Median tags): {Fmt(signal.DaySnrMedian, " dB")}\n" +
-                "Grün ≥5 dB | Gelb -5…5 dB | Rot <-5 dB");
+                string.Format(Loc("StrTelSignalLedTooltip"), Fmt(signal.DaySnrMedian, " dB")));
 
             float? battVal = power.DayBatteryAvg ?? power.NightBatteryAvg;
             var battLed = battVal switch
@@ -90,10 +92,9 @@ public partial class TelemetryWindow : Window
                 >= 20f => LedState.Warning,
                 _      => LedState.Alert
             };
-            string battPeriod = power.DayBatteryAvg.HasValue ? "Tages-Ø" : "Nacht-Ø (kein Tages-Wert)";
+            string battPeriod = power.DayBatteryAvg.HasValue ? Loc("StrTelBatteryPeriodDay") : Loc("StrTelBatteryPeriodNight");
             SetLed(NodeBatteryLed, battLed,
-                $"Batterie {battPeriod}: {Fmt(battVal, "%")}\n" +
-                "Grün ≥50% | Gelb 20–50% | Rot <20% | Grau = keine Telemetrie-Daten");
+                string.Format(Loc("StrTelBatteryLedTooltip"), battPeriod, Fmt(battVal, "%")));
 
             var nodeTrend = _db.GetSingleNodeTrend(_node.NodeId, _shortHours, _longDays, _nodeNames);
             var trendLed  = nodeTrend == null || nodeTrend.PointCount < 5 ? LedState.NoData
@@ -101,10 +102,10 @@ public partial class TelemetryWindow : Window
                           : nodeTrend.ShortSlope > -0.5f                  ? LedState.Warning
                           :                                                  LedState.Alert;
             string trendTip = nodeTrend == null || nodeTrend.PointCount < 5
-                ? $"SNR-Trend: zu wenige Datenpunkte (min. 5 benötigt)."
-                : $"SNR-Trend (kurzfristig, {_shortHours}h): {nodeTrend.ShortSlope:+0.00;-0.00} dB/h\n" +
-                  $"SNR-Trend (langfristig, {_longDays}d): {nodeTrend.LongSlope:+0.00;-0.00} dB/Tag\n" +
-                  "Grün = stabil/steigend | Gelb = leicht fallend | Rot = stark fallend";
+                ? Loc("StrTelTrendLedTooltipNoData")
+                : string.Format(Loc("StrTelTrendLedTooltip"),
+                    _shortHours, $"{nodeTrend.ShortSlope:+0.00;-0.00}",
+                    _longDays,   $"{nodeTrend.LongSlope:+0.00;-0.00}");
             SetLed(NodeAckLed, trendLed, trendTip);
 
             var chanLed = airtime.ChannelUtilMax switch
@@ -115,8 +116,7 @@ public partial class TelemetryWindow : Window
                 _      => LedState.Alert
             };
             SetLed(NodeChanLed, chanLed,
-                $"Kanalauslastung (Max): {Fmt(airtime.ChannelUtilMax, "%")}\n" +
-                "Grün ≤15% | Gelb 15–25% | Rot >25% | Grau = keine Airtime-Daten");
+                string.Format(Loc("StrTelChanLedTooltip"), Fmt(airtime.ChannelUtilMax, "%")));
 
             // ── Signal ──
             SnrDayMedian.Text    = Fmt(signal.DaySnrMedian,   " dB");

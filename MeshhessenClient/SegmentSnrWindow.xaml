@@ -1,0 +1,23 @@
+<Window x:Class="MeshhessenClient.SegmentSnrWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:oxy="http://oxyplot.org/wpf"
+        Title="Segment SNR-Verlauf" Height="380" Width="620"
+        WindowStartupLocation="CenterOwner"
+        Background="#FF1E1E1E">
+    <Grid Margin="8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock x:Name="TitleText" Grid.Row="0" FontSize="13" FontWeight="SemiBold"
+                   Foreground="#DDDDDD" Margin="0,0,0,6" TextWrapping="Wrap"/>
+
+        <oxy:PlotView x:Name="Plot" Grid.Row="1" Background="Transparent"/>
+
+        <TextBlock x:Name="StatusText" Grid.Row="2" FontSize="10" Foreground="Gray"
+                   Margin="0,4,0,0" TextWrapping="Wrap"/>
+    </Grid>
+</Window>

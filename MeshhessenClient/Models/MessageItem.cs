@@ -20,6 +20,13 @@ public class MessageItem : INotifyPropertyChanged
     public string SenderNote { get; set; } = string.Empty;
     public bool HasAlertBell { get; set; } = false;
 
+    // Protocol-level reply (Meshtastic Data.reply_id field 7)
+    public uint ReplyId { get; set; }
+    public string ReplyFromName { get; set; } = string.Empty;
+    public string ReplyPreview { get; set; } = string.Empty;
+    public bool HasReply => ReplyId != 0;
+    public string ReplyQuoteText => $"↳ {ReplyFromName}: {ReplyPreview}";
+
     private string _reactionsDisplay = string.Empty;
     public string ReactionsDisplay
     {

@@ -1,8 +1,10 @@
 ﻿using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
+using MeshhessenClient.Helpers;
 using MeshhessenClient.Models;
 using MeshhessenClient.Services;
 
@@ -13,6 +15,7 @@ public partial class DirectMessagesWindow : Window
     private MeshtasticProtocolService _protocolService;
     private readonly ObservableCollection<DirectMessageConversation> _conversations = new();
     private readonly Dictionary<uint, TabItem> _tabByNodeId = new();
+    private readonly Dictionary<uint, MessageItem> _dmMessageById = new();
     private uint _myNodeId;
 
     private static string Loc(string key) =>
@@ -52,6 +55,17 @@ public partial class DirectMessagesWindow : Window
                     _conversations.Add(conversation);
                     CreateTabForConversation(conversation);
                 }
+
+                // Populate reply preview from original DM message
+                if (message.ReplyId != 0 && _dmMessageById.TryGetValue(message.ReplyId, out var origDm))
+                {
+                    message.ReplyFromName = origDm.From;
+                    message.ReplyPreview = origDm.Message?.Length > 60 ? origDm.Message[..60] + "…" : origDm.Message ?? string.Empty;
+                }
+
+                // Store in ID lookup
+                if (message.Id != 0)
+                    _dmMessageById[message.Id] = message;
 
                 // Füge Nachricht hinzu
                 conversation.Messages.Add(message);
@@ -129,7 +143,61 @@ public partial class DirectMessagesWindow : Window
 
         gridView.Columns.Add(new GridViewColumn { Header = Loc("StrColTime"), Width = 100, DisplayMemberBinding = new System.Windows.Data.Binding("Time") });
         gridView.Columns.Add(new GridViewColumn { Header = Loc("StrColFrom"), Width = 120, DisplayMemberBinding = new System.Windows.Data.Binding("From") });
-        gridView.Columns.Add(new GridViewColumn { Header = Loc("StrColMessage"), Width = 300, DisplayMemberBinding = new System.Windows.Data.Binding("Message") });
+
+        // Message column with selectable text, clickable links, and reply quote block
+        var msgDocConverter = new MeshhessenClient.Converters.MessageDocumentConverter();
+        var boolToVis = new System.Windows.Controls.BooleanToVisibilityConverter();
+
+        var msgCol = new GridViewColumn { Header = Loc("StrColMessage"), Width = 300 };
+        var msgTemplate = new DataTemplate();
+
+        var gridFactory = new FrameworkElementFactory(typeof(Grid));
+        gridFactory.SetValue(FrameworkElement.HorizontalAlignmentProperty, HorizontalAlignment.Stretch);
+
+        var rowDef0Factory = new FrameworkElementFactory(typeof(RowDefinition));
+        rowDef0Factory.SetValue(RowDefinition.HeightProperty, GridLength.Auto);
+        var rowDef1Factory = new FrameworkElementFactory(typeof(RowDefinition));
+        rowDef1Factory.SetValue(RowDefinition.HeightProperty, GridLength.Auto);
+        gridFactory.AppendChild(rowDef0Factory);
+        gridFactory.AppendChild(rowDef1Factory);
+
+        // Reply quote block (Row 0)
+        var replyBorderFactory = new FrameworkElementFactory(typeof(Border));
+        replyBorderFactory.SetValue(Grid.RowProperty, 0);
+        replyBorderFactory.SetBinding(Border.VisibilityProperty, new System.Windows.Data.Binding("HasReply") { Converter = boolToVis });
+        replyBorderFactory.SetValue(Border.BackgroundProperty, new SolidColorBrush(Color.FromArgb(0x15, 0x00, 0x78, 0xD4)));
+        replyBorderFactory.SetValue(Border.BorderBrushProperty, new SolidColorBrush(Color.FromRgb(0x00, 0x78, 0xD4)));
+        replyBorderFactory.SetValue(Border.BorderThicknessProperty, new Thickness(3, 0, 0, 0));
+        replyBorderFactory.SetValue(Border.PaddingProperty, new Thickness(6, 2, 4, 2));
+        replyBorderFactory.SetValue(Border.MarginProperty, new Thickness(0, 0, 0, 3));
+
+        var replyTextFactory = new FrameworkElementFactory(typeof(TextBlock));
+        replyTextFactory.SetBinding(TextBlock.TextProperty, new System.Windows.Data.Binding("ReplyQuoteText"));
+        replyTextFactory.SetResourceReference(TextBlock.ForegroundProperty, "SystemControlForegroundBaseMediumHighBrush");
+        replyTextFactory.SetValue(TextBlock.FontStyleProperty, FontStyles.Italic);
+        replyTextFactory.SetValue(TextBlock.FontSizeProperty, 10.0);
+        replyTextFactory.SetValue(TextBlock.TextWrappingProperty, TextWrapping.Wrap);
+        replyBorderFactory.AppendChild(replyTextFactory);
+        gridFactory.AppendChild(replyBorderFactory);
+
+        // Main message RichTextBox (Row 1)
+        var rtbFactory = new FrameworkElementFactory(typeof(RichTextBox));
+        rtbFactory.SetValue(Grid.RowProperty, 1);
+        rtbFactory.SetBinding(RichTextBoxHelper.BoundDocumentProperty, new System.Windows.Data.Binding("Message") { Converter = msgDocConverter });
+        rtbFactory.SetValue(RichTextBox.IsReadOnlyProperty, true);
+        rtbFactory.SetValue(RichTextBox.BorderThicknessProperty, new Thickness(0));
+        rtbFactory.SetValue(RichTextBox.BackgroundProperty, Brushes.Transparent);
+        rtbFactory.SetValue(RichTextBox.PaddingProperty, new Thickness(0, 1, 0, 1));
+        rtbFactory.SetValue(RichTextBox.IsTabStopProperty, false);
+        rtbFactory.SetValue(ScrollViewer.VerticalScrollBarVisibilityProperty, ScrollBarVisibility.Disabled);
+        rtbFactory.SetValue(ScrollViewer.HorizontalScrollBarVisibilityProperty, ScrollBarVisibility.Disabled);
+        rtbFactory.SetValue(RichTextBox.IsDocumentEnabledProperty, true);
+        rtbFactory.SetValue(ContextMenuService.IsEnabledProperty, false);
+        gridFactory.AppendChild(rtbFactory);
+
+        msgTemplate.VisualTree = gridFactory;
+        msgCol.CellTemplate = msgTemplate;
+        gridView.Columns.Add(msgCol);
 
         // Reactions column — use Emoji.Wpf.TextBlock for proper color emoji rendering
         var reactCol = new GridViewColumn { Header = "💬", Width = 90 };
@@ -142,21 +210,101 @@ public partial class DirectMessagesWindow : Window
 
         listView.View = gridView;
 
-        // Right-click context menu for reactions on DM messages
+        // Per-conversation reply state
+        MessageItem? dmReplyTarget = null;
+
+        // Right-click context menu for reactions and replies on DM messages
         var cmenu = new ContextMenu();
-        var reactItem = new MenuItem { Header = "😀 Reaktion..." };
+
+        var copyItem = new MenuItem { Header = Loc("StrCopyMessage") };
+        copyItem.Click += (s, e) =>
+        {
+            if (listView.SelectedItem is MeshhessenClient.Models.MessageItem msg)
+                System.Windows.Clipboard.SetText(msg.Message ?? string.Empty);
+        };
+        cmenu.Items.Add(copyItem);
+        cmenu.Items.Add(new Separator());
+
+        var reactItem = new MenuItem { Header = Loc("StrReact") };
         reactItem.Click += (s, e) =>
         {
             if (listView.SelectedItem is MeshhessenClient.Models.MessageItem msg)
                 ShowDmEmojiPicker(msg, conversation.NodeId);
         };
         cmenu.Items.Add(reactItem);
+
+        var replyItem = new MenuItem { Header = Loc("StrReplyMessage") };
+        cmenu.Items.Add(replyItem);
         listView.ContextMenu = cmenu;
+
+        // Update selection to right-clicked item before menu opens
+        listView.ContextMenuOpening += (s, e) =>
+        {
+            if (e.OriginalSource is DependencyObject d)
+            {
+                var container = ItemsControl.ContainerFromElement(listView, d) as ListViewItem;
+                if (container?.Content is MeshhessenClient.Models.MessageItem clickedMsg)
+                    listView.SelectedItem = clickedMsg;
+            }
+        };
 
         Grid.SetRow(listView, 0);
         grid.Children.Add(listView);
 
         // Send Message Area
+        var sendPanel = new StackPanel();
+
+        // Reply indicator bar
+        var replyIndicatorBorder = new Border
+        {
+            Visibility = Visibility.Collapsed,
+            Background = new SolidColorBrush(Color.FromArgb(0x15, 0x00, 0x78, 0xD4)),
+            BorderBrush = new SolidColorBrush(Color.FromRgb(0x00, 0x78, 0xD4)),
+            BorderThickness = new Thickness(0, 2, 0, 0),
+            Padding = new Thickness(10, 4, 10, 4)
+        };
+        var replyIndicatorGrid = new Grid();
+        replyIndicatorGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        replyIndicatorGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        var replyIndicatorText = new TextBlock
+        {
+            FontStyle = FontStyles.Italic,
+            FontSize = 11,
+            VerticalAlignment = VerticalAlignment.Center,
+            TextTrimming = TextTrimming.CharacterEllipsis
+        };
+        Grid.SetColumn(replyIndicatorText, 0);
+        var cancelReplyBtn = new Button
+        {
+            Content = Loc("StrCancelReply"),
+            Padding = new Thickness(6, 2, 6, 2),
+            Margin = new Thickness(8, 0, 0, 0),
+            Background = Brushes.Transparent,
+            FontSize = 11
+        };
+        Grid.SetColumn(cancelReplyBtn, 1);
+        replyIndicatorGrid.Children.Add(replyIndicatorText);
+        replyIndicatorGrid.Children.Add(cancelReplyBtn);
+        replyIndicatorBorder.Child = replyIndicatorGrid;
+        sendPanel.Children.Add(replyIndicatorBorder);
+
+        cancelReplyBtn.Click += (s, e) =>
+        {
+            dmReplyTarget = null;
+            replyIndicatorBorder.Visibility = Visibility.Collapsed;
+        };
+
+        replyItem.Click += (s, e) =>
+        {
+            if (listView.SelectedItem is MeshhessenClient.Models.MessageItem msg)
+            {
+                dmReplyTarget = msg;
+                var preview = msg.Message?.Length > 60 ? msg.Message[..60] + "…" : msg.Message ?? string.Empty;
+                replyIndicatorText.Text = string.Format(Loc("StrReplyingTo"), msg.From, preview);
+                replyIndicatorBorder.Visibility = Visibility.Visible;
+            }
+        };
+
         var sendGrid = new Grid { Margin = new Thickness(10) };
         sendGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         sendGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
@@ -166,13 +314,17 @@ public partial class DirectMessagesWindow : Window
         {
             VerticalContentAlignment = VerticalAlignment.Center,
             Padding = new Thickness(10),
-            Text = "" // Placeholder würde hier gesetzt werden wenn verfügbar
+            MaxLength = 200,
+            Text = ""
         };
         textBox.KeyDown += (s, e) =>
         {
             if (e.Key == Key.Enter)
             {
-                SendDirectMessage(conversation.NodeId, textBox.Text);
+                var reply = dmReplyTarget;
+                dmReplyTarget = null;
+                replyIndicatorBorder.Visibility = Visibility.Collapsed;
+                SendDirectMessage(conversation.NodeId, textBox.Text, reply?.Id ?? 0, reply);
                 textBox.Clear();
             }
         };
@@ -221,6 +373,8 @@ public partial class DirectMessagesWindow : Window
             var hexDump = string.Join(" ", bytes.Select(b => $"{b:X2}"));
             Services.Logger.WriteLine($"[MSG DEBUG] Sending DM Alert Bell {bytes.Length} bytes to !{conversation.NodeId:X8}: {hexDump}");
 
+            dmReplyTarget = null;
+            replyIndicatorBorder.Visibility = Visibility.Collapsed;
             SendDirectMessage(conversation.NodeId, alertMessage);
             textBox.Clear();
         };
@@ -236,15 +390,19 @@ public partial class DirectMessagesWindow : Window
         };
         sendButton.Click += (s, e) =>
         {
-            SendDirectMessage(conversation.NodeId, textBox.Text);
+            var reply = dmReplyTarget;
+            dmReplyTarget = null;
+            replyIndicatorBorder.Visibility = Visibility.Collapsed;
+            SendDirectMessage(conversation.NodeId, textBox.Text, reply?.Id ?? 0, reply);
             textBox.Clear();
         };
 
         Grid.SetColumn(sendButton, 2);
         sendGrid.Children.Add(sendButton);
 
-        Grid.SetRow(sendGrid, 1);
-        grid.Children.Add(sendGrid);
+        sendPanel.Children.Add(sendGrid);
+        Grid.SetRow(sendPanel, 1);
+        grid.Children.Add(sendPanel);
 
         tab.Content = grid;
 
@@ -348,14 +506,14 @@ public partial class DirectMessagesWindow : Window
         }
     }
 
-    private async void SendDirectMessage(uint toNodeId, string messageText)
+    private async void SendDirectMessage(uint toNodeId, string messageText, uint replyId = 0, MessageItem? replyTarget = null)
     {
         if (string.IsNullOrWhiteSpace(messageText))
             return;
 
         try
         {
-            uint packetId = await _protocolService.SendTextMessageAsync(messageText, toNodeId, 0);
+            uint packetId = await _protocolService.SendTextMessageAsync(messageText, toNodeId, 0, replyId);
             Services.Logger.WriteLine($"DM sent to {toNodeId:X8}: {messageText}");
 
             // Zeige gesendete Nachricht im Chat
@@ -369,8 +527,12 @@ public partial class DirectMessagesWindow : Window
                     From = Loc("StrSentFrom"),
                     Message = messageText,
                     FromId = _myNodeId,
-                    ToId = toNodeId
+                    ToId = toNodeId,
+                    ReplyId = replyId,
+                    ReplyFromName = replyTarget?.From ?? string.Empty,
+                    ReplyPreview = replyTarget?.Message?.Length > 60 ? replyTarget.Message[..60] + "…" : replyTarget?.Message ?? string.Empty
                 };
+                if (packetId != 0) _dmMessageById[packetId] = sentMessage;
                 conversation.Messages.Add(sentMessage);
 
                 // Log die Nachricht

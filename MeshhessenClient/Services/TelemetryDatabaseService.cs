@@ -84,8 +84,124 @@ CREATE TABLE IF NOT EXISTS traceroute_hops (
 );
 CREATE INDEX IF NOT EXISTS idx_trhop_source ON traceroute_hops(source_node_id, timestamp);
 CREATE INDEX IF NOT EXISTS idx_trhop_dest   ON traceroute_hops(dest_node_id, timestamp);
+
+CREATE TABLE IF NOT EXISTS node_positions (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    node_id      INTEGER NOT NULL,
+    latitude     REAL    NOT NULL,
+    longitude    REAL    NOT NULL,
+    altitude     REAL,
+    ground_speed REAL,
+    ground_track REAL,
+    timestamp    INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_nodepos_node_ts ON node_positions(node_id, timestamp DESC);
+
+CREATE TABLE IF NOT EXISTS waypoints (
+    id           INTEGER PRIMARY KEY,   -- waypoint ID from Meshtastic proto
+    name         TEXT    NOT NULL,
+    description  TEXT,
+    latitude     REAL    NOT NULL,
+    longitude    REAL    NOT NULL,
+    expire       INTEGER,               -- Unix timestamp, NULL = never
+    locked_to    INTEGER,               -- Node ID that owns it, NULL = anyone
+    icon         INTEGER,               -- Unicode codepoint, 0 = default
+    from_node    INTEGER,               -- Sender node ID
+    received_at  INTEGER NOT NULL       -- local Unix timestamp when received
+);
 ";
         cmd.ExecuteNonQuery();
+    }
+
+    // ── Write methods ─────────────────────────────────────────────────────────
+
+    public void InsertNodePosition(uint nodeId, double lat, double lon, double? alt,
+        float? speed, float? track, long unixTimestamp)
+    {
+        lock (_lock)
+        {
+            using var con = Open();
+
+            // Duplicate guard: skip if same node had a position within 60s that is < 5m away
+            using (var chk = con.CreateCommand())
+            {
+                chk.CommandText = @"
+SELECT latitude, longitude FROM node_positions
+WHERE node_id = $n AND timestamp >= $minTs
+ORDER BY timestamp DESC LIMIT 1";
+                chk.Parameters.AddWithValue("$n",     (long)nodeId);
+                chk.Parameters.AddWithValue("$minTs", unixTimestamp - 60);
+                using var rdr = chk.ExecuteReader();
+                if (rdr.Read())
+                {
+                    var prevLat = rdr.GetDouble(0);
+                    var prevLon = rdr.GetDouble(1);
+                    if (HaversineMeters(lat, lon, prevLat, prevLon) < 5.0)
+                        return;
+                }
+            }
+
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = @"
+INSERT INTO node_positions (node_id, latitude, longitude, altitude, ground_speed, ground_track, timestamp)
+VALUES ($n, $lat, $lon, $alt, $spd, $trk, $ts)";
+            cmd.Parameters.AddWithValue("$n",   (long)nodeId);
+            cmd.Parameters.AddWithValue("$lat", lat);
+            cmd.Parameters.AddWithValue("$lon", lon);
+            cmd.Parameters.AddWithValue("$alt", alt.HasValue  ? alt.Value   : (object)DBNull.Value);
+            cmd.Parameters.AddWithValue("$spd", speed.HasValue ? speed.Value : (object)DBNull.Value);
+            cmd.Parameters.AddWithValue("$trk", track.HasValue ? track.Value : (object)DBNull.Value);
+            cmd.Parameters.AddWithValue("$ts",  unixTimestamp);
+            cmd.ExecuteNonQuery();
+        }
+    }
+
+    public void DeleteOldNodePositions(int retentionHours)
+    {
+        if (retentionHours <= 0) return;
+        var cutoff = DateTimeOffset.UtcNow.ToUnixTimeSeconds() - (long)retentionHours * 3600;
+        lock (_lock)
+        {
+            using var con = Open();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "DELETE FROM node_positions WHERE timestamp < $cut";
+            cmd.Parameters.AddWithValue("$cut", cutoff);
+            cmd.ExecuteNonQuery();
+        }
+    }
+
+    public record NodePositionEntry(double Lat, double Lon, double? Alt, float? Track, float? Speed, long Timestamp);
+
+    public List<NodePositionEntry> GetNodePositionHistory(uint nodeId, int hours)
+    {
+        var result = new List<NodePositionEntry>();
+        long since = hours > 0
+            ? DateTimeOffset.UtcNow.ToUnixTimeSeconds() - (long)hours * 3600
+            : 0;
+
+        using var con = Open();
+        using var cmd = con.CreateCommand();
+        cmd.CommandText = @"
+SELECT latitude, longitude, altitude, ground_track, ground_speed, timestamp
+FROM node_positions
+WHERE node_id = $n AND timestamp >= $since
+ORDER BY timestamp ASC";
+        cmd.Parameters.AddWithValue("$n",     (long)nodeId);
+        cmd.Parameters.AddWithValue("$since", since);
+
+        using var rdr = cmd.ExecuteReader();
+        while (rdr.Read())
+        {
+            result.Add(new NodePositionEntry(
+                Lat:       rdr.GetDouble(0),
+                Lon:       rdr.GetDouble(1),
+                Alt:       rdr.IsDBNull(2) ? null : rdr.GetDouble(2),
+                Track:     rdr.IsDBNull(3) ? null : (float)rdr.GetDouble(3),
+                Speed:     rdr.IsDBNull(4) ? null : (float)rdr.GetDouble(4),
+                Timestamp: rdr.GetInt64(5)
+            ));
+        }
+        return result;
     }
 
     // ── Write methods ─────────────────────────────────────────────────────────
@@ -976,16 +1092,37 @@ LIMIT 50";
         float rxScore   = expected > 0 ? Math.Min(1f, currentRxPerHour / expected) : 1f;
         float rxPenalty = 1f - rxScore;
 
-        // 2. Channel utilization (average across all nodes)
+        // 2. Channel utilization: most-recent value per node (within window), then average
         float channelUtil = 0f;
+        var chanUtilPerNode = new List<(uint nodeId, float cu)>();
         using (var con = Open())
         {
             using var cmd = con.CreateCommand();
-            cmd.CommandText = "SELECT AVG(channel_utilization) FROM device_telemetry WHERE timestamp>=$s AND channel_utilization IS NOT NULL";
-            cmd.Parameters.AddWithValue("$s", since);
-            var val = cmd.ExecuteScalar();
-            if (val != null && val != DBNull.Value) channelUtil = (float)(double)val;
+            cmd.CommandText = @"
+SELECT node_id, channel_utilization
+FROM device_telemetry d1
+WHERE channel_utilization IS NOT NULL
+  AND timestamp >= $since
+  AND timestamp = (
+      SELECT MAX(timestamp) FROM device_telemetry d2
+      WHERE d2.node_id = d1.node_id
+        AND d2.channel_utilization IS NOT NULL
+        AND d2.timestamp >= $since
+  )
+GROUP BY node_id";
+            cmd.Parameters.AddWithValue("$since", since);
+            using var r = cmd.ExecuteReader();
+            while (r.Read())
+            {
+                var nid = (uint)r.GetInt64(0);
+                var cu  = Math.Min(100f, (float)r.GetDouble(1)); // sanity cap at 100%
+                chanUtilPerNode.Add((nid, cu));
+            }
         }
+        if (chanUtilPerNode.Count > 0)
+            channelUtil = chanUtilPerNode.Average(x => x.cu);
+
+        Logger.WriteLine($"[MeshHealth] channelUtil={channelUtil.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)}% from {chanUtilPerNode.Count} nodes: [{string.Join(", ", chanUtilPerNode.OrderByDescending(x => x.cu).Select(x => $"!{x.nodeId:x8}={x.cu.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)}%"))}]");
 
         // 3. Path cost and route change rate across all nodes with traceroute data
         float avgPathCost = 0f, avgRouteChange = 0f;
@@ -1022,13 +1159,18 @@ LIMIT 50";
                   : LedState.Alert;
 
         string dayNight = isDay ? "Tag" : "Nacht";
+        var top5 = chanUtilPerNode.OrderByDescending(x => x.cu).Take(5).ToList();
+        var chanUtilDetail = chanUtilPerNode.Count == 0
+            ? "–"
+            : string.Join("\n  ", top5.Select(x => $"!{x.nodeId:x8} = {x.cu.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)}%"))
+              + (chanUtilPerNode.Count > 5 ? $"\n  … ({chanUtilPerNode.Count} Nodes gesamt)" : $"\n  ({chanUtilPerNode.Count} Nodes gesamt)");
         var summary =
             $"Mesh Health Score: {score:0}%\n" +
             $"Pfad-Kosten (Ø): {avgPathCost:0.00}\n" +
             $"Route-Änderungen: {avgRouteChange:0.00}/h\n" +
             $"Empfangsrate ({dayNight}-Baseline): {expected:0.0} Pkts/h\n" +
             $"Empfangsrate aktuell ({rxWindowHours}h): {currentRxPerHour:0.0} Pkts/h ({rxScore * 100:0}%)\n" +
-            $"Kanalauslastung (Ø): {channelUtil:0.1}%";
+            $"Kanalauslastung (Ø): {channelUtil:0.1}% [{chanUtilDetail}]";
 
         return new MeshHealthScore
         {
@@ -1041,6 +1183,7 @@ LIMIT 50";
             CurrentRxPerHour   = currentRxPerHour,
             RxScore            = rxScore,
             ChannelUtilization = channelUtil,
+            ChannelUtilDetail  = chanUtilDetail,
             Summary            = summary,
         };
     }
@@ -1114,6 +1257,17 @@ AND timestamp >= $s AND battery_percent IS NOT NULL";
     private bool IsDay(long unixTs)
         => SunriseSunsetService.IsDay(DateTime.UnixEpoch.AddSeconds(unixTs), Latitude, Longitude);
 
+    private static double HaversineMeters(double lat1, double lon1, double lat2, double lon2)
+    {
+        const double R = 6_371_000;
+        var dLat = (lat2 - lat1) * Math.PI / 180;
+        var dLon = (lon2 - lon1) * Math.PI / 180;
+        var a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2)
+              + Math.Cos(lat1 * Math.PI / 180) * Math.Cos(lat2 * Math.PI / 180)
+              * Math.Sin(dLon / 2) * Math.Sin(dLon / 2);
+        return R * 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
+    }
+
     private static float? Median(IEnumerable<float> values)
     {
         var arr = values.OrderBy(x => x).ToArray();
@@ -1134,6 +1288,229 @@ AND timestamp >= $s AND battery_percent IS NOT NULL";
     {
         var arr = values.ToArray();
         return arr.Length > 0 ? (float?)arr.Average() : null;
+    }
+
+    /// <summary>
+    /// Returns recent TracerouteResult objects reconstructed from the DB.
+    /// days=0 means no cutoff. RouteForward is approximated as reversed RouteBack.
+    /// </summary>
+    public List<Models.TracerouteResult> GetRecentTracerouteResults(int days)
+    {
+        long cutoff = days > 0 ? ToUnix(DateTime.UtcNow.AddDays(-days)) : 0;
+        lock (_lock)
+        {
+            using var con = Open();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = @"
+SELECT request_id, source_node_id, dest_node_id, MAX(timestamp) AS ts
+FROM traceroute_hops
+WHERE ($cutoff = 0 OR timestamp >= $cutoff) AND hop_index >= 0
+GROUP BY request_id, source_node_id, dest_node_id
+ORDER BY ts DESC";
+            cmd.Parameters.AddWithValue("$cutoff", cutoff);
+
+            var routes = new List<(long reqId, uint src, uint dst, long ts)>();
+            using (var r = cmd.ExecuteReader())
+                while (r.Read())
+                    routes.Add((r.GetInt64(0), (uint)r.GetInt64(1), (uint)r.GetInt64(2), r.GetInt64(3)));
+
+            var results = new List<Models.TracerouteResult>();
+            foreach (var (reqId, src, dst, ts) in routes)
+            {
+                using var hcmd = con.CreateCommand();
+                hcmd.CommandText = @"
+SELECT node_id, snr_towards, snr_back
+FROM traceroute_hops
+WHERE request_id = $rid AND hop_index >= 0
+ORDER BY hop_index ASC";
+                hcmd.Parameters.AddWithValue("$rid", reqId);
+
+                var routeBack   = new List<uint>();
+                var snrTowards  = new List<int>();
+                var snrBack     = new List<int>();
+                using (var hr = hcmd.ExecuteReader())
+                {
+                    while (hr.Read())
+                    {
+                        routeBack.Add((uint)hr.GetInt64(0));
+                        snrTowards.Add(hr.IsDBNull(1) ? int.MinValue : (int)Math.Round(hr.GetDouble(1) * 4));
+                        snrBack.Add(hr.IsDBNull(2) ? int.MinValue : (int)Math.Round(hr.GetDouble(2) * 4));
+                    }
+                }
+
+                results.Add(new Models.TracerouteResult
+                {
+                    RequestId         = (uint)reqId,
+                    SourceNodeId      = src,
+                    DestinationNodeId = dst,
+                    ReceivedAt        = DateTimeOffset.FromUnixTimeSeconds(ts).LocalDateTime,
+                    RouteBack         = routeBack,
+                    RouteForward      = Enumerable.Reverse(routeBack).ToList(),
+                    SnrTowards        = snrTowards,
+                    SnrBack           = snrBack,
+                });
+            }
+            return results;
+        }
+    }
+
+    /// <summary>
+    /// Returns SNR statistics for a segment between two adjacent nodes across all recorded traceroutes.
+    /// fromNode is the transmitting node, toNode is the receiving node (snr_towards value at toNode's hop row).
+    /// </summary>
+    public record SegmentSnrStats(float Min, float Max, float Avg, int Count);
+
+    public SegmentSnrStats? GetSegmentSnrStats(uint fromNode, uint toNode, int days = 30)
+    {
+        long cutoff = ToUnix(DateTime.UtcNow.AddDays(-days));
+        lock (_lock)
+        {
+            using var con = Open();
+            using var cmd = con.CreateCommand();
+            // Case 1: first hop — source_node_id=fromNode, hop_index=0, node_id=toNode
+            // Case 2: relay hop — prior hop node_id=fromNode, this hop node_id=toNode (same request_id, hop_index matches)
+            cmd.CommandText = @"
+SELECT MIN(snr), MAX(snr), AVG(snr), COUNT(snr) FROM (
+    SELECT snr_towards AS snr
+    FROM traceroute_hops
+    WHERE source_node_id = $from AND node_id = $to AND hop_index = 0
+      AND snr_towards IS NOT NULL AND timestamp >= $cutoff
+    UNION ALL
+    SELECT h.snr_towards AS snr
+    FROM traceroute_hops h
+    JOIN traceroute_hops prev ON prev.request_id = h.request_id
+                              AND prev.hop_index = h.hop_index - 1
+                              AND prev.node_id = $from
+    WHERE h.node_id = $to AND h.snr_towards IS NOT NULL AND h.timestamp >= $cutoff
+)";
+            cmd.Parameters.AddWithValue("$from", (long)fromNode);
+            cmd.Parameters.AddWithValue("$to",   (long)toNode);
+            cmd.Parameters.AddWithValue("$cutoff", cutoff);
+            using var r = cmd.ExecuteReader();
+            if (!r.Read() || r.IsDBNull(3)) return null;
+            int count = r.GetInt32(3);
+            if (count == 0) return null;
+            return new SegmentSnrStats((float)r.GetDouble(0), (float)r.GetDouble(1), (float)r.GetDouble(2), count);
+        }
+    }
+
+    // ── Waypoints ─────────────────────────────────────────────────────────────
+
+    public record WaypointEntry(
+        uint Id, string Name, string Description,
+        double Latitude, double Longitude,
+        uint? Expire, uint? LockedTo, uint Icon,
+        uint FromNode, DateTime ReceivedAt);
+
+    public void UpsertWaypoint(WaypointEntry wp)
+    {
+        lock (_lock)
+        {
+            using var con = Open();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = @"
+INSERT INTO waypoints (id, name, description, latitude, longitude, expire, locked_to, icon, from_node, received_at)
+VALUES ($id, $name, $desc, $lat, $lon, $exp, $lck, $icon, $from, $recv)
+ON CONFLICT(id) DO UPDATE SET
+    name=$name, description=$desc, latitude=$lat, longitude=$lon,
+    expire=$exp, locked_to=$lck, icon=$icon, from_node=$from, received_at=$recv";
+            cmd.Parameters.AddWithValue("$id",   (long)wp.Id);
+            cmd.Parameters.AddWithValue("$name", wp.Name);
+            cmd.Parameters.AddWithValue("$desc", wp.Description ?? (object)DBNull.Value);
+            cmd.Parameters.AddWithValue("$lat",  wp.Latitude);
+            cmd.Parameters.AddWithValue("$lon",  wp.Longitude);
+            cmd.Parameters.AddWithValue("$exp",  wp.Expire.HasValue ? (long)wp.Expire.Value : DBNull.Value);
+            cmd.Parameters.AddWithValue("$lck",  wp.LockedTo.HasValue ? (long)wp.LockedTo.Value : DBNull.Value);
+            cmd.Parameters.AddWithValue("$icon", (long)wp.Icon);
+            cmd.Parameters.AddWithValue("$from", (long)wp.FromNode);
+            cmd.Parameters.AddWithValue("$recv", ToUnix(wp.ReceivedAt));
+            cmd.ExecuteNonQuery();
+        }
+    }
+
+    public void DeleteWaypoint(uint waypointId)
+    {
+        lock (_lock)
+        {
+            using var con = Open();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "DELETE FROM waypoints WHERE id = $id";
+            cmd.Parameters.AddWithValue("$id", (long)waypointId);
+            cmd.ExecuteNonQuery();
+        }
+    }
+
+    public List<WaypointEntry> GetAllWaypoints(bool excludeExpired = true)
+    {
+        long now = ToUnix(DateTime.UtcNow);
+        lock (_lock)
+        {
+            using var con = Open();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = excludeExpired
+                ? "SELECT id,name,description,latitude,longitude,expire,locked_to,icon,from_node,received_at FROM waypoints WHERE expire IS NULL OR expire=0 OR expire>$now ORDER BY received_at DESC"
+                : "SELECT id,name,description,latitude,longitude,expire,locked_to,icon,from_node,received_at FROM waypoints ORDER BY received_at DESC";
+            cmd.Parameters.AddWithValue("$now", now);
+            var list = new List<WaypointEntry>();
+            using var r = cmd.ExecuteReader();
+            while (r.Read())
+            {
+                list.Add(new WaypointEntry(
+                    Id:          (uint)r.GetInt64(0),
+                    Name:        r.GetString(1),
+                    Description: r.IsDBNull(2) ? string.Empty : r.GetString(2),
+                    Latitude:    r.GetDouble(3),
+                    Longitude:   r.GetDouble(4),
+                    Expire:      r.IsDBNull(5) ? null : (uint?)r.GetInt64(5),
+                    LockedTo:    r.IsDBNull(6) ? null : (uint?)r.GetInt64(6),
+                    Icon:        r.IsDBNull(7) ? 0u : (uint)r.GetInt64(7),
+                    FromNode:    (uint)r.GetInt64(8),
+                    ReceivedAt:  DateTimeOffset.FromUnixTimeSeconds(r.GetInt64(9)).LocalDateTime
+                ));
+            }
+            return list;
+        }
+    }
+
+    public record SegmentSnrPoint(DateTime Timestamp, float Snr);
+
+    /// <summary>
+    /// Returns the SNR time series for a segment (fromNode→toNode) over the last <paramref name="days"/> days.
+    /// </summary>
+    public List<SegmentSnrPoint> GetSegmentSnrTimeSeries(uint fromNode, uint toNode, int days = 30)
+    {
+        long cutoff = ToUnix(DateTime.UtcNow.AddDays(-days));
+        lock (_lock)
+        {
+            using var con = Open();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = @"
+SELECT ts, snr FROM (
+    SELECT timestamp AS ts, snr_towards AS snr
+    FROM traceroute_hops
+    WHERE source_node_id = $from AND node_id = $to AND hop_index = 0
+      AND snr_towards IS NOT NULL AND timestamp >= $cutoff
+    UNION ALL
+    SELECT h.timestamp AS ts, h.snr_towards AS snr
+    FROM traceroute_hops h
+    JOIN traceroute_hops prev ON prev.request_id = h.request_id
+                              AND prev.hop_index = h.hop_index - 1
+                              AND prev.node_id = $from
+    WHERE h.node_id = $to AND h.snr_towards IS NOT NULL AND h.timestamp >= $cutoff
+) ORDER BY ts ASC";
+            cmd.Parameters.AddWithValue("$from", (long)fromNode);
+            cmd.Parameters.AddWithValue("$to",   (long)toNode);
+            cmd.Parameters.AddWithValue("$cutoff", cutoff);
+
+            var list = new List<SegmentSnrPoint>();
+            using var r = cmd.ExecuteReader();
+            while (r.Read())
+            {
+                var dt = DateTimeOffset.FromUnixTimeSeconds(r.GetInt64(0)).LocalDateTime;
+                list.Add(new SegmentSnrPoint(dt, (float)r.GetDouble(1)));
+            }
+            return list;
+        }
     }
 
     public void Dispose()

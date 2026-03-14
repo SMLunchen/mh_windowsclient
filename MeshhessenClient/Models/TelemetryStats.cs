@@ -146,5 +146,7 @@ public class MeshHealthScore
     /// <summary>currentRx / expectedRx (day or night baseline), 0–1. 1 = on par with baseline.</summary>
     public float    RxScore            { get; set; }
     public float    ChannelUtilization { get; set; }
+    /// <summary>Per-node channel util breakdown, sorted descending. E.g. "!aabb1122=8.3%, !deadbeef=4.1%"</summary>
+    public string   ChannelUtilDetail  { get; set; } = string.Empty;
     public string   Summary            { get; set; } = string.Empty;
 }

@@ -8,6 +8,8 @@ namespace MeshhessenClient;
 
 public partial class TracerouteWindow : Window
 {
+    private static string Loc(string key) =>
+        Application.Current?.Resources[key] as string ?? key;
     private readonly MeshtasticProtocolService _protocolService;
     private readonly NodeInfo _targetNode;
     private readonly uint _myNodeId;
@@ -63,12 +65,12 @@ public partial class TracerouteWindow : Window
         // Build hop list: [us] → relay1 → relay2 → ... → destination
         var hops = BuildHopList(result);
 
-        StatusText.Text = $"Ergebnis empfangen um {result.ReceivedAt:HH:mm:ss}";
-        LastResultText.Text = $"Letzte Antwort: {result.ReceivedAt:HH:mm:ss}";
+        StatusText.Text = $"{Loc("StrTrResultReceived")} {result.ReceivedAt:HH:mm:ss}";
+        LastResultText.Text = $"{Loc("StrTrLastResult")} {result.ReceivedAt:HH:mm:ss}";
         MqttIndicator.Visibility = result.IsViaMqtt ? Visibility.Visible : Visibility.Collapsed;
 
         int knownCount = hops.Count(h => h.HasPosition);
-        HopCountText.Text = $"{hops.Count} Hops · {knownCount} Positionen";
+        HopCountText.Text = string.Format(Loc("StrTrHopsPositions"), hops.Count, knownCount);
 
         RebuildHopRows(hops);
 
@@ -87,7 +89,7 @@ public partial class TracerouteWindow : Window
         {
             HopIndex = 0,
             NodeId = $"!{_myNodeId:x8}",
-            NodeName = "Ich (Quelle)",
+            NodeName = Loc("StrSentFrom") + " (Quelle)",
             IsSource = true,
         };
         if (_myPosition.HasValue)
@@ -239,14 +241,14 @@ public partial class TracerouteWindow : Window
             // Distance column
             var distStack = new StackPanel { VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(4, 0, 4, 0) };
             distStack.Children.Add(new TextBlock { Text = hop.Distance, FontSize = 12, HorizontalAlignment = HorizontalAlignment.Right });
-            distStack.Children.Add(new TextBlock { Text = "Entfernung", FontSize = 9, Opacity = 0.5, HorizontalAlignment = HorizontalAlignment.Right });
+            distStack.Children.Add(new TextBlock { Text = Loc("StrTrDistance"), FontSize = 9, Opacity = 0.5, HorizontalAlignment = HorizontalAlignment.Right });
             Grid.SetColumn(distStack, 2);
             grid.Children.Add(distStack);
 
             // SNR column
             var snrStack = new StackPanel { VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(4, 0, 4, 0) };
             snrStack.Children.Add(new TextBlock { Text = hop.SnrDisplay, FontSize = 12, HorizontalAlignment = HorizontalAlignment.Right });
-            snrStack.Children.Add(new TextBlock { Text = "SNR", FontSize = 9, Opacity = 0.5, HorizontalAlignment = HorizontalAlignment.Right });
+            snrStack.Children.Add(new TextBlock { Text = Loc("StrTrSnr"), FontSize = 9, Opacity = 0.5, HorizontalAlignment = HorizontalAlignment.Right });
             Grid.SetColumn(snrStack, 3);
             grid.Children.Add(snrStack);
 
@@ -270,7 +272,7 @@ public partial class TracerouteWindow : Window
                     CornerRadius = new CornerRadius(3),
                     Padding = new Thickness(4, 1, 4, 1),
                     Margin = new Thickness(0, hop.IsViaMqtt ? 2 : 0, 0, 0),
-                    ToolTip = "Keine Positionsdaten bekannt",
+                    ToolTip = Loc("StrTrNoData"),
                     Child = new TextBlock { Text = "?", FontSize = 9, Foreground = Brushes.White, FontWeight = FontWeights.Bold }
                 });
             }
@@ -301,7 +303,7 @@ public partial class TracerouteWindow : Window
         if (_isRequesting) return;
         _isRequesting = true;
         RequestButton.IsEnabled = false;
-        StatusText.Text = "Traceroute wird angefragt…";
+        StatusText.Text = Loc("StrTrNoRequest");
         HopCountText.Text = string.Empty;
         MqttIndicator.Visibility = Visibility.Collapsed;
         HopsPanel.Children.Clear();
@@ -309,7 +311,7 @@ public partial class TracerouteWindow : Window
         try
         {
             await _protocolService.SendTracerouteAsync(_targetNode.NodeId);
-            StatusText.Text = "Warte auf Antwort…";
+            StatusText.Text = Loc("StrConnecting");
 
             // Auto-reset after 30 s if no result arrives
             _ = Task.Delay(30_000).ContinueWith(_ => Dispatcher.BeginInvoke(() =>
@@ -317,12 +319,12 @@ public partial class TracerouteWindow : Window
                 if (!_isRequesting) return; // result already arrived
                 _isRequesting = false;
                 RequestButton.IsEnabled = true;
-                StatusText.Text = "Timeout – kein Ergebnis nach 30 s. Erneut versuchen?";
+                StatusText.Text = Loc("StrTrNoData") + " – Timeout 30s";
             }));
         }
         catch (Exception ex)
         {
-            StatusText.Text = $"Fehler: {ex.Message}";
+            StatusText.Text = $"{Loc("StrError")}: {ex.Message}";
             RequestButton.IsEnabled = true;
             _isRequesting = false;
         }
