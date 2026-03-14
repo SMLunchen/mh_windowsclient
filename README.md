@@ -4,7 +4,7 @@ Der **Meshhessen Client** ist ein **kostenloser, nativer Windows-Client für Mes
 
 ![Windows](https://img.shields.io/badge/Windows-10%2F11-blue)
 ![.NET](https://img.shields.io/badge/.NET-8.0-purple)
-![Status](https://img.shields.io/badge/Status-v1.5.5-yellow)
+![Status](https://img.shields.io/badge/Status-v1.5.6-yellow)
 ![License](https://img.shields.io/github/license/SMLunchen/mh_windowsclient)
 ![Stars](https://img.shields.io/github/stars/SMLunchen/mh_windowsclient)
 
@@ -38,6 +38,13 @@ Der **Meshhessen Client** ist ein **kostenloser, nativer Windows-Client für Mes
   * Rechtsklick auf Nachricht → Emoji-Picker
   * Reaktionen werden direkt an Sender/Kanal übermittelt und angezeigt
   * Funktioniert in Kanal-Chat und DMs
+* **Antwort-Funktion** – auf einzelne Nachrichten antworten (Protokoll-Level)
+  * Zitat-Block mit farblicher Hervorhebung der Originalnachricht
+  * Funktioniert in Kanal-Chat und DMs
+* **Nachrichten auswählbar & kopierbar** – Texte markieren, in Zwischenablage kopieren, Links anklicken
+  * Rechtsklick auf beliebige Nachricht → „Nachricht kopieren" im Kontextmenü
+  * Kopiert immer die angeklickte Nachricht (nicht die zuletzt selektierte)
+  * Kontextmenü auch bei Nachrichten von unbekannten Sendern
 * **🚨 Alert Bell Support** – Senden und Empfangen von Notrufen
   * 🚨 SOS-Button in Chat und DMs
   * Visuell: rote blinkende Umrandung + Notification-Bar mit „Zur Karte springen"-Button
@@ -52,7 +59,7 @@ Der **Meshhessen Client** ist ein **kostenloser, nativer Windows-Client für Mes
   * 📶 **Signal** – Empfangsqualität (SNR/RSSI-Trend)
   * 👥 **Nachbarn** – Anzahl und Stabilität direkter Nachbar-Nodes
   * 🛤️ **Pfad-Stabilität** – Stabilität des Traceroute-Pfads
-  * 🌐 **Mesh-Health** – Gesamtzustand des sichtbaren Meshes
+  * 🌐 **Mesh-Health** – Gesamtzustand des sichtbaren Meshes; 
   * 🌤️ **Wetter** – für Nodes mit Umweltsensor
 
 ### 🗺️ Offline-Karte
@@ -62,26 +69,34 @@ Der **Meshhessen Client** ist ein **kostenloser, nativer Windows-Client für Mes
 * **Offline-Tiles** für ganz Deutschland und angrenzende Gebiete
 * **Node-Positionen** als farbige Pins auf der Karte
 * **Node-Pfade** – GPS-Positionsverläufe aufzeichnen und auf der Karte anzeigen
+* **Wegpunkte (Waypoints)** – empfangene Wegpunkte werden auf der Karte angezeigt; Wegpunkte per Karte-Rechtsklick erstellen und senden
 
 ### 📡 Traceroute
 
 * **Traceroute starten** – direkt aus dem Node-Kontextmenü (Nodes-Liste, Karte, Nachrichtenliste)
 * **Eigenes Fenster** pro Ziel-Node mit:
-  * Hop-Tabelle: Node-Name, Entfernung, SNR (in dB), MQTT-Indikator
+  * Hop-Tabelle: Node-Name, Entfernung, SNR (in dB), MQTT-Indikator (⚡ Blitz-Symbol)
   * Live-Status (Warten / Empfangen)
 * **Karte:** Route mit Linien plotten
   * Durchgezogene Linie wo Positionen bekannt
   * Gestrichelte Linie wo Positionen fehlen
+  * Richtungspfeile auf Segmenten
+  * Klick auf Segment → SNR-Popup für diesen Hop
   * Fallback auf eingestellte Kartenposition wenn eigene GPS fehlt
 * **Mehrere Traceroutes gleichzeitig** auf der Karte – jede bekommt eine eindeutige Farbe
 * **Speichern & Laden** – Traceroutes werden automatisch in `traceroutes/` gespeichert (JSON)
   * Pfade unterschiedlicher Zeitpunkte vergleichen
   * Mehrere Dateien gleichzeitig laden
+  * Historische Traceroutes direkt aus der Datenbank laden
+* **Zeitreihenfilter** – Traceroutes nach Zeitraum filtern (3d / 7d / 14d / 30d / 90d / Alle)
+* **Deduplizierung** – nur neueste Traceroute pro Node-Paar anzeigen (optional)
 * **Karten-Legende** – zeigt alle aktiven Traces mit Farbe und ✕-Button zum Entfernen
 
 ### 🔧 Node-Verwaltung
 
 * **Knoten-Übersicht** – alle Nodes im Mesh mit SNR, Batterie, Entfernung, Hop-Anzahl
+* **Firmware-Version & Hardware-Modell** – werden automatisch beim Verbinden abgefragt und im Node-Info-Fenster angezeigt
+* **PKI-Schlüssel-Indikator** – 🔑-Spalte zeigt, ob der Public Key des Nodes bekannt ist
 * **Node-Farben** – Nodes individuell einfärben (Karte + Listen)
 * **Node-Notizen** – Freitext-Notizen pro Node
 * **Nodes anpinnen** – Nodes in der Liste oben fixieren (unabhängig von Sortierung)
@@ -265,7 +280,7 @@ Meshhessen Client · Windows-Client für Meshtastic-Geräte · Meshtastic Window
 
  ![Windows](https://img.shields.io/badge/Windows-10%2F11-blue)
  ![.NET](https://img.shields.io/badge/.NET-8.0-purple)
- ![Status](https://img.shields.io/badge/Status-v1.5.5-yellow)
+ ![Status](https://img.shields.io/badge/Status-v1.5.6-yellow)
  ![License](https://img.shields.io/github/license/SMLunchen/mh_windowsclient)
  ![Stars](https://img.shields.io/github/stars/SMLunchen/mh_windowsclient)
 
@@ -297,6 +312,13 @@ Meshhessen Client · Windows-Client für Meshtastic-Geräte · Meshtastic Window
   * Right-click a message → emoji picker
   * Reactions are sent to the sender/channel and displayed inline
   * Works in channel chat and DMs
+* **Reply function** – reply to individual messages (protocol-level)
+  * Quoted block with accent-colored highlight of the original message
+  * Works in channel chat and DMs
+* **Selectable & copyable messages** – select text, copy to clipboard, click links
+  * Right-click any message → "Copy Message" in context menu
+  * Always copies the right-clicked message (not just the last selected row)
+  * Context menu available even for messages from unknown senders
 * **🚨 Alert Bell support** – send and receive emergency alerts
   * 🚨 SOS button in chat and DMs
   * Visual: red blinking border + notification bar with "Jump to map" button
@@ -321,26 +343,34 @@ Meshhessen Client · Windows-Client für Meshtastic-Geräte · Meshtastic Window
 * **Offline tiles** for all of Germany and neighboring areas
 * **Node positions** as colored pins on the map
 * **Node paths** – record GPS position history and display tracks on the map
+* **Waypoints** – received waypoints are displayed on the map; create and send waypoints via right-click on the map
 
 ### 📡 Traceroute
 
 * **Start traceroute** – directly from the node context menu (node list, map, message list)
 * **Dedicated window** per target node with:
-  * Hop table: node name, distance, SNR (in dB), MQTT indicator
+  * Hop table: node name, distance, SNR (in dB), MQTT indicator (⚡ lightning symbol)
   * Live status (waiting / received)
 * **Map plotting** – plot the route with lines
   * Solid line where positions are known
   * Dashed line where positions are missing
+  * Direction arrows on segments
+  * Click a segment → SNR popup for that hop
   * Falls back to the configured map position if own GPS is unavailable
 * **Multiple traceroutes at once** on the map – each gets a unique color
 * **Save & Load** – traceroutes are automatically saved to `traceroutes/` as JSON
   * Compare routes recorded at different times
   * Load multiple files simultaneously
+  * Load historical traceroutes directly from the database
+* **Time range filter** – filter traceroutes by period (3d / 7d / 14d / 30d / 90d / All)
+* **Deduplication** – show only the latest traceroute per node pair (optional)
 * **Map legend** – shows all active traces with color and individual ✕ remove button
 
 ### 🔧 Node Management
 
 * **Node overview** – all nodes in the mesh with SNR, battery, distance, hop count
+* **Firmware version & hardware model** – queried automatically on connect and shown in the node info window
+* **PKI key indicator** – 🔑 column shows whether a node's public key is known
 * **Node colors** – color-code nodes individually (map + lists)
 * **Node notes** – free-text annotations per node
 * **Pin nodes** – pin nodes to the top of the list (independent of sorting)
