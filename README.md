@@ -150,6 +150,16 @@ Telemetrie-Zeitreihen-Graph (SNR, RSSI, Batterie):
 <img width="902" height="604" alt="Meshhessen Client – Meshtastic Telemetrie-Graph SNR RSSI Batterie Zeitreihe OxyPlot" src="https://github.com/user-attachments/assets/a42d6a79-5b90-4f7a-8456-c74099c55c41" />
 Node-Telemetrie-Statistik-Fenster:
 <img width="1278" height="889" alt="Meshhessen Client – Meshtastic Node-Telemetrie Tag/Nacht-Auswertung Statistik Windows" src="https://github.com/user-attachments/assets/4821c996-c524-499a-8fba-f738fb051f88" />
+Node-Telemetrie-Übersicht (Signal):
+<img alt="Meshhessen Client – Meshtastic Node-Telemetrie-Übersicht: Signal-Analyse, Routing, Airtime und Nachbar-Statistik" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node-telemetry.png" />
+Airtime-Auswertung pro Node (TX/RX-Sendezeit, Kanalauslastung):
+<img alt="Meshhessen Client – Meshtastic Airtime-Analyse: TX-Airtime, RX-Airtime und Kanalauslastung pro Node" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node_airtime.png" />
+Nachbar-Analyse (direkte Mesh-Verbindungen und SNR-Trends):
+<img alt="Meshhessen Client – Meshtastic Nachbar-Analyse: Direkte Verbindungen, SNR-Trends und Nachbar-Stabilität" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node_neighbors.png" />
+Batterie & Spannungs-Analyse (Tag/Nacht-Profil, Nachtabfall):
+<img alt="Meshhessen Client – Meshtastic Batterie-Analyse: Spannungs-Verlauf, Tag/Nacht-Profil und Nachtabfall" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node_power.png" />
+Routing-Statistik (Hop-Anzahl, Pfad-Stabilität, Pfadwechsel-Rate):
+<img alt="Meshhessen Client – Meshtastic Routing-Statistik: Hop-Anzahl, Pfad-Stabilität und Pfadwechsel-Rate" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node_routing.png" />
 
 
 ## ⚠️ Bekannte Einschränkungen

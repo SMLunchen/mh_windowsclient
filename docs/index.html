@@ -4,11 +4,15 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <title>Meshhessen Client – Windows App für Meshtastic-Geräte</title>
-  <meta name="description" content="Kostenloser Windows-Client für Meshtastic-Geräte (WPF/.NET 8). Offline-Karte, Telemetrie, Traceroute, PKI-Entschlüsselung – USB/Serial, TCP/WiFi und Bluetooth. Kein Cloud-Zwang, keine Installation. Von der Meshhessen Community." />
-  <meta name="keywords" content="Meshtastic Windows, Meshtastic Windows App, Windows App für Meshtastic-Geräte, Meshtastic PC Software, Meshtastic Desktop, Meshtastic USB Windows, Meshtastic Serial, Meshtastic Bluetooth Windows, Meshtastic BLE, Meshtastic Offline Karte, Meshtastic Telemetrie, Meshtastic Traceroute, Meshtastic Hessen, Meshtastic Deutschland, Meshhessen, Meshhessen Client, LILYGO T-Beam, T-Deck, RAK4631, Heltec, LoRa Mesh Windows, Meshtastic PKI, Meshtastic WPF, Meshtastic .NET" />
+  <title>Meshhessen Client – Windows App für Meshtastic-Geräte | Offline-Karte, Telemetrie, Traceroute</title>
+  <meta name="description" content="Kostenloser Windows-Client für Meshtastic-Geräte (WPF/.NET 8). Offline-Karte (OSM), Telemetrie-Analyse, Traceroute, PKI-Entschlüsselung – USB/Serial, TCP/WiFi, Bluetooth. Kein Cloud-Zwang, keine Installation. Von der Meshhessen Community in Hessen." />
+  <meta name="keywords" content="Meshtastic Windows, Meshtastic Windows App, Windows App für Meshtastic-Geräte, Meshhessen Client, Meshtastic PC Software, Meshtastic Desktop, Meshtastic USB Windows, Meshtastic Serial, Meshtastic Bluetooth Windows, Meshtastic BLE, Meshtastic Offline Karte, Meshtastic Telemetrie Analyse, Meshtastic Traceroute, Meshtastic Hessen, Meshtastic Deutschland, Meshhessen, LILYGO T-Beam, T-Deck, RAK4631, Heltec, LoRa Mesh Windows, Meshtastic PKI Entschlüsselung, Meshtastic WPF, Meshtastic .NET, SNR RSSI Analyse, Mesh Health, Kanalauslastung" />
   <meta name="author" content="Meshhessen Community" />
   <link rel="canonical" href="https://smlunchen.github.io/mh_windowsclient/" />
+
+  <!-- hreflang -->
+  <link rel="alternate" hreflang="de" href="https://smlunchen.github.io/mh_windowsclient/#de" />
+  <link rel="alternate" hreflang="en" href="https://smlunchen.github.io/mh_windowsclient/#en" />
 
   <!-- Open Graph -->
   <meta property="og:type" content="website" />
@@ -23,6 +27,25 @@
   <meta name="twitter:description" content="Kostenloser Windows-Client für Meshtastic-Geräte. Offline-Karte, Telemetrie, Traceroute, PKI – USB/Serial/TCP/BLE." />
   <meta name="twitter:image" content="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map.png" />
 
+  <!-- JSON-LD Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Meshhessen Client",
+    "description": "Kostenloser Windows-Client für Meshtastic-Geräte mit Offline-Karte, Telemetrie-Analyse, Traceroute und PKI-Entschlüsselung.",
+    "applicationCategory": "CommunicationApplication",
+    "operatingSystem": "Windows 10, Windows 11",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" },
+    "url": "https://smlunchen.github.io/mh_windowsclient/",
+    "downloadUrl": "https://github.com/SMLunchen/mh_windowsclient/releases/latest",
+    "author": { "@type": "Organization", "name": "Meshhessen Community", "url": "https://www.meshhessen.de" },
+    "softwareVersion": "1.5.6",
+    "screenshot": "https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map.png",
+    "keywords": "Meshtastic, Windows, LoRa, Mesh, Telemetrie, Traceroute, Offline-Karte, PKI"
+  }
+  </script>
+
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -34,17 +57,16 @@
     a { color: #58a6ff; text-decoration: none; }
     a:hover { text-decoration: underline; }
 
+    /* ── Header ── */
     header {
       background: #161b22;
       border-bottom: 1px solid #30363d;
-      padding: 2rem 1rem;
+      padding: 2rem 1rem 1.5rem;
       text-align: center;
     }
-    header h1 { font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem; }
-    header p { color: #8b949e; font-size: 1.05rem; max-width: 680px; margin: 0 auto 1.2rem; }
-
-    .badges { display: flex; flex-wrap: wrap; gap: 0.4rem; justify-content: center; margin-bottom: 1.5rem; }
-
+    header h1 { font-size: 2rem; font-weight: 700; margin-bottom: 0.4rem; }
+    header .subtitle { color: #8b949e; font-size: 1.05rem; max-width: 700px; margin: 0 auto 1rem; }
+    .badges { display: flex; flex-wrap: wrap; gap: 0.4rem; justify-content: center; margin-bottom: 1.2rem; }
     .btn {
       display: inline-block;
       background: #238636;
@@ -63,10 +85,46 @@
     }
     .btn.secondary:hover { background: #30363d; }
 
-    main { max-width: 860px; margin: 0 auto; padding: 2.5rem 1rem; }
+    /* ── Language switcher ── */
+    .lang-bar {
+      display: flex;
+      justify-content: center;
+      gap: 0.5rem;
+      margin-top: 1.2rem;
+    }
+    .lang-btn {
+      padding: 0.3rem 1rem;
+      border-radius: 20px;
+      border: 1px solid #30363d;
+      background: #21262d;
+      color: #8b949e;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 600;
+      transition: background 0.15s;
+    }
+    .lang-btn.active, .lang-btn:hover {
+      background: #1f6feb;
+      border-color: #1f6feb;
+      color: #fff;
+    }
 
-    h2 { font-size: 1.4rem; margin: 2rem 0 0.8rem; border-bottom: 1px solid #30363d; padding-bottom: 0.4rem; }
+    /* ── Main layout ── */
+    .section { display: none; }
+    .section.active { display: block; }
+    main { max-width: 900px; margin: 0 auto; padding: 2.5rem 1rem; }
 
+    h2 {
+      font-size: 1.45rem;
+      margin: 2.5rem 0 0.8rem;
+      border-bottom: 1px solid #30363d;
+      padding-bottom: 0.4rem;
+    }
+    h3 { font-size: 1.05rem; margin: 1.2rem 0 0.4rem; color: #79c0ff; }
+
+    p { color: #c9d1d9; margin-bottom: 0.6rem; }
+
+    /* ── Feature grid ── */
     .grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -79,14 +137,81 @@
       border-radius: 8px;
       padding: 1rem 1.2rem;
     }
-    .card h3 { font-size: 1rem; margin-bottom: 0.4rem; }
-    .card p { color: #8b949e; font-size: 0.9rem; }
+    .card h3 { font-size: 1rem; margin: 0 0 0.4rem; color: #e6edf3; }
+    .card p { color: #8b949e; font-size: 0.9rem; margin: 0; }
 
-    .screenshots { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 0.8rem; margin-top: 0.8rem; }
-    .screenshots img { width: 100%; border-radius: 6px; border: 1px solid #30363d; }
+    /* ── Screenshots (clickable) ── */
+    .screenshots {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 0.8rem;
+      margin-top: 0.8rem;
+    }
+    .screenshot-item { display: flex; flex-direction: column; gap: 0.3rem; }
+    .screenshot-item a { display: block; }
+    .screenshot-item img {
+      width: 100%;
+      border-radius: 6px;
+      border: 1px solid #30363d;
+      transition: border-color 0.15s, opacity 0.15s;
+    }
+    .screenshot-item img:hover { border-color: #58a6ff; opacity: 0.9; }
+    .screenshot-item .caption {
+      font-size: 0.78rem;
+      color: #8b949e;
+      text-align: center;
+    }
 
+    /* ── Telemetry section ── */
+    .telem-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+    .telem-card {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+    }
+    .telem-card h3 { color: #79c0ff; margin: 0 0 0.6rem; font-size: 1rem; }
+    .telem-card p, .telem-card li { color: #8b949e; font-size: 0.88rem; }
+    .telem-card ul { padding-left: 1.2rem; }
+    .telem-card li { margin-bottom: 0.2rem; }
+
+    .led-table { width: 100%; border-collapse: collapse; margin: 0.6rem 0; font-size: 0.88rem; }
+    .led-table th, .led-table td { padding: 0.4rem 0.6rem; border: 1px solid #30363d; text-align: left; }
+    .led-table th { background: #161b22; color: #79c0ff; }
+    .led-table td { color: #8b949e; }
+    .led-green { color: #3fb950; font-weight: 700; }
+    .led-yellow { color: #d29922; font-weight: 700; }
+    .led-red { color: #f85149; font-weight: 700; }
+    .led-gray { color: #6e7681; font-weight: 700; }
+
+    .fix-list { padding-left: 1.4rem; color: #8b949e; font-size: 0.9rem; }
+    .fix-list li { margin-bottom: 0.5rem; }
+    .fix-list strong { color: #e6edf3; }
+
+    /* ── Download ── */
+    ol.dl-steps { padding-left: 1.4rem; color: #8b949e; font-size: 0.95rem; }
+    ol.dl-steps li { margin-bottom: 0.4rem; }
+
+    /* ── Devices ── */
     .devices { color: #8b949e; font-size: 0.9rem; margin-top: 0.5rem; }
 
+    /* ── Disclaimer ── */
+    .disclaimer {
+      background: #1c2128;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      padding: 0.7rem 1rem;
+      font-size: 0.85rem;
+      color: #8b949e;
+      margin: 1.5rem 0 0;
+    }
+
+    /* ── Footer ── */
     footer {
       text-align: center;
       padding: 2rem 1rem;
@@ -94,16 +219,17 @@
       font-size: 0.85rem;
       border-top: 1px solid #30363d;
     }
-
-    /* English toggle note */
-    .lang-note { text-align: center; margin: 1rem 0 0; font-size: 0.85rem; color: #8b949e; }
   </style>
 </head>
 <body>
 
 <header>
   <h1>Meshhessen Client</h1>
-  <p>Kostenloser Windows-Client für Meshtastic-Geräte – Offline-Karte, Telemetrie, Traceroute und PKI-Entschlüsselung. Keine Cloud, keine Installation.</p>
+  <p class="subtitle">
+    Kostenloser Windows-Client für Meshtastic-Geräte –
+    Offline-Karte, Telemetrie-Analyse, Traceroute und PKI-Entschlüsselung.
+    Keine Cloud, keine Installation.
+  </p>
   <div class="badges">
     <img src="https://img.shields.io/badge/Windows-10%2F11-blue" alt="Windows 10/11" />
     <img src="https://img.shields.io/badge/.NET-8.0-purple" alt=".NET 8.0" />
@@ -112,67 +238,320 @@
     <img src="https://img.shields.io/github/stars/SMLunchen/mh_windowsclient" alt="Stars" />
   </div>
   <div>
-    <a class="btn" href="https://github.com/SMLunchen/mh_windowsclient/releases/latest">Download (EXE)</a>
+    <a class="btn" href="https://github.com/SMLunchen/mh_windowsclient/releases/latest">⬇ Download (EXE)</a>
     <a class="btn secondary" href="https://github.com/SMLunchen/mh_windowsclient">GitHub Repository</a>
     <a class="btn secondary" href="https://www.meshhessen.de">meshhessen.de</a>
   </div>
-  <p class="lang-note">
-    Free <strong>Windows app for Meshtastic devices</strong> – offline map, telemetry, traceroute, PKI decryption, USB/Serial/TCP/BLE.
-    No installation, no cloud. By the <a href="https://www.meshhessen.de">Meshhessen community</a> (Hesse, Germany).
-  </p>
+  <div class="lang-bar">
+    <button class="lang-btn active" onclick="setLang('de')" id="btn-de">🇩🇪 Deutsch</button>
+    <button class="lang-btn" onclick="setLang('en')" id="btn-en">🇬🇧 English</button>
+  </div>
 </header>
 
+<!-- ════════════════════════════════════ DEUTSCH ════════════════════════════════════ -->
+<div class="section active" id="de">
 <main>
 
   <h2>Features</h2>
   <div class="grid">
     <div class="card">
       <h3>📨 Nachrichten</h3>
-      <p>Broadcast & Direktnachrichten, Multi-Channel, Tap-Back Reaktionen, Alert Bell / SOS-Notruf.</p>
+      <p>Broadcast- & Direktnachrichten, Multi-Channel, Antwort-Funktion mit Zitat-Block, Tap-Back-Reaktionen (32 Emojis), Alert Bell / SOS-Notruf, Nachrichten kopierbar.</p>
     </div>
     <div class="card">
       <h3>🗺️ Offline-Karte</h3>
-      <p>OSM Standard, OSM Dark, OpenTopoMap – Tiles für ganz Deutschland offline speicherbar. Node-Pins, GPS-Tracks.</p>
+      <p>OSM Standard, OSM Dark, OpenTopoMap – Tiles für ganz Deutschland offline speicherbar. Node-Pins, GPS-Tracks, Wegpunkte erstellen & empfangen.</p>
     </div>
     <div class="card">
-      <h3>📊 Telemetrie</h3>
-      <p>SQLite-Datenbank, Zeitreihen-Graphen (SNR, RSSI, Batterie), LED-Ampel für Mesh-Health.</p>
+      <h3>📊 Telemetrie-Analyse</h3>
+      <p>SQLite-Datenbank, Zeitreihen-Graphen (SNR, RSSI, Batterie), LED-Ampel für Signal, Nachbarn, Mesh-Health, Pfad-Stabilität und Wetter.</p>
     </div>
     <div class="card">
       <h3>📡 Traceroute</h3>
-      <p>Hop-Tabelle mit Entfernung & SNR, Karten-Visualisierung, mehrere Traces gleichzeitig, JSON-Speicherung.</p>
+      <p>Hop-Tabelle mit SNR & Entfernung, Karten-Visualisierung mit Richtungspfeilen, SNR-Popup per Klick, Zeitreihenfilter, Deduplizierung, JSON-Speicherung.</p>
     </div>
     <div class="card">
       <h3>🔒 PKI-Entschlüsselung</h3>
-      <p>Client-seitige X25519 + AES-256-CTR Entschlüsselung. Private Key wird automatisch vom Gerät geladen.</p>
+      <p>Client-seitige X25519 + AES-256-CTR Entschlüsselung. Private Key wird automatisch vom verbundenen Gerät geladen und nur im RAM gehalten.</p>
     </div>
     <div class="card">
-      <h3>⚙️ Verbindung</h3>
-      <p>USB/Serial, TCP/WiFi, Bluetooth BLE – Auto-Reconnect, Update-Check, Dark Mode, Deutsch/Englisch.</p>
+      <h3>⚙️ Verbindung & System</h3>
+      <p>USB/Serial, TCP/WiFi, Bluetooth BLE – Auto-Reconnect, Firmware-Versions-Anzeige, Hardware-Modell, Update-Check, Dark Mode, Deutsch/Englisch.</p>
     </div>
   </div>
 
+  <!-- ── Telemetrie-Analyse ── -->
+  <h2 id="telemetrie">📊 Telemetrie-Analyse – Messwerte verstehen</h2>
+  <p>
+    Der Meshhessen Client speichert alle empfangenen Telemetrie-Daten in einer lokalen SQLite-Datenbank
+    und wertet sie automatisch aus. Über das Node-Kontextmenü → <em>Telemetrie</em> öffnet sich das
+    Analyse-Fenster für jeden Node. Die LED-Ampeln im Hauptfenster zeigen den Gesamtzustand auf
+    einen Blick.
+  </p>
+
+  <h3>📶 Signal-Analyse: SNR & RSSI</h3>
+  <div class="telem-grid">
+    <div class="telem-card">
+      <h3>SNR – Signal-Rausch-Abstand</h3>
+      <p>Gibt an, wie stark das Nutzsignal gegenüber dem Rauschen ist. LoRa kann theoretisch bis ca. −20 dB empfangen, praktisch ist oberhalb von −10 dB aber mit erheblichen Paketverlusten zu rechnen.</p>
+      <ul>
+        <li><span class="led-green">▲ &gt; 5 dB</span> – Sehr gut, stabile Verbindung</li>
+        <li><span class="led-green">● 0 – 5 dB</span> – Gut, zuverlässige Verbindung</li>
+        <li><span class="led-yellow">● −5 – 0 dB</span> – Grenzwertig, Paketverluste möglich</li>
+        <li><span class="led-red">▼ &lt; −5 dB</span> – Schlecht, häufige Paketverluste</li>
+      </ul>
+    </div>
+    <div class="telem-card">
+      <h3>RSSI – Empfangspegel</h3>
+      <p>Absoluter Empfangspegel in dBm. Gibt an, wie laut das Signal am Empfänger ankommt – unabhängig vom Rauschen. In Kombination mit SNR ergibt sich ein vollständiges Bild der Verbindungsqualität.</p>
+      <ul>
+        <li><span class="led-green">● &gt; −100 dBm</span> – Gut</li>
+        <li><span class="led-yellow">● −100 bis −115 dBm</span> – Grenzwertig</li>
+        <li><span class="led-red">● &lt; −115 dBm</span> – Schwach</li>
+      </ul>
+    </div>
+    <div class="telem-card">
+      <h3>Signal-Trend (Regression)</h3>
+      <p>Der Client berechnet den linearen Trend über das eingestellte Zeitfenster (Standard: 6 Stunden). Ein negativer Trend deutet auf eine sich verschlechternde Verbindung hin – z.B. durch wechselnde Wetterbedingungen oder Hindernisse.</p>
+      <ul>
+        <li><span class="led-green">▲ Steigend</span> – Signal verbessert sich</li>
+        <li><span class="led-yellow">→ Stabil</span> – Kein signifikanter Trend</li>
+        <li><span class="led-red">▼ Fallend</span> – Signal verschlechtert sich</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>🔋 Batterie & Spannung</h3>
+  <div class="telem-grid">
+    <div class="telem-card">
+      <h3>Batteriestand (%)</h3>
+      <ul>
+        <li><span class="led-green">● &gt; 50 %</span> – Gut</li>
+        <li><span class="led-yellow">● 20 – 50 %</span> – Mittel</li>
+        <li><span class="led-red">● &lt; 20 %</span> – Niedrig, bald laden</li>
+      </ul>
+    </div>
+    <div class="telem-card">
+      <h3>Nachtabfall</h3>
+      <p>Gibt an, wie viel % Batterie der Node in der Nacht (kein Solar) verbraucht. Hoher Nachtabfall zeigt erhöhten Ruhestrom oder fehlende Deep-Sleep-Konfiguration.</p>
+      <ul>
+        <li><span class="led-green">● &lt; 5 %</span> – Normal (Ruhestrom)</li>
+        <li><span class="led-yellow">● 5 – 15 %</span> – Leicht erhöht</li>
+        <li><span class="led-red">● &gt; 15 %</span> – Kritisch, Ursache prüfen</li>
+      </ul>
+    </div>
+    <div class="telem-card">
+      <h3>Spannung (V)</h3>
+      <p>Rohspannung des Akkus in Volt. Typische LiPo-Werte: 4,2 V = voll geladen, 3,7 V = Nennspannung, 3,2 V = Tiefentladungsgrenze. Solarnodes: Spannung tagsüber deutlich höher als nachts.</p>
+    </div>
+  </div>
+
+  <h3>📡 Kanalauslastung (Channel Utilization)</h3>
+  <p>
+    Die Kanalauslastung gibt an, wie viel Prozent des LoRa-Zeitfensters auf dem gewählten Kanal belegt ist –
+    durch eigene Pakete und empfangene Pakete fremder Nodes. Hohe Kanalauslastung erhöht die
+    Wahrscheinlichkeit von Kollisionen und Paketverlusten. Der Mesh-Health-Tooltip zeigt die
+    Top-5-Nodes nach Kanalauslastung.
+  </p>
+  <table class="led-table">
+    <thead>
+      <tr><th>Auslastung</th><th>Bewertung</th><th>Empfehlung</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>0 – 10 %</td><td><span class="led-green">Sehr gut</span></td><td>Viel Kapazität frei, keine Maßnahmen nötig</td></tr>
+      <tr><td>10 – 25 %</td><td><span class="led-green">Gut</span></td><td>Normales, gesundes Mesh</td></tr>
+      <tr><td>25 – 50 %</td><td><span class="led-yellow">Erhöht</span></td><td>Position-Update-Rate reduzieren, Short Slow prüfen</td></tr>
+      <tr><td>&gt; 50 %</td><td><span class="led-red">Kritisch</span></td><td>Viele Paketverluste; Telemetrie-Intervalle und Broadcasts reduzieren</td></tr>
+    </tbody>
+  </table>
+
+  <h3>🔀 Routing & Pfad-Stabilität</h3>
+  <div class="telem-grid">
+    <div class="telem-card">
+      <h3>Hop-Anzahl</h3>
+      <p>Wie viele Zwischenstationen (Relay-Nodes) ein Paket durchläuft. Jeder Hop erhöht die Latenz und verbraucht Airtime auf dem Kanal.</p>
+      <ul>
+        <li><span class="led-green">● 1 Hop</span> – Direktverbindung, optimal</li>
+        <li><span class="led-green">● 2–3 Hops</span> – Normal</li>
+        <li><span class="led-yellow">● 4–5 Hops</span> – Hoch, hoher Airtime-Verbrauch</li>
+        <li><span class="led-red">● 6–7 Hops</span> – Maximum, sehr ineffizient</li>
+      </ul>
+    </div>
+    <div class="telem-card">
+      <h3>Pfad-Wechselrate</h3>
+      <p>Gibt an, wie häufig sich der Routing-Pfad zu einem Node ändert. Häufige Pfadwechsel deuten auf instabile Zwischenverbindungen hin – z.B. Relay-Nodes an schlechten Standorten.</p>
+      <ul>
+        <li><span class="led-green">● Stabil</span> – Gleichbleibender Pfad</li>
+        <li><span class="led-yellow">● Mäßig</span> – Gelegentliche Wechsel</li>
+        <li><span class="led-red">● Instabil</span> – Häufige Wechsel, Relay-Nodes prüfen</li>
+      </ul>
+    </div>
+    <div class="telem-card">
+      <h3>Hop-Kosten</h3>
+      <p>Gewichteter Durchschnitt der Hop-Anzahl über den Analysezeitraum. Niedrige Hop-Kosten bedeuten kurze, effiziente Pfade; hohe Hop-Kosten erhöhen Latenz und Kanalauslastung im gesamten Mesh.</p>
+    </div>
+  </div>
+
+  <h3>👥 Nachbarn (Neighbors)</h3>
+  <p>
+    Zeigt alle Nodes, die der ausgewählte Node direkt (1 Hop, ohne Relay) hört. Pro Nachbar wird der
+    SNR der direkten Verbindung und der zeitliche Trend angezeigt. Viele stabile Nachbarn bedeuten
+    eine gute Einbindung ins Mesh; wenige oder instabile Nachbarn zeigen Reichweitenprobleme.
+  </p>
+
+  <h3>⏱️ Airtime</h3>
+  <p>
+    Gibt an, wie viel Sendezeit (TX-Airtime) und Empfangszeit (RX-Airtime) der Node belegt.
+    Nodes mit hoher TX-Airtime erhöhen die Kanalauslastung für alle anderen Nodes im Bereich.
+    Telemetrie-Intervalle und Broadcast-Häufigkeit sollten entsprechend angepasst werden.
+  </p>
+
+  <h3>🔧 LED-Ampeln – Bedeutung auf einen Blick</h3>
+  <table class="led-table">
+    <thead>
+      <tr><th>LED</th><th><span class="led-green">Grün</span></th><th><span class="led-yellow">Gelb</span></th><th><span class="led-red">Rot</span></th><th><span class="led-gray">Grau</span></th></tr>
+    </thead>
+    <tbody>
+      <tr><td>📶 Signal</td><td>SNR &gt; 0 dB, stabiler Trend</td><td>SNR grenzwertig oder leicht fallend</td><td>SNR &lt; −5 dB oder stark fallend</td><td>Keine Daten</td></tr>
+      <tr><td>👥 Nachbarn</td><td>≥ 2 stabile Nachbarn</td><td>1 Nachbar oder sinkende SNRs</td><td>Keine Direktverbindungen</td><td>Keine Daten</td></tr>
+      <tr><td>🛤️ Pfad</td><td>Stabiler Pfad, ≤ 3 Hops</td><td>Gelegentliche Wechsel</td><td>Häufige Pfadwechsel</td><td>Kein Traceroute</td></tr>
+      <tr><td>🌐 Mesh-Health</td><td>Guter Gesamtzustand</td><td>Einzelne Problembereiche</td><td>Hohe Kanalauslastung oder viele instabile Nodes</td><td>Keine Daten</td></tr>
+      <tr><td>🌤️ Wetter</td><td>Sensor-Daten vorhanden</td><td>–</td><td>–</td><td>Kein Umweltsensor</td></tr>
+    </tbody>
+  </table>
+
+  <h3>🛠️ Maßnahmen zur Fehlerbehebung</h3>
+  <ul class="fix-list">
+    <li>
+      <strong>Schlechtes Signal (SNR/RSSI niedrig):</strong>
+      Antenne auf festen Sitz und Beschädigung prüfen. Standort erhöhen – freies Sichtfeld
+      verbessert LoRa-Reichweite erheblich. Antennen-Polarisation beachten (vertikal).
+      Relay-Node als Zwischenstation aufstellen.
+    </li>
+    <li>
+      <strong>Fallender Signal-Trend:</strong>
+      Wetterbedingungen beobachten (Feuchtigkeit, Regen dämpfen das Signal).
+      Antenne auf Wassereintritt prüfen (Outdoor-Nodes). Frequenz-Offset des Nodes überprüfen.
+    </li>
+    <li>
+      <strong>Hohe Kanalauslastung (&gt; 25 %):</strong>
+      Modem-Preset auf <em>Short Slow</em> setzen (höhere Spreading Factor = weniger Airtime).
+      Position-Update-Rate in der Firmware reduzieren (z.B. auf alle 10–30 Minuten).
+      Telemetrie-Intervalle (Gerät, Umwelt) erhöhen.
+      Unnötige Broadcasts (z.B. häufige Nachrichten) minimieren.
+    </li>
+    <li>
+      <strong>Pfad-Instabilität (häufige Pfadwechsel):</strong>
+      Relay-Nodes an schlechten Standorten identifizieren und verbessern.
+      Fixed-Position für Relay-Nodes setzen – verbessert die Routing-Stabilität erheblich.
+      SNR der betroffenen Zwischenverbindungen über Traceroute analysieren.
+    </li>
+    <li>
+      <strong>Hoher Nachtabfall der Batterie:</strong>
+      Deep-Sleep in der Firmware aktivieren (wenn Standort stationär).
+      Display-Timeout reduzieren. Netzteil / Solar-Panel prüfen.
+      Ladecontroller auf korrekte Funktion überprüfen.
+    </li>
+    <li>
+      <strong>Wenige oder keine Nachbarn:</strong>
+      Kanal-Einstellungen (Frequenz, Modem-Preset) mit Nachbar-Nodes abgleichen.
+      Antenne und Standort verbessern. Mesh-Dichte in der Region erhöhen (weiteren Node aufstellen).
+    </li>
+  </ul>
+
+  <!-- ── Screenshots ── -->
+  <h2>📸 Screenshots <small style="font-size:0.75rem; color:#8b949e;">(klicken zum Vergrößern)</small></h2>
+  <div class="screenshots">
+    <div class="screenshot-item">
+      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map.png" target="_blank" rel="noopener">
+        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map.png"
+             alt="Meshhessen Client – Offline-Karte mit Meshtastic Node-Positionen unter Windows" loading="lazy" />
+      </a>
+      <span class="caption">Offline-Karte mit Node-Positionen (OSM)</span>
+    </div>
+    <div class="screenshot-item">
+      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/nodes.png" target="_blank" rel="noopener">
+        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/nodes.png"
+             alt="Meshhessen Client – Meshtastic Node-Übersicht mit SNR, RSSI, Batterie und LED-Ampeln" loading="lazy" />
+      </a>
+      <span class="caption">Node-Übersicht mit SNR, Batterie und LED-Ampeln</span>
+    </div>
+    <div class="screenshot-item">
+      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/messaging.png" target="_blank" rel="noopener">
+        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/messaging.png"
+             alt="Meshhessen Client – Meshtastic Nachrichten, Kanal-Chat und Direktnachrichten (DM) unter Windows" loading="lazy" />
+      </a>
+      <span class="caption">Kanal-Chat und Direktnachrichten (DMs)</span>
+    </div>
+    <div class="screenshot-item">
+      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/channel_list.png" target="_blank" rel="noopener">
+        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/channel_list.png"
+             alt="Meshhessen Client – Meshtastic Kanal-Liste (Multi-Channel) unter Windows" loading="lazy" />
+      </a>
+      <span class="caption">Kanal-Liste (Multi-Channel)</span>
+    </div>
+    <div class="screenshot-item">
+      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node-telemetry.png" target="_blank" rel="noopener">
+        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node-telemetry.png"
+             alt="Meshhessen Client – Meshtastic Telemetrie-Übersicht: Signal, Airtime, Routing und Nachbarn" loading="lazy" />
+      </a>
+      <span class="caption">Telemetrie-Übersicht pro Node</span>
+    </div>
+    <div class="screenshot-item">
+      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node_power.png" target="_blank" rel="noopener">
+        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node_power.png"
+             alt="Meshhessen Client – Meshtastic Batterie- und Spannungsanalyse mit Tag/Nacht-Profil" loading="lazy" />
+      </a>
+      <span class="caption">Batterie &amp; Spannung – Tag/Nacht-Profil</span>
+    </div>
+    <div class="screenshot-item">
+      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node_airtime.png" target="_blank" rel="noopener">
+        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node_airtime.png"
+             alt="Meshhessen Client – Meshtastic Airtime-Analyse: TX-Airtime, RX-Airtime und Kanalauslastung" loading="lazy" />
+      </a>
+      <span class="caption">Airtime-Analyse (TX/RX, Kanalauslastung)</span>
+    </div>
+    <div class="screenshot-item">
+      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node_neighbors.png" target="_blank" rel="noopener">
+        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node_neighbors.png"
+             alt="Meshhessen Client – Meshtastic Nachbar-Analyse: Direkte Verbindungen und SNR-Trends" loading="lazy" />
+      </a>
+      <span class="caption">Nachbar-Analyse mit SNR-Trends</span>
+    </div>
+    <div class="screenshot-item">
+      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node_routing.png" target="_blank" rel="noopener">
+        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node_routing.png"
+             alt="Meshhessen Client – Meshtastic Routing-Statistik: Hop-Anzahl und Pfad-Stabilität" loading="lazy" />
+      </a>
+      <span class="caption">Routing-Statistik (Hops, Pfad-Stabilität)</span>
+    </div>
+    <div class="screenshot-item">
+      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/alert_bell.png" target="_blank" rel="noopener">
+        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/alert_bell.png"
+             alt="Meshhessen Client – Alert Bell SOS-Notruf Signalisierung für Meshtastic-Geräte unter Windows" loading="lazy" />
+      </a>
+      <span class="caption">Alert Bell / SOS-Notruf</span>
+    </div>
+    <div class="screenshot-item">
+      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/tile_downloader.png" target="_blank" rel="noopener">
+        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/tile_downloader.png"
+             alt="Meshhessen Client – Offline-Karten-Tile-Downloader für Meshtastic-Geräte unter Windows" loading="lazy" />
+      </a>
+      <span class="caption">Offline-Tile-Downloader</span>
+    </div>
+  </div>
+
+  <!-- ── Supported devices ── -->
   <h2>Unterstützte Geräte</h2>
   <p class="devices">
     Funktioniert mit allen Meshtastic-kompatiblen Geräten:
-    LILYGO T-Beam · LILYGO T-Deck · RAK4631 · Heltec LoRa 32 · Heltec Mesh Node · Seeed WiO-E5 · und weitere.
+    LILYGO T-Beam · LILYGO T-Deck · RAK4631 · Heltec LoRa 32 · Heltec Mesh Node · Seeed WiO-E5 · und weitere.<br>
     Verbindung per USB/Serial (115200 baud), TCP/WiFi oder Bluetooth Low Energy (BLE).
   </p>
 
-  <h2>Screenshots</h2>
-  <div class="screenshots">
-    <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map.png"
-         alt="Meshhessen Client – Offline-Karte mit Meshtastic Node-Positionen unter Windows" />
-    <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/nodes.png"
-         alt="Meshhessen Client – Node-Übersicht mit SNR, RSSI und Batterie für Meshtastic-Geräte" />
-    <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/messaging.png"
-         alt="Meshhessen Client – Meshtastic Nachrichten und Kanal-Chat unter Windows" />
-    <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/channel_list.png"
-         alt="Meshhessen Client – Meshtastic Kanal-Liste unter Windows" />
-  </div>
-
-  <h2>Download & Installation</h2>
-  <ol style="padding-left:1.4rem; color:#8b949e; font-size:0.95rem;">
+  <!-- ── Download ── -->
+  <h2>Download &amp; Installation</h2>
+  <ol class="dl-steps">
     <li>
       <a href="https://dotnet.microsoft.com/en-us/download/dotnet/8.0">.NET 8 Desktop Runtime</a> herunterladen und installieren
     </li>
@@ -183,11 +562,338 @@
     <li>Doppelklick auf <code>MeshhessenClient.exe</code> – fertig. Keine Installation nötig.</li>
   </ol>
 
+  <div class="disclaimer">
+    Der Meshhessen Client ist ein inoffizieller Community-Client für Meshtastic-Geräte und steht in keiner
+    Verbindung zum offiziellen Meshtastic-Projekt. Meshtastic® ist ein eingetragenes Warenzeichen der
+    Meshtastic LLC. Entwickelt von der <a href="https://www.meshhessen.de">Meshhessen Community</a> in Hessen.
+  </div>
+
 </main>
+</div>
+
+<!-- ════════════════════════════════════ ENGLISH ════════════════════════════════════ -->
+<div class="section" id="en">
+<main>
+
+  <h2>Features</h2>
+  <div class="grid">
+    <div class="card">
+      <h3>📨 Messaging</h3>
+      <p>Broadcast &amp; direct messages, multi-channel, reply function with quote block, tap-back reactions (32 emojis), Alert Bell / SOS, copyable messages with clickable links.</p>
+    </div>
+    <div class="card">
+      <h3>🗺️ Offline Map</h3>
+      <p>OSM Standard, OSM Dark, OpenTopoMap – downloadable tiles for all of Germany. Node pins, GPS tracks, create &amp; receive waypoints.</p>
+    </div>
+    <div class="card">
+      <h3>📊 Telemetry Analysis</h3>
+      <p>SQLite database, time-series graphs (SNR, RSSI, battery), LED indicators for signal, neighbors, mesh health, path stability and weather.</p>
+    </div>
+    <div class="card">
+      <h3>📡 Traceroute</h3>
+      <p>Hop table with SNR &amp; distance, map visualization with direction arrows, SNR popup on click, time range filter, deduplication, JSON storage.</p>
+    </div>
+    <div class="card">
+      <h3>🔒 PKI Decryption</h3>
+      <p>Client-side X25519 + AES-256-CTR decryption. Private key is loaded automatically from the connected device and kept in RAM only.</p>
+    </div>
+    <div class="card">
+      <h3>⚙️ Connection &amp; System</h3>
+      <p>USB/Serial, TCP/WiFi, Bluetooth BLE – auto-reconnect, firmware version &amp; hardware model display, update check, dark mode, German/English.</p>
+    </div>
+  </div>
+
+  <!-- ── Telemetry Analysis ── -->
+  <h2 id="telemetry">📊 Telemetry Analysis – Understanding the Values</h2>
+  <p>
+    The Meshhessen Client stores all received telemetry data in a local SQLite database and
+    analyses it automatically. Open the analysis window for any node via the node context menu →
+    <em>Telemetry</em>. The LED indicators in the main window give you an at-a-glance overview
+    of the overall mesh state.
+  </p>
+
+  <h3>📶 Signal Analysis: SNR &amp; RSSI</h3>
+  <div class="telem-grid">
+    <div class="telem-card">
+      <h3>SNR – Signal-to-Noise Ratio</h3>
+      <p>Indicates how much stronger the signal is compared to background noise. LoRa can theoretically receive down to approx. −20 dB, but below −10 dB expect significant packet loss.</p>
+      <ul>
+        <li><span class="led-green">▲ &gt; 5 dB</span> – Excellent, stable link</li>
+        <li><span class="led-green">● 0 – 5 dB</span> – Good, reliable link</li>
+        <li><span class="led-yellow">● −5 – 0 dB</span> – Marginal, packet loss possible</li>
+        <li><span class="led-red">▼ &lt; −5 dB</span> – Poor, frequent packet loss</li>
+      </ul>
+    </div>
+    <div class="telem-card">
+      <h3>RSSI – Received Signal Strength</h3>
+      <p>Absolute received signal level in dBm. Shows how loud the signal arrives at the receiver regardless of noise. Combined with SNR it gives a complete picture of link quality.</p>
+      <ul>
+        <li><span class="led-green">● &gt; −100 dBm</span> – Good</li>
+        <li><span class="led-yellow">● −100 to −115 dBm</span> – Marginal</li>
+        <li><span class="led-red">● &lt; −115 dBm</span> – Weak</li>
+      </ul>
+    </div>
+    <div class="telem-card">
+      <h3>Signal Trend (Regression)</h3>
+      <p>The client calculates the linear trend over the configured time window (default: 6 hours). A negative trend indicates a deteriorating link – e.g. due to changing weather or new obstructions.</p>
+      <ul>
+        <li><span class="led-green">▲ Rising</span> – Signal improving</li>
+        <li><span class="led-yellow">→ Stable</span> – No significant trend</li>
+        <li><span class="led-red">▼ Falling</span> – Signal deteriorating</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>🔋 Battery &amp; Voltage</h3>
+  <div class="telem-grid">
+    <div class="telem-card">
+      <h3>Battery Level (%)</h3>
+      <ul>
+        <li><span class="led-green">● &gt; 50 %</span> – Good</li>
+        <li><span class="led-yellow">● 20 – 50 %</span> – Medium</li>
+        <li><span class="led-red">● &lt; 20 %</span> – Low, charge soon</li>
+      </ul>
+    </div>
+    <div class="telem-card">
+      <h3>Night-time Drop</h3>
+      <p>How many % battery the node consumes overnight (no solar charging). A high night drop indicates elevated idle current or missing deep-sleep configuration.</p>
+      <ul>
+        <li><span class="led-green">● &lt; 5 %</span> – Normal (standby current)</li>
+        <li><span class="led-yellow">● 5 – 15 %</span> – Slightly elevated</li>
+        <li><span class="led-red">● &gt; 15 %</span> – Critical, investigate</li>
+      </ul>
+    </div>
+    <div class="telem-card">
+      <h3>Voltage (V)</h3>
+      <p>Raw battery voltage in volts. Typical LiPo values: 4.2 V = fully charged, 3.7 V = nominal, 3.2 V = deep-discharge threshold. Solar nodes show significantly higher voltage during the day.</p>
+    </div>
+  </div>
+
+  <h3>📡 Channel Utilization</h3>
+  <p>
+    Channel utilization shows what percentage of the LoRa time slot on the selected channel is occupied –
+    by the node's own packets and by received packets from other nodes. High channel utilization increases
+    the probability of collisions and packet loss. The Mesh Health tooltip shows the top-5 nodes by
+    channel utilization.
+  </p>
+  <table class="led-table">
+    <thead>
+      <tr><th>Utilization</th><th>Rating</th><th>Recommendation</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>0 – 10 %</td><td><span class="led-green">Excellent</span></td><td>Plenty of capacity free, no action needed</td></tr>
+      <tr><td>10 – 25 %</td><td><span class="led-green">Good</span></td><td>Normal, healthy mesh</td></tr>
+      <tr><td>25 – 50 %</td><td><span class="led-yellow">Elevated</span></td><td>Reduce position update rate, consider Short Slow preset</td></tr>
+      <tr><td>&gt; 50 %</td><td><span class="led-red">Critical</span></td><td>Many packet losses expected; reduce telemetry intervals and broadcasts</td></tr>
+    </tbody>
+  </table>
+
+  <h3>🔀 Routing &amp; Path Stability</h3>
+  <div class="telem-grid">
+    <div class="telem-card">
+      <h3>Hop Count</h3>
+      <p>How many relay nodes a packet passes through. Each hop increases latency and consumes airtime on the channel.</p>
+      <ul>
+        <li><span class="led-green">● 1 hop</span> – Direct link, optimal</li>
+        <li><span class="led-green">● 2–3 hops</span> – Normal</li>
+        <li><span class="led-yellow">● 4–5 hops</span> – High, heavy airtime use</li>
+        <li><span class="led-red">● 6–7 hops</span> – Maximum, very inefficient</li>
+      </ul>
+    </div>
+    <div class="telem-card">
+      <h3>Path Change Rate</h3>
+      <p>How frequently the routing path to a node changes. Frequent path changes indicate unstable intermediate links – e.g. relay nodes at poor locations.</p>
+      <ul>
+        <li><span class="led-green">● Stable</span> – Consistent path</li>
+        <li><span class="led-yellow">● Moderate</span> – Occasional changes</li>
+        <li><span class="led-red">● Unstable</span> – Frequent changes, check relay nodes</li>
+      </ul>
+    </div>
+    <div class="telem-card">
+      <h3>Hop Cost</h3>
+      <p>Weighted average hop count over the analysis period. Low hop cost means short, efficient paths; high hop cost increases latency and channel utilization for the entire mesh.</p>
+    </div>
+  </div>
+
+  <h3>👥 Neighbors</h3>
+  <p>
+    Shows all nodes that the selected node hears directly (1 hop, no relay). Per neighbor the SNR of
+    the direct link and its trend over time are displayed. Many stable neighbors indicate good
+    integration into the mesh; few or unstable neighbors indicate range or configuration issues.
+  </p>
+
+  <h3>⏱️ Airtime</h3>
+  <p>
+    Shows how much transmit time (TX airtime) and receive time (RX airtime) the node uses.
+    Nodes with high TX airtime increase channel utilization for all nodes in range.
+    Telemetry intervals and broadcast frequency should be adjusted accordingly.
+  </p>
+
+  <h3>🔧 LED Indicators – Quick Reference</h3>
+  <table class="led-table">
+    <thead>
+      <tr><th>LED</th><th><span class="led-green">Green</span></th><th><span class="led-yellow">Yellow</span></th><th><span class="led-red">Red</span></th><th><span class="led-gray">Grey</span></th></tr>
+    </thead>
+    <tbody>
+      <tr><td>📶 Signal</td><td>SNR &gt; 0 dB, stable trend</td><td>SNR marginal or slightly falling</td><td>SNR &lt; −5 dB or strongly falling</td><td>No data</td></tr>
+      <tr><td>👥 Neighbors</td><td>≥ 2 stable neighbors</td><td>1 neighbor or declining SNRs</td><td>No direct links</td><td>No data</td></tr>
+      <tr><td>🛤️ Path</td><td>Stable path, ≤ 3 hops</td><td>Occasional path changes</td><td>Frequent path changes</td><td>No traceroute</td></tr>
+      <tr><td>🌐 Mesh Health</td><td>Good overall state</td><td>Individual problem areas</td><td>High channel util. or many unstable nodes</td><td>No data</td></tr>
+      <tr><td>🌤️ Weather</td><td>Sensor data present</td><td>–</td><td>–</td><td>No env. sensor</td></tr>
+    </tbody>
+  </table>
+
+  <h3>🛠️ Troubleshooting</h3>
+  <ul class="fix-list">
+    <li>
+      <strong>Poor signal (low SNR/RSSI):</strong>
+      Check antenna for loose connections or damage. Raise the node – clear line of sight significantly
+      extends LoRa range. Keep the antenna vertical. Add a relay node as an intermediate hop.
+    </li>
+    <li>
+      <strong>Falling signal trend:</strong>
+      Monitor weather conditions (moisture and rain attenuate signal). Check outdoor nodes for water
+      ingress in the antenna connector. Verify frequency offset of the node.
+    </li>
+    <li>
+      <strong>High channel utilization (&gt; 25 %):</strong>
+      Switch modem preset to <em>Short Slow</em> (higher spreading factor = less airtime per packet).
+      Reduce position update rate in firmware (e.g. every 10–30 minutes).
+      Increase telemetry intervals (device, environment). Minimize unnecessary broadcasts.
+    </li>
+    <li>
+      <strong>Path instability (frequent path changes):</strong>
+      Identify relay nodes at poor locations using traceroute SNR analysis.
+      Set a fixed position for relay nodes – greatly improves routing stability.
+    </li>
+    <li>
+      <strong>High night-time battery drop:</strong>
+      Enable deep sleep in firmware (if node location is stationary).
+      Reduce display timeout. Check solar panel alignment and cleanliness.
+      Verify charge controller operation.
+    </li>
+    <li>
+      <strong>Few or no neighbors:</strong>
+      Verify channel settings (frequency, modem preset) match neighboring nodes.
+      Improve antenna and node placement. Increase mesh density by deploying another node.
+    </li>
+  </ul>
+
+  <!-- ── Screenshots ── -->
+  <h2>📸 Screenshots <small style="font-size:0.75rem; color:#8b949e;">(click to enlarge)</small></h2>
+  <div class="screenshots">
+    <div class="screenshot-item">
+      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map.png" target="_blank" rel="noopener">
+        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map.png"
+             alt="Meshhessen Client – Offline map with Meshtastic node positions on Windows" loading="lazy" />
+      </a>
+      <span class="caption">Offline map with node positions (OSM)</span>
+    </div>
+    <div class="screenshot-item">
+      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/nodes.png" target="_blank" rel="noopener">
+        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/nodes.png"
+             alt="Meshhessen Client – Meshtastic node list with SNR, RSSI, battery and LED indicators" loading="lazy" />
+      </a>
+      <span class="caption">Node list with SNR, battery and LED indicators</span>
+    </div>
+    <div class="screenshot-item">
+      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/messaging.png" target="_blank" rel="noopener">
+        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/messaging.png"
+             alt="Meshhessen Client – Meshtastic channel chat and direct messages on Windows" loading="lazy" />
+      </a>
+      <span class="caption">Channel chat and direct messages (DMs)</span>
+    </div>
+    <div class="screenshot-item">
+      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/channel_list.png" target="_blank" rel="noopener">
+        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/channel_list.png"
+             alt="Meshhessen Client – Meshtastic multi-channel list on Windows" loading="lazy" />
+      </a>
+      <span class="caption">Multi-channel list</span>
+    </div>
+    <div class="screenshot-item">
+      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node-telemetry.png" target="_blank" rel="noopener">
+        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node-telemetry.png"
+             alt="Meshhessen Client – Meshtastic telemetry overview: signal, airtime, routing and neighbors" loading="lazy" />
+      </a>
+      <span class="caption">Telemetry overview per node</span>
+    </div>
+    <div class="screenshot-item">
+      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node_power.png" target="_blank" rel="noopener">
+        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node_power.png"
+             alt="Meshhessen Client – Meshtastic battery and voltage analysis with day/night profile" loading="lazy" />
+      </a>
+      <span class="caption">Battery &amp; voltage – day/night profile</span>
+    </div>
+    <div class="screenshot-item">
+      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node_airtime.png" target="_blank" rel="noopener">
+        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node_airtime.png"
+             alt="Meshhessen Client – Meshtastic airtime analysis: TX airtime, RX airtime and channel utilization" loading="lazy" />
+      </a>
+      <span class="caption">Airtime analysis (TX/RX, channel utilization)</span>
+    </div>
+    <div class="screenshot-item">
+      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node_neighbors.png" target="_blank" rel="noopener">
+        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node_neighbors.png"
+             alt="Meshhessen Client – Meshtastic neighbor analysis: direct links and SNR trends" loading="lazy" />
+      </a>
+      <span class="caption">Neighbor analysis with SNR trends</span>
+    </div>
+    <div class="screenshot-item">
+      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node_routing.png" target="_blank" rel="noopener">
+        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node_routing.png"
+             alt="Meshhessen Client – Meshtastic routing statistics: hop count and path stability" loading="lazy" />
+      </a>
+      <span class="caption">Routing statistics (hops, path stability)</span>
+    </div>
+    <div class="screenshot-item">
+      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/alert_bell.png" target="_blank" rel="noopener">
+        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/alert_bell.png"
+             alt="Meshhessen Client – Alert Bell SOS emergency alert for Meshtastic devices on Windows" loading="lazy" />
+      </a>
+      <span class="caption">Alert Bell / SOS emergency alert</span>
+    </div>
+    <div class="screenshot-item">
+      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/tile_downloader.png" target="_blank" rel="noopener">
+        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/tile_downloader.png"
+             alt="Meshhessen Client – Offline map tile downloader for Meshtastic devices on Windows" loading="lazy" />
+      </a>
+      <span class="caption">Offline tile downloader</span>
+    </div>
+  </div>
+
+  <!-- ── Supported devices ── -->
+  <h2>Supported Devices</h2>
+  <p class="devices">
+    Works with all Meshtastic-compatible devices:
+    LILYGO T-Beam · LILYGO T-Deck · RAK4631 · Heltec LoRa 32 · Heltec Mesh Node · Seeed WiO-E5 · and more.<br>
+    Connect via USB/Serial (115200 baud), TCP/WiFi, or Bluetooth Low Energy (BLE).
+  </p>
+
+  <!-- ── Download ── -->
+  <h2>Download &amp; Installation</h2>
+  <ol class="dl-steps">
+    <li>
+      Download and install the <a href="https://dotnet.microsoft.com/en-us/download/dotnet/8.0">.NET 8 Desktop Runtime</a>
+    </li>
+    <li>
+      Download the latest <a href="https://github.com/SMLunchen/mh_windowsclient/releases/latest"><code>MeshhessenClient.exe</code></a>
+    </li>
+    <li>Plug in your Meshtastic device via USB</li>
+    <li>Double-click <code>MeshhessenClient.exe</code> – done. No installation required.</li>
+  </ol>
+
+  <div class="disclaimer">
+    The Meshhessen Client is an unofficial community client for Meshtastic devices and is not affiliated
+    with the official Meshtastic project. Meshtastic® is a registered trademark of Meshtastic LLC.
+    Developed by the <a href="https://www.meshhessen.de">Meshhessen Community</a> in Hesse, Germany.
+  </div>
+
+</main>
+</div>
 
 <footer>
   <p>
-    <strong>Meshhessen Client</strong> – Windows-App für Meshtastic-Geräte ·
+    <strong>Meshhessen Client</strong> – Windows App für Meshtastic-Geräte / Windows app for Meshtastic devices ·
     <a href="https://github.com/SMLunchen/mh_windowsclient">GitHub</a> ·
     <a href="https://www.meshhessen.de">meshhessen.de</a>
   </p>
@@ -195,10 +901,28 @@
     Made with ❤️ by the <a href="https://www.meshhessen.de">Meshhessen Community</a> · Hessen, Germany
   </p>
   <p style="margin-top:0.5rem; font-size:0.8rem;">
-    Not affiliated with the official Meshtastic project.
-    Meshtastic® is a registered trademark of Meshtastic LLC.
+    Not affiliated with the official Meshtastic project. Meshtastic® is a registered trademark of Meshtastic LLC.
   </p>
 </footer>
+
+<script>
+  function setLang(lang) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(lang).classList.add('active');
+    document.getElementById('btn-' + lang).classList.add('active');
+    // update html lang attribute for accessibility/SEO
+    document.documentElement.lang = lang;
+    history.replaceState(null, '', '#' + lang);
+  }
+
+  // Auto-detect from hash on load
+  (function() {
+    const hash = location.hash.replace('#', '');
+    if (hash === 'en') setLang('en');
+    else setLang('de');
+  })();
+</script>
 
 </body>
 </html>
