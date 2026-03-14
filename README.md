@@ -128,26 +128,37 @@ Der Meshhessen Client ist ein Gemeinschaftsprojekt der Meshtastic-Community in H
 
 Offline-Karte mit Node-Positionen und Entfernungsanzeige:
 <img width="1250" height="813" alt="Meshhessen Client – Windows-App für Meshtastic-Geräte: Offline-Karte mit Node-Positionen (OSM)" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/map.png" />
+
 Node-Übersicht mit SNR, Batterie und Hop-Anzahl:
 <img width="1249" height="812" alt="Meshhessen Client – Node-Übersicht mit SNR, RSSI, Batterie und Signal-LEDs" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/nodes.png" />
+
 Nachrichtenansicht mit Kanal-Chat und Direktnachrichten:
 <img width="1443" height="813" alt="Meshhessen Client – Meshtastic Nachrichten, Kanal-Chat und Direktnachrichten (DM) unter Windows" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/messaging.png" />
+
 Alert Bell / SOS-Notruf Anzeige:
 <img width="1446" height="816" alt="Meshhessen Client – Alert Bell SOS-Notruf Signalisierung für Meshtastic-Geräte unter Windows" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/alert_bell.png" />
+
 Offline-Tile-Downloader für Deutschland und Umgebung:
 <img width="567" height="883" alt="Meshhessen Client – Offline-Karten-Tile-Downloader für Meshtastic-Geräte unter Windows (OSM, OpenTopoMap)" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/tile_downloader.png" />
+
 Kanal-Liste mit allen Meshtastic-Kanälen:
 <img width="1443" height="814" alt="Meshhessen Client – Meshtastic Kanal-Liste (Multi-Channel) unter Windows" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/channel_list.png" />
+
 Traceroute-Fenster mit Hop-Tabelle:
 <img width="780" height="868" alt="Meshhessen Client – Traceroute für Meshtastic-Geräte: Hop-Tabelle, Entfernung und SNR unter Windows" src="https://github.com/user-attachments/assets/10880a3d-9d94-4b07-84bc-ad64af56dab1" />
+
 Traceroute-Pfad auf der Karte:
 <img width="1278" height="889" alt="Meshhessen Client – Meshtastic Traceroute-Pfad auf Offline-Karte visualisiert" src="https://github.com/user-attachments/assets/800925ef-0d4e-41ad-a7f2-56cdd06da6b7" />
+
 Node-Standort-Verlauf (GPS-Track) auf der Karte:
 <img width="967" height="411" alt="Meshhessen Client – Meshtastic Node-Standort-Verlauf GPS-Track auf Karte" src="https://github.com/user-attachments/assets/0415083a-9f22-44fc-b767-be66b69892cd" />
+
 Telemetrie-LED-Ampel im Hauptfenster:
 <img width="516" height="162" alt="Meshhessen Client – Meshtastic Telemetrie-LEDs für Signal, Nachbarn, Mesh-Health und Wetter" src="https://github.com/user-attachments/assets/a580cf69-ab10-4890-a17a-1c5086c19700" />
+
 Telemetrie-Zeitreihen-Graph (SNR, RSSI, Batterie):
 <img width="902" height="604" alt="Meshhessen Client – Meshtastic Telemetrie-Graph SNR RSSI Batterie Zeitreihe OxyPlot" src="https://github.com/user-attachments/assets/a42d6a79-5b90-4f7a-8456-c74099c55c41" />
+
 Node-Telemetrie-Statistik-Fenster:
 <img width="1278" height="889" alt="Meshhessen Client – Meshtastic Node-Telemetrie Tag/Nacht-Auswertung Statistik Windows" src="https://github.com/user-attachments/assets/4821c996-c524-499a-8fba-f738fb051f88" />
 Node-Telemetrie-Übersicht (Signal):
@@ -161,6 +172,11 @@ Batterie & Spannungs-Analyse (Tag/Nacht-Profil, Nachtabfall):
 Routing-Statistik (Hop-Anzahl, Pfad-Stabilität, Pfadwechsel-Rate):
 <img alt="Meshhessen Client – Meshtastic Routing-Statistik: Hop-Anzahl, Pfad-Stabilität und Pfadwechsel-Rate" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node_routing.png" />
 
+https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node-telemetry.png
+https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node_airtime.png
+https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node_neighbors.png
+https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node_power.png
+https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node_routing.png
 
 ## ⚠️ Bekannte Einschränkungen
 
