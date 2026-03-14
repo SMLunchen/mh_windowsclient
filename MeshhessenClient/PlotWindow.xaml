@@ -4,7 +4,7 @@
         xmlns:ui="http://schemas.modernwpf.com/2019"
         xmlns:oxy="http://oxyplot.org/wpf"
         ui:WindowHelper.UseModernWindowStyle="True"
-        Title="Telemetrie-Plot"
+        Title="{DynamicResource StrPlotWindowTitle}"
         Width="900" Height="600"
         MinWidth="640" MinHeight="420"
         WindowStartupLocation="CenterOwner"
@@ -30,7 +30,7 @@
                           HorizontalScrollBarVisibility="Disabled">
                 <StackPanel>
                     <!-- Nodes -->
-                    <TextBlock Text="Nodes" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                    <TextBlock Text="{DynamicResource StrPlotNodes}" FontWeight="SemiBold" Margin="0,0,0,4"/>
                     <ListBox x:Name="NodeListBox"
                              SelectionMode="Multiple"
                              MaxHeight="180"
@@ -39,37 +39,37 @@
                              SelectionChanged="OnSelectionChanged"/>
 
                     <!-- Metriken -->
-                    <TextBlock Text="Metrik" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                    <TextBlock Text="{DynamicResource StrPlotMetric}" FontWeight="SemiBold" Margin="0,0,0,4"/>
                     <ListBox x:Name="MetricListBox"
                              SelectionMode="Multiple"
                              Margin="0,0,0,10">
                         <ListBoxItem Tag="snr"          Content="SNR (dB)"/>
                         <ListBoxItem Tag="rssi"         Content="RSSI (dBm)"/>
-                        <ListBoxItem Tag="battery"      Content="Batterie (%)"/>
-                        <ListBoxItem Tag="voltage"      Content="Spannung (V)"/>
+                        <ListBoxItem Tag="battery"      Content="{DynamicResource StrPlotBattery}"/>
+                        <ListBoxItem Tag="voltage"      Content="{DynamicResource StrPlotVoltage}"/>
                         <ListBoxItem Tag="channel_util" Content="Channel Util (%)"/>
                         <ListBoxItem Tag="air_tx_util"  Content="Air TX Util (%)"/>
                         <ListBoxItem Tag="hop_count"    Content="Hop Count"/>
                     </ListBox>
 
                     <!-- Zeitraum -->
-                    <TextBlock Text="Zeitraum" FontWeight="SemiBold" Margin="0,0,0,4"/>
-                    <RadioButton x:Name="PlotRange7d"  Content="7 Tage"  GroupName="PlotRange" IsChecked="True"  Margin="0,0,0,4" Checked="OnPlotRangeChanged"/>
-                    <RadioButton x:Name="PlotRange14d" Content="14 Tage" GroupName="PlotRange" Margin="0,0,0,4" Checked="OnPlotRangeChanged"/>
-                    <RadioButton x:Name="PlotRange30d" Content="30 Tage" GroupName="PlotRange" Margin="0,0,0,4" Checked="OnPlotRangeChanged"/>
-                    <RadioButton x:Name="PlotRangeAll" Content="Gesamt"  GroupName="PlotRange" Margin="0,0,0,10" Checked="OnPlotRangeChanged"/>
+                    <TextBlock Text="{DynamicResource StrPlotTimeRange}" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                    <RadioButton x:Name="PlotRange7d"  Content="{DynamicResource StrPlot7d}"  GroupName="PlotRange" IsChecked="True"  Margin="0,0,0,4" Checked="OnPlotRangeChanged"/>
+                    <RadioButton x:Name="PlotRange14d" Content="{DynamicResource StrPlot14d}" GroupName="PlotRange" Margin="0,0,0,4" Checked="OnPlotRangeChanged"/>
+                    <RadioButton x:Name="PlotRange30d" Content="{DynamicResource StrPlot30d}" GroupName="PlotRange" Margin="0,0,0,4" Checked="OnPlotRangeChanged"/>
+                    <RadioButton x:Name="PlotRangeAll" Content="{DynamicResource StrPlotAll}" GroupName="PlotRange" Margin="0,0,0,10" Checked="OnPlotRangeChanged"/>
 
                     <!-- Ansicht -->
-                    <TextBlock Text="Ansicht" FontWeight="SemiBold" Margin="0,0,0,4"/>
-                    <RadioButton x:Name="ViewRaw"    Content="Rohdaten"     GroupName="View" IsChecked="True" Margin="0,0,0,4" Checked="OnViewChanged"/>
-                    <RadioButton x:Name="ViewAvg1h"  Content="Gleitend 1h"  GroupName="View" Margin="0,0,0,4" Checked="OnViewChanged"/>
-                    <RadioButton x:Name="ViewAvg6h"  Content="Gleitend 6h"  GroupName="View" Margin="0,0,0,4" Checked="OnViewChanged"/>
-                    <RadioButton x:Name="ViewAvg24h" Content="Gleitend 24h" GroupName="View" Margin="0,0,0,4" Checked="OnViewChanged"/>
+                    <TextBlock Text="{DynamicResource StrPlotView}" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                    <RadioButton x:Name="ViewRaw"    Content="{DynamicResource StrPlotRaw}"     GroupName="View" IsChecked="True" Margin="0,0,0,4" Checked="OnViewChanged"/>
+                    <RadioButton x:Name="ViewAvg1h"  Content="{DynamicResource StrPlotMovAvg1h}"  GroupName="View" Margin="0,0,0,4" Checked="OnViewChanged"/>
+                    <RadioButton x:Name="ViewAvg6h"  Content="{DynamicResource StrPlotMovAvg6h}"  GroupName="View" Margin="0,0,0,4" Checked="OnViewChanged"/>
+                    <RadioButton x:Name="ViewAvg24h" Content="{DynamicResource StrPlotMovAvg24h}" GroupName="View" Margin="0,0,0,4" Checked="OnViewChanged"/>
                 </StackPanel>
             </ScrollViewer>
 
             <!-- Export pinned at bottom -->
-            <Button Grid.Row="1" Content="💾 Als PNG exportieren"
+            <Button Grid.Row="1" Content="{DynamicResource StrPlotExportPng}"
                     HorizontalAlignment="Stretch"
                     Padding="8,6"
                     Margin="0,8,0,0"
@@ -90,7 +90,7 @@
 
             <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="8,4,8,8">
                 <TextBlock x:Name="StatusText" FontSize="11" Opacity="0.55" VerticalAlignment="Center"/>
-                <Button Content="Aktualisieren" Padding="8,4" Margin="16,0,0,0" Click="Refresh_Click"/>
+                <Button Content="{DynamicResource StrPlotRefresh}" Padding="8,4" Margin="16,0,0,0" Click="Refresh_Click"/>
             </StackPanel>
         </Grid>
     </Grid>

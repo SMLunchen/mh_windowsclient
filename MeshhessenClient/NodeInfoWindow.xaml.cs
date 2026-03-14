@@ -12,7 +12,9 @@ public partial class NodeInfoWindow : Window
         LongNameText.Text = node.LongName;
         NodeIdText.Text = node.Id;
         HardwareModelText.Text = string.IsNullOrEmpty(node.HardwareModel) ? "-" : node.HardwareModel;
-        PkiKeyText.Text = node.PkiKeyKnown ? "🔑 Bekannt (Entschlüsselung möglich)" : "Unbekannt";
+        PkiKeyText.Text = node.PkiKeyKnown
+            ? (TryFindResource("StrPkiKeyAvailable") as string ?? "🔑 PKI decryption available")
+            : (TryFindResource("StrPkiKeyUnavailable") as string ?? "PKI key unknown");
         LatText.Text = node.Latitude.HasValue ? node.Latitude.Value.ToString("F6") : "-";
         LonText.Text = node.Longitude.HasValue ? node.Longitude.Value.ToString("F6") : "-";
         AltText.Text = node.Altitude.HasValue ? $"{node.Altitude.Value} m" : "-";

@@ -21,17 +21,19 @@ public static class LocationLogger
             var path = GetLogPath(node.NodeId);
             var ci = CultureInfo.InvariantCulture;
             var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", ci);
-            var lat = node.Latitude.Value.ToString("F7", ci);
-            var lon = node.Longitude.Value.ToString("F7", ci);
-            var alt = node.Altitude?.ToString(ci) ?? "";
-            var name = node.ShortName ?? node.Id;
+            var lat   = node.Latitude.Value.ToString("F7", ci);
+            var lon   = node.Longitude.Value.ToString("F7", ci);
+            var alt   = node.Altitude?.ToString(ci) ?? "";
+            var speed = node.GroundSpeed.HasValue ? node.GroundSpeed.Value.ToString("F1", ci) : "";
+            var track = node.GroundTrack.HasValue ? node.GroundTrack.Value.ToString("F1", ci) : "";
+            var name  = node.ShortName ?? node.Id;
 
             // Write header if file is new
             bool isNew = !File.Exists(path);
             using var sw = new StreamWriter(path, append: true);
             if (isNew)
-                sw.WriteLine("Timestamp;NodeId;Name;Latitude;Longitude;Altitude");
-            sw.WriteLine($"{timestamp};{node.NodeId:X8};{name};{lat};{lon};{alt}");
+                sw.WriteLine("Timestamp;NodeId;Name;Latitude;Longitude;Altitude;GroundSpeed;GroundTrack");
+            sw.WriteLine($"{timestamp};{node.NodeId:X8};{name};{lat};{lon};{alt};{speed};{track}");
         }
         catch (Exception ex)
         {
@@ -39,7 +41,8 @@ public static class LocationLogger
         }
     }
 
-    public record LocationEntry(DateTime Timestamp, string Name, double Latitude, double Longitude, double? Altitude);
+    public record LocationEntry(DateTime Timestamp, string Name, double Latitude, double Longitude,
+        double? Altitude, float? GroundSpeed, float? GroundTrack);
 
     public static List<LocationEntry> ReadLog(uint nodeId)
     {
@@ -57,8 +60,10 @@ public static class LocationLogger
                 if (!DateTime.TryParse(parts[0], ci, System.Globalization.DateTimeStyles.None, out var ts)) continue;
                 if (!double.TryParse(parts[3], NumberStyles.Float, ci, out var lat)) continue;
                 if (!double.TryParse(parts[4], NumberStyles.Float, ci, out var lon)) continue;
-                double? alt = parts.Length > 5 && double.TryParse(parts[5], NumberStyles.Float, ci, out var a) ? a : null;
-                entries.Add(new LocationEntry(ts, parts[2], lat, lon, alt));
+                double? alt   = parts.Length > 5 && double.TryParse(parts[5], NumberStyles.Float, ci, out var a) ? a : null;
+                float?  speed = parts.Length > 6 && float.TryParse(parts[6],  NumberStyles.Float, ci, out var s) ? s : null;
+                float?  track = parts.Length > 7 && float.TryParse(parts[7],  NumberStyles.Float, ci, out var t) ? t : null;
+                entries.Add(new LocationEntry(ts, parts[2], lat, lon, alt, speed, track));
             }
         }
         catch (Exception ex)

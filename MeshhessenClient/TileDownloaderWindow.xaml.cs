@@ -6,6 +6,9 @@ namespace MeshhessenClient;
 
 public partial class TileDownloaderWindow : Window
 {
+    private static string Loc(string key) =>
+        Application.Current?.Resources[key] as string ?? key;
+
     private CancellationTokenSource? _cts;
     private static readonly string TileDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "maptiles");
 
@@ -64,15 +67,15 @@ public partial class TileDownloaderWindow : Window
         {
             if (!TryGetParams(out var n, out var s, out var e, out var w, out var minZ, out var maxZ))
             {
-                EstimateText.Text = "Geschätzte Tiles: –";
+                EstimateText.Text = Loc("StrTdEstimateNone");
                 return;
             }
             var count = TileDownloaderService.EstimateTileCount(n, s, e, w, minZ, maxZ);
-            EstimateText.Text = $"Geschätzte Tiles: ~{count:N0}";
+            EstimateText.Text = string.Format(Loc("StrTdEstimateCount"), count);
         }
         catch
         {
-            EstimateText.Text = "Geschätzte Tiles: –";
+            EstimateText.Text = Loc("StrTdEstimateNone");
         }
     }
 
