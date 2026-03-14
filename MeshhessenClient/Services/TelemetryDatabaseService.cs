@@ -1092,26 +1092,37 @@ LIMIT 50";
         float rxScore   = expected > 0 ? Math.Min(1f, currentRxPerHour / expected) : 1f;
         float rxPenalty = 1f - rxScore;
 
-        // 2. Channel utilization: latest value per node, then average across nodes
+        // 2. Channel utilization: most-recent value per node (within window), then average
         float channelUtil = 0f;
+        var chanUtilPerNode = new List<(uint nodeId, float cu)>();
         using (var con = Open())
         {
             using var cmd = con.CreateCommand();
-            // Subquery picks the channel_utilization from the most-recent row per node
             cmd.CommandText = @"
-SELECT AVG(channel_utilization) FROM (
-    SELECT channel_utilization
-    FROM device_telemetry d1
-    WHERE channel_utilization IS NOT NULL
-      AND timestamp = (
-          SELECT MAX(timestamp) FROM device_telemetry d2
-          WHERE d2.node_id = d1.node_id AND d2.channel_utilization IS NOT NULL
-      )
-    GROUP BY node_id
-)";
-            var val = cmd.ExecuteScalar();
-            if (val != null && val != DBNull.Value) channelUtil = (float)(double)val;
+SELECT node_id, channel_utilization
+FROM device_telemetry d1
+WHERE channel_utilization IS NOT NULL
+  AND timestamp >= $since
+  AND timestamp = (
+      SELECT MAX(timestamp) FROM device_telemetry d2
+      WHERE d2.node_id = d1.node_id
+        AND d2.channel_utilization IS NOT NULL
+        AND d2.timestamp >= $since
+  )
+GROUP BY node_id";
+            cmd.Parameters.AddWithValue("$since", since);
+            using var r = cmd.ExecuteReader();
+            while (r.Read())
+            {
+                var nid = (uint)r.GetInt64(0);
+                var cu  = Math.Min(100f, (float)r.GetDouble(1)); // sanity cap at 100%
+                chanUtilPerNode.Add((nid, cu));
+            }
         }
+        if (chanUtilPerNode.Count > 0)
+            channelUtil = chanUtilPerNode.Average(x => x.cu);
+
+        Logger.WriteLine($"[MeshHealth] channelUtil={channelUtil.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)}% from {chanUtilPerNode.Count} nodes: [{string.Join(", ", chanUtilPerNode.OrderByDescending(x => x.cu).Select(x => $"!{x.nodeId:x8}={x.cu.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)}%"))}]");
 
         // 3. Path cost and route change rate across all nodes with traceroute data
         float avgPathCost = 0f, avgRouteChange = 0f;
@@ -1148,13 +1159,18 @@ SELECT AVG(channel_utilization) FROM (
                   : LedState.Alert;
 
         string dayNight = isDay ? "Tag" : "Nacht";
+        var top5 = chanUtilPerNode.OrderByDescending(x => x.cu).Take(5).ToList();
+        var chanUtilDetail = chanUtilPerNode.Count == 0
+            ? "–"
+            : string.Join("\n  ", top5.Select(x => $"!{x.nodeId:x8} = {x.cu.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)}%"))
+              + (chanUtilPerNode.Count > 5 ? $"\n  … ({chanUtilPerNode.Count} Nodes gesamt)" : $"\n  ({chanUtilPerNode.Count} Nodes gesamt)");
         var summary =
             $"Mesh Health Score: {score:0}%\n" +
             $"Pfad-Kosten (Ø): {avgPathCost:0.00}\n" +
             $"Route-Änderungen: {avgRouteChange:0.00}/h\n" +
             $"Empfangsrate ({dayNight}-Baseline): {expected:0.0} Pkts/h\n" +
             $"Empfangsrate aktuell ({rxWindowHours}h): {currentRxPerHour:0.0} Pkts/h ({rxScore * 100:0}%)\n" +
-            $"Kanalauslastung (Ø): {channelUtil:0.1}%";
+            $"Kanalauslastung (Ø): {channelUtil:0.1}% [{chanUtilDetail}]";
 
         return new MeshHealthScore
         {
@@ -1167,6 +1183,7 @@ SELECT AVG(channel_utilization) FROM (
             CurrentRxPerHour   = currentRxPerHour,
             RxScore            = rxScore,
             ChannelUtilization = channelUtil,
+            ChannelUtilDetail  = chanUtilDetail,
             Summary            = summary,
         };
     }

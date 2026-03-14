@@ -151,28 +151,38 @@ public partial class DirectMessagesWindow : Window
         var msgCol = new GridViewColumn { Header = Loc("StrColMessage"), Width = 300 };
         var msgTemplate = new DataTemplate();
 
-        var stackFactory = new FrameworkElementFactory(typeof(StackPanel));
+        var gridFactory = new FrameworkElementFactory(typeof(Grid));
+        gridFactory.SetValue(FrameworkElement.HorizontalAlignmentProperty, HorizontalAlignment.Stretch);
 
-        // Reply quote block
+        var rowDef0Factory = new FrameworkElementFactory(typeof(RowDefinition));
+        rowDef0Factory.SetValue(RowDefinition.HeightProperty, GridLength.Auto);
+        var rowDef1Factory = new FrameworkElementFactory(typeof(RowDefinition));
+        rowDef1Factory.SetValue(RowDefinition.HeightProperty, GridLength.Auto);
+        gridFactory.AppendChild(rowDef0Factory);
+        gridFactory.AppendChild(rowDef1Factory);
+
+        // Reply quote block (Row 0)
         var replyBorderFactory = new FrameworkElementFactory(typeof(Border));
+        replyBorderFactory.SetValue(Grid.RowProperty, 0);
         replyBorderFactory.SetBinding(Border.VisibilityProperty, new System.Windows.Data.Binding("HasReply") { Converter = boolToVis });
-        replyBorderFactory.SetResourceReference(Border.BackgroundProperty, "SystemControlBackgroundBaseLowBrush");
-        replyBorderFactory.SetResourceReference(Border.BorderBrushProperty, "SystemControlForegroundBaseMediumBrush");
-        replyBorderFactory.SetValue(Border.BorderThicknessProperty, new Thickness(2, 0, 0, 0));
-        replyBorderFactory.SetValue(Border.PaddingProperty, new Thickness(5, 2, 4, 2));
-        replyBorderFactory.SetValue(Border.MarginProperty, new Thickness(0, 0, 0, 2));
+        replyBorderFactory.SetValue(Border.BackgroundProperty, new SolidColorBrush(Color.FromArgb(0x15, 0x00, 0x78, 0xD4)));
+        replyBorderFactory.SetValue(Border.BorderBrushProperty, new SolidColorBrush(Color.FromRgb(0x00, 0x78, 0xD4)));
+        replyBorderFactory.SetValue(Border.BorderThicknessProperty, new Thickness(3, 0, 0, 0));
+        replyBorderFactory.SetValue(Border.PaddingProperty, new Thickness(6, 2, 4, 2));
+        replyBorderFactory.SetValue(Border.MarginProperty, new Thickness(0, 0, 0, 3));
 
         var replyTextFactory = new FrameworkElementFactory(typeof(TextBlock));
         replyTextFactory.SetBinding(TextBlock.TextProperty, new System.Windows.Data.Binding("ReplyQuoteText"));
-        replyTextFactory.SetResourceReference(TextBlock.ForegroundProperty, "SystemControlForegroundBaseMediumBrush");
+        replyTextFactory.SetResourceReference(TextBlock.ForegroundProperty, "SystemControlForegroundBaseMediumHighBrush");
         replyTextFactory.SetValue(TextBlock.FontStyleProperty, FontStyles.Italic);
         replyTextFactory.SetValue(TextBlock.FontSizeProperty, 10.0);
-        replyTextFactory.SetValue(TextBlock.TextTrimmingProperty, TextTrimming.CharacterEllipsis);
+        replyTextFactory.SetValue(TextBlock.TextWrappingProperty, TextWrapping.Wrap);
         replyBorderFactory.AppendChild(replyTextFactory);
-        stackFactory.AppendChild(replyBorderFactory);
+        gridFactory.AppendChild(replyBorderFactory);
 
-        // Main message RichTextBox
+        // Main message RichTextBox (Row 1)
         var rtbFactory = new FrameworkElementFactory(typeof(RichTextBox));
+        rtbFactory.SetValue(Grid.RowProperty, 1);
         rtbFactory.SetBinding(RichTextBoxHelper.BoundDocumentProperty, new System.Windows.Data.Binding("Message") { Converter = msgDocConverter });
         rtbFactory.SetValue(RichTextBox.IsReadOnlyProperty, true);
         rtbFactory.SetValue(RichTextBox.BorderThicknessProperty, new Thickness(0));
@@ -182,9 +192,10 @@ public partial class DirectMessagesWindow : Window
         rtbFactory.SetValue(ScrollViewer.VerticalScrollBarVisibilityProperty, ScrollBarVisibility.Disabled);
         rtbFactory.SetValue(ScrollViewer.HorizontalScrollBarVisibilityProperty, ScrollBarVisibility.Disabled);
         rtbFactory.SetValue(RichTextBox.IsDocumentEnabledProperty, true);
-        stackFactory.AppendChild(rtbFactory);
+        rtbFactory.SetValue(ContextMenuService.IsEnabledProperty, false);
+        gridFactory.AppendChild(rtbFactory);
 
-        msgTemplate.VisualTree = stackFactory;
+        msgTemplate.VisualTree = gridFactory;
         msgCol.CellTemplate = msgTemplate;
         gridView.Columns.Add(msgCol);
 
@@ -204,7 +215,17 @@ public partial class DirectMessagesWindow : Window
 
         // Right-click context menu for reactions and replies on DM messages
         var cmenu = new ContextMenu();
-        var reactItem = new MenuItem { Header = "😀 Reaktion..." };
+
+        var copyItem = new MenuItem { Header = Loc("StrCopyMessage") };
+        copyItem.Click += (s, e) =>
+        {
+            if (listView.SelectedItem is MeshhessenClient.Models.MessageItem msg)
+                System.Windows.Clipboard.SetText(msg.Message ?? string.Empty);
+        };
+        cmenu.Items.Add(copyItem);
+        cmenu.Items.Add(new Separator());
+
+        var reactItem = new MenuItem { Header = Loc("StrReact") };
         reactItem.Click += (s, e) =>
         {
             if (listView.SelectedItem is MeshhessenClient.Models.MessageItem msg)
@@ -216,6 +237,17 @@ public partial class DirectMessagesWindow : Window
         cmenu.Items.Add(replyItem);
         listView.ContextMenu = cmenu;
 
+        // Update selection to right-clicked item before menu opens
+        listView.ContextMenuOpening += (s, e) =>
+        {
+            if (e.OriginalSource is DependencyObject d)
+            {
+                var container = ItemsControl.ContainerFromElement(listView, d) as ListViewItem;
+                if (container?.Content is MeshhessenClient.Models.MessageItem clickedMsg)
+                    listView.SelectedItem = clickedMsg;
+            }
+        };
+
         Grid.SetRow(listView, 0);
         grid.Children.Add(listView);
 
@@ -226,9 +258,9 @@ public partial class DirectMessagesWindow : Window
         var replyIndicatorBorder = new Border
         {
             Visibility = Visibility.Collapsed,
-            Background = new SolidColorBrush(Color.FromArgb(24, 136, 170, 255)),
-            BorderBrush = new SolidColorBrush(Color.FromArgb(68, 136, 170, 255)),
-            BorderThickness = new Thickness(0, 1, 0, 0),
+            Background = new SolidColorBrush(Color.FromArgb(0x15, 0x00, 0x78, 0xD4)),
+            BorderBrush = new SolidColorBrush(Color.FromRgb(0x00, 0x78, 0xD4)),
+            BorderThickness = new Thickness(0, 2, 0, 0),
             Padding = new Thickness(10, 4, 10, 4)
         };
         var replyIndicatorGrid = new Grid();
@@ -236,7 +268,6 @@ public partial class DirectMessagesWindow : Window
         replyIndicatorGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         var replyIndicatorText = new TextBlock
         {
-            Foreground = new SolidColorBrush(Color.FromRgb(170, 187, 221)),
             FontStyle = FontStyles.Italic,
             FontSize = 11,
             VerticalAlignment = VerticalAlignment.Center,
@@ -283,7 +314,8 @@ public partial class DirectMessagesWindow : Window
         {
             VerticalContentAlignment = VerticalAlignment.Center,
             Padding = new Thickness(10),
-            Text = "" // Placeholder würde hier gesetzt werden wenn verfügbar
+            MaxLength = 200,
+            Text = ""
         };
         textBox.KeyDown += (s, e) =>
         {

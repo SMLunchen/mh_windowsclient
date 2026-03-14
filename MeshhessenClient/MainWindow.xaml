@@ -180,12 +180,12 @@
 
                     <!-- TCP Connection UI -->
                     <StackPanel x:Name="TcpConnectionPanel" Orientation="Horizontal" Visibility="Collapsed">
-                        <TextBlock Text="Host:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                        <TextBlock Text="{DynamicResource StrTcpHost}" VerticalAlignment="Center" Margin="0,0,5,0"/>
                         <TextBox x:Name="TcpHostTextBox"
                                 Width="120"
                                 VerticalAlignment="Center"
                                 Text="192.168.1.1"/>
-                        <TextBlock Text="Port:" VerticalAlignment="Center" Margin="8,0,5,0"/>
+                        <TextBlock Text="{DynamicResource StrTcpPort}" VerticalAlignment="Center" Margin="8,0,5,0"/>
                         <TextBox x:Name="TcpPortTextBox"
                                 Width="50"
                                 VerticalAlignment="Center"
@@ -404,21 +404,27 @@
                                 <GridViewColumn Header="{DynamicResource StrColMessage}" Width="350">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate>
-                                            <StackPanel>
+                                            <Grid HorizontalAlignment="Stretch">
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto"/>
+                                                    <RowDefinition Height="Auto"/>
+                                                </Grid.RowDefinitions>
                                                 <!-- Reply quote block: only visible when HasReply=true -->
-                                                <Border Visibility="{Binding HasReply, Converter={StaticResource BoolToVis}}"
-                                                        Background="{DynamicResource SystemControlBackgroundBaseLowBrush}"
-                                                        BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
-                                                        BorderThickness="2,0,0,0"
-                                                        Padding="5,2,4,2"
-                                                        Margin="0,0,0,2">
+                                                <Border Grid.Row="0"
+                                                        Visibility="{Binding HasReply, Converter={StaticResource BoolToVis}}"
+                                                        Background="#150078D4"
+                                                        BorderBrush="#0078D4"
+                                                        BorderThickness="3,0,0,0"
+                                                        Padding="6,2,4,2"
+                                                        Margin="0,0,0,3">
                                                     <TextBlock Text="{Binding ReplyQuoteText}"
-                                                               Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                                                               Foreground="{DynamicResource SystemControlForegroundBaseMediumHighBrush}"
                                                                FontStyle="Italic"
                                                                FontSize="10"
-                                                               TextTrimming="CharacterEllipsis"/>
+                                                               TextWrapping="Wrap"/>
                                                 </Border>
-                                                <RichTextBox helpers:RichTextBoxHelper.BoundDocument="{Binding Message, Converter={StaticResource MsgDocConverter}}"
+                                                <RichTextBox Grid.Row="1"
+                                                             helpers:RichTextBoxHelper.BoundDocument="{Binding Message, Converter={StaticResource MsgDocConverter}}"
                                                              IsReadOnly="True"
                                                              BorderThickness="0"
                                                              Background="Transparent"
@@ -427,8 +433,9 @@
                                                              ScrollViewer.VerticalScrollBarVisibility="Disabled"
                                                              ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                                                              IsDocumentEnabled="True"
+                                                             ContextMenuService.IsEnabled="False"
                                                              Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
-                                            </StackPanel>
+                                            </Grid>
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
@@ -514,9 +521,9 @@
                         <!-- Reply indicator bar -->
                         <Border x:Name="ReplyIndicatorPanel"
                                 Visibility="Collapsed"
-                                Background="{DynamicResource SystemControlBackgroundBaseLowBrush}"
-                                BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
-                                BorderThickness="0,1,0,0"
+                                Background="#150078D4"
+                                BorderBrush="#0078D4"
+                                BorderThickness="0,2,0,0"
                                 Padding="10,4">
                             <Grid>
                                 <Grid.ColumnDefinitions>
@@ -525,7 +532,7 @@
                                 </Grid.ColumnDefinitions>
                                 <TextBlock x:Name="ReplyIndicatorText"
                                            Grid.Column="0"
-                                           Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                                           Foreground="{DynamicResource SystemControlForegroundBaseMediumHighBrush}"
                                            FontStyle="Italic"
                                            FontSize="11"
                                            VerticalAlignment="Center"
@@ -563,6 +570,7 @@
                                 ui:ControlHelper.PlaceholderText="{DynamicResource StrMessagePlaceholder}"
                                 VerticalContentAlignment="Center"
                                 Padding="10"
+                                MaxLength="200"
                                 KeyDown="MessageTextBox_KeyDown"/>
 
                         <Button x:Name="AlertBellButton"

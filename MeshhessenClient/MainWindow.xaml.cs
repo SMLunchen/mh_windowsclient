@@ -1307,7 +1307,7 @@ public partial class MainWindow : Window
                     var selectedPort = PortComboBox.SelectedItem as string;
                     if (string.IsNullOrEmpty(selectedPort))
                     {
-                        MessageBox.Show("Bitte wählen Sie einen COM Port aus.", "Fehler", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        MessageBox.Show(Loc("StrSelectComPort"), Loc("StrError"), MessageBoxButton.OK, MessageBoxImage.Warning);
                         return;
                     }
                     connectionParams = new SerialConnectionParameters
@@ -1322,7 +1322,7 @@ public partial class MainWindow : Window
                     var selectedDevice = BluetoothDeviceComboBox.SelectedItem as Models.BluetoothDeviceInfo;
                     if (selectedDevice == null)
                     {
-                        MessageBox.Show("Bitte wählen Sie ein Bluetooth-Gerät aus.", "Fehler", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        MessageBox.Show(Loc("StrSelectBtDevice"), Loc("StrError"), MessageBoxButton.OK, MessageBoxImage.Warning);
                         return;
                     }
                     connectionParams = new BluetoothConnectionParameters
@@ -1337,12 +1337,12 @@ public partial class MainWindow : Window
                     var host = TcpHostTextBox.Text.Trim();
                     if (string.IsNullOrEmpty(host))
                     {
-                        MessageBox.Show("Bitte geben Sie einen Hostnamen oder IP-Adresse ein.", "Fehler", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        MessageBox.Show(Loc("StrEnterTcpHost"), Loc("StrError"), MessageBoxButton.OK, MessageBoxImage.Warning);
                         return;
                     }
                     if (!int.TryParse(TcpPortTextBox.Text, out var port) || port <= 0 || port > 65535)
                     {
-                        MessageBox.Show("Bitte geben Sie einen gültigen Port (1-65535) ein.", "Fehler", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        MessageBox.Show(Loc("StrEnterTcpPort"), Loc("StrError"), MessageBoxButton.OK, MessageBoxImage.Warning);
                         return;
                     }
                     connectionParams = new TcpConnectionParameters
@@ -3011,12 +3011,32 @@ public partial class MainWindow : Window
 
     private void MessagesListView_ContextMenuOpening(object sender, ContextMenuEventArgs e)
     {
+        // Select the right-clicked row (not the previously selected one)
+        if (e.OriginalSource is DependencyObject d)
+        {
+            var container = ItemsControl.ContainerFromElement(MessageListView, d) as ListViewItem;
+            if (container?.Content is MessageItem clickedMsg)
+                MessageListView.SelectedItem = clickedMsg;
+        }
+
         var node = GetNodeFromSelectedMessage();
-        if (node == null) { e.Handled = true; return; }
-        PinMsgMenuItem.Header = node.IsPinned ? Loc("StrUnpin") : Loc("StrPin");
-        bool pathActive = _pathLayers.ContainsKey(node.NodeId);
-        ShowPathMsgMenuItem.Visibility = pathActive ? Visibility.Collapsed : Visibility.Visible;
-        HidePathMsgMenuItem.Visibility = pathActive ? Visibility.Visible : Visibility.Collapsed;
+        bool hasNode = node != null;
+
+        // Node-specific items: hide when sender is unknown
+        PinMsgMenuItem.Visibility = hasNode ? Visibility.Visible : Visibility.Collapsed;
+
+        if (hasNode)
+        {
+            PinMsgMenuItem.Header = node!.IsPinned ? Loc("StrUnpin") : Loc("StrPin");
+            bool pathActive = _pathLayers.ContainsKey(node.NodeId);
+            ShowPathMsgMenuItem.Visibility = pathActive ? Visibility.Collapsed : Visibility.Visible;
+            HidePathMsgMenuItem.Visibility = pathActive ? Visibility.Visible : Visibility.Collapsed;
+        }
+        else
+        {
+            ShowPathMsgMenuItem.Visibility = Visibility.Collapsed;
+            HidePathMsgMenuItem.Visibility = Visibility.Collapsed;
+        }
     }
 
     private void MessageContextMenu_Pin_Click(object sender, RoutedEventArgs e)
@@ -4596,7 +4616,8 @@ public partial class MainWindow : Window
                     string.Format(Loc("StrMeshSumRxBaseline"), health.DayRxPerHour > 0 ? Loc("StrTelDayLabel") : Loc("StrTelNightLabel"),
                         health.DayRxPerHour > 0 ? health.DayRxPerHour : health.NightRxPerHour) + "\n" +
                     string.Format(Loc("StrMeshSumRxCurrent"), health.CurrentRxPerHour, (int)(health.RxScore * 100)) + "\n" +
-                    string.Format(Loc("StrMeshSumChanUtil"), health.ChannelUtilization);
+                    string.Format(Loc("StrMeshSumChanUtil"), health.ChannelUtilization) +
+                    (string.IsNullOrEmpty(health.ChannelUtilDetail) ? "" : $"\n  {health.ChannelUtilDetail}");
                 LedFill(GlobalMeshHealthLed, health.State, meshSummary);
                 GlobalMeshHealthText.Text = health.Score > 0 ? $"{health.Score:0}%" : "–";
             });

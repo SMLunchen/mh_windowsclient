@@ -511,6 +511,16 @@
     <!-- Own node label -->
     <sys:String x:Key="StrMe">Me</sys:String>
 
+    <!-- TCP connection panel labels -->
+    <sys:String x:Key="StrTcpHost">Host:</sys:String>
+    <sys:String x:Key="StrTcpPort">Port:</sys:String>
+
+    <!-- Connection validation messages -->
+    <sys:String x:Key="StrSelectComPort">Please select a COM port.</sys:String>
+    <sys:String x:Key="StrSelectBtDevice">Please select a Bluetooth device.</sys:String>
+    <sys:String x:Key="StrEnterTcpHost">Please enter a hostname or IP address.</sys:String>
+    <sys:String x:Key="StrEnterTcpPort">Please enter a valid port (1–65535).</sys:String>
+
     <!-- Connection error messages -->
     <sys:String x:Key="StrConnectFailed">Connection attempt failed: {0}</sys:String>
     <sys:String x:Key="StrBtScanFailed">Bluetooth scan failed: {0}</sys:String>
@@ -580,7 +590,7 @@ Green ≤15% | Yellow 15–25% | Red &gt;25% | Gray = no airtime data</sys:Strin
     <sys:String x:Key="StrMeshSumRouteChange">Route changes: {0:0.00}/h</sys:String>
     <sys:String x:Key="StrMeshSumRxBaseline">Reception rate ({0} baseline): {1:0.0} pkts/h</sys:String>
     <sys:String x:Key="StrMeshSumRxCurrent">Reception rate current: {0:0.0} pkts/h ({1}%)</sys:String>
-    <sys:String x:Key="StrMeshSumChanUtil">Channel utilization (avg): {0:0.1}%</sys:String>
+    <sys:String x:Key="StrMeshSumChanUtil">Channel utilization (avg): {0:F1}%</sys:String>
 
     <!-- Status strip column headers -->
     <sys:String x:Key="StrHdrWeather">Weather/ST</sys:String>
