@@ -2838,11 +2838,15 @@ public partial class MainWindow : Window
                              .ThenByDescending(n => ParseNumericForSorting(n.Rssi))
                              .ThenBy(n => n.ShortName),
                 "Battery" => _nodeSortAscending
-                    ? filtered.OrderBy(n => ParseNumericForSorting(n.Battery))
-                    : filtered.OrderByDescending(n => ParseNumericForSorting(n.Battery)),
+                    ? filtered.OrderBy(n => HasValidNumeric(n.Battery) ? 0 : 1)
+                             .ThenBy(n => ParseNumericForSorting(n.Battery))
+                             .ThenBy(n => n.ShortName)
+                    : filtered.OrderBy(n => HasValidNumeric(n.Battery) ? 0 : 1)
+                             .ThenByDescending(n => ParseNumericForSorting(n.Battery))
+                             .ThenBy(n => n.ShortName),
                 "LastSeen" => _nodeSortAscending
-                    ? filtered.OrderBy(n => n.LastSeen)
-                    : filtered.OrderByDescending(n => n.LastSeen),
+                    ? filtered.OrderBy(n => n.LastSeenDateTime ?? DateTime.MinValue)
+                    : filtered.OrderByDescending(n => n.LastSeenDateTime ?? DateTime.MinValue),
                 _ => filtered
             };
         }

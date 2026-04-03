@@ -1171,7 +1171,10 @@ public class MeshtasticProtocolService
                 Snr = protoNodeInfo.Snr.ToString("F1"),
                 LastSeen = protoNodeInfo.LastHeard > 0
                     ? DateTimeOffset.FromUnixTimeSeconds(protoNodeInfo.LastHeard).LocalDateTime.ToString("HH:mm:ss")
-                    : DateTime.Now.ToString("HH:mm:ss")
+                    : DateTime.Now.ToString("HH:mm:ss"),
+                LastSeenDateTime = protoNodeInfo.LastHeard > 0
+                    ? DateTimeOffset.FromUnixTimeSeconds(protoNodeInfo.LastHeard).LocalDateTime
+                    : DateTime.Now
             };
 
             if (protoNodeInfo.Position != null)
@@ -1273,6 +1276,7 @@ public class MeshtasticProtocolService
                 SnrValue = packet.RxSnr != 0f ? packet.RxSnr : null,
                 Rssi = packet.RxRssi != 0 ? packet.RxRssi.ToString() : "-",
                 LastSeen = DateTime.Now.ToString("HH:mm:ss"),
+                LastSeenDateTime = DateTime.Now,
                 HardwareModel = user.HwModel != HardwareModel.Unset ? user.HwModel.ToString() : "",
                 PkiKeyKnown = _nodeKeyService?.GetPublicKey(packet.From) != null
             };
@@ -1348,6 +1352,7 @@ public class MeshtasticProtocolService
                         Logger.WriteLine($"  Position ignored (LatI=LonI=0, no GPS fix)");
                     }
                     nodeInfo.LastSeen = DateTime.Now.ToString("HH:mm:ss");
+                    nodeInfo.LastSeenDateTime = DateTime.Now;
                     if (packet.RxRssi != 0) nodeInfo.Rssi = packet.RxRssi.ToString();
                     if (packet.RxSnr != 0f) { nodeInfo.Snr = packet.RxSnr.ToString("F1"); nodeInfo.SnrValue = packet.RxSnr; }
                     nodeToFire = nodeInfo;
@@ -1429,6 +1434,7 @@ public class MeshtasticProtocolService
                 if (_knownNodes.TryGetValue(packet.From, out var nodeInfo))
                 {
                     nodeInfo.LastSeen = DateTime.Now.ToString("HH:mm:ss");
+                    nodeInfo.LastSeenDateTime = DateTime.Now;
                     if (packet.RxRssi != 0) nodeInfo.Rssi = packet.RxRssi.ToString();
                     if (packet.RxSnr != 0f) { nodeInfo.Snr = packet.RxSnr.ToString("F1"); nodeInfo.SnrValue = packet.RxSnr; }
                     // Live-update battery from telemetry payload

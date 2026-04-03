@@ -11,6 +11,7 @@ public class NodeInfo
     public string Rssi { get; set; } = "-";
     public string Battery { get; set; } = "-";
     public string LastSeen { get; set; } = "-";
+    public DateTime? LastSeenDateTime { get; set; }
     public uint NodeId { get; set; }
     public double? Latitude { get; set; }
     public double? Longitude { get; set; }
