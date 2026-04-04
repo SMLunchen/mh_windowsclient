@@ -17,6 +17,7 @@ public partial class DirectMessagesWindow : Window
     private readonly Dictionary<uint, TabItem> _tabByNodeId = new();
     private readonly Dictionary<uint, MessageItem> _dmMessageById = new();
     private uint _myNodeId;
+    private Services.MessageDbManager? _messageDbManager;
 
     private static string Loc(string key) =>
         Application.Current?.Resources[key] as string ?? key;
@@ -31,6 +32,13 @@ public partial class DirectMessagesWindow : Window
     public void UpdateProtocolService(MeshtasticProtocolService protocolService)
     {
         _protocolService = protocolService;
+    }
+
+    public void SetMessageDbManager(Services.MessageDbManager? manager)
+    {
+        _messageDbManager = manager;
+        if (manager != null)
+            Task.Run(LoadAllDmHistoryFromDb);
     }
 
     public void AddOrUpdateMessage(MessageItem message)
@@ -70,6 +78,14 @@ public partial class DirectMessagesWindow : Window
                 // Füge Nachricht hinzu
                 conversation.Messages.Add(message);
 
+                // Persistiere in DM-Datenbank
+                if (_messageDbManager != null)
+                {
+                    var pid = partnerId;
+                    var msg = message;
+                    System.Threading.Tasks.Task.Run(() => _messageDbManager.InsertDmMessage(pid, msg));
+                }
+
                 // Log die Nachricht
                 Services.MessageLogger.LogDirectMessage(partnerId, conversation.NodeName, message.From, message.Message, message.IsViaMqtt);
 
@@ -102,7 +118,81 @@ public partial class DirectMessagesWindow : Window
         });
     }
 
-    private void CreateTabForConversation(DirectMessageConversation conversation)
+    private static Models.MessageItem DbEntryToMessageItem(Models.MessageDbEntry e)
+    {
+        var dt = DateTimeOffset.FromUnixTimeSeconds(e.Timestamp).ToLocalTime();
+        return new Models.MessageItem
+        {
+            Id            = e.PacketId,
+            Time          = dt.ToString("HH:mm:ss"),
+            From          = e.FromName,
+            FromId        = e.FromId,
+            ToId          = e.ToId,
+            Message       = e.Message,
+            IsViaMqtt     = e.IsViaMqtt,
+            ReplyId       = e.ReplyId,
+            ReplyFromName = e.ReplyFromName,
+            ReplyPreview  = e.ReplyPreview,
+            SenderColorHex = e.SenderColorHex,
+            SenderNote    = e.SenderNote
+        };
+    }
+
+    private void LoadAllDmHistoryFromDb()
+    {
+        if (_messageDbManager == null) return;
+        try
+        {
+            var since = DateTimeOffset.UtcNow.AddHours(-24).ToUnixTimeSeconds();
+            var all = _messageDbManager.LoadDmMessagesSince(since);
+            if (all.Count == 0) return;
+
+            var byPartner = all
+                .Where(e => e.PartnerId != 0)
+                .GroupBy(e => e.PartnerId);
+
+            Dispatcher.BeginInvoke(() =>
+            {
+                foreach (var group in byPartner)
+                {
+                    var partnerId = group.Key;
+                    var entries   = group.OrderBy(e => e.Timestamp).ToList();
+
+                    var firstReceived = entries.FirstOrDefault(e => e.FromId != _myNodeId);
+                    var partnerName   = firstReceived?.FromName ?? $"!{partnerId:X8}";
+                    var colorHex      = firstReceived?.SenderColorHex ?? string.Empty;
+
+                    var conversation = _conversations.FirstOrDefault(c => c.NodeId == partnerId);
+                    if (conversation == null)
+                    {
+                        conversation = new DirectMessageConversation
+                        {
+                            NodeId   = partnerId,
+                            NodeName = partnerName,
+                            ColorHex = colorHex
+                        };
+                        _conversations.Add(conversation);
+                        CreateTabForConversation(conversation, activate: false);
+                    }
+
+                    foreach (var entry in entries)
+                    {
+                        if (entry.PacketId != 0 && _dmMessageById.ContainsKey(entry.PacketId)) continue;
+                        var msg = DbEntryToMessageItem(entry);
+                        conversation.Messages.Add(msg);
+                        if (entry.PacketId != 0) _dmMessageById[entry.PacketId] = msg;
+                    }
+                }
+                UpdateStatusBar();
+            });
+        }
+        catch (Exception ex)
+        {
+            Services.Logger.WriteLine($"[MsgDB] LoadAllDmHistory: {ex.Message}");
+        }
+    }
+
+    private void CreateTabForConversation(DirectMessageConversation conversation, bool activate = true)
     {
         var tab = new TabItem();
         _tabByNodeId[conversation.NodeId] = tab;
@@ -401,6 +491,36 @@ public partial class DirectMessagesWindow : Window
         sendGrid.Children.Add(sendButton);
 
         sendPanel.Children.Add(sendGrid);
+
+        // "Clear conversation" button (only visible when DB is active)
+        var clearConvGrid = new Grid { Margin = new Thickness(10, 0, 10, 6) };
+        clearConvGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        clearConvGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+        var clearConvBtn = new Button
+        {
+            Content = Loc("StrMsgDbClearConversation"),
+            Padding = new Thickness(8, 2, 8, 2),
+            FontSize = 11,
+            Background = Brushes.Transparent,
+            ToolTip = Loc("StrMsgDbClearConversationHint")
+        };
+        var convNodeId = conversation.NodeId;
+        clearConvBtn.Click += (s, e) =>
+        {
+            if (_messageDbManager == null) return;
+            var confirm = MessageBox.Show(
+                string.Format(Loc("StrMsgDbClearConversationConfirm"), conversation.NodeName),
+                Loc("StrMsgDbClearConversation"),
+                MessageBoxButton.YesNo, MessageBoxImage.Question);
+            if (confirm != MessageBoxResult.Yes) return;
+            _messageDbManager.ClearDmConversation(convNodeId);
+            conversation.Messages.Clear();
+        };
+        Grid.SetColumn(clearConvBtn, 1);
+        clearConvGrid.Children.Add(clearConvBtn);
+        sendPanel.Children.Add(clearConvGrid);
+
         Grid.SetRow(sendPanel, 1);
         grid.Children.Add(sendPanel);
 
@@ -414,7 +534,8 @@ public partial class DirectMessagesWindow : Window
         };
 
         DmTabControl.Items.Add(tab);
-        DmTabControl.SelectedItem = tab; // Aktiviere neuen Tab
+        if (activate)
+            DmTabControl.SelectedItem = tab;
     }
 
     private void UpdateTabHeader(TabItem tab, DirectMessageConversation conversation)
@@ -535,6 +656,12 @@ public partial class DirectMessagesWindow : Window
                 if (packetId != 0) _dmMessageById[packetId] = sentMessage;
                 conversation.Messages.Add(sentMessage);
 
+                if (_messageDbManager != null)
+                {
+                    var msgToSave = sentMessage;
+                    Task.Run(() => _messageDbManager.InsertDmMessage(toNodeId, msgToSave));
+                }
+
                 // Log die Nachricht
                 Services.MessageLogger.LogDirectMessage(toNodeId, conversation.NodeName, Loc("StrSentFrom"), messageText, false);
             }
@@ -548,7 +675,9 @@ public partial class DirectMessagesWindow : Window
 
     private void UpdateStatusBar()
     {
-        StatusText.Text = string.Format(Loc("StrActiveChats"), _conversations.Count);
+        StatusText.Text = _conversations.Count == 1
+            ? Loc("StrActiveChat")
+            : string.Format(Loc("StrActiveChats"), _conversations.Count);
     }
 
     private void MakeWindowProminent()

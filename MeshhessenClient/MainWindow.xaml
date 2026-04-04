@@ -355,7 +355,8 @@
                     <ListView x:Name="MessageListView"
                              Grid.Row="1"
                              Margin="10,5,10,10"
-                             ContextMenuOpening="MessagesListView_ContextMenuOpening">
+                             ContextMenuOpening="MessagesListView_ContextMenuOpening"
+                             ScrollViewer.ScrollChanged="MessageListView_ScrollChanged">
                         <ListView.View>
                             <GridView>
                                 <GridViewColumn Header="" Width="50">
@@ -805,6 +806,16 @@
                                 <GridViewColumn Header="Name" Width="150" DisplayMemberBinding="{Binding Name}"/>
                                 <GridViewColumn Header="PSK" Width="300" DisplayMemberBinding="{Binding Psk}"/>
                                 <GridViewColumn Header="Role" Width="100" DisplayMemberBinding="{Binding Role}"/>
+                                <GridViewColumn Header="{DynamicResource StrMsgDbClearSelectedChannel}" Width="120">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Button Content="{DynamicResource StrMsgDbClearBtn}"
+                                                    Tag="{Binding}"
+                                                    Click="ClearSelectedChannelDb_Click"
+                                                    Padding="4,2" FontSize="11"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
                             </GridView>
                         </ListView.View>
                     </ListView>
@@ -829,7 +840,13 @@
                     </Grid.ColumnDefinitions>
 
                     <!-- ===== Linke Spalte: Einstellungen ===== -->
-                    <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
+                    <Grid Grid.Column="0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                    <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
                         <StackPanel Margin="20,20,10,20">
 
                             <!-- a) Sprache -->
@@ -1053,6 +1070,48 @@
                                 </StackPanel>
                             </GroupBox>
 
+                            <!-- Nachrichten-Datenbank -->
+                            <GroupBox Header="{DynamicResource StrMsgDbGroup}" Margin="0,0,0,16">
+                                <StackPanel Margin="10">
+                                    <CheckBox x:Name="EnableMessageDbCheckBox"
+                                             Content="{DynamicResource StrMsgDbEnable}"
+                                             Margin="0,0,0,4"/>
+                                    <TextBlock Text="{DynamicResource StrMsgDbEnableHint}"
+                                              FontStyle="Italic" Foreground="Gray" TextWrapping="Wrap"
+                                              FontSize="11" Margin="0,0,0,10"/>
+
+                                    <TextBlock Text="{DynamicResource StrMsgDbRetention}" Margin="0,0,0,4"/>
+                                    <ComboBox x:Name="MessageDbRetentionComboBox" Width="200" HorizontalAlignment="Left" Margin="0,0,0,12">
+                                        <ComboBoxItem Tag="30"  Content="{DynamicResource StrRetention30}"/>
+                                        <ComboBoxItem Tag="90"  Content="{DynamicResource StrRetention90}" IsSelected="True"/>
+                                        <ComboBoxItem Tag="365" Content="{DynamicResource StrRetention365}"/>
+                                        <ComboBoxItem Tag="0"   Content="{DynamicResource StrRetentionUnlimited}"/>
+                                    </ComboBox>
+
+                                    <Separator Margin="0,4,0,8"/>
+
+                                    <TextBlock Text="{DynamicResource StrMsgDbClearHint}"
+                                              FontStyle="Italic" Foreground="Gray" TextWrapping="Wrap"
+                                              FontSize="11" Margin="0,0,0,6"/>
+
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                        <Button Content="{DynamicResource StrMsgDbClearChannels}"
+                                               Click="ClearChannelMessages_Click"
+                                               Margin="0,0,8,0" Padding="8,3"/>
+                                        <ComboBox x:Name="ClearChannelAgeComboBox" Width="130">
+                                            <ComboBoxItem Tag="0"   Content="{DynamicResource StrMsgDbClearAll}" IsSelected="True"/>
+                                            <ComboBoxItem Tag="30"  Content="{DynamicResource StrMsgDbClearOlder30}"/>
+                                            <ComboBoxItem Tag="90"  Content="{DynamicResource StrMsgDbClearOlder90}"/>
+                                            <ComboBoxItem Tag="365" Content="{DynamicResource StrMsgDbClearOlder365}"/>
+                                        </ComboBox>
+                                    </StackPanel>
+
+                                    <Button Content="{DynamicResource StrMsgDbClearDms}"
+                                           Click="ClearDmMessages_Click"
+                                           HorizontalAlignment="Left" Padding="8,3"/>
+                                </StackPanel>
+                            </GroupBox>
+
                             <!-- g) Debug -->
                             <GroupBox Header="Debug" Margin="0,0,0,16">
                                 <StackPanel Margin="10">
@@ -1067,11 +1126,19 @@
                                 </StackPanel>
                             </GroupBox>
 
-                            <Button Content="{DynamicResource StrSaveSettings}"
-                                   Width="200" HorizontalAlignment="Left"
-                                   Click="SaveSettings_Click"/>
                         </StackPanel>
                     </ScrollViewer>
+
+                    <!-- Fixed save button below scroll area -->
+                    <Border Grid.Row="1"
+                            BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}"
+                            BorderThickness="0,1,0,0"
+                            Padding="20,10">
+                        <Button Content="{DynamicResource StrSaveSettings}"
+                               Width="200" HorizontalAlignment="Left"
+                               Click="SaveSettings_Click"/>
+                    </Border>
+                    </Grid>
 
                     <!-- ===== Rechte Spalte: Node-Konfig + Geräteinfo ===== -->
                     <Border Grid.Column="1"

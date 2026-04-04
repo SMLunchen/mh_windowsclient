@@ -48,6 +48,12 @@ Der **Meshhessen Client** ist ein **kostenloser, nativer Windows-Client für Mes
 * **🚨 Alert Bell Support** – Senden und Empfangen von Notrufen
   * 🚨 SOS-Button in Chat und DMs
   * Visuell: rote blinkende Umrandung + Notification-Bar mit „Zur Karte springen"-Button
+* **Persistente Nachrichten-Datenbank** – Kanal- und DM-Nachrichten dauerhaft in lokaler SQLite-DB speichern (optional, aktivierbar in Einstellungen)
+  * Letzten 24 Stunden beim Verbinden automatisch geladen; ältere Nachrichten per Hochscrollen nachladen
+  * **DM-History:** Alle Konversationen der letzten 24 h erscheinen beim Öffnen des DM-Fensters automatisch
+  * **Pro-Kanal-Löschung** direkt im Kanäle-Tab: „Nachrichten-DB leeren"-Spalte mit Zeitraum-Dialog (Alle / 30 / 90 / 365 Tage)
+  * Bestätigung vor dem Löschen einer DM-Konversation (kein versehentliches Wischen)
+  * Aufbewahrungsdauer konfigurierbar (30 / 90 / 365 Tage)
 
 ### 📊 Telemetrie & Statistik
 
@@ -108,6 +114,7 @@ Der **Meshhessen Client** ist ein **kostenloser, nativer Windows-Client für Mes
 ### ⚙️ Verbindung & System
 
 * **Multi-Verbindung** – USB/Serial, TCP/WiFi und Bluetooth (BLE)
+* **Letzte Verbindung merken** – Verbindungsart (Serial / BT / WiFi) und zuletzt genutztes BT-Gerät werden gespeichert und beim nächsten Start automatisch vorausgewählt
 * **Auto-Reconnect** – nach Einstellungsänderungen die einen Neustart erfordern
 * **Update-Check** – beim Start wird automatisch nach neuen Versionen gesucht; bei verfügbarem Update erscheint ein klickbarer Hinweis in der Statusleiste (offline-fähig: kein Fehler wenn kein Internet)
 * **Multi-Sprache** – Deutsch und Englisch (umschaltbar in Einstellungen)
@@ -182,7 +189,7 @@ https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node_routing.png
 
 ## ⚠️ Bekannte Einschränkungen
 
-* Keine persistente Message-History (Neustart = leere UI; Logs bleiben erhalten, beim Start geladene Nachrichten vom Node bleiben)
+* ~~Keine persistente Message-History~~ → jetzt optional via Nachrichten-Datenbank (aktivierbar in Einstellungen)
 * Getestet mit Firmware 2.x
 * T-Deck: Channels werden nicht immer in der Config-Sequenz mitgesendet (Retry-Workaround aktiv) – Das T-Deck ist fast schon mit sich selbst überfordert, daher dauert dort alles etwas länger…
 
@@ -361,6 +368,12 @@ Meshhessen Client · Windows-Client für Meshtastic-Geräte · Meshtastic Window
 * **🚨 Alert Bell support** – send and receive emergency alerts
   * 🚨 SOS button in chat and DMs
   * Visual: red blinking border + notification bar with "Jump to map" button
+* **Persistent message database** – store channel and DM messages in a local SQLite DB (optional, enable in settings)
+  * Last 24 hours loaded automatically on connect; older messages lazy-loaded when scrolling up
+  * **DM history:** all conversations from the last 24 h appear automatically when the DM window is opened
+  * **Per-channel deletion** directly in the Channels tab: "Clear Message DB" column with a time-range dialog (All / 30 / 90 / 365 days)
+  * Confirmation before clearing a DM conversation (no accidental wipe)
+  * Configurable retention period (30 / 90 / 365 days)
 
 ### 📊 Telemetry & Statistics
 
@@ -421,6 +434,7 @@ Meshhessen Client · Windows-Client für Meshtastic-Geräte · Meshtastic Window
 ### ⚙️ Connection & System
 
 * **Multi-connection** – USB/Serial, TCP/WiFi, and Bluetooth (BLE)
+* **Remember last connection** – connection type (Serial / BT / WiFi) and last used BT device are saved and pre-selected on next launch
 * **Auto-reconnect** – after settings changes that require a device reboot
 * **Update check** – automatically checks for new versions on startup; a clickable hint appears in the status bar if an update is available (offline-safe: no error if no internet)
 * **Multi-language** – German and English (switchable in settings)
@@ -441,7 +455,7 @@ The Meshhessen Client is a community project of the Meshtastic community in Hess
 
 ## ⚠️ Known Limitations
 
-* No persistent message history (restart = empty UI; logs are preserved, node-loaded messages at startup are preserved)
+* ~~No persistent message history~~ → now available as optional message database (enable in settings)
 * Tested with firmware 2.x
 * T-Deck: channels are not always included in the config sequence (retry workaround active) – The T-Deck is barely keeping up with itself, so everything takes a bit longer there…
 

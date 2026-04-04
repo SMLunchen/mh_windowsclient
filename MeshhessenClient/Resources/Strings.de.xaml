@@ -273,7 +273,8 @@
     <sys:String x:Key="StrChannelReceived">Kanal {0} empfangen: {1}</sys:String>
     <sys:String x:Key="StrAlertSent">Notruf gesendet!</sys:String>
     <sys:String x:Key="StrEncryptedMessage">[Verschlüsselte Nachricht – PSK erforderlich]</sys:String>
-    <sys:String x:Key="StrActiveChats">{0} aktive Chat(s)</sys:String>
+    <sys:String x:Key="StrActiveChats">{0} aktive Chats</sys:String>
+    <sys:String x:Key="StrActiveChat">1 aktiver Chat</sys:String>
     <sys:String x:Key="StrCloseTab">Tab schließen</sys:String>
     <sys:String x:Key="StrSentFrom">Ich</sys:String>
     <sys:String x:Key="StrSetMyPosition">📍 Eigenen Standort hier setzen ({0}, {1})</sys:String>
@@ -617,5 +618,26 @@ Grün ≤15% | Gelb 15–25% | Rot &gt;25% | Grau = keine Airtime-Daten</sys:Str
     <sys:String x:Key="StrReplyPrefix">&gt; {0} ({1}): {2}</sys:String>
     <sys:String x:Key="StrReplyingTo">↳ Antwort auf {0}: {1}</sys:String>
     <sys:String x:Key="StrCancelReply">✕ Abbrechen</sys:String>
+
+    <!-- Nachrichten-Datenbank -->
+    <sys:String x:Key="StrMsgDbGroup">Nachrichten-Datenbank</sys:String>
+    <sys:String x:Key="StrMsgDbEnable">Nachrichten in SQLite-Datenbank speichern</sys:String>
+    <sys:String x:Key="StrMsgDbEnableHint">Speichert alle empfangenen und gesendeten Kanal- und Direktnachrichten dauerhaft in einer lokalen SQLite-Datenbank (messages/). Nach dem Verbinden werden die letzten 24 Stunden automatisch geladen. Beim Hochscrollen werden ältere Nachrichten nachgeladen.</sys:String>
+    <sys:String x:Key="StrMsgDbRetention">Speicherdauer:</sys:String>
+    <sys:String x:Key="StrMsgDbClearHint">Nachrichten aus der Datenbank löschen (nicht aus der aktuellen Ansicht):</sys:String>
+    <sys:String x:Key="StrMsgDbClearChannels">Kanal-DBs leeren</sys:String>
+    <sys:String x:Key="StrMsgDbClearAll">Alle</sys:String>
+    <sys:String x:Key="StrMsgDbClearOlder30">Älter als 30 Tage</sys:String>
+    <sys:String x:Key="StrMsgDbClearOlder90">Älter als 90 Tage</sys:String>
+    <sys:String x:Key="StrMsgDbClearOlder365">Älter als 365 Tage</sys:String>
+    <sys:String x:Key="StrMsgDbClearDms">Alle DM-Nachrichten leeren</sys:String>
+    <sys:String x:Key="StrMsgDbClearConversation">Konversation leeren</sys:String>
+    <sys:String x:Key="StrMsgDbClearConversationHint">Löscht alle Nachrichten dieser Konversation aus der Datenbank und der Ansicht.</sys:String>
+    <sys:String x:Key="StrMsgDbClearConversationConfirm">Alle Nachrichten mit »{0}« wirklich löschen?</sys:String>
+    <sys:String x:Key="StrMsgDbClearSelectedChannel">Nachrichten-DB leeren</sys:String>
+    <sys:String x:Key="StrMsgDbClearBtn">leeren</sys:String>
+    <sys:String x:Key="StrMsgDbClearChannelPrompt">Nachrichten für Kanal »{0}« löschen:</sys:String>
+    <sys:String x:Key="StrMsgDbClearConfirm">Leeren</sys:String>
+    <sys:String x:Key="StrMsgDbNotEnabled">Nachrichten-Datenbank ist nicht aktiviert.</sys:String>
 
 </ResourceDictionary>

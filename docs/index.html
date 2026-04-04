@@ -259,13 +259,17 @@
     <li><strong>Neuer Tile-Server:</strong> <code>tile.meshhessenclient.de</code> löst den bisherigen Server ab.</li>
     <li><strong>HTTP/3-Unterstützung:</strong> Tile-Downloads nutzen jetzt HTTP/3 (mit automatischem Fallback auf HTTP/2 und HTTP/1.1) für effizientere Verbindungen.</li>
     <li><strong>OSM-Cache:</strong> Im OSM-Online-Modus werden Tiles lokal gecacht (HTTP-Cache-Header werden respektiert, mindestens 7 Tage TTL) – inklusive ETag/If-None-Match für bedingte Anfragen.</li>
+    <li><strong>Persistente Nachrichten-Datenbank:</strong> Kanal- und DM-Nachrichten dauerhaft in lokaler SQLite-DB speichern (optional, in Einstellungen aktivierbar). Letzten 24 h werden beim Verbinden automatisch geladen; beim Hochscrollen werden ältere Nachrichten nachgeladen.</li>
+    <li><strong>DM-History:</strong> Beim Öffnen des DM-Fensters werden alle gespeicherten Konversationen der letzten 24 h automatisch als Tabs wiederhergestellt – auch ohne neue eingehende Nachrichten.</li>
+    <li><strong>Pro-Kanal-Löschung:</strong> Direkt im Kanäle-Tab – neue Spalte „Nachrichten-DB leeren" mit Button pro Kanal. Klick öffnet Dialog mit Zeitraum-Auswahl (Alle / 30 / 90 / 365 Tage).</li>
+    <li><strong>Letzte Verbindung merken:</strong> Verbindungsart (Serial / BT / WiFi) und zuletzt genutztes BT-Gerät werden gespeichert und beim nächsten Start automatisch vorausgewählt.</li>
   </ul>
 
   <h2>Features</h2>
   <div class="grid">
     <div class="card">
       <h3>📨 Nachrichten</h3>
-      <p>Broadcast- & Direktnachrichten, Multi-Channel, Antwort-Funktion mit Zitat-Block, Tap-Back-Reaktionen (32 Emojis), Alert Bell / SOS-Notruf, Nachrichten kopierbar.</p>
+      <p>Broadcast- &amp; Direktnachrichten, Multi-Channel, Antwort-Funktion mit Zitat-Block, Tap-Back-Reaktionen (32 Emojis), Alert Bell / SOS-Notruf, Nachrichten kopierbar. <strong>Persistente Nachrichten-DB</strong> mit automatischer DM-History.</p>
     </div>
     <div class="card">
       <h3>🗺️ Karte</h3>
@@ -284,8 +288,8 @@
       <p>Client-seitige X25519 + AES-256-CTR Entschlüsselung. Private Key wird automatisch vom verbundenen Gerät geladen und nur im RAM gehalten.</p>
     </div>
     <div class="card">
-      <h3>⚙️ Verbindung & System</h3>
-      <p>USB/Serial, TCP/WiFi, Bluetooth BLE – Auto-Reconnect, Firmware-Versions-Anzeige, Hardware-Modell, Update-Check, Dark Mode, Deutsch/Englisch.</p>
+      <h3>⚙️ Verbindung &amp; System</h3>
+      <p>USB/Serial, TCP/WiFi, Bluetooth BLE – Auto-Reconnect, <strong>letzte Verbindung wird gemerkt</strong>, Firmware-Versions-Anzeige, Hardware-Modell, Update-Check, Dark Mode, Deutsch/Englisch.</p>
     </div>
   </div>
 
@@ -592,13 +596,17 @@
     <li><strong>New tile server:</strong> <code>tile.meshhessenclient.de</code> replaces the previous server.</li>
     <li><strong>HTTP/3 support:</strong> Tile downloads now use HTTP/3 (with automatic fallback to HTTP/2 and HTTP/1.1) for more efficient connections.</li>
     <li><strong>OSM cache:</strong> In OSM online mode, tiles are cached locally (HTTP cache headers respected, minimum 7-day TTL) – including ETag/If-None-Match for conditional requests.</li>
+    <li><strong>Persistent message database:</strong> Optionally store channel and DM messages in a local SQLite DB (enable in settings). Last 24 h are loaded automatically on connect; scrolling up lazy-loads older messages.</li>
+    <li><strong>DM history:</strong> When the DM window is opened, all saved conversations from the last 24 h are automatically restored as tabs – even without any new incoming messages.</li>
+    <li><strong>Per-channel deletion:</strong> Directly in the Channels tab – new "Clear Message DB" column with a button per channel. Click opens a dialog with time-range selection (All / 30 / 90 / 365 days).</li>
+    <li><strong>Remember last connection:</strong> Connection type (Serial / BT / WiFi) and last used BT device are saved and pre-selected on next launch.</li>
   </ul>
 
   <h2>Features</h2>
   <div class="grid">
     <div class="card">
       <h3>📨 Messaging</h3>
-      <p>Broadcast &amp; direct messages, multi-channel, reply function with quote block, tap-back reactions (32 emojis), Alert Bell / SOS, copyable messages with clickable links.</p>
+      <p>Broadcast &amp; direct messages, multi-channel, reply with quote block, tap-back reactions (32 emojis), Alert Bell / SOS, copyable messages. <strong>Persistent message DB</strong> with automatic DM history restore.</p>
     </div>
     <div class="card">
       <h3>🗺️ Map</h3>
@@ -618,7 +626,7 @@
     </div>
     <div class="card">
       <h3>⚙️ Connection &amp; System</h3>
-      <p>USB/Serial, TCP/WiFi, Bluetooth BLE – auto-reconnect, firmware version &amp; hardware model display, update check, dark mode, German/English.</p>
+      <p>USB/Serial, TCP/WiFi, Bluetooth BLE – auto-reconnect, <strong>remembers last connection</strong>, firmware version &amp; hardware model display, update check, dark mode, German/English.</p>
     </div>
   </div>
 
