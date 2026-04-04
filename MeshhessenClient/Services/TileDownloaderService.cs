@@ -19,9 +19,9 @@ public static class TileDownloaderService
     };
 
     // Tile URL templates für jede Kartenquelle (werden von Settings geladen)
-    public static string OSMTileUrl { get; set; } = "https://tile.schwarzes-seelenreich.de/osm/{z}/{x}/{y}.png";
-    public static string OSMTopoTileUrl { get; set; } = "https://tile.schwarzes-seelenreich.de/opentopo/{z}/{x}/{y}.png";
-    public static string OSMDarkTileUrl { get; set; } = "https://tile.schwarzes-seelenreich.de/dark/{z}/{x}/{y}.png";
+    public static string OSMTileUrl { get; set; } = "https://tile.meshhessenclient.de/osm/{z}/{x}/{y}.png";
+    public static string OSMTopoTileUrl { get; set; } = "https://tile.meshhessenclient.de/opentopo/{z}/{x}/{y}.png";
+    public static string OSMDarkTileUrl { get; set; } = "https://tile.meshhessenclient.de/dark/{z}/{x}/{y}.png";
 
     // Gibt die Tile-URL-Template für die angegebene Kartenquelle zurück
     private static string GetTileUrlTemplate(MapSource source) => source switch
@@ -108,8 +108,9 @@ public static class TileDownloaderService
                             await File.WriteAllBytesAsync(filePath, data, ct);
 
                             // Rate-Limiting nur für externe Server (nicht für eigene Server)
-                            if (!url.Contains("tile.schwarzes-seelenreich.de", StringComparison.OrdinalIgnoreCase) &&
-                                !url.Contains("tile.meshhessen.de", StringComparison.OrdinalIgnoreCase))
+                            if (!url.Contains("tile.meshhessenclient.de", StringComparison.OrdinalIgnoreCase) &&
+                                !url.Contains("tile.meshhessen.de", StringComparison.OrdinalIgnoreCase) &&
+                                !url.Contains("tile.schwarzes-seelenreich.de", StringComparison.OrdinalIgnoreCase))
                             {
                                 await Task.Delay(500, ct);
                             }
