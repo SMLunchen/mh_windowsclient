@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Changelog – Meshhessen Client</title>
+  <meta name="description" content="Versionshistorie und Änderungsprotokoll des Meshhessen Clients für Meshtastic-Geräte unter Windows." />
+  <link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #0d1117;
+      color: #e6edf3;
+      line-height: 1.6;
+    }
+    a { color: #58a6ff; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    header {
+      background: #161b22;
+      border-bottom: 1px solid #30363d;
+      padding: 2rem 1rem 1.5rem;
+      text-align: center;
+    }
+    header h1 { font-size: 1.8rem; font-weight: 700; margin-bottom: 0.4rem; }
+    header .subtitle { color: #8b949e; font-size: 1rem; margin: 0 auto 1rem; }
+    .btn {
+      display: inline-block;
+      background: #21262d;
+      border: 1px solid #30363d;
+      color: #e6edf3;
+      padding: 0.5rem 1.2rem;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin: 0.3rem;
+    }
+    .btn:hover { background: #30363d; text-decoration: none; }
+
+    .lang-bar {
+      display: flex;
+      justify-content: center;
+      gap: 0.5rem;
+      margin-top: 1.2rem;
+    }
+    .lang-btn {
+      padding: 0.3rem 1rem;
+      border-radius: 20px;
+      border: 1px solid #30363d;
+      background: #21262d;
+      color: #8b949e;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 600;
+      transition: background 0.15s;
+    }
+    .lang-btn.active, .lang-btn:hover {
+      background: #1f6feb;
+      border-color: #1f6feb;
+      color: #fff;
+    }
+
+    .section { display: none; }
+    .section.active { display: block; }
+    main { max-width: 820px; margin: 0 auto; padding: 2.5rem 1rem 3rem; }
+
+    /* ── Version entries ── */
+    .version-entry {
+      margin-bottom: 2.5rem;
+      border-left: 3px solid #30363d;
+      padding-left: 1.4rem;
+    }
+    .version-entry.unreleased { border-left-color: #3fb950; }
+    .version-entry.v158 { border-left-color: #58a6ff; }
+    .version-entry.v10 { border-left-color: #bc8cff; }
+
+    .version-header {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-size: 1.3rem;
+      font-weight: 700;
+      margin-bottom: 0.25rem;
+      flex-wrap: wrap;
+    }
+    .version-tag {
+      font-size: 0.8rem;
+      font-weight: 700;
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      letter-spacing: 0.04em;
+    }
+    .version-tag.unreleased { background: #1a4a26; color: #3fb950; border: 1px solid #3fb950; }
+    .version-tag.released   { background: #1c2d5a; color: #58a6ff; border: 1px solid #58a6ff; }
+    .version-tag.beta       { background: #2d1f54; color: #bc8cff; border: 1px solid #bc8cff; }
+    .version-date { font-size: 0.85rem; color: #8b949e; font-weight: 400; }
+
+    .version-desc { color: #8b949e; font-size: 0.93rem; margin: 0.25rem 0 1rem; }
+
+    .cl-section { margin-bottom: 1.2rem; }
+    .cl-section h3 {
+      font-size: 0.9rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.5rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 3px;
+      display: inline-block;
+    }
+    .cl-section.added   h3 { background: #1a4a26; color: #3fb950; }
+    .cl-section.fixed   h3 { background: #3d2219; color: #f85149; }
+    .cl-section.changed h3 { background: #2d2208; color: #d29922; }
+
+    .cl-group { margin-bottom: 0.8rem; }
+    .cl-group-title {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: #79c0ff;
+      margin-bottom: 0.25rem;
+    }
+
+    ul.cl-list {
+      list-style: none;
+      padding: 0;
+    }
+    ul.cl-list li {
+      color: #c9d1d9;
+      font-size: 0.9rem;
+      padding: 0.15rem 0 0.15rem 1.2rem;
+      position: relative;
+    }
+    ul.cl-list li::before {
+      content: "–";
+      position: absolute;
+      left: 0;
+      color: #484f58;
+    }
+    ul.cl-list li strong { color: #e6edf3; }
+    ul.cl-list li code {
+      font-size: 0.82rem;
+      background: #21262d;
+      border: 1px solid #30363d;
+      border-radius: 3px;
+      padding: 0 0.3rem;
+      color: #79c0ff;
+    }
+
+    .divider {
+      border: none;
+      border-top: 1px solid #21262d;
+      margin: 2.5rem 0;
+    }
+
+    footer {
+      text-align: center;
+      padding: 2rem 1rem;
+      color: #8b949e;
+      font-size: 0.85rem;
+      border-top: 1px solid #30363d;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Changelog</h1>
+  <p class="subtitle">Meshhessen Client – Versionshistorie</p>
+  <div>
+    <a class="btn" href="index.html">← Zurück zur Übersicht</a>
+  </div>
+  <div class="lang-bar">
+    <button class="lang-btn active" onclick="setLang('de')" id="btn-de">🇩🇪 Deutsch</button>
+    <button class="lang-btn" onclick="setLang('en')" id="btn-en">🇬🇧 English</button>
+  </div>
+</header>
+
+<!-- ════════ DEUTSCH ════════ -->
+<div class="section active" id="de">
+<main>
+
+  <!-- ── Demnächst ── -->
+  <div class="version-entry unreleased">
+    <div class="version-header">
+      <span class="version-tag unreleased">Demnächst</span>
+      Persistente Nachrichten-DB & Verbindung merken
+    </div>
+    <p class="version-desc">Nachrichten überleben Neustarts. Die App merkt sich, womit du zuletzt verbunden warst.</p>
+
+    <div class="cl-section added">
+      <h3>✨ Hinzugefügt</h3>
+
+      <div class="cl-group">
+        <div class="cl-group-title">Persistente Nachrichten-Datenbank</div>
+        <ul class="cl-list">
+          <li><strong>SQLite-Nachrichtenspeicher</strong> für Kanal- und DM-Nachrichten — optional, in den Einstellungen aktivierbar</li>
+          <li>Je Kanal eine eigene DB-Datei (<code>messages/channel_{index}_{name}.db</code>), DMs in <code>messages/dm.db</code></li>
+          <li>WAL-Modus, Insert/LoadSince/LoadBefore/ClearAll/ClearOlderThan, filterbar per <code>partner_id</code></li>
+          <li><strong>Automatisches Laden</strong> der letzten 24&thinsp;h nach dem Verbinden; ältere Nachrichten per Hochscrollen nachladen</li>
+          <li><strong>DM-History:</strong> beim Öffnen des DM-Fensters werden alle gespeicherten Konversationen automatisch als Tabs wiederhergestellt</li>
+          <li><strong>Pro-Kanal-Löschung</strong> im Kanäle-Tab — neuer Button pro Zeile, öffnet Dialog mit Zeitraum-Auswahl (Alle / 30 / 90 / 365 Tage)</li>
+          <li><strong>Bestätigung</strong> vor dem Leeren einer DM-Konversation</li>
+          <li>Aufbewahrungsdauer konfigurierbar, Retention wird beim Start angewendet</li>
+          <li>Neue Einstellungen: <code>EnableMessageDb</code>, <code>MessageDbRetentionDays</code></li>
+        </ul>
+      </div>
+
+      <div class="cl-group">
+        <div class="cl-group-title">Verbindung merken</div>
+        <ul class="cl-list">
+          <li><strong>Letzte Verbindungsart</strong> (Serial / Bluetooth / WiFi) wird gespeichert und beim Start automatisch vorausgewählt</li>
+          <li><strong>Letztes BT-Gerät</strong> wird gespeichert; nach dem BT-Scan automatisch in der Liste vorausgewählt</li>
+          <li>Neue Einstellungen: <code>LastConnectionType</code>, <code>LastBtDevice</code></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider" />
+
+  <!-- ── v1.5.8 ── -->
+  <div class="version-entry v158">
+    <div class="version-header">
+      <span class="version-tag released">v1.5.8</span>
+      Online-Karten, HTTP/3 &amp; neuer Tile-Server
+    </div>
+    <p class="version-desc">Drei Kartenmodi, eigener Tile-Server, HTTP/3-Support und OSM-konformes Caching.</p>
+
+    <div class="cl-section added">
+      <h3>✨ Hinzugefügt</h3>
+
+      <div class="cl-group">
+        <div class="cl-group-title">Karten-Erweiterungen</div>
+        <ul class="cl-list">
+          <li><strong>Online-Karten-Modi:</strong> Meshhessen-Server (lazy download, Deutschland) und OpenStreetMap (weltweit, Policy-konform)</li>
+          <li><strong>Neuer Tile-Server:</strong> <code>tile.meshhessenclient.de</code> löst den bisherigen Server ab</li>
+          <li><strong>HTTP/3</strong> mit automatischem Fallback auf HTTP/2 und HTTP/1.1</li>
+          <li><strong>OSM-Tile-Cache</strong> mit HTTP-Cache-Headers (ETag/If-None-Match, min. 7 Tage TTL)</li>
+          <li>OSM Dark Mode und OpenTopoMap als neue Kartentypen</li>
+          <li>Tile-Server-URL in Einstellungen konfigurierbar</li>
+          <li>Copyright-Hinweise auf der Karte, dynamisch je nach Quelle</li>
+        </ul>
+      </div>
+
+      <div class="cl-group">
+        <div class="cl-group-title">Alert Bell / SOS</div>
+        <ul class="cl-list">
+          <li>SOS-Button in Hauptchat und DM-Fenster</li>
+          <li>Visuelle Benachrichtigung: rote blinkende Umrandung (6 Blinks, 3 Sekunden)</li>
+          <li>Akustische Benachrichtigung (WAV-generiert, unabhängig von System-Stummschaltung)</li>
+          <li>Notification-Bar mit Absender und „Zur Karte springen"-Button</li>
+          <li>Verschwindet automatisch nach 30 Sekunden oder manuell schließbar</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="cl-section fixed">
+      <h3>🐛 Behoben</h3>
+      <ul class="cl-list">
+        <li><strong>Zombie-Prozess:</strong> App beendet sich jetzt sauber (<code>Application.Current.Shutdown()</code>)</li>
+        <li><strong>Tab-Navigation:</strong> „Zur Karte"-Button springt korrekt zum Karten-Tab</li>
+      </ul>
+    </div>
+
+    <div class="cl-section changed">
+      <h3>🔄 Geändert</h3>
+      <ul class="cl-list">
+        <li><strong>Alert Bell Format:</strong> von ASCII <code>0x07</code> auf Emoji 🔔 umgestellt — kompatibel mit Android &amp; Web</li>
+      </ul>
+    </div>
+  </div>
+
+  <hr class="divider" />
+
+  <!-- ── v1.0-Beta ── -->
+  <div class="version-entry v10">
+    <div class="version-header">
+      <span class="version-tag beta">v1.0-Beta</span>
+      <span class="version-date">2026-02-08</span>
+      Erstveröffentlichung
+    </div>
+    <p class="version-desc">Erster öffentlicher Beta-Release mit DMs, Message-Logging und vollständiger Telemetrie-Analyse.</p>
+
+    <div class="cl-section added">
+      <h3>✨ Hinzugefügt</h3>
+
+      <div class="cl-group">
+        <div class="cl-group-title">Direct Messages (DMs)</div>
+        <ul class="cl-list">
+          <li>Separates DM-Fenster mit Tab-System für mehrere Konversationen</li>
+          <li>Automatische Benachrichtigung (Fenster vordergrund, Taskbar-Blinken, System-Sound)</li>
+          <li>Orange Hervorhebung und fette Schrift für ungelesene Nachrichten</li>
+          <li>„💬 DM senden" per Rechtsklick auf Node</li>
+        </ul>
+      </div>
+
+      <div class="cl-group">
+        <div class="cl-group-title">Message-Logging</div>
+        <ul class="cl-list">
+          <li>Automatisches Logging aller Nachrichten in separate Logdateien</li>
+          <li>Separate Dateien pro Kanal (<code>logs/Channel_[Index]_[Name].log</code>) und pro DM-Partner</li>
+          <li>UTF-8 Encoding, Thread-sicheres Schreiben</li>
+        </ul>
+      </div>
+
+      <div class="cl-group">
+        <div class="cl-group-title">Karte & Telemetrie</div>
+        <ul class="cl-list">
+          <li>Offline-OSM-Karte mit Node-Pins, GPS-Tracks, Wegpunkten</li>
+          <li>Telemetrie-Analyse: SNR, RSSI, Batterie, Kanalauslastung, Routing, Nachbarn</li>
+          <li>Traceroute mit Hop-Tabelle und Karten-Visualisierung</li>
+          <li>PKI-Entschlüsselung (X25519 + AES-256-CTR, Key vom Gerät)</li>
+          <li>LED-Ampeln für Signal, Nachbarn, Pfad, Mesh-Health, Wetter</li>
+        </ul>
+      </div>
+
+      <div class="cl-group">
+        <div class="cl-group-title">Verbindung & System</div>
+        <ul class="cl-list">
+          <li>USB/Serial, TCP/WiFi, Bluetooth BLE — Auto-Reconnect</li>
+          <li>Tap-Back-Reaktionen (32 Emojis), Zitat-Block-Antworten</li>
+          <li>Multi-Channel-Support, Firmware-Version- und Hardware-Anzeige</li>
+          <li>Update-Check, Dark Mode, Deutsch/Englisch</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+</main>
+</div>
+
+<!-- ════════ ENGLISH ════════ -->
+<div class="section" id="en">
+<main>
+
+  <!-- ── Coming Soon ── -->
+  <div class="version-entry unreleased">
+    <div class="version-header">
+      <span class="version-tag unreleased">Coming Soon</span>
+      Persistent Message DB &amp; Remember Connection
+    </div>
+    <p class="version-desc">Messages survive restarts. The app remembers how you last connected.</p>
+
+    <div class="cl-section added">
+      <h3>✨ Added</h3>
+
+      <div class="cl-group">
+        <div class="cl-group-title">Persistent Message Database</div>
+        <ul class="cl-list">
+          <li><strong>SQLite message store</strong> for channel and DM messages — optional, enable in settings</li>
+          <li>One DB file per channel (<code>messages/channel_{index}_{name}.db</code>), DMs in <code>messages/dm.db</code></li>
+          <li>WAL mode, Insert/LoadSince/LoadBefore/ClearAll/ClearOlderThan, filterable by <code>partner_id</code></li>
+          <li><strong>Auto-load</strong> last 24&thinsp;h on connect; scroll up to lazy-load older messages</li>
+          <li><strong>DM history:</strong> all saved conversations auto-restored as tabs when DM window opens</li>
+          <li><strong>Per-channel deletion</strong> in Channels tab — new button per row, opens dialog with time range (All / 30 / 90 / 365 days)</li>
+          <li><strong>Confirmation</strong> before clearing a DM conversation</li>
+          <li>Configurable retention period, applied on startup</li>
+          <li>New settings: <code>EnableMessageDb</code>, <code>MessageDbRetentionDays</code></li>
+        </ul>
+      </div>
+
+      <div class="cl-group">
+        <div class="cl-group-title">Remember Connection</div>
+        <ul class="cl-list">
+          <li><strong>Last connection type</strong> (Serial / Bluetooth / WiFi) saved and pre-selected on next launch</li>
+          <li><strong>Last BT device</strong> saved and auto-selected after BT scan</li>
+          <li>New settings: <code>LastConnectionType</code>, <code>LastBtDevice</code></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider" />
+
+  <!-- ── v1.5.8 ── -->
+  <div class="version-entry v158">
+    <div class="version-header">
+      <span class="version-tag released">v1.5.8</span>
+      Online Maps, HTTP/3 &amp; New Tile Server
+    </div>
+    <p class="version-desc">Three map modes, own tile server, HTTP/3 support and OSM-compliant caching.</p>
+
+    <div class="cl-section added">
+      <h3>✨ Added</h3>
+
+      <div class="cl-group">
+        <div class="cl-group-title">Map Enhancements</div>
+        <ul class="cl-list">
+          <li><strong>Online map modes:</strong> Meshhessen server (lazy download, Germany) and OpenStreetMap (worldwide, policy-compliant)</li>
+          <li><strong>New tile server:</strong> <code>tile.meshhessenclient.de</code> replaces the previous server</li>
+          <li><strong>HTTP/3</strong> with automatic fallback to HTTP/2 and HTTP/1.1</li>
+          <li><strong>OSM tile cache</strong> with HTTP cache headers (ETag/If-None-Match, min. 7-day TTL)</li>
+          <li>OSM Dark mode and OpenTopoMap as new map types</li>
+          <li>Tile server URL configurable in settings</li>
+          <li>Dynamic copyright attribution on map</li>
+        </ul>
+      </div>
+
+      <div class="cl-group">
+        <div class="cl-group-title">Alert Bell / SOS</div>
+        <ul class="cl-list">
+          <li>SOS button in main chat and DM window</li>
+          <li>Visual alert: red flashing border (6 blinks over 3 seconds)</li>
+          <li>Audio alert (WAV-generated, works even when system is muted)</li>
+          <li>Notification bar with sender name and "Jump to map" button</li>
+          <li>Auto-dismisses after 30 seconds or manually closeable</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="cl-section fixed">
+      <h3>🐛 Fixed</h3>
+      <ul class="cl-list">
+        <li><strong>Zombie process on exit:</strong> app now shuts down cleanly via <code>Application.Current.Shutdown()</code></li>
+        <li><strong>Tab navigation:</strong> "Go to map" button now correctly activates the Map tab</li>
+      </ul>
+    </div>
+
+    <div class="cl-section changed">
+      <h3>🔄 Changed</h3>
+      <ul class="cl-list">
+        <li><strong>Alert Bell format:</strong> switched from ASCII <code>0x07</code> to emoji 🔔 — compatible with Android &amp; web apps</li>
+      </ul>
+    </div>
+  </div>
+
+  <hr class="divider" />
+
+  <!-- ── v1.0-Beta ── -->
+  <div class="version-entry v10">
+    <div class="version-header">
+      <span class="version-tag beta">v1.0-Beta</span>
+      <span class="version-date">2026-02-08</span>
+      Initial Release
+    </div>
+    <p class="version-desc">First public beta with DMs, message logging and full telemetry analysis.</p>
+
+    <div class="cl-section added">
+      <h3>✨ Added</h3>
+
+      <div class="cl-group">
+        <div class="cl-group-title">Direct Messages (DMs)</div>
+        <ul class="cl-list">
+          <li>Dedicated DM window with tab system for multiple conversations</li>
+          <li>Automatic notifications (foreground, taskbar flash, system sound)</li>
+          <li>Orange highlight and bold text for unread messages</li>
+          <li>"💬 Send DM" via right-click on node</li>
+        </ul>
+      </div>
+
+      <div class="cl-group">
+        <div class="cl-group-title">Message Logging</div>
+        <ul class="cl-list">
+          <li>Automatic logging of all messages to separate log files</li>
+          <li>Separate files per channel (<code>logs/Channel_[Index]_[Name].log</code>) and per DM partner</li>
+          <li>UTF-8 encoding, thread-safe writing</li>
+        </ul>
+      </div>
+
+      <div class="cl-group">
+        <div class="cl-group-title">Map &amp; Telemetry</div>
+        <ul class="cl-list">
+          <li>Offline OSM map with node pins, GPS tracks, waypoints</li>
+          <li>Telemetry analysis: SNR, RSSI, battery, channel utilization, routing, neighbors</li>
+          <li>Traceroute with hop table and map visualization</li>
+          <li>PKI decryption (X25519 + AES-256-CTR, key loaded from device)</li>
+          <li>LED indicators for signal, neighbors, path, mesh health, weather</li>
+        </ul>
+      </div>
+
+      <div class="cl-group">
+        <div class="cl-group-title">Connection &amp; System</div>
+        <ul class="cl-list">
+          <li>USB/Serial, TCP/WiFi, Bluetooth BLE — auto-reconnect</li>
+          <li>Tap-back reactions (32 emojis), quote-block replies</li>
+          <li>Multi-channel support, firmware version &amp; hardware model display</li>
+          <li>Update check, dark mode, German/English</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+</main>
+</div>
+
+<footer>
+  <p>
+    <strong>Meshhessen Client</strong> – Windows App für Meshtastic-Geräte ·
+    <a href="index.html">Startseite</a> ·
+    <a href="https://github.com/SMLunchen/mh_windowsclient">GitHub</a> ·
+    <a href="https://www.meshhessen.de">meshhessen.de</a>
+  </p>
+  <p style="margin-top:0.5rem;">
+    Made with ❤️ by the <a href="https://www.meshhessen.de">Meshhessen Community</a> · Hessen, Germany
+  </p>
+</footer>
+
+<script>
+  function setLang(lang) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(lang).classList.add('active');
+    document.getElementById('btn-' + lang).classList.add('active');
+    document.documentElement.lang = lang;
+    history.replaceState(null, '', '#' + lang);
+  }
+  // restore lang from hash
+  const hash = location.hash.replace('#','');
+  if (hash === 'en') setLang('en');
+</script>
+</body>
+</html>
