@@ -4,7 +4,7 @@ Der **Meshhessen Client** ist ein **kostenloser, nativer Windows-Client für Mes
 
 ![Windows](https://img.shields.io/badge/Windows-10%2F11-blue)
 ![.NET](https://img.shields.io/badge/.NET-8.0-purple)
-![Status](https://img.shields.io/badge/Status-v1.5.6-yellow)
+![Status](https://img.shields.io/badge/Status-v1.5.8-yellow)
 ![License](https://img.shields.io/github/license/SMLunchen/mh_windowsclient)
 ![Stars](https://img.shields.io/github/stars/SMLunchen/mh_windowsclient)
 
@@ -62,11 +62,13 @@ Der **Meshhessen Client** ist ein **kostenloser, nativer Windows-Client für Mes
   * 🌐 **Mesh-Health** – Gesamtzustand des sichtbaren Meshes; 
   * 🌤️ **Wetter** – für Nodes mit Umweltsensor
 
-### 🗺️ Offline-Karte
+### 🗺️ Karte
 
 * **Drei Kartentypen:** OSM Standard, OSM Dark Mode, OpenTopoMap (topografisch)
-* **Eigener Tile-Server** – OSM-Policy verbietet Offline-Downloads, daher nutzen wir einen eigenen Server der das erlaubt
-* **Offline-Tiles** für ganz Deutschland und angrenzende Gebiete
+* **Drei Karten-Modi** (umschaltbar in Einstellungen):
+  * **Offline** (Standard) – vorher heruntergeladene Tiles vom Meshhessen-Server, kein Internet, nur Deutschland
+  * **Online – Meshhessen-Server** – Tiles werden on-demand von `tile.meshhessenclient.de` geladen und dauerhaft lokal gespeichert; alle drei Stile, nur Deutschland
+  * **Online – OpenStreetMap** – weltweite Abdeckung über `tile.openstreetmap.org`; nur Standardkarte; OSM-Tile-Policy-konform (kein Bulk-Download, Tiles lokal gecacht)
 * **Node-Positionen** als farbige Pins auf der Karte
 * **Node-Pfade** – GPS-Positionsverläufe aufzeichnen und auf der Karte anzeigen
 * **Wegpunkte (Waypoints)** – empfangene Wegpunkte werden auf der Karte angezeigt; Wegpunkte per Karte-Rechtsklick erstellen und senden
@@ -185,16 +187,27 @@ https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node_routing.png
 * T-Deck: Channels werden nicht immer in der Config-Sequenz mitgesendet (Retry-Workaround aktiv) – Das T-Deck ist fast schon mit sich selbst überfordert, daher dauert dort alles etwas länger…
 
 
-## 🗺️ Offline-Karte einrichten
+## 🗺️ Karte einrichten
 
 **Kartentypen:** OSM Standard (hell), OSM Dark Mode, OpenTopoMap (topografisch) – wählbar in Einstellungen.
 
-> ⚠️ **Wichtig:** Bitte NICHT auf den offiziellen OSM Tile-Server zurückstellen – Offline-Downloads verstoßen gegen deren Policy. Wir nutzen einen eigenen Server, der das explizit erlaubt. Eigenen Tile-Server in den Einstellungen konfigurierbar.
+### Karten-Modus wählen
 
-**Tiles herunterladen:**
+In den Einstellungen unter **Karte / Tiles** stehen drei Modi zur Verfügung:
 
+| Modus | Beschreibung | Abdeckung |
+|----|----|----|
+| **Offline** (Standard) | Vorher heruntergeladene Tiles. Kein Internet erforderlich. | Nur Deutschland |
+| **Online – Meshhessen-Server** | Tiles werden bei Bedarf geladen und dauerhaft lokal gespeichert. Alle drei Kartenstile. | Nur Deutschland |
+| **Online – OpenStreetMap** | Weltweite Abdeckung. Nur Standardkarte. Tiles werden lokal gecacht (mind. 7 Tage). OSM-Policy-konform. | Weltweit |
 
-1. Einstellungen öffnen → Kartenquelle wählen (OSM / OSM Dark / OpenTopo)
+> Der OSM-Online-Modus ist für Gebiete außerhalb Deutschlands gedacht. Der OSM-Tile-Server ist spendenfinanziert – bitte sparsam nutzen.
+
+### Tiles herunterladen (Offline- und Meshhessen-Online-Modus)
+
+> ⚠️ **Wichtig:** Tile-Download ist nur für den Meshhessen-Tile-Server (`tile.meshhessenclient.de`) vorgesehen – Bulk-Downloads verstoßen gegen die OSM-Tile-Policy.
+
+1. Einstellungen öffnen → Karten-Modus **Offline** wählen → Kartenstil wählen
 2. **„Tiles herunterladen"** klicken
 3. Bereich (Bounding Box) und Zoom-Level eingeben – z.B. Hessen: `49.3,7.7,51.7,10.2`, Zoom `1-14`
 4. Download starten
@@ -306,7 +319,7 @@ Meshhessen Client · Windows-Client für Meshtastic-Geräte · Meshtastic Window
 
  ![Windows](https://img.shields.io/badge/Windows-10%2F11-blue)
  ![.NET](https://img.shields.io/badge/.NET-8.0-purple)
- ![Status](https://img.shields.io/badge/Status-v1.5.6-yellow)
+ ![Status](https://img.shields.io/badge/Status-v1.5.8-yellow)
  ![License](https://img.shields.io/github/license/SMLunchen/mh_windowsclient)
  ![Stars](https://img.shields.io/github/stars/SMLunchen/mh_windowsclient)
 
@@ -362,11 +375,13 @@ Meshhessen Client · Windows-Client für Meshtastic-Geräte · Meshtastic Window
   * 🌐 **Mesh health** – overall health of the visible mesh
   * 🌤️ **Weather** – for nodes with environmental sensors
 
-### 🗺️ Offline Map
+### 🗺️ Map
 
-* **Three map types:** OSM Standard, OSM Dark Mode, OpenTopoMap (topographic)
-* **Own tile server** – OSM policy prohibits offline downloads; we use our own server that explicitly permits it
-* **Offline tiles** for all of Germany and neighboring areas
+* **Three map styles:** OSM Standard, OSM Dark Mode, OpenTopoMap (topographic)
+* **Three map modes** (switchable in settings):
+  * **Offline** (default) – pre-downloaded tiles from the Meshhessen server, no internet required, Germany only
+  * **Online – Meshhessen Server** – tiles fetched on demand from `tile.meshhessenclient.de` and stored permanently; all three styles, Germany only
+  * **Online – OpenStreetMap** – worldwide coverage via `tile.openstreetmap.org`; standard map only; OSM tile policy compliant (no bulk download, tiles cached locally)
 * **Node positions** as colored pins on the map
 * **Node paths** – record GPS position history and display tracks on the map
 * **Waypoints** – received waypoints are displayed on the map; create and send waypoints via right-click on the map

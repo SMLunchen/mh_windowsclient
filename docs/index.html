@@ -41,7 +41,7 @@
     "url": "https://smlunchen.github.io/mh_windowsclient/",
     "downloadUrl": "https://github.com/SMLunchen/mh_windowsclient/releases/latest",
     "author": { "@type": "Organization", "name": "Meshhessen Community", "url": "https://www.meshhessen.de" },
-    "softwareVersion": "1.5.6",
+    "softwareVersion": "1.5.8",
     "screenshot": "https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map.png",
     "keywords": "Meshtastic, Windows, LoRa, Mesh, Telemetrie, Traceroute, Offline-Karte, PKI"
   }
@@ -253,6 +253,14 @@
 <div class="section active" id="de">
 <main>
 
+  <h2>🆕 Neu in v1.5.8</h2>
+  <ul class="fix-list">
+    <li><strong>Online-Karten-Modi:</strong> Neben dem bisherigen Offline-Modus stehen jetzt zwei Online-Modi zur Verfügung – <em>Meshhessen-Server</em> (lazy download, dauerhaft lokal gespeichert, alle Kartenstile, nur Deutschland) und <em>OpenStreetMap</em> (weltweite Abdeckung, nur Standardkarte, OSM-Tile-Policy-konform).</li>
+    <li><strong>Neuer Tile-Server:</strong> <code>tile.meshhessenclient.de</code> löst den bisherigen Server ab.</li>
+    <li><strong>HTTP/3-Unterstützung:</strong> Tile-Downloads nutzen jetzt HTTP/3 (mit automatischem Fallback auf HTTP/2 und HTTP/1.1) für effizientere Verbindungen.</li>
+    <li><strong>OSM-Cache:</strong> Im OSM-Online-Modus werden Tiles lokal gecacht (HTTP-Cache-Header werden respektiert, mindestens 7 Tage TTL) – inklusive ETag/If-None-Match für bedingte Anfragen.</li>
+  </ul>
+
   <h2>Features</h2>
   <div class="grid">
     <div class="card">
@@ -260,8 +268,8 @@
       <p>Broadcast- & Direktnachrichten, Multi-Channel, Antwort-Funktion mit Zitat-Block, Tap-Back-Reaktionen (32 Emojis), Alert Bell / SOS-Notruf, Nachrichten kopierbar.</p>
     </div>
     <div class="card">
-      <h3>🗺️ Offline-Karte</h3>
-      <p>OSM Standard, OSM Dark, OpenTopoMap – Tiles für ganz Deutschland offline speicherbar. Node-Pins, GPS-Tracks, Wegpunkte erstellen & empfangen.</p>
+      <h3>🗺️ Karte</h3>
+      <p>OSM Standard, OSM Dark, OpenTopoMap. Drei Modi: <strong>Offline</strong> (vorheruntergeladen, Deutschland), <strong>Online&nbsp;Meshhessen</strong> (lazy download, Deutschland), <strong>Online&nbsp;OSM</strong> (weltweit, Policy-konform). Node-Pins, GPS-Tracks, Wegpunkte.</p>
     </div>
     <div class="card">
       <h3>📊 Telemetrie-Analyse</h3>
@@ -578,13 +586,23 @@
 
   <h2>Features</h2>
   <div class="grid">
+  <h2>🆕 New in v1.5.8</h2>
+  <ul class="fix-list">
+    <li><strong>Online map modes:</strong> In addition to the existing offline mode, two new online modes are available – <em>Meshhessen Server</em> (lazy download, stored permanently, all map styles, Germany only) and <em>OpenStreetMap</em> (worldwide coverage, standard map only, OSM tile policy compliant).</li>
+    <li><strong>New tile server:</strong> <code>tile.meshhessenclient.de</code> replaces the previous server.</li>
+    <li><strong>HTTP/3 support:</strong> Tile downloads now use HTTP/3 (with automatic fallback to HTTP/2 and HTTP/1.1) for more efficient connections.</li>
+    <li><strong>OSM cache:</strong> In OSM online mode, tiles are cached locally (HTTP cache headers respected, minimum 7-day TTL) – including ETag/If-None-Match for conditional requests.</li>
+  </ul>
+
+  <h2>Features</h2>
+  <div class="grid">
     <div class="card">
       <h3>📨 Messaging</h3>
       <p>Broadcast &amp; direct messages, multi-channel, reply function with quote block, tap-back reactions (32 emojis), Alert Bell / SOS, copyable messages with clickable links.</p>
     </div>
     <div class="card">
-      <h3>🗺️ Offline Map</h3>
-      <p>OSM Standard, OSM Dark, OpenTopoMap – downloadable tiles for all of Germany. Node pins, GPS tracks, create &amp; receive waypoints.</p>
+      <h3>🗺️ Map</h3>
+      <p>OSM Standard, OSM Dark, OpenTopoMap. Three modes: <strong>Offline</strong> (pre-downloaded, Germany), <strong>Online&nbsp;Meshhessen</strong> (lazy download, Germany), <strong>Online&nbsp;OSM</strong> (worldwide, policy-compliant). Node pins, GPS tracks, waypoints.</p>
     </div>
     <div class="card">
       <h3>📊 Telemetry Analysis</h3>
