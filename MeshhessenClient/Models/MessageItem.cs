@@ -19,6 +19,12 @@ public class MessageItem : INotifyPropertyChanged
     public string SenderColorHex { get; set; } = string.Empty;
     public string SenderNote { get; set; } = string.Empty;
     public bool HasAlertBell { get; set; } = false;
+    public bool IsOwnMessage { get; set; } = false;
+
+    // Hop count: number of relay hops the packet traversed. -1 = unknown (e.g. from DB without hop info)
+    public int HopCount { get; set; } = -1;
+    public bool HasHopCount => HopCount >= 0;
+    public string HopCountDisplay => HopCount >= 0 ? $"↪ {HopCount}" : string.Empty;
 
     // Protocol-level reply (Meshtastic Data.reply_id field 7)
     public uint ReplyId { get; set; }

@@ -639,5 +639,6 @@ Grün ≤15% | Gelb 15–25% | Rot &gt;25% | Grau = keine Airtime-Daten</sys:Str
     <sys:String x:Key="StrMsgDbClearChannelPrompt">Nachrichten für Kanal »{0}« löschen:</sys:String>
     <sys:String x:Key="StrMsgDbClearConfirm">Leeren</sys:String>
     <sys:String x:Key="StrMsgDbNotEnabled">Nachrichten-Datenbank ist nicht aktiviert.</sys:String>
+    <sys:String x:Key="StrRelayHopsTooltip">Relay-Hops (Anzahl Zwischenknoten)</sys:String>
 
 </ResourceDictionary>

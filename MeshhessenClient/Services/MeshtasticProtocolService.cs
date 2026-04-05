@@ -885,16 +885,20 @@ public class MeshtasticProtocolService
                 }
             }
 
+            int encHops = (packet.HopStart == 0 || packet.HopLimit > packet.HopStart)
+                ? -1 : (int)(packet.HopStart - packet.HopLimit);
+
             var messageItem = new MessageItem
             {
-                Time = DateTime.Now.ToString("HH:mm:ss"),
+                Time = DateTime.Now.ToString("HH:mm"),
                 From = fromName,
                 FromId = packet.From,
                 ToId = packet.To,
                 Message = System.Windows.Application.Current?.Resources["StrEncryptedMessage"] as string ?? "[Encrypted message – PSK required]",
                 Channel = FormatChannelDisplay(packet.Channel),
                 IsEncrypted = true,
-                IsViaMqtt = packet.ViaMqtt
+                IsViaMqtt = packet.ViaMqtt,
+                HopCount = encHops
             };
             MessageReceived?.Invoke(this, messageItem);
         }
@@ -989,17 +993,21 @@ public class MeshtasticProtocolService
                 }
             }
 
+            int hops = (packet.HopStart == 0 || packet.HopLimit > packet.HopStart)
+                ? -1 : (int)(packet.HopStart - packet.HopLimit);
+
             var messageItem = new MessageItem
             {
                 Id = packet.Id,
-                Time = DateTime.Now.ToString("HH:mm:ss"),
+                Time = DateTime.Now.ToString("HH:mm"),
                 From = fromName,
                 FromId = packet.From,
                 ToId = packet.To,
                 Message = messageText,
                 Channel = FormatChannelDisplay(packet.Channel),
                 IsViaMqtt = packet.ViaMqtt,
-                ReplyId = data.ReplyId
+                ReplyId = data.ReplyId,
+                HopCount = hops
             };
 
             MessageReceived?.Invoke(this, messageItem);

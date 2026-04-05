@@ -7,7 +7,55 @@
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="Resources/Strings.de.xaml"/>
-                <ui:ThemeResources />
+                <ui:ThemeResources>
+                    <ui:ThemeResources.ThemeDictionaries>
+                        <ResourceDictionary x:Key="Light">
+                            <!-- Bubble backgrounds -->
+                            <SolidColorBrush x:Key="MsgBubbleOtherBg"     Color="#ECEEF1"/>
+                            <SolidColorBrush x:Key="MsgBubbleOtherBorder" Color="#D0D7DE"/>
+                            <SolidColorBrush x:Key="MsgBubbleSelfBg"      Color="#E1F5E8"/>
+                            <SolidColorBrush x:Key="MsgBubbleSelfBorder"  Color="#A8D5B5"/>
+                            <!-- Text colors -->
+                            <SolidColorBrush x:Key="MsgSenderNameFg"  Color="#0550AE"/>
+                            <SolidColorBrush x:Key="MsgSubtleFg"      Color="#57606A"/>
+                            <SolidColorBrush x:Key="MsgNoteFg"        Color="#6E7781"/>
+                            <SolidColorBrush x:Key="MsgMqttFg"        Color="#7D4E00"/>
+                            <SolidColorBrush x:Key="MsgAlertFg"       Color="#CF222E"/>
+                            <!-- Hover/selection overlays -->
+                            <SolidColorBrush x:Key="MsgHoverBg"    Color="#0D000000"/>
+                            <SolidColorBrush x:Key="MsgSelectedBg" Color="#1A000000"/>
+                        </ResourceDictionary>
+                        <ResourceDictionary x:Key="Dark">
+                            <!-- Bubble backgrounds -->
+                            <SolidColorBrush x:Key="MsgBubbleOtherBg"     Color="#212121"/>
+                            <SolidColorBrush x:Key="MsgBubbleOtherBorder" Color="#303030"/>
+                            <SolidColorBrush x:Key="MsgBubbleSelfBg"      Color="#1A3326"/>
+                            <SolidColorBrush x:Key="MsgBubbleSelfBorder"  Color="#1E3D2E"/>
+                            <!-- Text colors -->
+                            <SolidColorBrush x:Key="MsgSenderNameFg"  Color="#79C0FF"/>
+                            <SolidColorBrush x:Key="MsgSubtleFg"      Color="#8B949E"/>
+                            <SolidColorBrush x:Key="MsgNoteFg"        Color="#A8B3BE"/>
+                            <SolidColorBrush x:Key="MsgMqttFg"        Color="#E3B341"/>
+                            <SolidColorBrush x:Key="MsgAlertFg"       Color="#FF7B72"/>
+                            <!-- Hover/selection overlays -->
+                            <SolidColorBrush x:Key="MsgHoverBg"    Color="#0AFFFFFF"/>
+                            <SolidColorBrush x:Key="MsgSelectedBg" Color="#14FFFFFF"/>
+                        </ResourceDictionary>
+                        <ResourceDictionary x:Key="HighContrast">
+                            <SolidColorBrush x:Key="MsgBubbleOtherBg"     Color="{x:Static SystemColors.ControlColor}"/>
+                            <SolidColorBrush x:Key="MsgBubbleOtherBorder" Color="{x:Static SystemColors.ControlTextColor}"/>
+                            <SolidColorBrush x:Key="MsgBubbleSelfBg"      Color="{x:Static SystemColors.HighlightColor}"/>
+                            <SolidColorBrush x:Key="MsgBubbleSelfBorder"  Color="{x:Static SystemColors.HighlightTextColor}"/>
+                            <SolidColorBrush x:Key="MsgSenderNameFg"  Color="{x:Static SystemColors.HighlightTextColor}"/>
+                            <SolidColorBrush x:Key="MsgSubtleFg"      Color="{x:Static SystemColors.ControlTextColor}"/>
+                            <SolidColorBrush x:Key="MsgNoteFg"        Color="{x:Static SystemColors.ControlTextColor}"/>
+                            <SolidColorBrush x:Key="MsgMqttFg"        Color="{x:Static SystemColors.HighlightTextColor}"/>
+                            <SolidColorBrush x:Key="MsgAlertFg"       Color="{x:Static SystemColors.HighlightTextColor}"/>
+                            <SolidColorBrush x:Key="MsgHoverBg"    Color="{x:Static SystemColors.HighlightColor}"/>
+                            <SolidColorBrush x:Key="MsgSelectedBg" Color="{x:Static SystemColors.HighlightColor}"/>
+                        </ResourceDictionary>
+                    </ui:ThemeResources.ThemeDictionaries>
+                </ui:ThemeResources>
                 <ui:XamlControlsResources />
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>

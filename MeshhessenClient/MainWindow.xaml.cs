@@ -1714,12 +1714,13 @@ public partial class MainWindow : Window
             var sentMessage = new MessageItem
             {
                 Id = sentId,
-                Time = DateTime.Now.ToString("HH:mm:ss"),
+                Time = DateTime.Now.ToString("HH:mm"),
                 From = Loc("StrMe"),
                 Message = message,
                 Channel = _activeChannelIndex.ToString(),
                 ChannelName = channelName,
                 IsViaMqtt = false,
+                IsOwnMessage = true,
                 ReplyId = replyTarget?.Id ?? 0,
                 ReplyFromName = replyTarget?.From ?? string.Empty,
                 ReplyPreview = replyTarget?.Message?.Length > 60 ? replyTarget.Message[..60] + "…" : replyTarget?.Message ?? string.Empty
@@ -2768,6 +2769,9 @@ public partial class MainWindow : Window
                         continue;
 
                     var msg = DbEntryToMessageItem(entry);
+                    msg.IsOwnMessage = (_myNodeId != 0 && msg.FromId == _myNodeId);
+                    var senderNodeA = _allNodes.FirstOrDefault(n => n.NodeId == msg.FromId);
+                    if (senderNodeA != null) msg.SenderShortName = senderNodeA.ShortName;
                     _allMessages.Add(msg);
                     if (entry.PacketId != 0)
                         _messageById[entry.PacketId] = msg;
@@ -2814,6 +2818,9 @@ public partial class MainWindow : Window
         {
             if (entry.PacketId != 0 && _messageById.ContainsKey(entry.PacketId)) continue;
             var msg = DbEntryToMessageItem(entry);
+            msg.IsOwnMessage = (_myNodeId != 0 && msg.FromId == _myNodeId);
+            var senderNodeB = _allNodes.FirstOrDefault(n => n.NodeId == msg.FromId);
+            if (senderNodeB != null) msg.SenderShortName = senderNodeB.ShortName;
 
             // Insert at start of _allMessages (before first live entry)
             int insertIdx = 0;
@@ -2834,10 +2841,17 @@ public partial class MainWindow : Window
     private static Models.MessageItem DbEntryToMessageItem(Models.MessageDbEntry e)
     {
         var dt = DateTimeOffset.FromUnixTimeSeconds(e.Timestamp).ToLocalTime();
+        var today = DateTime.Today;
+        string timeStr = dt.Date == today
+            ? dt.ToString("HH:mm")
+            : dt.Date == today.AddDays(-1)
+                ? $"Gestern {dt:HH:mm}"
+                : dt.ToString("dd.MM. HH:mm");
+
         return new Models.MessageItem
         {
             Id              = e.PacketId,
-            Time            = dt.ToString("HH:mm:ss"),
+            Time            = timeStr,
             From            = e.FromName,
             FromId          = e.FromId,
             ToId            = e.ToId,
@@ -5280,7 +5294,6 @@ public partial class MainWindow : Window
         var preview = msg.Message?.Length > 60 ? msg.Message[..60] + "…" : msg.Message ?? string.Empty;
         ReplyIndicatorText.Text = string.Format(Loc("StrReplyingTo"), msg.From, preview);
         ReplyIndicatorPanel.Visibility = Visibility.Visible;
-        MessageTextBox.Clear();
         MessageTextBox.Focus();
         if (MainTabs.SelectedIndex != 0) MainTabs.SelectedIndex = 0;
     }

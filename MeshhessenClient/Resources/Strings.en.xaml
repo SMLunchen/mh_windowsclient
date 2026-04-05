@@ -639,5 +639,6 @@ Green ≤15% | Yellow 15–25% | Red &gt;25% | Gray = no airtime data</sys:Strin
     <sys:String x:Key="StrMsgDbClearChannelPrompt">Delete messages for channel »{0}«:</sys:String>
     <sys:String x:Key="StrMsgDbClearConfirm">Clear</sys:String>
     <sys:String x:Key="StrMsgDbNotEnabled">Message database is not enabled.</sys:String>
+    <sys:String x:Key="StrRelayHopsTooltip">Relay hops (number of intermediate nodes)</sys:String>
 
 </ResourceDictionary>

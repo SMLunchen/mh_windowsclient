@@ -216,6 +216,19 @@
           <li><strong>OSM-Tile-Cache</strong> mit HTTP-Cache-Headers, ETag/If-None-Match, mindestens 7 Tage TTL</li>
         </ul>
       </div>
+
+      <div class="cl-group">
+        <div class="cl-group-title">Chat-Bubbles &amp; Messaging</div>
+        <ul class="cl-list">
+          <li><strong>Chat-Bubble-Design</strong> im Kanal-Nachrichten-Fenster — eigene Nachrichten rechts (grün), fremde links, abgerundete Ecken, Light- &amp; Dark-Mode-Farben</li>
+          <li><strong>DM-Fenster</strong> ebenfalls auf Chat-Bubbles umgestellt — einheitliches Messaging-Erlebnis</li>
+          <li><strong>Node-Farbe als Tint:</strong> die in den Node-Einstellungen gewählte Farbe wird als halbtransparenter Hintergrundton auf der gesamten Bubble sichtbar</li>
+          <li><strong>Relay-Hops</strong> werden pro Nachricht angezeigt (<code>↪ N</code> mit Tooltip „Relay-Hops")</li>
+          <li><strong>Datum bei alten Nachrichten:</strong> gestern → „Gestern HH:mm", ältere → „TT.MM. HH:mm"</li>
+          <li>Absender-Kurzname (ShortName) und Notiz-Badge neben dem Namen</li>
+          <li>MQTT-Nachrichten deutlich als <code>⚡ MQTT</code> gekennzeichnet</li>
+        </ul>
+      </div>
     </div>
 
     <div class="cl-section fixed">
@@ -223,6 +236,7 @@
       <ul class="cl-list">
         <li><strong>Zombie-Prozess beim Beenden:</strong> App schließt sich sauber via <code>Application.Current.Shutdown()</code></li>
         <li><strong>Tab-Navigation:</strong> „Zur Karte"-Button springt korrekt zum Karten-Tab</li>
+        <li><strong>Antwort löscht Eingabe nicht mehr:</strong> Klick auf „Antworten" im Kontextmenü leerte zuvor das Texteingabefeld — behoben</li>
       </ul>
     </div>
   </div>
@@ -566,6 +580,19 @@
           <li><strong>OSM tile cache</strong> with HTTP cache headers, ETag/If-None-Match, min. 7-day TTL</li>
         </ul>
       </div>
+
+      <div class="cl-group">
+        <div class="cl-group-title">Chat Bubbles &amp; Messaging</div>
+        <ul class="cl-list">
+          <li><strong>Chat bubble design</strong> in the channel messages view — own messages on the right (green), others on the left, rounded corners, Light &amp; Dark mode colors</li>
+          <li><strong>DM window</strong> redesigned as chat bubbles too — consistent messaging experience throughout</li>
+          <li><strong>Node color tint:</strong> the color assigned to a node is shown as a semi-transparent background tint across the entire bubble</li>
+          <li><strong>Relay hops</strong> displayed per message (<code>↪ N</code> with tooltip "Relay-Hops")</li>
+          <li><strong>Smart date for old messages:</strong> yesterday → "Gestern HH:mm", older → "DD.MM. HH:mm"</li>
+          <li>Sender short name and note badge shown next to the name</li>
+          <li>MQTT messages clearly labeled as <code>⚡ MQTT</code></li>
+        </ul>
+      </div>
     </div>
 
     <div class="cl-section fixed">
@@ -573,6 +600,7 @@
       <ul class="cl-list">
         <li><strong>Zombie process on exit:</strong> app shuts down cleanly via <code>Application.Current.Shutdown()</code></li>
         <li><strong>Tab navigation:</strong> "Go to map" button now correctly activates the Map tab</li>
+        <li><strong>Reply no longer clears input:</strong> clicking "Reply" in the context menu previously erased any text already typed — fixed</li>
       </ul>
     </div>
   </div>

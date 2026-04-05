@@ -43,6 +43,50 @@ public class IsNotEmptyConverter : IValueConverter
     }
 }
 
+/// <summary>Returns a semi-transparent tint brush (≈20 % opacity) of the node color,
+/// used to tint the whole bubble background. Returns Transparent when hex is empty.</summary>
+public class HexToTintBrushConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value is string hex && !string.IsNullOrEmpty(hex))
+        {
+            try
+            {
+                var color = (Color)ColorConverter.ConvertFromString(hex);
+                return new SolidColorBrush(Color.FromArgb(50, color.R, color.G, color.B));
+            }
+            catch { }
+        }
+        return Brushes.Transparent;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        => throw new NotImplementedException();
+}
+
+/// <summary>Like HexToColorConverter but returns Transparent brush when the hex string is empty.
+/// Used for optional accent borders that should be invisible when no node color is set.</summary>
+public class HexToAccentBrushConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value is string hex && !string.IsNullOrEmpty(hex))
+        {
+            try
+            {
+                var color = (Color)ColorConverter.ConvertFromString(hex);
+                return new SolidColorBrush(color);
+            }
+            catch { }
+        }
+        return Brushes.Transparent;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        => throw new NotImplementedException();
+}
+
 public class NoteToParenthesesConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
