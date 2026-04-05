@@ -72,41 +72,43 @@
       border-left: 3px solid #30363d;
       padding-left: 1.4rem;
     }
-    .version-entry.unreleased { border-left-color: #3fb950; }
-    .version-entry.v158 { border-left-color: #58a6ff; }
-    .version-entry.v10 { border-left-color: #bc8cff; }
+    .version-entry.upcoming  { border-left-color: #3fb950; }
+    .version-entry.current   { border-left-color: #58a6ff; }
+    .version-entry.old       { border-left-color: #484f58; }
 
     .version-header {
       display: flex;
       align-items: center;
       gap: 0.6rem;
-      font-size: 1.3rem;
+      font-size: 1.2rem;
       font-weight: 700;
-      margin-bottom: 0.25rem;
+      margin-bottom: 0.2rem;
       flex-wrap: wrap;
     }
     .version-tag {
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       font-weight: 700;
-      padding: 0.2rem 0.6rem;
+      padding: 0.18rem 0.55rem;
       border-radius: 4px;
       letter-spacing: 0.04em;
+      white-space: nowrap;
     }
-    .version-tag.unreleased { background: #1a4a26; color: #3fb950; border: 1px solid #3fb950; }
-    .version-tag.released   { background: #1c2d5a; color: #58a6ff; border: 1px solid #58a6ff; }
-    .version-tag.beta       { background: #2d1f54; color: #bc8cff; border: 1px solid #bc8cff; }
-    .version-date { font-size: 0.85rem; color: #8b949e; font-weight: 400; }
+    .tag-upcoming { background: #1a4a26; color: #3fb950; border: 1px solid #3fb950; }
+    .tag-latest   { background: #1c2d5a; color: #58a6ff; border: 1px solid #58a6ff; }
+    .tag-release  { background: #1c2128; color: #8b949e; border: 1px solid #30363d; }
+    .tag-beta     { background: #2d1f54; color: #bc8cff; border: 1px solid #bc8cff; }
 
-    .version-desc { color: #8b949e; font-size: 0.93rem; margin: 0.25rem 0 1rem; }
+    .version-date { font-size: 0.83rem; color: #6e7681; font-weight: 400; }
+    .version-desc { color: #8b949e; font-size: 0.9rem; margin: 0.2rem 0 0.9rem; }
 
-    .cl-section { margin-bottom: 1.2rem; }
+    .cl-section { margin-bottom: 1rem; }
     .cl-section h3 {
-      font-size: 0.9rem;
+      font-size: 0.82rem;
       font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.08em;
-      margin-bottom: 0.5rem;
-      padding: 0.15rem 0.5rem;
+      letter-spacing: 0.07em;
+      margin-bottom: 0.45rem;
+      padding: 0.12rem 0.45rem;
       border-radius: 3px;
       display: inline-block;
     }
@@ -114,33 +116,25 @@
     .cl-section.fixed   h3 { background: #3d2219; color: #f85149; }
     .cl-section.changed h3 { background: #2d2208; color: #d29922; }
 
-    .cl-group { margin-bottom: 0.8rem; }
+    .cl-group { margin-bottom: 0.7rem; }
     .cl-group-title {
-      font-size: 0.88rem;
+      font-size: 0.86rem;
       font-weight: 600;
       color: #79c0ff;
-      margin-bottom: 0.25rem;
+      margin-bottom: 0.2rem;
     }
 
-    ul.cl-list {
-      list-style: none;
-      padding: 0;
-    }
+    ul.cl-list { list-style: none; padding: 0; }
     ul.cl-list li {
       color: #c9d1d9;
-      font-size: 0.9rem;
-      padding: 0.15rem 0 0.15rem 1.2rem;
+      font-size: 0.88rem;
+      padding: 0.13rem 0 0.13rem 1.1rem;
       position: relative;
     }
-    ul.cl-list li::before {
-      content: "–";
-      position: absolute;
-      left: 0;
-      color: #484f58;
-    }
+    ul.cl-list li::before { content: "–"; position: absolute; left: 0; color: #484f58; }
     ul.cl-list li strong { color: #e6edf3; }
     ul.cl-list li code {
-      font-size: 0.82rem;
+      font-size: 0.8rem;
       background: #21262d;
       border: 1px solid #30363d;
       border-radius: 3px;
@@ -148,11 +142,7 @@
       color: #79c0ff;
     }
 
-    .divider {
-      border: none;
-      border-top: 1px solid #21262d;
-      margin: 2.5rem 0;
-    }
+    .divider { border: none; border-top: 1px solid #1c2128; margin: 2rem 0; }
 
     footer {
       text-align: center;
@@ -167,9 +157,10 @@
 
 <header>
   <h1>Changelog</h1>
-  <p class="subtitle">Meshhessen Client – Versionshistorie</p>
+  <p class="subtitle">Meshhessen Client – Versionshistorie / Version History</p>
   <div>
-    <a class="btn" href="index.html">← Zurück zur Übersicht</a>
+    <a class="btn" href="index.html">← Zurück / Back</a>
+    <a class="btn" href="https://github.com/SMLunchen/mh_windowsclient/releases">GitHub Releases</a>
   </div>
   <div class="lang-bar">
     <button class="lang-btn active" onclick="setLang('de')" id="btn-de">🇩🇪 Deutsch</button>
@@ -177,17 +168,18 @@
   </div>
 </header>
 
-<!-- ════════ DEUTSCH ════════ -->
+<!-- ════════════════════ DEUTSCH ════════════════════ -->
 <div class="section active" id="de">
 <main>
 
-  <!-- ── Demnächst ── -->
-  <div class="version-entry unreleased">
+  <!-- ── v1.5.8 ── -->
+  <div class="version-entry upcoming">
     <div class="version-header">
-      <span class="version-tag unreleased">Demnächst</span>
-      Persistente Nachrichten-DB & Verbindung merken
+      <span class="version-tag tag-upcoming">v1.5.8</span>
+      <span class="version-tag tag-upcoming" style="font-size:0.7rem; opacity:0.8;">in Arbeit</span>
+      Online-Karten, persistente DB &amp; mehr
     </div>
-    <p class="version-desc">Nachrichten überleben Neustarts. Die App merkt sich, womit du zuletzt verbunden warst.</p>
+    <p class="version-desc">Drei Kartenmodi, HTTP/3, persistente Nachrichten-DB, DM-History und Verbindung merken.</p>
 
     <div class="cl-section added">
       <h3>✨ Hinzugefügt</h3>
@@ -195,14 +187,13 @@
       <div class="cl-group">
         <div class="cl-group-title">Persistente Nachrichten-Datenbank</div>
         <ul class="cl-list">
-          <li><strong>SQLite-Nachrichtenspeicher</strong> für Kanal- und DM-Nachrichten — optional, in den Einstellungen aktivierbar</li>
+          <li><strong>SQLite-Nachrichtenspeicher</strong> für Kanal- und DM-Nachrichten — optional, in Einstellungen aktivierbar</li>
           <li>Je Kanal eine eigene DB-Datei (<code>messages/channel_{index}_{name}.db</code>), DMs in <code>messages/dm.db</code></li>
-          <li>WAL-Modus, Insert/LoadSince/LoadBefore/ClearAll/ClearOlderThan, filterbar per <code>partner_id</code></li>
-          <li><strong>Automatisches Laden</strong> der letzten 24&thinsp;h nach dem Verbinden; ältere Nachrichten per Hochscrollen nachladen</li>
-          <li><strong>DM-History:</strong> beim Öffnen des DM-Fensters werden alle gespeicherten Konversationen automatisch als Tabs wiederhergestellt</li>
+          <li><strong>Automatisches Laden</strong> der letzten 24&thinsp;h nach dem Verbinden; ältere per Hochscrollen nachladen</li>
+          <li><strong>DM-History:</strong> alle gespeicherten Konversationen erscheinen beim Öffnen des DM-Fensters automatisch als Tabs</li>
           <li><strong>Pro-Kanal-Löschung</strong> im Kanäle-Tab — neuer Button pro Zeile, öffnet Dialog mit Zeitraum-Auswahl (Alle / 30 / 90 / 365 Tage)</li>
           <li><strong>Bestätigung</strong> vor dem Leeren einer DM-Konversation</li>
-          <li>Aufbewahrungsdauer konfigurierbar, Retention wird beim Start angewendet</li>
+          <li>Konfigurierbare Aufbewahrungsdauer, wird beim Start automatisch angewendet</li>
           <li>Neue Einstellungen: <code>EnableMessageDb</code>, <code>MessageDbRetentionDays</code></li>
         </ul>
       </div>
@@ -211,47 +202,18 @@
         <div class="cl-group-title">Verbindung merken</div>
         <ul class="cl-list">
           <li><strong>Letzte Verbindungsart</strong> (Serial / Bluetooth / WiFi) wird gespeichert und beim Start automatisch vorausgewählt</li>
-          <li><strong>Letztes BT-Gerät</strong> wird gespeichert; nach dem BT-Scan automatisch in der Liste vorausgewählt</li>
+          <li><strong>Letztes BT-Gerät</strong> nach BT-Scan automatisch in der Liste vorausgewählt</li>
           <li>Neue Einstellungen: <code>LastConnectionType</code>, <code>LastBtDevice</code></li>
         </ul>
       </div>
-    </div>
-  </div>
-
-  <hr class="divider" />
-
-  <!-- ── v1.5.8 ── -->
-  <div class="version-entry v158">
-    <div class="version-header">
-      <span class="version-tag released">v1.5.8</span>
-      Online-Karten, HTTP/3 &amp; neuer Tile-Server
-    </div>
-    <p class="version-desc">Drei Kartenmodi, eigener Tile-Server, HTTP/3-Support und OSM-konformes Caching.</p>
-
-    <div class="cl-section added">
-      <h3>✨ Hinzugefügt</h3>
 
       <div class="cl-group">
         <div class="cl-group-title">Karten-Erweiterungen</div>
         <ul class="cl-list">
-          <li><strong>Online-Karten-Modi:</strong> Meshhessen-Server (lazy download, Deutschland) und OpenStreetMap (weltweit, Policy-konform)</li>
+          <li><strong>Online-Modi:</strong> Meshhessen-Server (lazy download, dauerhaft lokal, alle Stile, Deutschland) und OpenStreetMap (weltweit, nur Standardkarte, OSM-Policy-konform)</li>
           <li><strong>Neuer Tile-Server:</strong> <code>tile.meshhessenclient.de</code> löst den bisherigen Server ab</li>
           <li><strong>HTTP/3</strong> mit automatischem Fallback auf HTTP/2 und HTTP/1.1</li>
-          <li><strong>OSM-Tile-Cache</strong> mit HTTP-Cache-Headers (ETag/If-None-Match, min. 7 Tage TTL)</li>
-          <li>OSM Dark Mode und OpenTopoMap als neue Kartentypen</li>
-          <li>Tile-Server-URL in Einstellungen konfigurierbar</li>
-          <li>Copyright-Hinweise auf der Karte, dynamisch je nach Quelle</li>
-        </ul>
-      </div>
-
-      <div class="cl-group">
-        <div class="cl-group-title">Alert Bell / SOS</div>
-        <ul class="cl-list">
-          <li>SOS-Button in Hauptchat und DM-Fenster</li>
-          <li>Visuelle Benachrichtigung: rote blinkende Umrandung (6 Blinks, 3 Sekunden)</li>
-          <li>Akustische Benachrichtigung (WAV-generiert, unabhängig von System-Stummschaltung)</li>
-          <li>Notification-Bar mit Absender und „Zur Karte springen"-Button</li>
-          <li>Verschwindet automatisch nach 30 Sekunden oder manuell schließbar</li>
+          <li><strong>OSM-Tile-Cache</strong> mit HTTP-Cache-Headers, ETag/If-None-Match, mindestens 7 Tage TTL</li>
         </ul>
       </div>
     </div>
@@ -259,15 +221,250 @@
     <div class="cl-section fixed">
       <h3>🐛 Behoben</h3>
       <ul class="cl-list">
-        <li><strong>Zombie-Prozess:</strong> App beendet sich jetzt sauber (<code>Application.Current.Shutdown()</code>)</li>
+        <li><strong>Zombie-Prozess beim Beenden:</strong> App schließt sich sauber via <code>Application.Current.Shutdown()</code></li>
         <li><strong>Tab-Navigation:</strong> „Zur Karte"-Button springt korrekt zum Karten-Tab</li>
       </ul>
     </div>
+  </div>
 
-    <div class="cl-section changed">
-      <h3>🔄 Geändert</h3>
+  <hr class="divider" />
+
+  <!-- ── v1.5.7 ── -->
+  <div class="version-entry old">
+    <div class="version-header">
+      <span class="version-tag tag-release">v1.5.7</span>
+      Sortierungs-Fixes
+    </div>
+    <div class="cl-section fixed">
+      <h3>🐛 Behoben</h3>
       <ul class="cl-list">
-        <li><strong>Alert Bell Format:</strong> von ASCII <code>0x07</code> auf Emoji 🔔 umgestellt — kompatibel mit Android &amp; Web</li>
+        <li>LastSeen-Sortierung: Datum wurde als Text verglichen statt als reelles Datum → falsche Reihenfolge</li>
+        <li>Batterie-Sortierung: Nodes ohne Batterie-Daten werden jetzt korrekt ans Ende sortiert</li>
+      </ul>
+    </div>
+  </div>
+
+  <hr class="divider" />
+
+  <!-- ── v1.5.6 ── -->
+  <div class="version-entry old">
+    <div class="version-header">
+      <span class="version-tag tag-release">v1.5.6</span>
+      Traceroute-Erweiterungen, QoL &amp; Übersetzungen
+    </div>
+    <p class="version-desc">Viele Detailverbesserungen: bessere Traceroutes, Copy-Funktion, Hyperlinks, Übersetzungs-Fixes.</p>
+
+    <div class="cl-section added">
+      <h3>✨ Hinzugefügt</h3>
+      <div class="cl-group">
+        <div class="cl-group-title">Traceroute</div>
+        <ul class="cl-list">
+          <li>Zeitraum-Filter (3d / 7d / 14d / 30d / 90d / Alle) in der Toolbar</li>
+          <li>Historische Traceroutes direkt aus der Datenbank laden</li>
+          <li>Deduplizierungs-Checkbox: nur neueste Traceroute pro Node-Paar</li>
+          <li>SNR-Popup beim Klick auf Hop-Segment in der Karte</li>
+          <li>Richtungspfeile auf Traceroute-Segmenten</li>
+          <li>MQTT-Hops mit ⚡-Symbol gekennzeichnet</li>
+          <li>Karten-Legende mit Farbe und ✕-Button pro Trace</li>
+        </ul>
+      </div>
+      <div class="cl-group">
+        <div class="cl-group-title">Nachrichten &amp; UI</div>
+        <ul class="cl-list">
+          <li>Nachrichten kopierbar (Rechtsklick → „Nachricht kopieren")</li>
+          <li>Hyperlinks in Nachrichten anklickbar</li>
+          <li>Antwort-Funktion: Zitat-Block bei beantworteten Nachrichten verbessert (Wrapping, Sichtbarkeit)</li>
+          <li>Wegpunkte (Waypoints) in der Karte komplett überarbeitet</li>
+          <li>Kanalauslastungs-Prozentwert korrekt berechnet und angezeigt</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="cl-section fixed">
+      <h3>🐛 Behoben</h3>
+      <ul class="cl-list">
+        <li>Viele Übersetzungs-Fixes in Deutsch und Englisch</li>
+        <li>Mesh-Health-Indikatoren angepasst</li>
+        <li>Traceroute: Automatisches Speichern repariert</li>
+        <li>Emoji-Darstellung: Emojis werden jetzt farbig angezeigt</li>
+        <li>Pfad-Stabilität LED (Grau-LED-Fix für Traceroutes ohne Relay-Hops)</li>
+      </ul>
+    </div>
+  </div>
+
+  <hr class="divider" />
+
+  <!-- ── v1.5.5 ── -->
+  <div class="version-entry old">
+    <div class="version-header">
+      <span class="version-tag tag-release">v1.5.5</span>
+      Telemetrie-Analyse &amp; PKI-Entschlüsselung
+    </div>
+    <p class="version-desc">Das größte Update bisher: vollständige Telemetrie-Analyse mit LED-Ampeln und PKI-Entschlüsselung.</p>
+
+    <div class="cl-section added">
+      <h3>✨ Hinzugefügt</h3>
+      <div class="cl-group">
+        <div class="cl-group-title">Telemetrie-Analyse</div>
+        <ul class="cl-list">
+          <li>Vollständiges Telemetrie-Analyse-Fenster pro Node: SNR, RSSI, Batterie, Airtime, Kanalauslastung, Routing, Nachbarn, Wetter</li>
+          <li>Zeitreihen-Graphen (OxyPlot): SNR-Trend, RSSI-Verlauf, Batterie-Tag/Nacht-Profil</li>
+          <li>Nachtabfall-Erkennung: wie viel % Batterie nachts (ohne Solar) verbraucht wird</li>
+          <li>Pfad-Stabilität: Hop-Anzahl, Pfadwechsel-Rate, Hop-Kosten</li>
+          <li>Nachbar-Analyse: direkte Verbindungen mit SNR-Trend pro Nachbar</li>
+          <li>LED-Ampeln im Hauptfenster: 📶 Signal, 👥 Nachbarn, 🛤️ Pfad, 🌐 Mesh-Health, 🌤️ Wetter</li>
+          <li>Mesh-Health-Tooltip: Top-5-Nodes nach Kanalauslastung</li>
+        </ul>
+      </div>
+      <div class="cl-group">
+        <div class="cl-group-title">PKI-Entschlüsselung</div>
+        <ul class="cl-list">
+          <li>Client-seitige PKI-Entschlüsselung: X25519 + AES-256-CTR</li>
+          <li>Private Key wird automatisch vom verbundenen Gerät geladen, nur im RAM gehalten</li>
+          <li>🔑-Spalte in der Node-Liste: zeigt ob der Public Key eines Nodes bekannt ist</li>
+          <li>Lokale CSV-Datei (<code>node_keys.csv</code>) für Public-Key-Verwaltung</li>
+        </ul>
+      </div>
+      <div class="cl-group">
+        <div class="cl-group-title">Node-Verwaltung</div>
+        <ul class="cl-list">
+          <li>Device-Metadata: Firmware-Version und Hardware-Modell im Node-Info-Fenster</li>
+          <li>Node-Konfiguration: Einstellungen des verbundenen Geräts direkt anpassen</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider" />
+
+  <!-- ── v1.5.4 ── -->
+  <div class="version-entry old">
+    <div class="version-header">
+      <span class="version-tag tag-release">v1.5.4</span>
+      Traceroute, Tap-Back &amp; Update-Check
+    </div>
+    <p class="version-desc">Traceroute-Visualisierung auf der Karte, Emoji-Reaktionen und automatischer Update-Check.</p>
+
+    <div class="cl-section added">
+      <h3>✨ Hinzugefügt</h3>
+      <ul class="cl-list">
+        <li><strong>Traceroute:</strong> Hop-Tabelle (Name, Entfernung, SNR), Karten-Visualisierung mit durchgezogenen/gestrichelten Linien, mehrere Traces gleichzeitig mit eindeutigen Farben</li>
+        <li>Traceroutes werden automatisch als JSON in <code>traceroutes/</code> gespeichert und sind nachladbar</li>
+        <li><strong>Tap-Back-Reaktionen:</strong> auf Nachrichten mit Emoji reagieren (32 Emojis), kompatibel mit Android-App</li>
+        <li><strong>Update-Check:</strong> beim Start wird automatisch nach neuen Versionen auf GitHub gesucht; klickbarer Hinweis in der Statusleiste</li>
+        <li>Automatische Traceroute-Speicherung</li>
+      </ul>
+    </div>
+  </div>
+
+  <hr class="divider" />
+
+  <!-- ── v1.5.3 ── -->
+  <div class="version-entry old">
+    <div class="version-header">
+      <span class="version-tag tag-release">v1.5.3</span>
+      GPS-Tracks, Mehrsprachigkeit &amp; Node-Konfiguration
+    </div>
+    <p class="version-desc">Standortverläufe auf der Karte, vollständige DE/EN-Übersetzung, Node-Konfiguration direkt aus dem Client.</p>
+
+    <div class="cl-section added">
+      <h3>✨ Hinzugefügt</h3>
+      <ul class="cl-list">
+        <li><strong>GPS-Track-Logging:</strong> Standortverlauf von Nodes auf der Karte anzeigen (Farbe des Nodes, Zeitstempel pro Punkt)</li>
+        <li><strong>Mehrsprachigkeit:</strong> vollständige Deutsch/Englisch-Unterstützung, umschaltbar in Einstellungen</li>
+        <li><strong>Node-Konfiguration:</strong> Einstellungen des verbundenen Geräts direkt anpassen</li>
+        <li><strong>Meshhessen-Schnellkonfiguration:</strong> One-Click für Short Slow + EU868 + Meshhessen-Kanal</li>
+        <li><strong>Nodes anpinnen:</strong> Nodes in der Liste oben fixieren, unabhängig von Sortierung</li>
+        <li><strong>BT-PIN ändern:</strong> Bluetooth-PIN direkt aus dem Client setzen</li>
+        <li><strong>Auto-Reconnect:</strong> nach Einstellungsänderungen die einen Geräte-Neustart erfordern</li>
+      </ul>
+    </div>
+  </div>
+
+  <hr class="divider" />
+
+  <!-- ── v1.5.2 ── -->
+  <div class="version-entry old">
+    <div class="version-header">
+      <span class="version-tag tag-release">v1.5.2</span>
+      Alert Bell, eigener Tile-Server &amp; PSK-Export
+    </div>
+    <p class="version-desc">SOS-Notruf, eigener Tile-Server wegen OSM-Policy, PSK-Export-Funktion.</p>
+
+    <div class="cl-section added">
+      <h3>✨ Hinzugefügt</h3>
+      <ul class="cl-list">
+        <li><strong>Alert Bell / SOS:</strong> Notruf senden und empfangen mit 🔔-Emoji, visueller Benachrichtigung (rote Umrandung) und „Zur Karte"-Button</li>
+        <li><strong>Eigener Tile-Server:</strong> Umstellung auf eigenen Server wegen OSM-Tile-Policy (kein Bulk-Download auf offiziellem OSM-Server erlaubt)</li>
+        <li><strong>PSK-Export:</strong> Channel-PSK aus der App exportieren</li>
+        <li><strong>Channel-CSV:</strong> CHANNELS.csv mit bekannten Meshtastic-Kanälen</li>
+        <li>Copyright-Hinweise auf der Karte, dynamisch je nach Quelle</li>
+      </ul>
+    </div>
+
+    <div class="cl-section fixed">
+      <h3>🐛 Behoben</h3>
+      <ul class="cl-list">
+        <li>Anzeige-Bug in Dark Mode Tabs</li>
+        <li>Kontextmenüs repariert</li>
+        <li>Text-Wrapping in Nachrichten-Fenster</li>
+      </ul>
+    </div>
+  </div>
+
+  <hr class="divider" />
+
+  <!-- ── v1.5 ── -->
+  <div class="version-entry old">
+    <div class="version-header">
+      <span class="version-tag tag-release">v1.5</span>
+      WiFi &amp; Bluetooth
+    </div>
+    <p class="version-desc">Der Client kann jetzt auch über TCP/WiFi und Bluetooth BLE verbinden — nicht mehr nur Serial/USB.</p>
+
+    <div class="cl-section added">
+      <h3>✨ Hinzugefügt</h3>
+      <ul class="cl-list">
+        <li><strong>TCP/WiFi-Verbindung:</strong> Hostname/IP + Port konfigurierbar</li>
+        <li><strong>Bluetooth BLE:</strong> direkte GATT-Verbindung ohne Framing, BLE-Gerät-Scan und Auswahl</li>
+        <li>Verbindungstyp-Auswahl als Radio-Buttons in der UI</li>
+      </ul>
+    </div>
+  </div>
+
+  <hr class="divider" />
+
+  <!-- ── v1.4 ── -->
+  <div class="version-entry old">
+    <div class="version-header">
+      <span class="version-tag tag-release">v1.4 – v1.4.2</span>
+      MQTT, Node-Farben &amp; Verbindungs-Fixes
+    </div>
+    <p class="version-desc">MQTT-Nachrichten besser anzeigen, Nodes einfärben und beschriften, Verbindungsrobustheit verbessert.</p>
+
+    <div class="cl-section added">
+      <h3>✨ Hinzugefügt</h3>
+      <ul class="cl-list">
+        <li><strong>Bessere MQTT-Anzeige:</strong> MQTT-Nachrichten optisch gekennzeichnet</li>
+        <li><strong>Node-Farben:</strong> Nodes individuell einfärben (Karte + Chat-Liste)</li>
+        <li><strong>Node-Notizen:</strong> Freitext-Notizen pro Node</li>
+        <li>Node-Sortierung verbessert (Name, SNR, RSSI, Distanz)</li>
+        <li>Schnellfilter für die Node-Liste</li>
+        <li>Kurzname (ShortName) in der Node-Liste</li>
+        <li>RSSI-Spalte in der Node-Liste</li>
+        <li>T-Deck: verlangsamtes Channel-Loading als Workaround für langsames Gerät</li>
+        <li>Auto-Recovery wenn Node aus dem Protobuf-Modus fällt</li>
+      </ul>
+    </div>
+
+    <div class="cl-section fixed">
+      <h3>🐛 Behoben</h3>
+      <ul class="cl-list">
+        <li>Disconnect/Reconnect: nach Reconnect wurden keine Daten mehr geladen</li>
+        <li>Tile-Download: Fortschrittsanzeige und Fehlermeldungen verständlicher</li>
+        <li>Sortierung nach Distanz, SNR und RSSI optimiert</li>
+        <li>Zoom-Button auf der Karte repariert</li>
+        <li>Hop-Count-Anzeige: war fälschlicherweise −1</li>
       </ul>
     </div>
   </div>
@@ -275,54 +472,44 @@
   <hr class="divider" />
 
   <!-- ── v1.0-Beta ── -->
-  <div class="version-entry v10">
+  <div class="version-entry old">
     <div class="version-header">
-      <span class="version-tag beta">v1.0-Beta</span>
+      <span class="version-tag tag-beta">v1.0-Beta</span>
       <span class="version-date">2026-02-08</span>
       Erstveröffentlichung
     </div>
-    <p class="version-desc">Erster öffentlicher Beta-Release mit DMs, Message-Logging und vollständiger Telemetrie-Analyse.</p>
+    <p class="version-desc">Erster öffentlicher Beta-Release: DMs, Message-Logging, Offline-Karte, Telemetrie-Grundlage und Dark Mode.</p>
 
     <div class="cl-section added">
       <h3>✨ Hinzugefügt</h3>
-
       <div class="cl-group">
-        <div class="cl-group-title">Direct Messages (DMs)</div>
+        <div class="cl-group-title">Nachrichten</div>
         <ul class="cl-list">
+          <li>Broadcast &amp; Direktnachrichten, Multi-Channel</li>
           <li>Separates DM-Fenster mit Tab-System für mehrere Konversationen</li>
-          <li>Automatische Benachrichtigung (Fenster vordergrund, Taskbar-Blinken, System-Sound)</li>
-          <li>Orange Hervorhebung und fette Schrift für ungelesene Nachrichten</li>
+          <li>Benachrichtigungen bei neuen DMs (Fenster vordergrund, Taskbar-Blinken, System-Sound)</li>
+          <li>Orange Hervorhebung für ungelesene DM-Tabs</li>
           <li>„💬 DM senden" per Rechtsklick auf Node</li>
+          <li>Automatisches Logging aller Nachrichten in <code>logs/</code></li>
         </ul>
       </div>
-
       <div class="cl-group">
-        <div class="cl-group-title">Message-Logging</div>
+        <div class="cl-group-title">Karte &amp; Nodes</div>
         <ul class="cl-list">
-          <li>Automatisches Logging aller Nachrichten in separate Logdateien</li>
-          <li>Separate Dateien pro Kanal (<code>logs/Channel_[Index]_[Name].log</code>) und pro DM-Partner</li>
-          <li>UTF-8 Encoding, Thread-sicheres Schreiben</li>
+          <li>Offline-OSM-Karte mit Node-Pins (Mapsui)</li>
+          <li>GPS-Tracks und Wegpunkte auf der Karte</li>
+          <li>Node-Übersicht mit SNR, RSSI, Batterie, Entfernung, Hop-Anzahl</li>
+          <li>Eigener Standort per Rechtsklick auf Karte setzbar</li>
+          <li>Tile-Downloader für Offline-Nutzung</li>
         </ul>
       </div>
-
       <div class="cl-group">
-        <div class="cl-group-title">Karte & Telemetrie</div>
+        <div class="cl-group-title">System</div>
         <ul class="cl-list">
-          <li>Offline-OSM-Karte mit Node-Pins, GPS-Tracks, Wegpunkten</li>
-          <li>Telemetrie-Analyse: SNR, RSSI, Batterie, Kanalauslastung, Routing, Nachbarn</li>
-          <li>Traceroute mit Hop-Tabelle und Karten-Visualisierung</li>
-          <li>PKI-Entschlüsselung (X25519 + AES-256-CTR, Key vom Gerät)</li>
-          <li>LED-Ampeln für Signal, Nachbarn, Pfad, Mesh-Health, Wetter</li>
-        </ul>
-      </div>
-
-      <div class="cl-group">
-        <div class="cl-group-title">Verbindung & System</div>
-        <ul class="cl-list">
-          <li>USB/Serial, TCP/WiFi, Bluetooth BLE — Auto-Reconnect</li>
-          <li>Tap-Back-Reaktionen (32 Emojis), Zitat-Block-Antworten</li>
-          <li>Multi-Channel-Support, Firmware-Version- und Hardware-Anzeige</li>
-          <li>Update-Check, Dark Mode, Deutsch/Englisch</li>
+          <li>USB/Serial-Verbindung mit robustem Protokoll-Framing</li>
+          <li>Dark Mode (ModernWPF Fluent Design)</li>
+          <li>Debug-Tab mit Live-Log</li>
+          <li>Persistente Einstellungen (INI-Datei)</li>
         </ul>
       </div>
     </div>
@@ -331,17 +518,18 @@
 </main>
 </div>
 
-<!-- ════════ ENGLISH ════════ -->
+<!-- ════════════════════ ENGLISH ════════════════════ -->
 <div class="section" id="en">
 <main>
 
-  <!-- ── Coming Soon ── -->
-  <div class="version-entry unreleased">
+  <!-- ── v1.5.8 ── -->
+  <div class="version-entry upcoming">
     <div class="version-header">
-      <span class="version-tag unreleased">Coming Soon</span>
-      Persistent Message DB &amp; Remember Connection
+      <span class="version-tag tag-upcoming">v1.5.8</span>
+      <span class="version-tag tag-upcoming" style="font-size:0.7rem; opacity:0.8;">in progress</span>
+      Online Maps, Persistent DB &amp; More
     </div>
-    <p class="version-desc">Messages survive restarts. The app remembers how you last connected.</p>
+    <p class="version-desc">Three map modes, HTTP/3, persistent message DB, DM history and remember connection.</p>
 
     <div class="cl-section added">
       <h3>✨ Added</h3>
@@ -351,10 +539,9 @@
         <ul class="cl-list">
           <li><strong>SQLite message store</strong> for channel and DM messages — optional, enable in settings</li>
           <li>One DB file per channel (<code>messages/channel_{index}_{name}.db</code>), DMs in <code>messages/dm.db</code></li>
-          <li>WAL mode, Insert/LoadSince/LoadBefore/ClearAll/ClearOlderThan, filterable by <code>partner_id</code></li>
           <li><strong>Auto-load</strong> last 24&thinsp;h on connect; scroll up to lazy-load older messages</li>
           <li><strong>DM history:</strong> all saved conversations auto-restored as tabs when DM window opens</li>
-          <li><strong>Per-channel deletion</strong> in Channels tab — new button per row, opens dialog with time range (All / 30 / 90 / 365 days)</li>
+          <li><strong>Per-channel deletion</strong> in Channels tab — button per row, opens dialog with time range (All / 30 / 90 / 365 days)</li>
           <li><strong>Confirmation</strong> before clearing a DM conversation</li>
           <li>Configurable retention period, applied on startup</li>
           <li>New settings: <code>EnableMessageDb</code>, <code>MessageDbRetentionDays</code></li>
@@ -365,47 +552,18 @@
         <div class="cl-group-title">Remember Connection</div>
         <ul class="cl-list">
           <li><strong>Last connection type</strong> (Serial / Bluetooth / WiFi) saved and pre-selected on next launch</li>
-          <li><strong>Last BT device</strong> saved and auto-selected after BT scan</li>
+          <li><strong>Last BT device</strong> auto-selected after BT scan</li>
           <li>New settings: <code>LastConnectionType</code>, <code>LastBtDevice</code></li>
         </ul>
       </div>
-    </div>
-  </div>
-
-  <hr class="divider" />
-
-  <!-- ── v1.5.8 ── -->
-  <div class="version-entry v158">
-    <div class="version-header">
-      <span class="version-tag released">v1.5.8</span>
-      Online Maps, HTTP/3 &amp; New Tile Server
-    </div>
-    <p class="version-desc">Three map modes, own tile server, HTTP/3 support and OSM-compliant caching.</p>
-
-    <div class="cl-section added">
-      <h3>✨ Added</h3>
 
       <div class="cl-group">
         <div class="cl-group-title">Map Enhancements</div>
         <ul class="cl-list">
-          <li><strong>Online map modes:</strong> Meshhessen server (lazy download, Germany) and OpenStreetMap (worldwide, policy-compliant)</li>
+          <li><strong>Online modes:</strong> Meshhessen server (lazy download, Germany) and OpenStreetMap (worldwide, policy-compliant)</li>
           <li><strong>New tile server:</strong> <code>tile.meshhessenclient.de</code> replaces the previous server</li>
           <li><strong>HTTP/3</strong> with automatic fallback to HTTP/2 and HTTP/1.1</li>
-          <li><strong>OSM tile cache</strong> with HTTP cache headers (ETag/If-None-Match, min. 7-day TTL)</li>
-          <li>OSM Dark mode and OpenTopoMap as new map types</li>
-          <li>Tile server URL configurable in settings</li>
-          <li>Dynamic copyright attribution on map</li>
-        </ul>
-      </div>
-
-      <div class="cl-group">
-        <div class="cl-group-title">Alert Bell / SOS</div>
-        <ul class="cl-list">
-          <li>SOS button in main chat and DM window</li>
-          <li>Visual alert: red flashing border (6 blinks over 3 seconds)</li>
-          <li>Audio alert (WAV-generated, works even when system is muted)</li>
-          <li>Notification bar with sender name and "Jump to map" button</li>
-          <li>Auto-dismisses after 30 seconds or manually closeable</li>
+          <li><strong>OSM tile cache</strong> with HTTP cache headers, ETag/If-None-Match, min. 7-day TTL</li>
         </ul>
       </div>
     </div>
@@ -413,15 +571,242 @@
     <div class="cl-section fixed">
       <h3>🐛 Fixed</h3>
       <ul class="cl-list">
-        <li><strong>Zombie process on exit:</strong> app now shuts down cleanly via <code>Application.Current.Shutdown()</code></li>
+        <li><strong>Zombie process on exit:</strong> app shuts down cleanly via <code>Application.Current.Shutdown()</code></li>
         <li><strong>Tab navigation:</strong> "Go to map" button now correctly activates the Map tab</li>
       </ul>
     </div>
+  </div>
 
-    <div class="cl-section changed">
-      <h3>🔄 Changed</h3>
+  <hr class="divider" />
+
+  <!-- ── v1.5.7 ── -->
+  <div class="version-entry old">
+    <div class="version-header">
+      <span class="version-tag tag-release">v1.5.7</span>
+      Sorting Fixes
+    </div>
+    <div class="cl-section fixed">
+      <h3>🐛 Fixed</h3>
       <ul class="cl-list">
-        <li><strong>Alert Bell format:</strong> switched from ASCII <code>0x07</code> to emoji 🔔 — compatible with Android &amp; web apps</li>
+        <li>LastSeen sorting: dates were compared as strings instead of real date values → wrong order</li>
+        <li>Battery sorting: nodes without battery data now correctly sorted to the end</li>
+      </ul>
+    </div>
+  </div>
+
+  <hr class="divider" />
+
+  <!-- ── v1.5.6 ── -->
+  <div class="version-entry old">
+    <div class="version-header">
+      <span class="version-tag tag-release">v1.5.6</span>
+      Traceroute Enhancements, QoL &amp; Translations
+    </div>
+    <p class="version-desc">Many detail improvements: better traceroutes, copy function, hyperlinks, translation fixes.</p>
+
+    <div class="cl-section added">
+      <h3>✨ Added</h3>
+      <div class="cl-group">
+        <div class="cl-group-title">Traceroute</div>
+        <ul class="cl-list">
+          <li>Time range filter toolbar (3d / 7d / 14d / 30d / 90d / All)</li>
+          <li>Load historical traceroutes directly from the database</li>
+          <li>Deduplication checkbox: show only the latest traceroute per node pair</li>
+          <li>SNR popup on click of a hop segment on the map</li>
+          <li>Direction arrows on traceroute segments</li>
+          <li>MQTT hops marked with ⚡ symbol</li>
+          <li>Map legend with color and individual ✕ remove button per trace</li>
+        </ul>
+      </div>
+      <div class="cl-group">
+        <div class="cl-group-title">Messaging &amp; UI</div>
+        <ul class="cl-list">
+          <li>Copyable messages (right-click → "Copy Message")</li>
+          <li>Clickable hyperlinks in messages</li>
+          <li>Reply quote block: improved wrapping and visibility</li>
+          <li>Waypoints on map completely overhauled</li>
+          <li>Channel utilization percentage correctly calculated</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="cl-section fixed">
+      <h3>🐛 Fixed</h3>
+      <ul class="cl-list">
+        <li>Many translation fixes (German and English)</li>
+        <li>Mesh health indicators adjusted</li>
+        <li>Traceroute auto-save repaired</li>
+        <li>Emoji display: emojis now rendered in color</li>
+        <li>Path stability LED (grey LED fix for traceroutes without relay hops)</li>
+      </ul>
+    </div>
+  </div>
+
+  <hr class="divider" />
+
+  <!-- ── v1.5.5 ── -->
+  <div class="version-entry old">
+    <div class="version-header">
+      <span class="version-tag tag-release">v1.5.5</span>
+      Telemetry Analysis &amp; PKI Decryption
+    </div>
+    <p class="version-desc">The biggest update yet: full telemetry analysis with LED indicators and PKI decryption.</p>
+
+    <div class="cl-section added">
+      <h3>✨ Added</h3>
+      <div class="cl-group">
+        <div class="cl-group-title">Telemetry Analysis</div>
+        <ul class="cl-list">
+          <li>Full telemetry analysis window per node: SNR, RSSI, battery, airtime, channel utilization, routing, neighbors, weather</li>
+          <li>Time-series graphs (OxyPlot): SNR trend, RSSI history, battery day/night profile</li>
+          <li>Night-drop detection: how much battery % the node uses overnight (no solar)</li>
+          <li>Path stability: hop count, path-change rate, hop cost</li>
+          <li>Neighbor analysis: direct links with SNR trend per neighbor</li>
+          <li>LED indicators in main window: 📶 Signal, 👥 Neighbors, 🛤️ Path, 🌐 Mesh Health, 🌤️ Weather</li>
+          <li>Mesh health tooltip: top-5 nodes by channel utilization</li>
+        </ul>
+      </div>
+      <div class="cl-group">
+        <div class="cl-group-title">PKI Decryption</div>
+        <ul class="cl-list">
+          <li>Client-side PKI decryption: X25519 + AES-256-CTR</li>
+          <li>Private key loaded automatically from connected device, held in RAM only</li>
+          <li>🔑 column in node list: shows whether a node's public key is known</li>
+          <li>Local CSV file (<code>node_keys.csv</code>) for public key management</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider" />
+
+  <!-- ── v1.5.4 ── -->
+  <div class="version-entry old">
+    <div class="version-header">
+      <span class="version-tag tag-release">v1.5.4</span>
+      Traceroute, Tap-Back &amp; Update Check
+    </div>
+    <p class="version-desc">Traceroute map visualization, emoji reactions and automatic update check.</p>
+
+    <div class="cl-section added">
+      <h3>✨ Added</h3>
+      <ul class="cl-list">
+        <li><strong>Traceroute:</strong> hop table (name, distance, SNR), map visualization with solid/dashed lines, multiple simultaneous traces with unique colors</li>
+        <li>Traceroutes auto-saved as JSON in <code>traceroutes/</code>, reloadable later</li>
+        <li><strong>Tap-back reactions:</strong> react to messages with emoji (32 emojis), compatible with Android app</li>
+        <li><strong>Update check:</strong> automatically checks GitHub for new versions on startup; clickable hint in status bar</li>
+      </ul>
+    </div>
+  </div>
+
+  <hr class="divider" />
+
+  <!-- ── v1.5.3 ── -->
+  <div class="version-entry old">
+    <div class="version-header">
+      <span class="version-tag tag-release">v1.5.3</span>
+      GPS Tracks, Multi-Language &amp; Node Config
+    </div>
+    <p class="version-desc">Location history on the map, full DE/EN translation, node configuration from the client.</p>
+
+    <div class="cl-section added">
+      <h3>✨ Added</h3>
+      <ul class="cl-list">
+        <li><strong>GPS track logging:</strong> display node location history on the map (node color, timestamp per point)</li>
+        <li><strong>Multi-language:</strong> full German/English support, switchable in settings</li>
+        <li><strong>Node configuration:</strong> adjust connected device settings directly from the client</li>
+        <li><strong>Meshhessen quick-config:</strong> one-click Short Slow + EU868 + Meshhessen channel setup</li>
+        <li><strong>Pin nodes:</strong> pin nodes to the top of the list regardless of sort order</li>
+        <li><strong>Change BT PIN:</strong> set Bluetooth PIN directly from the client</li>
+        <li><strong>Auto-reconnect</strong> after settings changes that require a device reboot</li>
+      </ul>
+    </div>
+  </div>
+
+  <hr class="divider" />
+
+  <!-- ── v1.5.2 ── -->
+  <div class="version-entry old">
+    <div class="version-header">
+      <span class="version-tag tag-release">v1.5.2</span>
+      Alert Bell, Own Tile Server &amp; PSK Export
+    </div>
+    <p class="version-desc">SOS emergency alert, own tile server due to OSM policy, PSK export.</p>
+
+    <div class="cl-section added">
+      <h3>✨ Added</h3>
+      <ul class="cl-list">
+        <li><strong>Alert Bell / SOS:</strong> send and receive emergency alerts with 🔔 emoji, visual notification (red flashing border) and "Jump to map" button</li>
+        <li><strong>Own tile server:</strong> switched away from official OSM server (bulk downloads violate OSM tile policy)</li>
+        <li><strong>PSK export:</strong> export channel PSK from the app</li>
+        <li><strong>Channel CSV:</strong> CHANNELS.csv with known Meshtastic community channels</li>
+        <li>Dynamic copyright attribution on map</li>
+      </ul>
+    </div>
+
+    <div class="cl-section fixed">
+      <h3>🐛 Fixed</h3>
+      <ul class="cl-list">
+        <li>Dark mode display bug in tabs</li>
+        <li>Context menus repaired</li>
+        <li>Text wrapping in messages window</li>
+      </ul>
+    </div>
+  </div>
+
+  <hr class="divider" />
+
+  <!-- ── v1.5 ── -->
+  <div class="version-entry old">
+    <div class="version-header">
+      <span class="version-tag tag-release">v1.5</span>
+      WiFi &amp; Bluetooth
+    </div>
+    <p class="version-desc">The client can now connect via TCP/WiFi and Bluetooth BLE — not just Serial/USB.</p>
+
+    <div class="cl-section added">
+      <h3>✨ Added</h3>
+      <ul class="cl-list">
+        <li><strong>TCP/WiFi connection:</strong> configurable hostname/IP + port</li>
+        <li><strong>Bluetooth BLE:</strong> direct GATT connection, BLE device scan and selection</li>
+        <li>Connection type selection via radio buttons in the UI</li>
+      </ul>
+    </div>
+  </div>
+
+  <hr class="divider" />
+
+  <!-- ── v1.4 ── -->
+  <div class="version-entry old">
+    <div class="version-header">
+      <span class="version-tag tag-release">v1.4 – v1.4.2</span>
+      MQTT, Node Colors &amp; Connection Fixes
+    </div>
+    <p class="version-desc">Better MQTT display, color-code and annotate nodes, improved connection robustness.</p>
+
+    <div class="cl-section added">
+      <h3>✨ Added</h3>
+      <ul class="cl-list">
+        <li><strong>Better MQTT display:</strong> MQTT messages visually distinguished</li>
+        <li><strong>Node colors:</strong> color-code nodes individually (map + chat list)</li>
+        <li><strong>Node notes:</strong> free-text annotations per node</li>
+        <li>Improved node sorting (name, SNR, RSSI, distance)</li>
+        <li>Quick filter for the node list</li>
+        <li>Short name (ShortName) in node list</li>
+        <li>RSSI column in node list</li>
+        <li>T-Deck: slowed channel loading as workaround for slow hardware</li>
+        <li>Auto-recovery when node drops out of protobuf mode</li>
+      </ul>
+    </div>
+
+    <div class="cl-section fixed">
+      <h3>🐛 Fixed</h3>
+      <ul class="cl-list">
+        <li>Disconnect/reconnect: no data was loaded after reconnecting</li>
+        <li>Tile download: progress and error messages made clearer</li>
+        <li>Sorting by distance, SNR and RSSI optimized</li>
+        <li>Zoom button on map repaired</li>
+        <li>Hop count display: was incorrectly showing −1</li>
       </ul>
     </div>
   </div>
@@ -429,54 +814,44 @@
   <hr class="divider" />
 
   <!-- ── v1.0-Beta ── -->
-  <div class="version-entry v10">
+  <div class="version-entry old">
     <div class="version-header">
-      <span class="version-tag beta">v1.0-Beta</span>
+      <span class="version-tag tag-beta">v1.0-Beta</span>
       <span class="version-date">2026-02-08</span>
       Initial Release
     </div>
-    <p class="version-desc">First public beta with DMs, message logging and full telemetry analysis.</p>
+    <p class="version-desc">First public beta: DMs, message logging, offline map, basic telemetry and dark mode.</p>
 
     <div class="cl-section added">
       <h3>✨ Added</h3>
-
       <div class="cl-group">
-        <div class="cl-group-title">Direct Messages (DMs)</div>
+        <div class="cl-group-title">Messaging</div>
         <ul class="cl-list">
+          <li>Broadcast &amp; direct messages, multi-channel</li>
           <li>Dedicated DM window with tab system for multiple conversations</li>
-          <li>Automatic notifications (foreground, taskbar flash, system sound)</li>
-          <li>Orange highlight and bold text for unread messages</li>
+          <li>Notifications for new DMs (foreground, taskbar flash, system sound)</li>
+          <li>Orange highlight for unread DM tabs</li>
           <li>"💬 Send DM" via right-click on node</li>
+          <li>Automatic message logging to <code>logs/</code></li>
         </ul>
       </div>
-
       <div class="cl-group">
-        <div class="cl-group-title">Message Logging</div>
+        <div class="cl-group-title">Map &amp; Nodes</div>
         <ul class="cl-list">
-          <li>Automatic logging of all messages to separate log files</li>
-          <li>Separate files per channel (<code>logs/Channel_[Index]_[Name].log</code>) and per DM partner</li>
-          <li>UTF-8 encoding, thread-safe writing</li>
+          <li>Offline OSM map with node pins (Mapsui)</li>
+          <li>GPS tracks and waypoints on the map</li>
+          <li>Node list with SNR, RSSI, battery, distance, hop count</li>
+          <li>Set own location via right-click on map</li>
+          <li>Tile downloader for offline use</li>
         </ul>
       </div>
-
       <div class="cl-group">
-        <div class="cl-group-title">Map &amp; Telemetry</div>
+        <div class="cl-group-title">System</div>
         <ul class="cl-list">
-          <li>Offline OSM map with node pins, GPS tracks, waypoints</li>
-          <li>Telemetry analysis: SNR, RSSI, battery, channel utilization, routing, neighbors</li>
-          <li>Traceroute with hop table and map visualization</li>
-          <li>PKI decryption (X25519 + AES-256-CTR, key loaded from device)</li>
-          <li>LED indicators for signal, neighbors, path, mesh health, weather</li>
-        </ul>
-      </div>
-
-      <div class="cl-group">
-        <div class="cl-group-title">Connection &amp; System</div>
-        <ul class="cl-list">
-          <li>USB/Serial, TCP/WiFi, Bluetooth BLE — auto-reconnect</li>
-          <li>Tap-back reactions (32 emojis), quote-block replies</li>
-          <li>Multi-channel support, firmware version &amp; hardware model display</li>
-          <li>Update check, dark mode, German/English</li>
+          <li>USB/Serial connection with robust protocol framing</li>
+          <li>Dark mode (ModernWPF Fluent Design)</li>
+          <li>Debug tab with live log</li>
+          <li>Persistent settings (INI file)</li>
         </ul>
       </div>
     </div>
@@ -489,7 +864,7 @@
   <p>
     <strong>Meshhessen Client</strong> – Windows App für Meshtastic-Geräte ·
     <a href="index.html">Startseite</a> ·
-    <a href="https://github.com/SMLunchen/mh_windowsclient">GitHub</a> ·
+    <a href="https://github.com/SMLunchen/mh_windowsclient/releases">GitHub Releases</a> ·
     <a href="https://www.meshhessen.de">meshhessen.de</a>
   </p>
   <p style="margin-top:0.5rem;">
@@ -506,7 +881,6 @@
     document.documentElement.lang = lang;
     history.replaceState(null, '', '#' + lang);
   }
-  // restore lang from hash
   const hash = location.hash.replace('#','');
   if (hash === 'en') setLang('en');
 </script>

@@ -14,13 +14,12 @@ Der **Meshhessen Client** ist ein **kostenloser, nativer Windows-Client für Mes
 ## 🚀 Schnellstart
 
 
-1. Download: https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-8.0.23-windows-x64-installer
-2. Installer ausführen
-3. **Download:** Neueste `MeshhessenClient.exe` aus den [Releases](../../releases) herunterladen
-4. **Gerät anschließen:** Meshtastic-Device per USB anstecken
-5. **Starten:** Doppelklick auf `MeshhessenClient.exe` – keine Installation nötig
-6. **Verbinden:** Verbindungstyp wählen (Serial, TCP oder Bluetooth) → „Verbinden" klicken
-7. **Loslegen:** 3–10 Sekunden warten bis Kanäle geladen sind, dann Nachrichten senden
+1. [**.NET 8 Desktop Runtime**](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) herunterladen und installieren
+2. **Download:** Neueste `MeshhessenClient.exe` aus den [Releases](../../releases) herunterladen
+3. **Gerät anschließen:** Meshtastic-Device per USB anstecken
+4. **Starten:** Doppelklick auf `MeshhessenClient.exe` – keine Installation nötig
+5. **Verbinden:** Verbindungstyp wählen (Serial, TCP oder Bluetooth) → „Verbinden" klicken
+6. **Loslegen:** 3–10 Sekunden warten bis Kanäle geladen sind, dann Nachrichten senden
 
 > Die App ist vollständig offline-fähig. Keine Cloud, keine Registrierung, keine Telemetrie zum Entwickler.
 
@@ -171,21 +170,24 @@ Telemetrie-Zeitreihen-Graph (SNR, RSSI, Batterie):
 Node-Telemetrie-Statistik-Fenster:
 <img width="1278" height="889" alt="Meshhessen Client – Meshtastic Node-Telemetrie Tag/Nacht-Auswertung Statistik Windows" src="https://github.com/user-attachments/assets/4821c996-c524-499a-8fba-f738fb051f88" />
 Node-Telemetrie-Übersicht (Signal):
-<img alt="Meshhessen Client – Meshtastic Node-Telemetrie-Übersicht: Signal-Analyse, Routing, Airtime und Nachbar-Statistik" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node-telemetry.png" />
-Airtime-Auswertung pro Node (TX/RX-Sendezeit, Kanalauslastung):
-<img alt="Meshhessen Client – Meshtastic Airtime-Analyse: TX-Airtime, RX-Airtime und Kanalauslastung pro Node" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node_airtime.png" />
-Nachbar-Analyse (direkte Mesh-Verbindungen und SNR-Trends):
-<img alt="Meshhessen Client – Meshtastic Nachbar-Analyse: Direkte Verbindungen, SNR-Trends und Nachbar-Stabilität" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node_neighbors.png" />
-Batterie & Spannungs-Analyse (Tag/Nacht-Profil, Nachtabfall):
-<img alt="Meshhessen Client – Meshtastic Batterie-Analyse: Spannungs-Verlauf, Tag/Nacht-Profil und Nachtabfall" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node_power.png" />
-Routing-Statistik (Hop-Anzahl, Pfad-Stabilität, Pfadwechsel-Rate):
-<img alt="Meshhessen Client – Meshtastic Routing-Statistik: Hop-Anzahl, Pfad-Stabilität und Pfadwechsel-Rate" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node_routing.png" />
 
-https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node-telemetry.png
-https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node_airtime.png
-https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node_neighbors.png
-https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node_power.png
-https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node_routing.png
+![Meshhessen Client – Meshtastic Node-Telemetrie-Übersicht: Signal-Analyse, Routing, Airtime und Nachbar-Statistik](https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node-telemetry.png)
+
+Airtime-Auswertung pro Node (TX/RX-Sendezeit, Kanalauslastung):
+
+![Meshhessen Client – Meshtastic Airtime-Analyse: TX-Airtime, RX-Airtime und Kanalauslastung pro Node](https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node_airtime.png)
+
+Nachbar-Analyse (direkte Mesh-Verbindungen und SNR-Trends):
+
+![Meshhessen Client – Meshtastic Nachbar-Analyse: Direkte Verbindungen, SNR-Trends und Nachbar-Stabilität](https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node_neighbors.png)
+
+Batterie & Spannungs-Analyse (Tag/Nacht-Profil, Nachtabfall):
+
+![Meshhessen Client – Meshtastic Batterie-Analyse: Spannungs-Verlauf, Tag/Nacht-Profil und Nachtabfall](https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node_power.png)
+
+Routing-Statistik (Hop-Anzahl, Pfad-Stabilität, Pfadwechsel-Rate):
+
+![Meshhessen Client – Meshtastic Routing-Statistik: Hop-Anzahl, Pfad-Stabilität und Pfadwechsel-Rate](https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node_routing.png)
 
 ## ⚠️ Bekannte Einschränkungen
 
@@ -334,13 +336,12 @@ Meshhessen Client · Windows-Client für Meshtastic-Geräte · Meshtastic Window
 ## 🚀 Quick Start
 
 
-1. Download .NET runtime: https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-8.0.23-windows-x64-installer
-2. Run the installer
-3. **Download:** Get the latest `MeshhessenClient.exe` from [Releases](../../releases)
-4. **Connect device:** Plug in your Meshtastic device via USB
-5. **Launch:** Double-click `MeshhessenClient.exe` – no installation required
-6. **Connect:** Select connection type (Serial, TCP, or Bluetooth) → click "Connect"
-7. **Start:** Wait 3–10 seconds for channels to load, then send messages
+1. Download and install the [**.NET 8 Desktop Runtime**](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)
+2. **Download:** Get the latest `MeshhessenClient.exe` from [Releases](../../releases)
+3. **Connect device:** Plug in your Meshtastic device via USB
+4. **Launch:** Double-click `MeshhessenClient.exe` – no installation required
+5. **Connect:** Select connection type (Serial, TCP, or Bluetooth) → click "Connect"
+6. **Start:** Wait 3–10 seconds for channels to load, then send messages
 
 > The app is fully offline-capable. No cloud, no registration, no telemetry to the developer.
 
