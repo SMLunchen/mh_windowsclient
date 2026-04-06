@@ -183,7 +183,8 @@
                                     <!-- MQTT -->
                                     <TextBlock FontSize="10.5" FontWeight="SemiBold"
                                                Foreground="{DynamicResource MsgMqttFg}"
-                                               Margin="0,0,5,0" VerticalAlignment="Center">
+                                               Margin="0,0,5,0" VerticalAlignment="Center"
+                                               ToolTip="{DynamicResource StrMqttBubbleTooltip}">
                                         <TextBlock.Style>
                                             <Style TargetType="TextBlock">
                                                 <Setter Property="Visibility" Value="Collapsed"/>

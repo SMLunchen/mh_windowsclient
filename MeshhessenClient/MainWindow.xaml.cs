@@ -1596,7 +1596,12 @@ public partial class MainWindow : Window
             }
             catch (Exception ex)
             {
-                MessageBox.Show(string.Format(Loc("StrConnectFailed"), ex.Message), Loc("StrError"), MessageBoxButton.OK, MessageBoxImage.Error);
+                // Translate common socket errors to user-friendly localized messages
+                var userMsg = ex.Message;
+                if (ex is System.Net.Sockets.SocketException se && se.SocketErrorCode == System.Net.Sockets.SocketError.ConnectionRefused
+                    || ex.InnerException is System.Net.Sockets.SocketException se2 && se2.SocketErrorCode == System.Net.Sockets.SocketError.ConnectionRefused)
+                    userMsg = Loc("StrErrConnectionRefused");
+                MessageBox.Show(string.Format(Loc("StrConnectFailed"), userMsg), Loc("StrError"), MessageBoxButton.OK, MessageBoxImage.Error);
                 UpdateStatusBar(Loc("StrConnectionFailed"));
                 SetConnectionStatus(ConnectionStatus.Error);
                 ConnectButton.IsEnabled = true;
@@ -1716,6 +1721,7 @@ public partial class MainWindow : Window
                 Id = sentId,
                 Time = DateTime.Now.ToString("HH:mm"),
                 From = Loc("StrMe"),
+                FromId = _myNodeId,
                 Message = message,
                 Channel = _activeChannelIndex.ToString(),
                 ChannelName = channelName,
@@ -2101,6 +2107,8 @@ public partial class MainWindow : Window
                     ActiveChannelComboBox.IsEnabled = false;
                     _messages.Clear();
                     _allMessages.Clear();
+                    _messageById.Clear();
+                    _dbOldestTimestamp = long.MaxValue;
                     _nodes.Clear();
                     _allNodes.Clear();
                     _channels.Clear();
@@ -2346,6 +2354,10 @@ public partial class MainWindow : Window
                     message.ChannelName = message.Channel;
                 }
 
+                // Mark own messages for right-aligned bubble
+                if (_myNodeId != 0 && message.FromId == _myNodeId)
+                    message.IsOwnMessage = true;
+
                 // Load sender color and note from settings
                 var senderNode = _allNodes.FirstOrDefault(n => n.NodeId == message.FromId);
                 if (senderNode != null)
@@ -2534,6 +2546,12 @@ public partial class MainWindow : Window
                 // Speichere eigene Node-ID für DM-Fenster
                 _myNodeId = deviceInfo.NodeId;
                 OwnNodeIdText.Text = $"!{_myNodeId:x8}";
+
+                // Re-evaluate IsOwnMessage for messages already loaded from DB
+                // (DB load can race ahead of DeviceInfo, leaving IsOwnMessage=false for own messages)
+                // IsOwnMessage raises PropertyChanged so the bubble switches side immediately.
+                foreach (var m in _allMessages.Where(m => !m.IsOwnMessage && m.FromId == _myNodeId))
+                    m.IsOwnMessage = true;
 
                 // Set hardware model and firmware version
                 HardwareModelText.Text = deviceInfo.HardwareModel;
@@ -2781,8 +2799,10 @@ public partial class MainWindow : Window
                         _dbOldestTimestamp = entry.Timestamp;
                 }
 
-                // Rebuild visible list
+                // Rebuild visible list and scroll to newest
                 RebuildVisibleMessages();
+                if (_messages.Count > 0)
+                    MessageListView.ScrollIntoView(_messages[^1]);
             });
         }
         catch (Exception ex)

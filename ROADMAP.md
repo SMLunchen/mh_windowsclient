@@ -17,6 +17,3 @@
 
 ## Bugfixes
 
-* Sortierung der Nodes "Last Seen" mit Datum
-* wenn Nachrichten aus der DB geladen werden, werden die eigenen Nachrichten nicht rechts dargestellt, sondern links.
-

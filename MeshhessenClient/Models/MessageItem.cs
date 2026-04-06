@@ -19,7 +19,13 @@ public class MessageItem : INotifyPropertyChanged
     public string SenderColorHex { get; set; } = string.Empty;
     public string SenderNote { get; set; } = string.Empty;
     public bool HasAlertBell { get; set; } = false;
-    public bool IsOwnMessage { get; set; } = false;
+
+    private bool _isOwnMessage = false;
+    public bool IsOwnMessage
+    {
+        get => _isOwnMessage;
+        set { _isOwnMessage = value; PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsOwnMessage))); }
+    }
 
     // Hop count: number of relay hops the packet traversed. -1 = unknown (e.g. from DB without hop info)
     public int HopCount { get; set; } = -1;

@@ -184,12 +184,13 @@
                     <StackPanel x:Name="TcpConnectionPanel" Orientation="Horizontal" Visibility="Collapsed">
                         <TextBlock Text="{DynamicResource StrTcpHost}" VerticalAlignment="Center" Margin="0,0,5,0"/>
                         <TextBox x:Name="TcpHostTextBox"
-                                Width="120"
+                                Width="150"
                                 VerticalAlignment="Center"
+                                ui:ControlHelper.PlaceholderText="192.168.1.1"
                                 Text="192.168.1.1"/>
                         <TextBlock Text="{DynamicResource StrTcpPort}" VerticalAlignment="Center" Margin="8,0,5,0"/>
                         <TextBox x:Name="TcpPortTextBox"
-                                Width="50"
+                                Width="90"
                                 VerticalAlignment="Center"
                                 Text="4403"/>
                     </StackPanel>
@@ -537,7 +538,7 @@
                                                         <TextBlock FontSize="10.5" FontWeight="SemiBold"
                                                                    Foreground="{DynamicResource MsgMqttFg}"
                                                                    Margin="0,0,5,0" VerticalAlignment="Center"
-                                                                   ToolTip="{DynamicResource StrLegendMqttHop}">
+                                                                   ToolTip="{DynamicResource StrMqttBubbleTooltip}">
                                                             <TextBlock.Style>
                                                                 <Style TargetType="TextBlock">
                                                                     <Setter Property="Visibility" Value="Collapsed"/>

@@ -78,7 +78,7 @@ public static class SettingsService
             true,                           // AutoTimeSyncOnConnect default on
             300,                            // TimeSyncDriftThresholdSeconds default 5min
             "offline",                      // MapMode default offline
-            false,                          // EnableMessageDb default off
+            true,                           // EnableMessageDb default on
             90,                             // MessageDbRetentionDays default 90
             "Serial",                       // LastConnectionType default Serial
             string.Empty);                  // LastBtDevice default empty
@@ -197,7 +197,7 @@ public static class SettingsService
                 AutoTimeSyncOnConnect: !values.TryGetValue("AutoTimeSyncOnConnect", out var ats) || !bool.TryParse(ats, out var atsBool) || atsBool,
                 TimeSyncDriftThresholdSeconds: values.TryGetValue("TimeSyncDriftThresholdSeconds", out var tsd) && int.TryParse(tsd, out var tsdInt) ? tsdInt : defaults.TimeSyncDriftThresholdSeconds,
                 MapMode: values.TryGetValue("MapMode", out var mapMode) && !string.IsNullOrEmpty(mapMode) ? mapMode : defaults.MapMode,
-                EnableMessageDb: values.TryGetValue("EnableMessageDb", out var emdb) && bool.TryParse(emdb, out var emdbBool) && emdbBool,
+                EnableMessageDb: values.TryGetValue("EnableMessageDb", out var emdb) && bool.TryParse(emdb, out var emdbBool) ? emdbBool : defaults.EnableMessageDb,
                 MessageDbRetentionDays: values.TryGetValue("MessageDbRetentionDays", out var mdr) && int.TryParse(mdr, out var mdrInt) ? mdrInt : defaults.MessageDbRetentionDays,
                 LastConnectionType: values.TryGetValue("LastConnectionType", out var lct) && !string.IsNullOrEmpty(lct) ? lct : defaults.LastConnectionType,
                 LastBtDevice: values.TryGetValue("LastBtDevice", out var lbd) ? lbd : defaults.LastBtDevice
