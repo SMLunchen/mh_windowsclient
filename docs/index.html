@@ -132,14 +132,7 @@
       gap: 1rem;
       margin-top: 0.8rem;
     }
-    .card {
-      background: #161b22;
-      border: 1px solid #30363d;
-      border-radius: 8px;
-      padding: 1rem 1.2rem;
-    }
-    .card h3 { font-size: 1rem; margin: 0 0 0.4rem; color: #e6edf3; }
-    .card p { color: #8b949e; font-size: 0.9rem; margin: 0; }
+    /* .card styles defined further below (enhanced with accent borders) */
 
     /* ── Screenshots (clickable) ── */
     .screenshots {
@@ -201,6 +194,71 @@
     /* ── Devices ── */
     .devices { color: #8b949e; font-size: 0.9rem; margin-top: 0.5rem; }
 
+    /* ── What's new banner ── */
+    .whats-new {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-left: 3px solid #3fb950;
+      border-radius: 6px;
+      padding: 0.7rem 1.1rem;
+      margin: 2rem 0 0.5rem;
+      font-size: 0.92rem;
+      color: #8b949e;
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+      flex-wrap: wrap;
+    }
+    .whats-new .vbadge {
+      background: #1a4a26;
+      color: #3fb950;
+      border: 1px solid #3fb950;
+      font-weight: 700;
+      font-size: 0.78rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 3px;
+      white-space: nowrap;
+      letter-spacing: 0.04em;
+    }
+    .whats-new span.summary { flex: 1; min-width: 0; }
+
+    /* ── Enhanced feature cards ── */
+    .card {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-top: 3px solid var(--card-accent, #30363d);
+      border-radius: 8px;
+      padding: 1.1rem 1.2rem 1rem;
+      position: relative;
+    }
+    .card h3 { font-size: 1rem; margin: 0 0 0.5rem; color: #e6edf3; }
+    .card ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .card ul li {
+      color: #8b949e;
+      font-size: 0.86rem;
+      padding: 0.18rem 0 0.18rem 1rem;
+      position: relative;
+    }
+    .card ul li::before { content: "·"; position: absolute; left: 0.2rem; color: #484f58; }
+    .card ul li strong { color: #c9d1d9; }
+    .card .badge-new {
+      position: absolute;
+      top: 0.55rem;
+      right: 0.75rem;
+      background: #1a4a26;
+      color: #3fb950;
+      border: 1px solid #3fb950;
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 0.1rem 0.4rem;
+      border-radius: 3px;
+      letter-spacing: 0.05em;
+    }
+
     /* ── Disclaimer ── */
     .disclaimer {
       background: #1c2128;
@@ -253,39 +311,89 @@
 <div class="section active" id="de">
 <main>
 
-  <h2>🆕 Neu in v1.5.8</h2>
-  <ul class="fix-list">
-    <li><strong>Online-Karten-Modi:</strong> Neben dem bisherigen Offline-Modus stehen jetzt zwei Online-Modi zur Verfügung – <em>Meshhessen-Server</em> (lazy download, dauerhaft lokal gespeichert, alle Kartenstile, nur Deutschland) und <em>OpenStreetMap</em> (weltweite Abdeckung, nur Standardkarte, OSM-Tile-Policy-konform).</li>
-    <li><strong>Neuer Tile-Server:</strong> <code>tile.meshhessenclient.de</code> löst den bisherigen Server ab.</li>
-    <li><strong>HTTP/3-Unterstützung:</strong> Tile-Downloads nutzen jetzt HTTP/3 (mit automatischem Fallback auf HTTP/2 und HTTP/1.1) für effizientere Verbindungen.</li>
-    <li><strong>OSM-Cache:</strong> Im OSM-Online-Modus werden Tiles lokal gecacht (HTTP-Cache-Header werden respektiert, mindestens 7 Tage TTL) – inklusive ETag/If-None-Match für bedingte Anfragen.</li>
-  </ul>
+  <div class="whats-new">
+    <span class="vbadge">v1.5.8</span>
+    <span class="summary">Persistente Nachrichten-DB, DM-History, Online-Karten, HTTP/3 und mehr.</span>
+    <a href="changelog.html">Changelog ansehen →</a>
+  </div>
 
   <h2>Features</h2>
   <div class="grid">
-    <div class="card">
+    <div class="card" style="--card-accent:#58a6ff">
+      <span class="badge-new">NEU</span>
       <h3>📨 Nachrichten</h3>
-      <p>Broadcast- & Direktnachrichten, Multi-Channel, Antwort-Funktion mit Zitat-Block, Tap-Back-Reaktionen (32 Emojis), Alert Bell / SOS-Notruf, Nachrichten kopierbar.</p>
+      <ul>
+        <li>Broadcast &amp; Direktnachrichten, Multi-Channel</li>
+        <li>Antworten mit Zitat-Block, Nachrichten kopierbar</li>
+        <li>Tap-Back-Reaktionen (32 Emojis)</li>
+        <li>Alert Bell / SOS-Notruf mit Benachrichtigung</li>
+        <li><strong>Persistente SQLite-DB</strong> (optional)</li>
+        <li><strong>DM-History</strong> automatisch wiederhergestellt</li>
+      </ul>
     </div>
-    <div class="card">
+    <div class="card" style="--card-accent:#3fb950">
       <h3>🗺️ Karte</h3>
-      <p>OSM Standard, OSM Dark, OpenTopoMap. Drei Modi: <strong>Offline</strong> (vorheruntergeladen, Deutschland), <strong>Online&nbsp;Meshhessen</strong> (lazy download, Deutschland), <strong>Online&nbsp;OSM</strong> (weltweit, Policy-konform). Node-Pins, GPS-Tracks, Wegpunkte.</p>
+      <ul>
+        <li>OSM Standard, OSM Dark, OpenTopoMap</li>
+        <li><strong>Offline</strong> (vorheruntergeladen, Deutschland)</li>
+        <li><strong>Online Meshhessen</strong> (lazy download, Deutschland)</li>
+        <li><strong>Online OSM</strong> (weltweit, Policy-konform)</li>
+        <li>Node-Pins, GPS-Tracks, Wegpunkte</li>
+        <li>HTTP/3, ETag-Cache, tile.meshhessenclient.de</li>
+      </ul>
     </div>
-    <div class="card">
+    <div class="card" style="--card-accent:#bc8cff">
       <h3>📊 Telemetrie-Analyse</h3>
-      <p>SQLite-Datenbank, Zeitreihen-Graphen (SNR, RSSI, Batterie), LED-Ampel für Signal, Nachbarn, Mesh-Health, Pfad-Stabilität und Wetter.</p>
+      <ul>
+        <li>Zeitreihen-Graphen: SNR, RSSI, Batterie</li>
+        <li>LED-Ampeln: Signal, Nachbarn, Pfad, Mesh-Health</li>
+        <li>Kanalauslastung &amp; Airtime-Analyse</li>
+        <li>Nachtabfall-Erkennung &amp; Spannungsverlauf</li>
+        <li>Pfad-Wechselrate &amp; Hop-Kosten</li>
+        <li>Maßnahmen-Empfehlungen je Ampelzustand</li>
+      </ul>
     </div>
-    <div class="card">
+    <div class="card" style="--card-accent:#f0883e">
       <h3>📡 Traceroute</h3>
-      <p>Hop-Tabelle mit SNR & Entfernung, Karten-Visualisierung mit Richtungspfeilen, SNR-Popup per Klick, Zeitreihenfilter, Deduplizierung, JSON-Speicherung.</p>
+      <ul>
+        <li>Hop-Tabelle mit SNR &amp; Entfernung</li>
+        <li>Karten-Visualisierung mit Richtungspfeilen</li>
+        <li>SNR-Popup per Klick auf Hop-Linie</li>
+        <li>Zeitreihenfilter, Deduplizierung</li>
+        <li>JSON-Speicherung aller Traceroute-Daten</li>
+      </ul>
     </div>
-    <div class="card">
+    <div class="card" style="--card-accent:#d29922">
       <h3>🔒 PKI-Entschlüsselung</h3>
-      <p>Client-seitige X25519 + AES-256-CTR Entschlüsselung. Private Key wird automatisch vom verbundenen Gerät geladen und nur im RAM gehalten.</p>
+      <ul>
+        <li>Client-seitig: X25519 + AES-256-CTR</li>
+        <li>Private Key automatisch vom Gerät geladen</li>
+        <li>Key nur im RAM – nie auf Disk geschrieben</li>
+        <li>Automatische Erkennung verschlüsselter Pakete</li>
+      </ul>
     </div>
-    <div class="card">
-      <h3>⚙️ Verbindung & System</h3>
-      <p>USB/Serial, TCP/WiFi, Bluetooth BLE – Auto-Reconnect, Firmware-Versions-Anzeige, Hardware-Modell, Update-Check, Dark Mode, Deutsch/Englisch.</p>
+    <div class="card" style="--card-accent:#79c0ff">
+      <span class="badge-new">NEU</span>
+      <h3>⚙️ Verbindung &amp; System</h3>
+      <ul>
+        <li>USB/Serial, TCP/WiFi, Bluetooth BLE</li>
+        <li>Auto-Reconnect nach Verbindungsabbruch</li>
+        <li><strong>Letzte Verbindung gemerkt</strong> (Serial/BT/WiFi)</li>
+        <li>Firmware-Version &amp; Hardware-Modell</li>
+        <li>Update-Check, Dark Mode, Deutsch/Englisch</li>
+      </ul>
+    </div>
+    <div class="card" style="--card-accent:#56d364">
+      <h3>🔧 Node-Verwaltung</h3>
+      <ul>
+        <li>Node-Farben individuell wählbar (Karte + Liste)</li>
+        <li>Freitext-Notizen pro Node</li>
+        <li>Nodes anpinnen (oben fixieren, unabhängig von Sortierung)</li>
+        <li>Schnellfilter für die Node-Liste</li>
+        <li>Node-Konfiguration direkt aus dem Client</li>
+        <li>Bluetooth-PIN direkt ändern</li>
+        <li>Meshhessen-Schnellkonfiguration (One-Click Short Slow + EU868)</li>
+      </ul>
     </div>
   </div>
 
@@ -584,41 +692,89 @@
 <div class="section" id="en">
 <main>
 
-  <h2>Features</h2>
-  <div class="grid">
-  <h2>🆕 New in v1.5.8</h2>
-  <ul class="fix-list">
-    <li><strong>Online map modes:</strong> In addition to the existing offline mode, two new online modes are available – <em>Meshhessen Server</em> (lazy download, stored permanently, all map styles, Germany only) and <em>OpenStreetMap</em> (worldwide coverage, standard map only, OSM tile policy compliant).</li>
-    <li><strong>New tile server:</strong> <code>tile.meshhessenclient.de</code> replaces the previous server.</li>
-    <li><strong>HTTP/3 support:</strong> Tile downloads now use HTTP/3 (with automatic fallback to HTTP/2 and HTTP/1.1) for more efficient connections.</li>
-    <li><strong>OSM cache:</strong> In OSM online mode, tiles are cached locally (HTTP cache headers respected, minimum 7-day TTL) – including ETag/If-None-Match for conditional requests.</li>
-  </ul>
+  <div class="whats-new">
+    <span class="vbadge">NEW</span>
+    <span class="summary">Persistent message DB, DM history, online maps, HTTP/3 and more.</span>
+    <a href="changelog.html">View changelog →</a>
+  </div>
 
   <h2>Features</h2>
   <div class="grid">
-    <div class="card">
+    <div class="card" style="--card-accent:#58a6ff">
+      <span class="badge-new">NEW</span>
       <h3>📨 Messaging</h3>
-      <p>Broadcast &amp; direct messages, multi-channel, reply function with quote block, tap-back reactions (32 emojis), Alert Bell / SOS, copyable messages with clickable links.</p>
+      <ul>
+        <li>Broadcast &amp; direct messages, multi-channel</li>
+        <li>Reply with quote block, copyable messages</li>
+        <li>Tap-back reactions (32 emojis)</li>
+        <li>Alert Bell / SOS with visual &amp; audio alert</li>
+        <li><strong>Persistent SQLite DB</strong> (optional)</li>
+        <li><strong>DM history</strong> auto-restored on open</li>
+      </ul>
     </div>
-    <div class="card">
+    <div class="card" style="--card-accent:#3fb950">
       <h3>🗺️ Map</h3>
-      <p>OSM Standard, OSM Dark, OpenTopoMap. Three modes: <strong>Offline</strong> (pre-downloaded, Germany), <strong>Online&nbsp;Meshhessen</strong> (lazy download, Germany), <strong>Online&nbsp;OSM</strong> (worldwide, policy-compliant). Node pins, GPS tracks, waypoints.</p>
+      <ul>
+        <li>OSM Standard, OSM Dark, OpenTopoMap</li>
+        <li><strong>Offline</strong> (pre-downloaded, Germany)</li>
+        <li><strong>Online Meshhessen</strong> (lazy download, Germany)</li>
+        <li><strong>Online OSM</strong> (worldwide, policy-compliant)</li>
+        <li>Node pins, GPS tracks, waypoints</li>
+        <li>HTTP/3, ETag cache, tile.meshhessenclient.de</li>
+      </ul>
     </div>
-    <div class="card">
+    <div class="card" style="--card-accent:#bc8cff">
       <h3>📊 Telemetry Analysis</h3>
-      <p>SQLite database, time-series graphs (SNR, RSSI, battery), LED indicators for signal, neighbors, mesh health, path stability and weather.</p>
+      <ul>
+        <li>Time-series graphs: SNR, RSSI, battery</li>
+        <li>LED indicators: signal, neighbors, path, mesh health</li>
+        <li>Channel utilization &amp; airtime analysis</li>
+        <li>Night-drop detection &amp; voltage profile</li>
+        <li>Path change rate &amp; hop cost metrics</li>
+        <li>Actionable recommendations per indicator</li>
+      </ul>
     </div>
-    <div class="card">
+    <div class="card" style="--card-accent:#f0883e">
       <h3>📡 Traceroute</h3>
-      <p>Hop table with SNR &amp; distance, map visualization with direction arrows, SNR popup on click, time range filter, deduplication, JSON storage.</p>
+      <ul>
+        <li>Hop table with SNR &amp; distance</li>
+        <li>Map visualization with direction arrows</li>
+        <li>SNR popup on hop-line click</li>
+        <li>Time range filter, deduplication</li>
+        <li>JSON storage of all traceroute data</li>
+      </ul>
     </div>
-    <div class="card">
+    <div class="card" style="--card-accent:#d29922">
       <h3>🔒 PKI Decryption</h3>
-      <p>Client-side X25519 + AES-256-CTR decryption. Private key is loaded automatically from the connected device and kept in RAM only.</p>
+      <ul>
+        <li>Client-side: X25519 + AES-256-CTR</li>
+        <li>Private key loaded automatically from device</li>
+        <li>Key held in RAM only – never written to disk</li>
+        <li>Automatic detection of encrypted packets</li>
+      </ul>
     </div>
-    <div class="card">
+    <div class="card" style="--card-accent:#79c0ff">
+      <span class="badge-new">NEW</span>
       <h3>⚙️ Connection &amp; System</h3>
-      <p>USB/Serial, TCP/WiFi, Bluetooth BLE – auto-reconnect, firmware version &amp; hardware model display, update check, dark mode, German/English.</p>
+      <ul>
+        <li>USB/Serial, TCP/WiFi, Bluetooth BLE</li>
+        <li>Auto-reconnect after connection loss</li>
+        <li><strong>Remembers last connection</strong> (Serial/BT/WiFi)</li>
+        <li>Firmware version &amp; hardware model display</li>
+        <li>Update check, dark mode, German/English</li>
+      </ul>
+    </div>
+    <div class="card" style="--card-accent:#56d364">
+      <h3>🔧 Node Management</h3>
+      <ul>
+        <li>Individual node colors (map + list)</li>
+        <li>Free-text notes per node</li>
+        <li>Pin nodes to top (independent of sort order)</li>
+        <li>Quick filter for the node list</li>
+        <li>Node configuration directly from the client</li>
+        <li>Change Bluetooth PIN directly</li>
+        <li>Meshhessen quick-config (one-click Short Slow + EU868)</li>
+      </ul>
     </div>
   </div>
 
@@ -914,6 +1070,7 @@
   <p>
     <strong>Meshhessen Client</strong> – Windows App für Meshtastic-Geräte / Windows app for Meshtastic devices ·
     <a href="https://github.com/SMLunchen/mh_windowsclient">GitHub</a> ·
+    <a href="changelog.html">Changelog</a> ·
     <a href="https://www.meshhessen.de">meshhessen.de</a>
   </p>
   <p style="margin-top:0.5rem;">

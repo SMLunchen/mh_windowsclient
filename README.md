@@ -14,13 +14,12 @@ Der **Meshhessen Client** ist ein **kostenloser, nativer Windows-Client für Mes
 ## 🚀 Schnellstart
 
 
-1. Download: https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-8.0.23-windows-x64-installer
-2. Installer ausführen
-3. **Download:** Neueste `MeshhessenClient.exe` aus den [Releases](../../releases) herunterladen
-4. **Gerät anschließen:** Meshtastic-Device per USB anstecken
-5. **Starten:** Doppelklick auf `MeshhessenClient.exe` – keine Installation nötig
-6. **Verbinden:** Verbindungstyp wählen (Serial, TCP oder Bluetooth) → „Verbinden" klicken
-7. **Loslegen:** 3–10 Sekunden warten bis Kanäle geladen sind, dann Nachrichten senden
+1. [**.NET 8 Desktop Runtime**](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) herunterladen und installieren
+2. **Download:** Neueste `MeshhessenClient.exe` aus den [Releases](../../releases) herunterladen
+3. **Gerät anschließen:** Meshtastic-Device per USB anstecken
+4. **Starten:** Doppelklick auf `MeshhessenClient.exe` – keine Installation nötig
+5. **Verbinden:** Verbindungstyp wählen (Serial, TCP oder Bluetooth) → „Verbinden" klicken
+6. **Loslegen:** 3–10 Sekunden warten bis Kanäle geladen sind, dann Nachrichten senden
 
 > Die App ist vollständig offline-fähig. Keine Cloud, keine Registrierung, keine Telemetrie zum Entwickler.
 
@@ -48,6 +47,12 @@ Der **Meshhessen Client** ist ein **kostenloser, nativer Windows-Client für Mes
 * **🚨 Alert Bell Support** – Senden und Empfangen von Notrufen
   * 🚨 SOS-Button in Chat und DMs
   * Visuell: rote blinkende Umrandung + Notification-Bar mit „Zur Karte springen"-Button
+* **Persistente Nachrichten-Datenbank** – Kanal- und DM-Nachrichten dauerhaft in lokaler SQLite-DB speichern (optional, aktivierbar in Einstellungen)
+  * Letzten 24 Stunden beim Verbinden automatisch geladen; ältere Nachrichten per Hochscrollen nachladen
+  * **DM-History:** Alle Konversationen der letzten 24 h erscheinen beim Öffnen des DM-Fensters automatisch
+  * **Pro-Kanal-Löschung** direkt im Kanäle-Tab: „Nachrichten-DB leeren"-Spalte mit Zeitraum-Dialog (Alle / 30 / 90 / 365 Tage)
+  * Bestätigung vor dem Löschen einer DM-Konversation (kein versehentliches Wischen)
+  * Aufbewahrungsdauer konfigurierbar (30 / 90 / 365 Tage)
 
 ### 📊 Telemetrie & Statistik
 
@@ -108,6 +113,7 @@ Der **Meshhessen Client** ist ein **kostenloser, nativer Windows-Client für Mes
 ### ⚙️ Verbindung & System
 
 * **Multi-Verbindung** – USB/Serial, TCP/WiFi und Bluetooth (BLE)
+* **Letzte Verbindung merken** – Verbindungsart (Serial / BT / WiFi) und zuletzt genutztes BT-Gerät werden gespeichert und beim nächsten Start automatisch vorausgewählt
 * **Auto-Reconnect** – nach Einstellungsänderungen die einen Neustart erfordern
 * **Update-Check** – beim Start wird automatisch nach neuen Versionen gesucht; bei verfügbarem Update erscheint ein klickbarer Hinweis in der Statusleiste (offline-fähig: kein Fehler wenn kein Internet)
 * **Multi-Sprache** – Deutsch und Englisch (umschaltbar in Einstellungen)
@@ -164,25 +170,28 @@ Telemetrie-Zeitreihen-Graph (SNR, RSSI, Batterie):
 Node-Telemetrie-Statistik-Fenster:
 <img width="1278" height="889" alt="Meshhessen Client – Meshtastic Node-Telemetrie Tag/Nacht-Auswertung Statistik Windows" src="https://github.com/user-attachments/assets/4821c996-c524-499a-8fba-f738fb051f88" />
 Node-Telemetrie-Übersicht (Signal):
-<img alt="Meshhessen Client – Meshtastic Node-Telemetrie-Übersicht: Signal-Analyse, Routing, Airtime und Nachbar-Statistik" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node-telemetry.png" />
-Airtime-Auswertung pro Node (TX/RX-Sendezeit, Kanalauslastung):
-<img alt="Meshhessen Client – Meshtastic Airtime-Analyse: TX-Airtime, RX-Airtime und Kanalauslastung pro Node" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node_airtime.png" />
-Nachbar-Analyse (direkte Mesh-Verbindungen und SNR-Trends):
-<img alt="Meshhessen Client – Meshtastic Nachbar-Analyse: Direkte Verbindungen, SNR-Trends und Nachbar-Stabilität" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node_neighbors.png" />
-Batterie & Spannungs-Analyse (Tag/Nacht-Profil, Nachtabfall):
-<img alt="Meshhessen Client – Meshtastic Batterie-Analyse: Spannungs-Verlauf, Tag/Nacht-Profil und Nachtabfall" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node_power.png" />
-Routing-Statistik (Hop-Anzahl, Pfad-Stabilität, Pfadwechsel-Rate):
-<img alt="Meshhessen Client – Meshtastic Routing-Statistik: Hop-Anzahl, Pfad-Stabilität und Pfadwechsel-Rate" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node_routing.png" />
 
-https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node-telemetry.png
-https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node_airtime.png
-https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node_neighbors.png
-https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node_power.png
-https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node_routing.png
+![Meshhessen Client – Meshtastic Node-Telemetrie-Übersicht: Signal-Analyse, Routing, Airtime und Nachbar-Statistik](https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node-telemetry.png)
+
+Airtime-Auswertung pro Node (TX/RX-Sendezeit, Kanalauslastung):
+
+![Meshhessen Client – Meshtastic Airtime-Analyse: TX-Airtime, RX-Airtime und Kanalauslastung pro Node](https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node_airtime.png)
+
+Nachbar-Analyse (direkte Mesh-Verbindungen und SNR-Trends):
+
+![Meshhessen Client – Meshtastic Nachbar-Analyse: Direkte Verbindungen, SNR-Trends und Nachbar-Stabilität](https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node_neighbors.png)
+
+Batterie & Spannungs-Analyse (Tag/Nacht-Profil, Nachtabfall):
+
+![Meshhessen Client – Meshtastic Batterie-Analyse: Spannungs-Verlauf, Tag/Nacht-Profil und Nachtabfall](https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node_power.png)
+
+Routing-Statistik (Hop-Anzahl, Pfad-Stabilität, Pfadwechsel-Rate):
+
+![Meshhessen Client – Meshtastic Routing-Statistik: Hop-Anzahl, Pfad-Stabilität und Pfadwechsel-Rate](https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node_routing.png)
 
 ## ⚠️ Bekannte Einschränkungen
 
-* Keine persistente Message-History (Neustart = leere UI; Logs bleiben erhalten, beim Start geladene Nachrichten vom Node bleiben)
+* ~~Keine persistente Message-History~~ → jetzt optional via Nachrichten-Datenbank (aktivierbar in Einstellungen)
 * Getestet mit Firmware 2.x
 * T-Deck: Channels werden nicht immer in der Config-Sequenz mitgesendet (Retry-Workaround aktiv) – Das T-Deck ist fast schon mit sich selbst überfordert, daher dauert dort alles etwas länger…
 
@@ -327,13 +336,12 @@ Meshhessen Client · Windows-Client für Meshtastic-Geräte · Meshtastic Window
 ## 🚀 Quick Start
 
 
-1. Download .NET runtime: https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-8.0.23-windows-x64-installer
-2. Run the installer
-3. **Download:** Get the latest `MeshhessenClient.exe` from [Releases](../../releases)
-4. **Connect device:** Plug in your Meshtastic device via USB
-5. **Launch:** Double-click `MeshhessenClient.exe` – no installation required
-6. **Connect:** Select connection type (Serial, TCP, or Bluetooth) → click "Connect"
-7. **Start:** Wait 3–10 seconds for channels to load, then send messages
+1. Download and install the [**.NET 8 Desktop Runtime**](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)
+2. **Download:** Get the latest `MeshhessenClient.exe` from [Releases](../../releases)
+3. **Connect device:** Plug in your Meshtastic device via USB
+4. **Launch:** Double-click `MeshhessenClient.exe` – no installation required
+5. **Connect:** Select connection type (Serial, TCP, or Bluetooth) → click "Connect"
+6. **Start:** Wait 3–10 seconds for channels to load, then send messages
 
 > The app is fully offline-capable. No cloud, no registration, no telemetry to the developer.
 
@@ -361,6 +369,12 @@ Meshhessen Client · Windows-Client für Meshtastic-Geräte · Meshtastic Window
 * **🚨 Alert Bell support** – send and receive emergency alerts
   * 🚨 SOS button in chat and DMs
   * Visual: red blinking border + notification bar with "Jump to map" button
+* **Persistent message database** – store channel and DM messages in a local SQLite DB (optional, enable in settings)
+  * Last 24 hours loaded automatically on connect; older messages lazy-loaded when scrolling up
+  * **DM history:** all conversations from the last 24 h appear automatically when the DM window is opened
+  * **Per-channel deletion** directly in the Channels tab: "Clear Message DB" column with a time-range dialog (All / 30 / 90 / 365 days)
+  * Confirmation before clearing a DM conversation (no accidental wipe)
+  * Configurable retention period (30 / 90 / 365 days)
 
 ### 📊 Telemetry & Statistics
 
@@ -421,6 +435,7 @@ Meshhessen Client · Windows-Client für Meshtastic-Geräte · Meshtastic Window
 ### ⚙️ Connection & System
 
 * **Multi-connection** – USB/Serial, TCP/WiFi, and Bluetooth (BLE)
+* **Remember last connection** – connection type (Serial / BT / WiFi) and last used BT device are saved and pre-selected on next launch
 * **Auto-reconnect** – after settings changes that require a device reboot
 * **Update check** – automatically checks for new versions on startup; a clickable hint appears in the status bar if an update is available (offline-safe: no error if no internet)
 * **Multi-language** – German and English (switchable in settings)
@@ -441,7 +456,7 @@ The Meshhessen Client is a community project of the Meshtastic community in Hess
 
 ## ⚠️ Known Limitations
 
-* No persistent message history (restart = empty UI; logs are preserved, node-loaded messages at startup are preserved)
+* ~~No persistent message history~~ → now available as optional message database (enable in settings)
 * Tested with firmware 2.x
 * T-Deck: channels are not always included in the config sequence (retry workaround active) – The T-Deck is barely keeping up with itself, so everything takes a bit longer there…
 

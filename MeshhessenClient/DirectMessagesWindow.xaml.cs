@@ -17,6 +17,7 @@ public partial class DirectMessagesWindow : Window
     private readonly Dictionary<uint, TabItem> _tabByNodeId = new();
     private readonly Dictionary<uint, MessageItem> _dmMessageById = new();
     private uint _myNodeId;
+    private Services.MessageDbManager? _messageDbManager;
 
     private static string Loc(string key) =>
         Application.Current?.Resources[key] as string ?? key;
@@ -31,6 +32,13 @@ public partial class DirectMessagesWindow : Window
     public void UpdateProtocolService(MeshtasticProtocolService protocolService)
     {
         _protocolService = protocolService;
+    }
+
+    public void SetMessageDbManager(Services.MessageDbManager? manager)
+    {
+        _messageDbManager = manager;
+        if (manager != null)
+            Task.Run(LoadAllDmHistoryFromDb);
     }
 
     public void AddOrUpdateMessage(MessageItem message)
@@ -63,12 +71,23 @@ public partial class DirectMessagesWindow : Window
                     message.ReplyPreview = origDm.Message?.Length > 60 ? origDm.Message[..60] + "…" : origDm.Message ?? string.Empty;
                 }
 
+                // Set own-message flag for bubble alignment
+                message.IsOwnMessage = (message.FromId == _myNodeId);
+
                 // Store in ID lookup
                 if (message.Id != 0)
                     _dmMessageById[message.Id] = message;
 
                 // Füge Nachricht hinzu
                 conversation.Messages.Add(message);
+
+                // Persistiere in DM-Datenbank
+                if (_messageDbManager != null)
+                {
+                    var pid = partnerId;
+                    var msg = message;
+                    System.Threading.Tasks.Task.Run(() => _messageDbManager.InsertDmMessage(pid, msg));
+                }
 
                 // Log die Nachricht
                 Services.MessageLogger.LogDirectMessage(partnerId, conversation.NodeName, message.From, message.Message, message.IsViaMqtt);
@@ -102,7 +121,88 @@ public partial class DirectMessagesWindow : Window
         });
     }
 
-    private void CreateTabForConversation(DirectMessageConversation conversation)
+    private static Models.MessageItem DbEntryToMessageItem(Models.MessageDbEntry e)
+    {
+        var dt = DateTimeOffset.FromUnixTimeSeconds(e.Timestamp).ToLocalTime().DateTime;
+        var today = DateTime.Today;
+        var timeStr = dt.Date == today
+            ? dt.ToString("HH:mm")
+            : dt.Date == today.AddDays(-1)
+                ? $"Gestern {dt:HH:mm}"
+                : dt.ToString("dd.MM. HH:mm");
+        return new Models.MessageItem
+        {
+            Id            = e.PacketId,
+            Time          = timeStr,
+            From          = e.FromName,
+            FromId        = e.FromId,
+            ToId          = e.ToId,
+            Message       = e.Message,
+            IsViaMqtt     = e.IsViaMqtt,
+            ReplyId       = e.ReplyId,
+            ReplyFromName = e.ReplyFromName,
+            ReplyPreview  = e.ReplyPreview,
+            SenderColorHex = e.SenderColorHex,
+            SenderNote    = e.SenderNote
+        };
+    }
+
+    private void LoadAllDmHistoryFromDb()
+    {
+        if (_messageDbManager == null) return;
+        try
+        {
+            var since = DateTimeOffset.UtcNow.AddHours(-24).ToUnixTimeSeconds();
+            var all = _messageDbManager.LoadDmMessagesSince(since);
+            if (all.Count == 0) return;
+
+            var byPartner = all
+                .Where(e => e.PartnerId != 0)
+                .GroupBy(e => e.PartnerId);
+
+            Dispatcher.BeginInvoke(() =>
+            {
+                foreach (var group in byPartner)
+                {
+                    var partnerId = group.Key;
+                    var entries   = group.OrderBy(e => e.Timestamp).ToList();
+
+                    var firstReceived = entries.FirstOrDefault(e => e.FromId != _myNodeId);
+                    var partnerName   = firstReceived?.FromName ?? $"!{partnerId:X8}";
+                    var colorHex      = firstReceived?.SenderColorHex ?? string.Empty;
+
+                    var conversation = _conversations.FirstOrDefault(c => c.NodeId == partnerId);
+                    if (conversation == null)
+                    {
+                        conversation = new DirectMessageConversation
+                        {
+                            NodeId   = partnerId,
+                            NodeName = partnerName,
+                            ColorHex = colorHex
+                        };
+                        _conversations.Add(conversation);
+                        CreateTabForConversation(conversation, activate: false);
+                    }
+
+                    foreach (var entry in entries)
+                    {
+                        if (entry.PacketId != 0 && _dmMessageById.ContainsKey(entry.PacketId)) continue;
+                        var msg = DbEntryToMessageItem(entry);
+                        msg.IsOwnMessage = (_myNodeId != 0 && entry.FromId == _myNodeId);
+                        conversation.Messages.Add(msg);
+                        if (entry.PacketId != 0) _dmMessageById[entry.PacketId] = msg;
+                    }
+                }
+                UpdateStatusBar();
+            });
+        }
+        catch (Exception ex)
+        {
+            Services.Logger.WriteLine($"[MsgDB] LoadAllDmHistory: {ex.Message}");
+        }
+    }
+
+    private void CreateTabForConversation(DirectMessageConversation conversation, bool activate = true)
     {
         var tab = new TabItem();
         _tabByNodeId[conversation.NodeId] = tab;
@@ -115,100 +215,21 @@ public partial class DirectMessagesWindow : Window
         grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
         grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
 
-        // Messages ListView
+        // Messages ListView — chat bubble style
         var listView = new ListView
         {
-            Margin = new Thickness(10),
-            ItemsSource = conversation.Messages
+            Margin = new Thickness(4, 4, 4, 4),
+            ItemsSource = conversation.Messages,
+            ItemTemplate = (DataTemplate)FindResource("DmBubbleTemplate"),
+            ItemContainerStyle = (Style)FindResource("DmBubbleItemContainerStyle"),
+            HorizontalContentAlignment = HorizontalAlignment.Stretch
         };
-
-        var gridView = new GridView();
-
-        // Alert Bell Column
-        var alertBellColumn = new GridViewColumn { Header = "🔔", Width = 50 };
-        var alertBellTemplate = new DataTemplate();
-        var alertBellFactory = new FrameworkElementFactory(typeof(TextBlock));
-        alertBellFactory.SetBinding(TextBlock.TextProperty, new System.Windows.Data.Binding("HasAlertBell")
+        // Auto-scroll to newest message
+        conversation.Messages.CollectionChanged += (s, e) =>
         {
-            Converter = (System.Windows.Data.IValueConverter)this.FindResource("AlertBellIconConverter")
-        });
-        alertBellFactory.SetValue(TextBlock.FontSizeProperty, 18.0);
-        alertBellFactory.SetValue(TextBlock.ForegroundProperty, System.Windows.Media.Brushes.Red);
-        alertBellFactory.SetValue(TextBlock.FontWeightProperty, FontWeights.Bold);
-        alertBellFactory.SetValue(TextBlock.HorizontalAlignmentProperty, HorizontalAlignment.Center);
-        alertBellFactory.SetValue(TextBlock.ToolTipProperty, Loc("StrAlertBellTooltip"));
-        alertBellTemplate.VisualTree = alertBellFactory;
-        alertBellColumn.CellTemplate = alertBellTemplate;
-        gridView.Columns.Add(alertBellColumn);
-
-        gridView.Columns.Add(new GridViewColumn { Header = Loc("StrColTime"), Width = 100, DisplayMemberBinding = new System.Windows.Data.Binding("Time") });
-        gridView.Columns.Add(new GridViewColumn { Header = Loc("StrColFrom"), Width = 120, DisplayMemberBinding = new System.Windows.Data.Binding("From") });
-
-        // Message column with selectable text, clickable links, and reply quote block
-        var msgDocConverter = new MeshhessenClient.Converters.MessageDocumentConverter();
-        var boolToVis = new System.Windows.Controls.BooleanToVisibilityConverter();
-
-        var msgCol = new GridViewColumn { Header = Loc("StrColMessage"), Width = 300 };
-        var msgTemplate = new DataTemplate();
-
-        var gridFactory = new FrameworkElementFactory(typeof(Grid));
-        gridFactory.SetValue(FrameworkElement.HorizontalAlignmentProperty, HorizontalAlignment.Stretch);
-
-        var rowDef0Factory = new FrameworkElementFactory(typeof(RowDefinition));
-        rowDef0Factory.SetValue(RowDefinition.HeightProperty, GridLength.Auto);
-        var rowDef1Factory = new FrameworkElementFactory(typeof(RowDefinition));
-        rowDef1Factory.SetValue(RowDefinition.HeightProperty, GridLength.Auto);
-        gridFactory.AppendChild(rowDef0Factory);
-        gridFactory.AppendChild(rowDef1Factory);
-
-        // Reply quote block (Row 0)
-        var replyBorderFactory = new FrameworkElementFactory(typeof(Border));
-        replyBorderFactory.SetValue(Grid.RowProperty, 0);
-        replyBorderFactory.SetBinding(Border.VisibilityProperty, new System.Windows.Data.Binding("HasReply") { Converter = boolToVis });
-        replyBorderFactory.SetValue(Border.BackgroundProperty, new SolidColorBrush(Color.FromArgb(0x15, 0x00, 0x78, 0xD4)));
-        replyBorderFactory.SetValue(Border.BorderBrushProperty, new SolidColorBrush(Color.FromRgb(0x00, 0x78, 0xD4)));
-        replyBorderFactory.SetValue(Border.BorderThicknessProperty, new Thickness(3, 0, 0, 0));
-        replyBorderFactory.SetValue(Border.PaddingProperty, new Thickness(6, 2, 4, 2));
-        replyBorderFactory.SetValue(Border.MarginProperty, new Thickness(0, 0, 0, 3));
-
-        var replyTextFactory = new FrameworkElementFactory(typeof(TextBlock));
-        replyTextFactory.SetBinding(TextBlock.TextProperty, new System.Windows.Data.Binding("ReplyQuoteText"));
-        replyTextFactory.SetResourceReference(TextBlock.ForegroundProperty, "SystemControlForegroundBaseMediumHighBrush");
-        replyTextFactory.SetValue(TextBlock.FontStyleProperty, FontStyles.Italic);
-        replyTextFactory.SetValue(TextBlock.FontSizeProperty, 10.0);
-        replyTextFactory.SetValue(TextBlock.TextWrappingProperty, TextWrapping.Wrap);
-        replyBorderFactory.AppendChild(replyTextFactory);
-        gridFactory.AppendChild(replyBorderFactory);
-
-        // Main message RichTextBox (Row 1)
-        var rtbFactory = new FrameworkElementFactory(typeof(RichTextBox));
-        rtbFactory.SetValue(Grid.RowProperty, 1);
-        rtbFactory.SetBinding(RichTextBoxHelper.BoundDocumentProperty, new System.Windows.Data.Binding("Message") { Converter = msgDocConverter });
-        rtbFactory.SetValue(RichTextBox.IsReadOnlyProperty, true);
-        rtbFactory.SetValue(RichTextBox.BorderThicknessProperty, new Thickness(0));
-        rtbFactory.SetValue(RichTextBox.BackgroundProperty, Brushes.Transparent);
-        rtbFactory.SetValue(RichTextBox.PaddingProperty, new Thickness(0, 1, 0, 1));
-        rtbFactory.SetValue(RichTextBox.IsTabStopProperty, false);
-        rtbFactory.SetValue(ScrollViewer.VerticalScrollBarVisibilityProperty, ScrollBarVisibility.Disabled);
-        rtbFactory.SetValue(ScrollViewer.HorizontalScrollBarVisibilityProperty, ScrollBarVisibility.Disabled);
-        rtbFactory.SetValue(RichTextBox.IsDocumentEnabledProperty, true);
-        rtbFactory.SetValue(ContextMenuService.IsEnabledProperty, false);
-        gridFactory.AppendChild(rtbFactory);
-
-        msgTemplate.VisualTree = gridFactory;
-        msgCol.CellTemplate = msgTemplate;
-        gridView.Columns.Add(msgCol);
-
-        // Reactions column — use Emoji.Wpf.TextBlock for proper color emoji rendering
-        var reactCol = new GridViewColumn { Header = "💬", Width = 90 };
-        var reactFactory = new FrameworkElementFactory(typeof(Emoji.Wpf.TextBlock));
-        reactFactory.SetBinding(Emoji.Wpf.TextBlock.TextProperty, new System.Windows.Data.Binding("ReactionsDisplay"));
-        reactFactory.SetValue(Emoji.Wpf.TextBlock.FontSizeProperty, 14.0);
-        var reactTemplate = new DataTemplate { VisualTree = reactFactory };
-        reactCol.CellTemplate = reactTemplate;
-        gridView.Columns.Add(reactCol);
-
-        listView.View = gridView;
+            if (e.NewItems?.Count > 0)
+                listView.ScrollIntoView(e.NewItems[e.NewItems.Count - 1]);
+        };
 
         // Per-conversation reply state
         MessageItem? dmReplyTarget = null;
@@ -401,6 +422,36 @@ public partial class DirectMessagesWindow : Window
         sendGrid.Children.Add(sendButton);
 
         sendPanel.Children.Add(sendGrid);
+
+        // "Clear conversation" button (only visible when DB is active)
+        var clearConvGrid = new Grid { Margin = new Thickness(10, 0, 10, 6) };
+        clearConvGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        clearConvGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+        var clearConvBtn = new Button
+        {
+            Content = Loc("StrMsgDbClearConversation"),
+            Padding = new Thickness(8, 2, 8, 2),
+            FontSize = 11,
+            Background = Brushes.Transparent,
+            ToolTip = Loc("StrMsgDbClearConversationHint")
+        };
+        var convNodeId = conversation.NodeId;
+        clearConvBtn.Click += (s, e) =>
+        {
+            if (_messageDbManager == null) return;
+            var confirm = MessageBox.Show(
+                string.Format(Loc("StrMsgDbClearConversationConfirm"), conversation.NodeName),
+                Loc("StrMsgDbClearConversation"),
+                MessageBoxButton.YesNo, MessageBoxImage.Question);
+            if (confirm != MessageBoxResult.Yes) return;
+            _messageDbManager.ClearDmConversation(convNodeId);
+            conversation.Messages.Clear();
+        };
+        Grid.SetColumn(clearConvBtn, 1);
+        clearConvGrid.Children.Add(clearConvBtn);
+        sendPanel.Children.Add(clearConvGrid);
+
         Grid.SetRow(sendPanel, 1);
         grid.Children.Add(sendPanel);
 
@@ -414,7 +465,8 @@ public partial class DirectMessagesWindow : Window
         };
 
         DmTabControl.Items.Add(tab);
-        DmTabControl.SelectedItem = tab; // Aktiviere neuen Tab
+        if (activate)
+            DmTabControl.SelectedItem = tab;
     }
 
     private void UpdateTabHeader(TabItem tab, DirectMessageConversation conversation)
@@ -523,17 +575,24 @@ public partial class DirectMessagesWindow : Window
                 var sentMessage = new MessageItem
                 {
                     Id = packetId,
-                    Time = DateTime.Now.ToString("HH:mm:ss"),
+                    Time = DateTime.Now.ToString("HH:mm"),
                     From = Loc("StrSentFrom"),
                     Message = messageText,
                     FromId = _myNodeId,
                     ToId = toNodeId,
+                    IsOwnMessage = true,
                     ReplyId = replyId,
                     ReplyFromName = replyTarget?.From ?? string.Empty,
                     ReplyPreview = replyTarget?.Message?.Length > 60 ? replyTarget.Message[..60] + "…" : replyTarget?.Message ?? string.Empty
                 };
                 if (packetId != 0) _dmMessageById[packetId] = sentMessage;
                 conversation.Messages.Add(sentMessage);
+
+                if (_messageDbManager != null)
+                {
+                    var msgToSave = sentMessage;
+                    Task.Run(() => _messageDbManager.InsertDmMessage(toNodeId, msgToSave));
+                }
 
                 // Log die Nachricht
                 Services.MessageLogger.LogDirectMessage(toNodeId, conversation.NodeName, Loc("StrSentFrom"), messageText, false);
@@ -548,7 +607,9 @@ public partial class DirectMessagesWindow : Window
 
     private void UpdateStatusBar()
     {
-        StatusText.Text = string.Format(Loc("StrActiveChats"), _conversations.Count);
+        StatusText.Text = _conversations.Count == 1
+            ? Loc("StrActiveChat")
+            : string.Format(Loc("StrActiveChats"), _conversations.Count);
     }
 
     private void MakeWindowProminent()

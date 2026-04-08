@@ -273,7 +273,8 @@
     <sys:String x:Key="StrChannelReceived">Channel {0} received: {1}</sys:String>
     <sys:String x:Key="StrAlertSent">SOS sent!</sys:String>
     <sys:String x:Key="StrEncryptedMessage">[Encrypted message – PSK required]</sys:String>
-    <sys:String x:Key="StrActiveChats">{0} active chat(s)</sys:String>
+    <sys:String x:Key="StrActiveChats">{0} active chats</sys:String>
+    <sys:String x:Key="StrActiveChat">1 active chat</sys:String>
     <sys:String x:Key="StrCloseTab">Close tab</sys:String>
     <sys:String x:Key="StrSentFrom">Me</sys:String>
     <sys:String x:Key="StrSetMyPosition">📍 Set my position here ({0}, {1})</sys:String>
@@ -617,5 +618,29 @@ Green ≤15% | Yellow 15–25% | Red &gt;25% | Gray = no airtime data</sys:Strin
     <sys:String x:Key="StrReplyPrefix">&gt; {0} ({1}): {2}</sys:String>
     <sys:String x:Key="StrReplyingTo">↳ Replying to {0}: {1}</sys:String>
     <sys:String x:Key="StrCancelReply">✕ Cancel</sys:String>
+
+    <!-- Message database -->
+    <sys:String x:Key="StrMsgDbGroup">Message Database</sys:String>
+    <sys:String x:Key="StrMsgDbEnable">Save messages to SQLite database</sys:String>
+    <sys:String x:Key="StrMsgDbEnableHint">Persistently stores all received and sent channel and direct messages in a local SQLite database (messages/). After connecting, the last 24 hours are loaded automatically. Scrolling up loads older messages.</sys:String>
+    <sys:String x:Key="StrMsgDbRetention">Retention period:</sys:String>
+    <sys:String x:Key="StrMsgDbClearHint">Delete messages from the database (not from the current view):</sys:String>
+    <sys:String x:Key="StrMsgDbClearChannels">Clear channel DBs</sys:String>
+    <sys:String x:Key="StrMsgDbClearAll">All</sys:String>
+    <sys:String x:Key="StrMsgDbClearOlder30">Older than 30 days</sys:String>
+    <sys:String x:Key="StrMsgDbClearOlder90">Older than 90 days</sys:String>
+    <sys:String x:Key="StrMsgDbClearOlder365">Older than 365 days</sys:String>
+    <sys:String x:Key="StrMsgDbClearDms">Clear all DM messages</sys:String>
+    <sys:String x:Key="StrMsgDbClearConversation">Clear conversation</sys:String>
+    <sys:String x:Key="StrMsgDbClearConversationHint">Deletes all messages in this conversation from the database and the view.</sys:String>
+    <sys:String x:Key="StrMsgDbClearConversationConfirm">Really delete all messages with »{0}«?</sys:String>
+    <sys:String x:Key="StrMsgDbClearSelectedChannel">Clear Message DB</sys:String>
+    <sys:String x:Key="StrMsgDbClearBtn">clear</sys:String>
+    <sys:String x:Key="StrMsgDbClearChannelPrompt">Delete messages for channel »{0}«:</sys:String>
+    <sys:String x:Key="StrMsgDbClearConfirm">Clear</sys:String>
+    <sys:String x:Key="StrMsgDbNotEnabled">Message database is not enabled.</sys:String>
+    <sys:String x:Key="StrRelayHopsTooltip">Relay hops (number of intermediate nodes)</sys:String>
+    <sys:String x:Key="StrErrConnectionRefused">Connection refused — is the Meshtastic service running on the device and is the port correct?</sys:String>
+    <sys:String x:Key="StrMqttBubbleTooltip">Message received via MQTT (not directly via LoRa)</sys:String>
 
 </ResourceDictionary>

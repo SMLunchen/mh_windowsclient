@@ -35,7 +35,11 @@ public record AppSettings(
     int PositionHistoryHours,                // Hours of position history to show on map (0=unlimited, default 24)
     bool AutoTimeSyncOnConnect,              // Send time sync packet after connection init
     int TimeSyncDriftThresholdSeconds,       // Trigger time sync if rx_time drifts more than N seconds (default 300)
-    string MapMode);                         // Tile fetch mode: "offline", "online-own", "online-osm"
+    string MapMode,                          // Tile fetch mode: "offline", "online-own", "online-osm"
+    bool EnableMessageDb,                    // Persist messages in SQLite DB
+    int MessageDbRetentionDays,              // 0=unlimited, 30/90/365
+    string LastConnectionType,              // "Serial", "Bluetooth", "Tcp"
+    string LastBtDevice);                   // Last used Bluetooth device name
 
 public static class SettingsService
 {
@@ -73,7 +77,11 @@ public static class SettingsService
             24,                             // PositionHistoryHours default 24h
             true,                           // AutoTimeSyncOnConnect default on
             300,                            // TimeSyncDriftThresholdSeconds default 5min
-            "offline");                     // MapMode default offline
+            "offline",                      // MapMode default offline
+            true,                           // EnableMessageDb default on
+            90,                             // MessageDbRetentionDays default 90
+            "Serial",                       // LastConnectionType default Serial
+            string.Empty);                  // LastBtDevice default empty
 
         try
         {
@@ -188,7 +196,11 @@ public static class SettingsService
                 PositionHistoryHours: values.TryGetValue("PositionHistoryHours", out var phh) && int.TryParse(phh, out var phhInt) ? phhInt : defaults.PositionHistoryHours,
                 AutoTimeSyncOnConnect: !values.TryGetValue("AutoTimeSyncOnConnect", out var ats) || !bool.TryParse(ats, out var atsBool) || atsBool,
                 TimeSyncDriftThresholdSeconds: values.TryGetValue("TimeSyncDriftThresholdSeconds", out var tsd) && int.TryParse(tsd, out var tsdInt) ? tsdInt : defaults.TimeSyncDriftThresholdSeconds,
-                MapMode: values.TryGetValue("MapMode", out var mapMode) && !string.IsNullOrEmpty(mapMode) ? mapMode : defaults.MapMode
+                MapMode: values.TryGetValue("MapMode", out var mapMode) && !string.IsNullOrEmpty(mapMode) ? mapMode : defaults.MapMode,
+                EnableMessageDb: values.TryGetValue("EnableMessageDb", out var emdb) && bool.TryParse(emdb, out var emdbBool) ? emdbBool : defaults.EnableMessageDb,
+                MessageDbRetentionDays: values.TryGetValue("MessageDbRetentionDays", out var mdr) && int.TryParse(mdr, out var mdrInt) ? mdrInt : defaults.MessageDbRetentionDays,
+                LastConnectionType: values.TryGetValue("LastConnectionType", out var lct) && !string.IsNullOrEmpty(lct) ? lct : defaults.LastConnectionType,
+                LastBtDevice: values.TryGetValue("LastBtDevice", out var lbd) ? lbd : defaults.LastBtDevice
             );
         }
         catch (Exception ex)
@@ -232,7 +244,11 @@ public static class SettingsService
                 $"PositionHistoryHours={settings.PositionHistoryHours}",
                 $"AutoTimeSyncOnConnect={settings.AutoTimeSyncOnConnect}",
                 $"TimeSyncDriftThresholdSeconds={settings.TimeSyncDriftThresholdSeconds}",
-                $"MapMode={settings.MapMode}"
+                $"MapMode={settings.MapMode}",
+                $"EnableMessageDb={settings.EnableMessageDb}",
+                $"MessageDbRetentionDays={settings.MessageDbRetentionDays}",
+                $"LastConnectionType={settings.LastConnectionType}",
+                $"LastBtDevice={settings.LastBtDevice}"
             };
 
             // Save node colors

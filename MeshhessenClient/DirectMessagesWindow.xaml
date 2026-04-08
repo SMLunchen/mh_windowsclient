@@ -4,17 +4,237 @@
         xmlns:ui="http://schemas.modernwpf.com/2019"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:converters="clr-namespace:MeshhessenClient.Converters"
+        xmlns:helpers="clr-namespace:MeshhessenClient.Helpers"
+        xmlns:emoji="clr-namespace:Emoji.Wpf;assembly=Emoji.Wpf"
         mc:Ignorable="d"
         ui:WindowHelper.UseModernWindowStyle="True"
         Title="{DynamicResource StrDmWindowTitle}"
         Height="500"
         Width="700"
         MinHeight="300"
-        MinWidth="500"
-        xmlns:converters="clr-namespace:MeshhessenClient.Converters">
+        MinWidth="500">
 
     <Window.Resources>
         <converters:AlertBellIconConverter x:Key="AlertBellIconConverter"/>
+        <converters:HexToTintBrushConverter x:Key="HexToTintBrushConverter"/>
+        <converters:MessageDocumentConverter x:Key="MsgDocConverter"/>
+        <converters:IsNotEmptyConverter x:Key="IsNotEmptyConverter"/>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+
+        <!-- ListViewItem container style: transparent bg, subtle hover/select -->
+        <Style x:Key="DmBubbleItemContainerStyle" TargetType="ListViewItem">
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Margin" Value="0,1"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListViewItem">
+                        <Border x:Name="ItemBd" Background="Transparent" Padding="0">
+                            <ContentPresenter/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ItemBd" Property="Background" Value="{DynamicResource MsgHoverBg}"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="ItemBd" Property="Background" Value="{DynamicResource MsgSelectedBg}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Chat bubble DataTemplate -->
+        <DataTemplate x:Key="DmBubbleTemplate">
+            <Grid Margin="6,3,6,3">
+                <Border MaxWidth="520" CornerRadius="4,14,14,14" BorderThickness="1">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="HorizontalAlignment" Value="Left"/>
+                            <Setter Property="Background"   Value="{DynamicResource MsgBubbleOtherBg}"/>
+                            <Setter Property="BorderBrush"  Value="{DynamicResource MsgBubbleOtherBorder}"/>
+                            <Setter Property="CornerRadius" Value="4,14,14,14"/>
+                            <Setter Property="Margin"       Value="0,0,60,0"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsOwnMessage}" Value="True">
+                                    <Setter Property="HorizontalAlignment" Value="Right"/>
+                                    <Setter Property="Background"   Value="{DynamicResource MsgBubbleSelfBg}"/>
+                                    <Setter Property="BorderBrush"  Value="{DynamicResource MsgBubbleSelfBorder}"/>
+                                    <Setter Property="CornerRadius" Value="14,4,14,14"/>
+                                    <Setter Property="Margin"       Value="60,0,0,0"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+
+                    <!-- Node-color tint + content -->
+                    <Grid>
+                        <!-- Full-bubble node color tint (only for incoming) -->
+                        <Border Background="{Binding SenderColorHex, Converter={StaticResource HexToTintBrushConverter}}"
+                                CornerRadius="3,13,13,13">
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsOwnMessage}" Value="True">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                        </Border>
+
+                        <!-- Bubble content -->
+                        <StackPanel Margin="10,7,10,7">
+
+                            <!-- ── Sender header ── -->
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                <StackPanel.Style>
+                                    <Style TargetType="StackPanel">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsOwnMessage}" Value="True">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </StackPanel.Style>
+                                <TextBlock Text="{Binding From}"
+                                           FontWeight="SemiBold" FontSize="11.5"
+                                           Foreground="{DynamicResource MsgSenderNameFg}"
+                                           VerticalAlignment="Center"/>
+                                <TextBlock FontSize="10.5"
+                                           Foreground="{DynamicResource MsgSubtleFg}"
+                                           Margin="5,0,0,0" VerticalAlignment="Center">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Text" Value="{Binding SenderShortName, StringFormat='({0})'}"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding SenderShortName}" Value="">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                                <!-- Note badge -->
+                                <Border Margin="6,0,0,0" Padding="4,1,4,1"
+                                        CornerRadius="3" BorderThickness="1"
+                                        BorderBrush="{DynamicResource MsgAlertFg}"
+                                        VerticalAlignment="Center">
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding SenderNote}" Value="">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                    <TextBlock Text="{Binding SenderNote}"
+                                               FontSize="10" FontStyle="Italic"
+                                               Foreground="{DynamicResource MsgAlertFg}"/>
+                                </Border>
+                            </StackPanel>
+
+                            <!-- ── Reply quote block ── -->
+                            <Border Visibility="{Binding HasReply, Converter={StaticResource BoolToVis}}"
+                                    Background="#120078D4" BorderBrush="#0078D4"
+                                    BorderThickness="3,0,0,0" CornerRadius="0,3,3,0"
+                                    Padding="7,3,6,3" Margin="0,0,0,5">
+                                <TextBlock Text="{Binding ReplyQuoteText}"
+                                           Foreground="{DynamicResource MsgSubtleFg}"
+                                           FontStyle="Italic" FontSize="10.5"
+                                           TextWrapping="Wrap"/>
+                            </Border>
+
+                            <!-- ── Message text ── -->
+                            <RichTextBox helpers:RichTextBoxHelper.BoundDocument="{Binding Message, Converter={StaticResource MsgDocConverter}}"
+                                         IsReadOnly="True" BorderThickness="0"
+                                         Background="Transparent" Padding="0"
+                                         IsTabStop="False"
+                                         ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                         IsDocumentEnabled="True"
+                                         ContextMenuService.IsEnabled="False"
+                                         FontSize="13"
+                                         Foreground="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
+
+                            <!-- ── Footer row ── -->
+                            <DockPanel Margin="0,5,0,0" LastChildFill="False">
+                                <StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
+                                    <!-- Alert Bell -->
+                                    <TextBlock Text="🔔" FontSize="12"
+                                               Foreground="{DynamicResource MsgAlertFg}"
+                                               Margin="0,0,5,0" VerticalAlignment="Center"
+                                               ToolTip="Alert Bell / SOS">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding HasAlertBell}" Value="True">
+                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                    <!-- MQTT -->
+                                    <TextBlock FontSize="10.5" FontWeight="SemiBold"
+                                               Foreground="{DynamicResource MsgMqttFg}"
+                                               Margin="0,0,5,0" VerticalAlignment="Center"
+                                               ToolTip="{DynamicResource StrMqttBubbleTooltip}">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                <Setter Property="Text" Value="⚡ MQTT"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsViaMqtt}" Value="True">
+                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </StackPanel>
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                    <emoji:TextBlock Text="{Binding ReactionsDisplay}" FontSize="12"
+                                                     VerticalAlignment="Center" Margin="0,0,8,0">
+                                        <emoji:TextBlock.Style>
+                                            <Style TargetType="emoji:TextBlock">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding ReactionsDisplay}" Value="">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </emoji:TextBlock.Style>
+                                    </emoji:TextBlock>
+                                    <TextBlock Text="{Binding HopCountDisplay}"
+                                               FontSize="10" Foreground="{DynamicResource MsgSubtleFg}"
+                                               VerticalAlignment="Center" Margin="0,0,6,0"
+                                               ToolTip="{DynamicResource StrRelayHopsTooltip}">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding HasHopCount}" Value="False">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                    <TextBlock Text="{Binding Time}"
+                                               FontSize="10" Foreground="{DynamicResource MsgSubtleFg}"
+                                               VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                </StackPanel>
+                            </DockPanel>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+            </Grid>
+        </DataTemplate>
     </Window.Resources>
 
     <Grid>
@@ -24,9 +244,7 @@
         </Grid.RowDefinitions>
 
         <!-- Tabs für verschiedene DM-Partner -->
-        <TabControl x:Name="DmTabControl" Grid.Row="0">
-            <!-- Tabs werden dynamisch hinzugefügt -->
-        </TabControl>
+        <TabControl x:Name="DmTabControl" Grid.Row="0"/>
 
         <!-- Alert Bell Overlay (Blinkt bei Notruf) -->
         <Border x:Name="AlertBellOverlay"

@@ -11,6 +11,23 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ### ✨ Hinzugefügt
 
+#### Persistente Nachrichten-Datenbank
+- **SQLite-Nachrichtenspeicher** für Kanal- und DM-Nachrichten (optional, in Einstellungen aktivierbar)
+  - Je Kanal eine eigene DB-Datei (`messages/channel_{index}_{name}.db`), DMs in `messages/dm.db`
+  - WAL-Modus, Insert/LoadSince/LoadBefore/ClearAll/ClearOlderThan, per `partner_id` filterbar
+- **Automatisches Laden** der letzten 24 h nach dem Verbinden; älteres Nachladen per Hochscrollen (Lazy Load)
+- **DM-History:** Beim Öffnen des DM-Fensters werden alle gespeicherten Konversationen der letzten 24 h automatisch als Tabs wiederhergestellt
+- **Pro-Kanal-Löschung** im Kanäle-Tab: neue Spalte „Nachrichten-DB leeren" mit Button pro Zeile
+  - Klick öffnet Dialog mit Zeitraum-Auswahl (Alle / Älter als 30 / 90 / 365 Tage)
+- **Bestätigung** vor dem Leeren einer DM-Konversation (versehentliches Löschen verhindert)
+- **Aufbewahrungsdauer** konfigurierbar (30 / 90 / 365 Tage), Retention wird beim Start angewendet
+- Neue Einstellungen: `EnableMessageDb`, `MessageDbRetentionDays`
+
+#### Verbindung merken
+- **Letzte Verbindungsart** (Serial / Bluetooth / WiFi) wird in der INI gespeichert und beim Start automatisch vorausgewählt
+- **Letztes BT-Gerät** wird gespeichert; nach BT-Scan wird es automatisch in der Geräteliste vorausgewählt
+- Neue Einstellungen: `LastConnectionType`, `LastBtDevice`
+
 #### Alert Bell Support
 - **🚨 Notruf-Funktion** integriert (Meshtastic Alert Bell Character)
   - SOS-Button in Hauptchat und DM-Fenstern

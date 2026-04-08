@@ -94,9 +94,17 @@ public partial class MainWindow : Window
         24,   // PositionHistoryHours
         true,       // AutoTimeSyncOnConnect
         300,        // TimeSyncDriftThresholdSeconds
-        "offline"); // MapMode
+        "offline",  // MapMode
+        false,      // EnableMessageDb
+        90,         // MessageDbRetentionDays
+        "Serial",   // LastConnectionType
+        string.Empty); // LastBtDevice
     private NodeInfo? _mapContextMenuNode;
     private uint? _alertNodeId;  // Stores the node ID for "Show on Map" button
+
+    // Message DB
+    private Services.MessageDbManager? _messageDbManager;
+    private long _dbOldestTimestamp = long.MaxValue; // Oldest timestamp currently in memory (for lazy load)
 
     // Traceroute + Reactions
     private readonly Dictionary<uint, TracerouteWindow> _tracerouteWindows = new();
@@ -385,6 +393,41 @@ public partial class MainWindow : Window
             // Time Sync
             if (AutoTimeSyncCheckBox != null) AutoTimeSyncCheckBox.IsChecked = settings.AutoTimeSyncOnConnect;
             if (TimeSyncDriftBox != null) TimeSyncDriftBox.Text = settings.TimeSyncDriftThresholdSeconds.ToString();
+
+            // Message DB
+            EnableMessageDbCheckBox.IsChecked = settings.EnableMessageDb;
+            foreach (System.Windows.Controls.ComboBoxItem item in MessageDbRetentionComboBox.Items)
+            {
+                if (item.Tag is string tagStr && int.TryParse(tagStr, out var tagVal) && tagVal == settings.MessageDbRetentionDays)
+                {
+                    MessageDbRetentionComboBox.SelectedItem = item;
+                    break;
+                }
+            }
+
+            // Restore last connection type
+            switch (settings.LastConnectionType)
+            {
+                case "Bluetooth": BluetoothRadioButton.IsChecked = true; break;
+                case "Tcp":       WifiRadioButton.IsChecked = true; break;
+                default:          SerialRadioButton.IsChecked = true; break;
+            }
+
+            // Initialize message DB manager if enabled
+            if (settings.EnableMessageDb)
+            {
+                var msgDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "messages");
+                if (_messageDbManager == null)
+                    _messageDbManager = new Services.MessageDbManager(msgDir);
+                // Apply retention on startup
+                if (settings.MessageDbRetentionDays > 0)
+                    Task.Run(() => _messageDbManager.ApplyRetention(settings.MessageDbRetentionDays));
+            }
+            else
+            {
+                _messageDbManager?.Dispose();
+                _messageDbManager = null;
+            }
         }
         catch (Exception ex)
         {
@@ -958,6 +1001,7 @@ public partial class MainWindow : Window
         if (_dmWindow == null || !_dmWindow.IsVisible)
         {
             _dmWindow = new DirectMessagesWindow(_protocolService, _myNodeId);
+            _dmWindow.SetMessageDbManager(_messageDbManager);
             _dmWindow.Show();
         }
         _dmWindow.OpenChatWithNode(node.NodeId, node.Name, node.ColorHex);
@@ -1286,6 +1330,13 @@ public partial class MainWindow : Window
             Services.Logger.WriteLine($"[BLE] Total devices added to list: {_bluetoothDevices.Count}");
             UpdateStatusBar($"{_bluetoothDevices.Count} Bluetooth-Geräte gefunden");
 
+            // Pre-select last used BT device
+            if (!string.IsNullOrEmpty(_currentSettings.LastBtDevice))
+            {
+                var match = _bluetoothDevices.FirstOrDefault(d => d.Name == _currentSettings.LastBtDevice);
+                if (match != null) BluetoothDeviceComboBox.SelectedItem = match;
+            }
+
             if (_bluetoothDevices.Count == 0)
             {
                 MessageBox.Show("Keine Bluetooth-Geräte gefunden.\n\nStellen Sie sicher, dass:\n- Bluetooth aktiviert ist\n- Das Gerät eingeschaltet ist\n- Das Gerät im BLE-Modus ist", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -1480,6 +1531,7 @@ public partial class MainWindow : Window
                 if (_db != null) _protocolService.SetDatabase(_db);
                 if (_nodeKeyService != null) _protocolService.SetNodeKeyService(_nodeKeyService);
                 _protocolService.SetPskMismatchAction(_currentSettings.NodeKeyMismatchAction);
+                _dmWindow?.UpdateProtocolService(_protocolService);
 
                 // Wire up connection state changed
                 _connectionService.ConnectionStateChanged += OnConnectionStateChanged;
@@ -1488,6 +1540,7 @@ public partial class MainWindow : Window
                 await _connectionService.ConnectAsync(connectionParams);
 
                 // Save last used connection settings
+                _currentSettings = _currentSettings with { LastConnectionType = _currentConnectionType.ToString() };
                 if (_currentConnectionType == Services.ConnectionType.Serial)
                 {
                     _currentSettings = _currentSettings with { LastComPort = displayName };
@@ -1500,6 +1553,10 @@ public partial class MainWindow : Window
                         LastTcpHost = tcpParams.Hostname,
                         LastTcpPort = tcpParams.Port
                     };
+                }
+                else if (_currentConnectionType == Services.ConnectionType.Bluetooth)
+                {
+                    _currentSettings = _currentSettings with { LastBtDevice = displayName };
                 }
                 SettingsService.Save(_currentSettings);
 
@@ -1539,7 +1596,12 @@ public partial class MainWindow : Window
             }
             catch (Exception ex)
             {
-                MessageBox.Show(string.Format(Loc("StrConnectFailed"), ex.Message), Loc("StrError"), MessageBoxButton.OK, MessageBoxImage.Error);
+                // Translate common socket errors to user-friendly localized messages
+                var userMsg = ex.Message;
+                if (ex is System.Net.Sockets.SocketException se && se.SocketErrorCode == System.Net.Sockets.SocketError.ConnectionRefused
+                    || ex.InnerException is System.Net.Sockets.SocketException se2 && se2.SocketErrorCode == System.Net.Sockets.SocketError.ConnectionRefused)
+                    userMsg = Loc("StrErrConnectionRefused");
+                MessageBox.Show(string.Format(Loc("StrConnectFailed"), userMsg), Loc("StrError"), MessageBoxButton.OK, MessageBoxImage.Error);
                 UpdateStatusBar(Loc("StrConnectionFailed"));
                 SetConnectionStatus(ConnectionStatus.Error);
                 ConnectButton.IsEnabled = true;
@@ -1657,12 +1719,14 @@ public partial class MainWindow : Window
             var sentMessage = new MessageItem
             {
                 Id = sentId,
-                Time = DateTime.Now.ToString("HH:mm:ss"),
+                Time = DateTime.Now.ToString("HH:mm"),
                 From = Loc("StrMe"),
+                FromId = _myNodeId,
                 Message = message,
                 Channel = _activeChannelIndex.ToString(),
                 ChannelName = channelName,
                 IsViaMqtt = false,
+                IsOwnMessage = true,
                 ReplyId = replyTarget?.Id ?? 0,
                 ReplyFromName = replyTarget?.From ?? string.Empty,
                 ReplyPreview = replyTarget?.Message?.Length > 60 ? replyTarget.Message[..60] + "…" : replyTarget?.Message ?? string.Empty
@@ -1671,6 +1735,15 @@ public partial class MainWindow : Window
             if (sentId != 0) _messageById[sentId] = sentMessage;
             _messages.Add(sentMessage);
             MessageListView.ScrollIntoView(sentMessage);
+
+            // Persistiere gesendete Nachricht in DB
+            if (_messageDbManager != null)
+            {
+                var dbChanName = channelName;
+                var dbChanIdx  = _activeChannelIndex;
+                var dbMsg      = sentMessage;
+                Task.Run(() => _messageDbManager.InsertChannelMessage(dbChanIdx, dbChanName, dbMsg));
+            }
 
             // Log die gesendete Nachricht
             Services.MessageLogger.LogChannelMessage(_activeChannelIndex, channelName, Loc("StrMe"), message, false);
@@ -1967,10 +2040,32 @@ public partial class MainWindow : Window
                 PositionHistoryHours: int.TryParse((PositionHistoryComboBox.SelectedItem as System.Windows.Controls.ComboBoxItem)?.Tag as string, out var phh) ? phh : 24,
                 AutoTimeSyncOnConnect: AutoTimeSyncCheckBox?.IsChecked == true,
                 TimeSyncDriftThresholdSeconds: int.TryParse(TimeSyncDriftBox?.Text, out var tsd) ? Math.Max(60, tsd) : 300,
-                MapMode: _currentSettings.MapMode
+                MapMode: _currentSettings.MapMode,
+                EnableMessageDb: EnableMessageDbCheckBox.IsChecked == true,
+                MessageDbRetentionDays: int.TryParse((MessageDbRetentionComboBox.SelectedItem as System.Windows.Controls.ComboBoxItem)?.Tag as string, out var mdr) ? mdr : 90,
+                LastConnectionType: _currentSettings.LastConnectionType,
+                LastBtDevice: _currentSettings.LastBtDevice
             );
             _currentSettings = settings;
             SettingsService.Save(settings);
+
+            // Enable/disable message DB manager
+            if (settings.EnableMessageDb && _messageDbManager == null)
+            {
+                var msgDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "messages");
+                _messageDbManager = new Services.MessageDbManager(msgDir);
+                if (settings.MessageDbRetentionDays > 0)
+                    Task.Run(() => _messageDbManager.ApplyRetention(settings.MessageDbRetentionDays));
+            }
+            else if (!settings.EnableMessageDb && _messageDbManager != null)
+            {
+                _messageDbManager.Dispose();
+                _messageDbManager = null;
+            }
+
+            // Propagate manager change to open DM window
+            _dmWindow?.SetMessageDbManager(_messageDbManager);
+
             _protocolService.SetPskMismatchAction(settings.NodeKeyMismatchAction);
             StationNameLabel.Text = settings.StationName;
             _showEncryptedMessages = settings.ShowEncryptedMessages;
@@ -2012,6 +2107,8 @@ public partial class MainWindow : Window
                     ActiveChannelComboBox.IsEnabled = false;
                     _messages.Clear();
                     _allMessages.Clear();
+                    _messageById.Clear();
+                    _dbOldestTimestamp = long.MaxValue;
                     _nodes.Clear();
                     _allNodes.Clear();
                     _channels.Clear();
@@ -2223,6 +2320,7 @@ public partial class MainWindow : Window
                     if (_dmWindow == null)
                     {
                         _dmWindow = new DirectMessagesWindow(_protocolService, _myNodeId);
+                        _dmWindow.SetMessageDbManager(_messageDbManager);
                     }
                     _dmWindow.AddOrUpdateMessage(message);
 
@@ -2256,6 +2354,10 @@ public partial class MainWindow : Window
                     message.ChannelName = message.Channel;
                 }
 
+                // Mark own messages for right-aligned bubble
+                if (_myNodeId != 0 && message.FromId == _myNodeId)
+                    message.IsOwnMessage = true;
+
                 // Load sender color and note from settings
                 var senderNode = _allNodes.FirstOrDefault(n => n.NodeId == message.FromId);
                 if (senderNode != null)
@@ -2276,6 +2378,10 @@ public partial class MainWindow : Window
                 _allMessages.Add(message);
                 if (message.Id != 0)
                     _messageById[message.Id] = message;
+
+                // Persistiere in Nachrichten-DB
+                if (_messageDbManager != null && uint.TryParse(message.Channel, out uint dbChanIdx))
+                    Task.Run(() => _messageDbManager.InsertChannelMessage((int)dbChanIdx, message.ChannelName, message));
 
                 // Log die Kanal-Nachricht
                 if (uint.TryParse(message.Channel, out uint logChannelIndex))
@@ -2440,6 +2546,12 @@ public partial class MainWindow : Window
                 // Speichere eigene Node-ID für DM-Fenster
                 _myNodeId = deviceInfo.NodeId;
                 OwnNodeIdText.Text = $"!{_myNodeId:x8}";
+
+                // Re-evaluate IsOwnMessage for messages already loaded from DB
+                // (DB load can race ahead of DeviceInfo, leaving IsOwnMessage=false for own messages)
+                // IsOwnMessage raises PropertyChanged so the bubble switches side immediately.
+                foreach (var m in _allMessages.Where(m => !m.IsOwnMessage && m.FromId == _myNodeId))
+                    m.IsOwnMessage = true;
 
                 // Set hardware model and firmware version
                 HardwareModelText.Text = deviceInfo.HardwareModel;
@@ -2636,6 +2748,9 @@ public partial class MainWindow : Window
                     null,
                     TimeSpan.FromSeconds(5),
                     TimeSpan.FromMinutes(10));
+                // Load last 24h from message DB (once per connection)
+                if (_messageDbManager != null)
+                    _ = Task.Run(LoadMessagesFromDbAsync);
                 break;
             case ConnectionStatus.Disconnecting:
                 StatusIndicator.Fill = new SolidColorBrush(Colors.Orange);
@@ -2646,6 +2761,252 @@ public partial class MainWindow : Window
                 StatusText.Text = Loc("StrError");
                 break;
         }
+    }
+
+    // ── Message DB load / lazy-load ───────────────────────────────────────────
+
+    /// <summary>Load last 24h from DB on connection ready. Runs on background thread.</summary>
+    private void LoadMessagesFromDbAsync()
+    {
+        try
+        {
+            if (_messageDbManager == null) return;
+            var since = DateTimeOffset.UtcNow.AddHours(-24).ToUnixTimeSeconds();
+            var entries = _messageDbManager.LoadAllChannelMessagesSince(since);
+            if (entries.Count == 0) return;
+
+            // Sort by timestamp
+            entries.Sort((a, b) => a.Timestamp.CompareTo(b.Timestamp));
+
+            Dispatcher.BeginInvoke(() =>
+            {
+                foreach (var entry in entries)
+                {
+                    // Skip if already present (same PacketId + timestamp guard)
+                    if (entry.PacketId != 0 && _messageById.ContainsKey(entry.PacketId))
+                        continue;
+
+                    var msg = DbEntryToMessageItem(entry);
+                    msg.IsOwnMessage = (_myNodeId != 0 && msg.FromId == _myNodeId);
+                    var senderNodeA = _allNodes.FirstOrDefault(n => n.NodeId == msg.FromId);
+                    if (senderNodeA != null) msg.SenderShortName = senderNodeA.ShortName;
+                    _allMessages.Add(msg);
+                    if (entry.PacketId != 0)
+                        _messageById[entry.PacketId] = msg;
+
+                    // Track oldest timestamp
+                    if (entry.Timestamp < _dbOldestTimestamp)
+                        _dbOldestTimestamp = entry.Timestamp;
+                }
+
+                // Rebuild visible list and scroll to newest
+                RebuildVisibleMessages();
+                if (_messages.Count > 0)
+                    MessageListView.ScrollIntoView(_messages[^1]);
+            });
+        }
+        catch (Exception ex)
+        {
+            Services.Logger.WriteLine($"[MsgDB] LoadMessagesFromDbAsync: {ex.Message}");
+        }
+    }
+
+    /// <summary>Load N messages before the oldest displayed. Called when user scrolls to top.</summary>
+    private void LazyLoadOlderMessages()
+    {
+        if (_messageDbManager == null || _dbOldestTimestamp == long.MaxValue) return;
+
+        // Collect entries from all channel DBs older than current oldest
+        var allEntries = new List<Models.MessageDbEntry>();
+
+        // We load 50 messages older than the oldest timestamp per channel
+        foreach (var channel in _channels)
+        {
+            var entries = _messageDbManager.LoadChannelMessagesBefore(
+                channel.Index, channel.Name, _dbOldestTimestamp, 50);
+            allEntries.AddRange(entries);
+        }
+
+        if (allEntries.Count == 0) return;
+
+        allEntries.Sort((a, b) => a.Timestamp.CompareTo(b.Timestamp));
+
+        // Prepend to message collections while preserving scroll position
+        var firstVisible = _messages.Count > 0 ? _messages[0] : null;
+
+        foreach (var entry in allEntries)
+        {
+            if (entry.PacketId != 0 && _messageById.ContainsKey(entry.PacketId)) continue;
+            var msg = DbEntryToMessageItem(entry);
+            msg.IsOwnMessage = (_myNodeId != 0 && msg.FromId == _myNodeId);
+            var senderNodeB = _allNodes.FirstOrDefault(n => n.NodeId == msg.FromId);
+            if (senderNodeB != null) msg.SenderShortName = senderNodeB.ShortName;
+
+            // Insert at start of _allMessages (before first live entry)
+            int insertIdx = 0;
+            _allMessages.Insert(insertIdx++, msg);
+            if (entry.PacketId != 0) _messageById[entry.PacketId] = msg;
+
+            if (entry.Timestamp < _dbOldestTimestamp)
+                _dbOldestTimestamp = entry.Timestamp;
+        }
+
+        RebuildVisibleMessages();
+
+        // Restore scroll position to the item that was previously first
+        if (firstVisible != null && _messages.Contains(firstVisible))
+            MessageListView.ScrollIntoView(firstVisible);
+    }
+
+    private static Models.MessageItem DbEntryToMessageItem(Models.MessageDbEntry e)
+    {
+        var dt = DateTimeOffset.FromUnixTimeSeconds(e.Timestamp).ToLocalTime();
+        var today = DateTime.Today;
+        string timeStr = dt.Date == today
+            ? dt.ToString("HH:mm")
+            : dt.Date == today.AddDays(-1)
+                ? $"Gestern {dt:HH:mm}"
+                : dt.ToString("dd.MM. HH:mm");
+
+        return new Models.MessageItem
+        {
+            Id              = e.PacketId,
+            Time            = timeStr,
+            From            = e.FromName,
+            FromId          = e.FromId,
+            ToId            = e.ToId,
+            Message         = e.Message,
+            Channel         = e.ChannelIndex.ToString(),
+            ChannelName     = e.ChannelName,
+            IsEncrypted     = e.IsEncrypted,
+            IsViaMqtt       = e.IsViaMqtt,
+            ReplyId         = e.ReplyId,
+            ReplyFromName   = e.ReplyFromName,
+            ReplyPreview    = e.ReplyPreview,
+            SenderColorHex  = e.SenderColorHex,
+            SenderNote      = e.SenderNote
+        };
+    }
+
+    private void RebuildVisibleMessages()
+    {
+        _messages.Clear();
+        foreach (var msg in _allMessages)
+        {
+            bool passes = true;
+            if (_messageChannelFilter != null && _messageChannelFilter.Index != 999)
+            {
+                if (uint.TryParse(msg.Channel, out uint idx))
+                    passes = idx == _messageChannelFilter.Index;
+            }
+            if (passes) _messages.Add(msg);
+        }
+    }
+
+    private void MessageListView_ScrollChanged(object sender, ScrollChangedEventArgs e)
+    {
+        // When scrolled to (near) the top, lazy-load older messages from DB
+        if (e.VerticalOffset < 10 && _messageDbManager != null && _dbOldestTimestamp != long.MaxValue)
+            LazyLoadOlderMessages();
+    }
+
+    private void ClearChannelMessages_Click(object sender, RoutedEventArgs e)
+    {
+        if (_messageDbManager == null) return;
+        int days = 0;
+        if (ClearChannelAgeComboBox.SelectedItem is System.Windows.Controls.ComboBoxItem item &&
+            item.Tag is string tag && int.TryParse(tag, out var d))
+            days = d;
+        _messageDbManager.ClearAllChannelDbs(days);
+        Services.Logger.WriteLine($"[MsgDB] Channel DBs cleared (olderThanDays={days})");
+    }
+
+    private void ClearDmMessages_Click(object sender, RoutedEventArgs e)
+    {
+        if (_messageDbManager == null) return;
+        _messageDbManager.ClearAllDms();
+        Services.Logger.WriteLine("[MsgDB] All DM messages cleared");
+    }
+
+    private void ClearSelectedChannelDb_Click(object sender, RoutedEventArgs e)
+    {
+        if (_messageDbManager == null)
+        {
+            MessageBox.Show(Loc("StrMsgDbNotEnabled"), Loc("StrMsgDbClearSelectedChannel"),
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+        if (((System.Windows.Controls.Button)sender).Tag is not ChannelInfo channel) return;
+
+        int? days = ShowClearDbDialog(channel.Name);
+        if (days == null) return;
+
+        _messageDbManager.ClearChannelDb(channel.Index, channel.Name, days.Value);
+        Services.Logger.WriteLine($"[MsgDB] Channel DB cleared: {channel.Name} (olderThanDays={days})");
+    }
+
+    private int? ShowClearDbDialog(string channelName)
+    {
+        var dlg = new Window
+        {
+            Title = Loc("StrMsgDbClearSelectedChannel"),
+            Width = 380, Height = 185,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            Owner = this,
+            ResizeMode = ResizeMode.NoResize,
+            ShowInTaskbar = false
+        };
+
+        var sp = new System.Windows.Controls.StackPanel { Margin = new Thickness(16) };
+        sp.Children.Add(new System.Windows.Controls.TextBlock
+        {
+            Text = string.Format(Loc("StrMsgDbClearChannelPrompt"), channelName),
+            Margin = new Thickness(0, 0, 0, 10),
+            TextWrapping = TextWrapping.Wrap
+        });
+
+        var combo = new System.Windows.Controls.ComboBox
+        {
+            Width = 220,
+            HorizontalAlignment = HorizontalAlignment.Left,
+            Margin = new Thickness(0, 0, 0, 16)
+        };
+        combo.Items.Add(new System.Windows.Controls.ComboBoxItem { Tag = "0",   Content = Loc("StrMsgDbClearAll") });
+        combo.Items.Add(new System.Windows.Controls.ComboBoxItem { Tag = "30",  Content = Loc("StrMsgDbClearOlder30") });
+        combo.Items.Add(new System.Windows.Controls.ComboBoxItem { Tag = "90",  Content = Loc("StrMsgDbClearOlder90") });
+        combo.Items.Add(new System.Windows.Controls.ComboBoxItem { Tag = "365", Content = Loc("StrMsgDbClearOlder365") });
+        combo.SelectedIndex = 0;
+        sp.Children.Add(combo);
+
+        var btnPanel = new System.Windows.Controls.StackPanel
+        {
+            Orientation = System.Windows.Controls.Orientation.Horizontal,
+            HorizontalAlignment = HorizontalAlignment.Right
+        };
+
+        int? result = null;
+        var okBtn = new System.Windows.Controls.Button
+        {
+            Content = Loc("StrMsgDbClearConfirm"),
+            Width = 90,
+            Margin = new Thickness(0, 0, 8, 0)
+        };
+        okBtn.Click += (_, _) =>
+        {
+            if (combo.SelectedItem is System.Windows.Controls.ComboBoxItem item &&
+                item.Tag is string t && int.TryParse(t, out var d))
+                result = d;
+            dlg.DialogResult = true;
+        };
+        var cancelBtn = new System.Windows.Controls.Button { Content = Loc("StrCancel"), Width = 90 };
+        cancelBtn.Click += (_, _) => { dlg.DialogResult = false; };
+
+        btnPanel.Children.Add(okBtn);
+        btnPanel.Children.Add(cancelBtn);
+        sp.Children.Add(btnPanel);
+        dlg.Content = sp;
+
+        return dlg.ShowDialog() == true ? result : null;
     }
 
     private void UpdateMessageFilterComboBox()
@@ -2696,6 +3057,7 @@ public partial class MainWindow : Window
             if (_dmWindow == null)
             {
                 _dmWindow = new DirectMessagesWindow(_protocolService, _myNodeId);
+                _dmWindow.SetMessageDbManager(_messageDbManager);
             }
 
             // Zeige Fenster
@@ -2779,6 +3141,7 @@ public partial class MainWindow : Window
             if (_dmWindow == null)
             {
                 _dmWindow = new DirectMessagesWindow(_protocolService, _myNodeId);
+                _dmWindow.SetMessageDbManager(_messageDbManager);
             }
 
             // Öffne Chat mit diesem Knoten
@@ -4951,7 +5314,6 @@ public partial class MainWindow : Window
         var preview = msg.Message?.Length > 60 ? msg.Message[..60] + "…" : msg.Message ?? string.Empty;
         ReplyIndicatorText.Text = string.Format(Loc("StrReplyingTo"), msg.From, preview);
         ReplyIndicatorPanel.Visibility = Visibility.Visible;
-        MessageTextBox.Clear();
         MessageTextBox.Focus();
         if (MainTabs.SelectedIndex != 0) MainTabs.SelectedIndex = 0;
     }

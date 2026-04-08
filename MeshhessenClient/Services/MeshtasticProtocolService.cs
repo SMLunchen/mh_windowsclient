@@ -885,16 +885,20 @@ public class MeshtasticProtocolService
                 }
             }
 
+            int encHops = (packet.HopStart == 0 || packet.HopLimit > packet.HopStart)
+                ? -1 : (int)(packet.HopStart - packet.HopLimit);
+
             var messageItem = new MessageItem
             {
-                Time = DateTime.Now.ToString("HH:mm:ss"),
+                Time = DateTime.Now.ToString("HH:mm"),
                 From = fromName,
                 FromId = packet.From,
                 ToId = packet.To,
                 Message = System.Windows.Application.Current?.Resources["StrEncryptedMessage"] as string ?? "[Encrypted message – PSK required]",
                 Channel = FormatChannelDisplay(packet.Channel),
                 IsEncrypted = true,
-                IsViaMqtt = packet.ViaMqtt
+                IsViaMqtt = packet.ViaMqtt,
+                HopCount = encHops
             };
             MessageReceived?.Invoke(this, messageItem);
         }
@@ -989,17 +993,21 @@ public class MeshtasticProtocolService
                 }
             }
 
+            int hops = (packet.HopStart == 0 || packet.HopLimit > packet.HopStart)
+                ? -1 : (int)(packet.HopStart - packet.HopLimit);
+
             var messageItem = new MessageItem
             {
                 Id = packet.Id,
-                Time = DateTime.Now.ToString("HH:mm:ss"),
+                Time = DateTime.Now.ToString("HH:mm"),
                 From = fromName,
                 FromId = packet.From,
                 ToId = packet.To,
                 Message = messageText,
                 Channel = FormatChannelDisplay(packet.Channel),
                 IsViaMqtt = packet.ViaMqtt,
-                ReplyId = data.ReplyId
+                ReplyId = data.ReplyId,
+                HopCount = hops
             };
 
             MessageReceived?.Invoke(this, messageItem);
@@ -1169,12 +1177,12 @@ public class MeshtasticProtocolService
                 LongName = protoNodeInfo.User?.LongName ?? protoNodeInfo.User?.ShortName ?? $"Node-{protoNodeInfo.Num:x4}",
                 Name = protoNodeInfo.User?.LongName ?? protoNodeInfo.User?.ShortName ?? $"Node-{protoNodeInfo.Num:x4}",
                 Snr = protoNodeInfo.Snr.ToString("F1"),
-                LastSeen = protoNodeInfo.LastHeard > 0
-                    ? DateTimeOffset.FromUnixTimeSeconds(protoNodeInfo.LastHeard).LocalDateTime.ToString("HH:mm:ss")
-                    : DateTime.Now.ToString("HH:mm:ss"),
                 LastSeenDateTime = protoNodeInfo.LastHeard > 0
                     ? DateTimeOffset.FromUnixTimeSeconds(protoNodeInfo.LastHeard).LocalDateTime
-                    : DateTime.Now
+                    : DateTime.Now,
+                LastSeen = FormatLastSeen(protoNodeInfo.LastHeard > 0
+                    ? DateTimeOffset.FromUnixTimeSeconds(protoNodeInfo.LastHeard).LocalDateTime
+                    : DateTime.Now)
             };
 
             if (protoNodeInfo.Position != null)
@@ -1275,7 +1283,7 @@ public class MeshtasticProtocolService
                 Snr = packet.RxSnr != 0f ? packet.RxSnr.ToString("F1") : "-",
                 SnrValue = packet.RxSnr != 0f ? packet.RxSnr : null,
                 Rssi = packet.RxRssi != 0 ? packet.RxRssi.ToString() : "-",
-                LastSeen = DateTime.Now.ToString("HH:mm:ss"),
+                LastSeen = FormatLastSeen(DateTime.Now),
                 LastSeenDateTime = DateTime.Now,
                 HardwareModel = user.HwModel != HardwareModel.Unset ? user.HwModel.ToString() : "",
                 PkiKeyKnown = _nodeKeyService?.GetPublicKey(packet.From) != null
@@ -1351,7 +1359,7 @@ public class MeshtasticProtocolService
                     {
                         Logger.WriteLine($"  Position ignored (LatI=LonI=0, no GPS fix)");
                     }
-                    nodeInfo.LastSeen = DateTime.Now.ToString("HH:mm:ss");
+                    nodeInfo.LastSeen = FormatLastSeen(DateTime.Now);
                     nodeInfo.LastSeenDateTime = DateTime.Now;
                     if (packet.RxRssi != 0) nodeInfo.Rssi = packet.RxRssi.ToString();
                     if (packet.RxSnr != 0f) { nodeInfo.Snr = packet.RxSnr.ToString("F1"); nodeInfo.SnrValue = packet.RxSnr; }
@@ -1433,7 +1441,7 @@ public class MeshtasticProtocolService
             {
                 if (_knownNodes.TryGetValue(packet.From, out var nodeInfo))
                 {
-                    nodeInfo.LastSeen = DateTime.Now.ToString("HH:mm:ss");
+                    nodeInfo.LastSeen = FormatLastSeen(DateTime.Now);
                     nodeInfo.LastSeenDateTime = DateTime.Now;
                     if (packet.RxRssi != 0) nodeInfo.Rssi = packet.RxRssi.ToString();
                     if (packet.RxSnr != 0f) { nodeInfo.Snr = packet.RxSnr.ToString("F1"); nodeInfo.SnrValue = packet.RxSnr; }
@@ -2240,6 +2248,16 @@ public class MeshtasticProtocolService
             sb.Append(input[i]);
         }
         return sb.ToString().Trim();
+    }
+
+    private static string FormatLastSeen(DateTime dt)
+    {
+        var today = DateTime.Today;
+        if (dt.Date == today)
+            return dt.ToString("HH:mm:ss");
+        if (dt.Date == today.AddDays(-1))
+            return $"Gestern {dt:HH:mm}";
+        return dt.ToString("dd.MM. HH:mm");
     }
 
     private static string ToHexString(byte[] data)

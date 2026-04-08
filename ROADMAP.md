@@ -2,10 +2,7 @@
 
 ## Persistence
 
-- [ ] SQLite-Datenbank für Message-History
-- [ ] History beim Start laden
 - [ ] Message-Suche
-
 
 ## Erweiterte Features
 
@@ -16,6 +13,7 @@
 ## Ideen / Backlog
 
 * Export/Import von Nachrichten
+* Einstellung: Chatbubbles mit eckigen ecken und runden ecken auswählbar.
 
-
+## Bugfixes
 
