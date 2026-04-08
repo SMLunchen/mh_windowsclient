@@ -74,9 +74,9 @@ public partial class MainWindow : Window
         "192.168.1.1",
         4403,
         "osm",
-        "https://tile.schwarzes-seelenreich.de/osm/{z}/{x}/{y}.png",
-        "https://tile.schwarzes-seelenreich.de/opentopo/{z}/{x}/{y}.png",
-        "https://tile.schwarzes-seelenreich.de/dark/{z}/{x}/{y}.png",
+        "https://tile.meshhessenclient.de/osm/{z}/{x}/{y}.png",
+        "https://tile.meshhessenclient.de/opentopo/{z}/{x}/{y}.png",
+        "https://tile.meshhessenclient.de/dark/{z}/{x}/{y}.png",
         new Dictionary<uint, string>(),
         new Dictionary<uint, string>(),
         false,
@@ -92,8 +92,9 @@ public partial class MainWindow : Window
         6,    // SignalWeatherWindowHours
         7,    // SignalAntennaWindowDays
         24,   // PositionHistoryHours
-        true, // AutoTimeSyncOnConnect
-        300); // TimeSyncDriftThresholdSeconds
+        true,       // AutoTimeSyncOnConnect
+        300,        // TimeSyncDriftThresholdSeconds
+        "offline"); // MapMode
     private NodeInfo? _mapContextMenuNode;
     private uint? _alertNodeId;  // Stores the node ID for "Show on Map" button
 
@@ -343,6 +344,12 @@ public partial class MainWindow : Window
                 MapSourceComboBox.SelectedIndex = 0;
             }
 
+            // Load Map Mode
+            MapModeOfflineRadio.IsChecked   = settings.MapMode != "online-own" && settings.MapMode != "online-osm";
+            MapModeOnlineOwnRadio.IsChecked = settings.MapMode == "online-own";
+            MapModeOnlineOsmRadio.IsChecked = settings.MapMode == "online-osm";
+            ApplyMapModeUi(settings.MapMode);
+
             if (settings.DarkMode)
                 ModernWpf.ThemeManager.Current.ApplicationTheme = ModernWpf.ApplicationTheme.Dark;
 
@@ -387,17 +394,38 @@ public partial class MainWindow : Window
 
     #region Karte
 
+    private string GetUrlForSource(string source) => source switch
+    {
+        "osm"     => _currentSettings.OSMTileUrl,
+        "osmtopo" => _currentSettings.OSMTopoTileUrl,
+        "osmdark" => _currentSettings.OSMDarkTileUrl,
+        _         => _currentSettings.OSMTileUrl
+    };
+
     private void InitializeMap()
     {
         try
         {
             _map = new Mapsui.Map();
 
-            // Lokale Tile-Layer mit ausgewählter Kartenquelle
             var tileDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "maptiles");
             var sourceFolder = _currentSettings.MapSource;  // "osm", "osmtopo", oder "osmdark"
             var schema = new GlobalSphericalMercator(YAxis.TMS, 0, 18, "OSM");
-            var tileSource = new TileSource(new LocalFileTileProvider(tileDir, sourceFolder), schema);
+
+            BruTile.ITileProvider tileProvider = _currentSettings.MapMode switch
+            {
+                "online-osm" => new Services.CachingHttpTileProvider(
+                    tileDir, "osm_online",
+                    "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+                    useHttpCacheHeaders: true),
+                "online-own" => new Services.CachingHttpTileProvider(
+                    tileDir, sourceFolder,
+                    GetUrlForSource(sourceFolder),
+                    useHttpCacheHeaders: false),
+                _ => new LocalFileTileProvider(tileDir, sourceFolder)
+            };
+
+            var tileSource = new TileSource(tileProvider, schema);
             _map.Layers.Add(new TileLayer(tileSource) { Name = "OSM" });
 
             // Node-Layer
@@ -423,9 +451,16 @@ public partial class MainWindow : Window
 
             UpdateMyPositionPin();
 
-            var sourceTileDir = Path.Combine(tileDir, sourceFolder);
-            MapStatusText.Text = Directory.Exists(sourceTileDir) && Directory.EnumerateFiles(sourceTileDir, "*.png", SearchOption.AllDirectories).Any()
-                ? "" : Loc("StrNoTiles");
+            if (_currentSettings.MapMode is "online-own" or "online-osm")
+            {
+                MapStatusText.Text = "";
+            }
+            else
+            {
+                var sourceTileDir = Path.Combine(tileDir, sourceFolder);
+                MapStatusText.Text = Directory.Exists(sourceTileDir) && Directory.EnumerateFiles(sourceTileDir, "*.png", SearchOption.AllDirectories).Any()
+                    ? "" : Loc("StrNoTiles");
+            }
 
             // Copyright-Hinweis basierend auf Kartenquelle setzen
             UpdateMapCopyright();
@@ -938,7 +973,7 @@ public partial class MainWindow : Window
     {
         // Tile-Server URL direkt aus TextBox übernehmen (auch ohne vorheriges Speichern)
         var currentTileUrl = string.IsNullOrWhiteSpace(TileServerUrlTextBox.Text)
-            ? "https://tile.schwarzes-seelenreich.de/osm/{z}/{x}/{y}.png"
+            ? "https://tile.meshhessenclient.de/osm/{z}/{x}/{y}.png"
             : TileServerUrlTextBox.Text.Trim();
 
         // Update the appropriate URL based on current map source
@@ -963,9 +998,14 @@ public partial class MainWindow : Window
 
     private void UpdateMapTileStatus()
     {
+        if (_currentSettings.MapMode is "online-own" or "online-osm")
+        {
+            MapStatusText.Text = "";
+            return;
+        }
+
         var tileDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "maptiles");
-        var sourceFolder = _currentSettings.MapSource;
-        var sourceTileDir = Path.Combine(tileDir, sourceFolder);
+        var sourceTileDir = Path.Combine(tileDir, _currentSettings.MapSource);
         MapStatusText.Text = Directory.Exists(sourceTileDir) && Directory.EnumerateFiles(sourceTileDir, "*.png", SearchOption.AllDirectories).Any()
             ? "" : Loc("StrNoTiles");
     }
@@ -996,6 +1036,54 @@ public partial class MainWindow : Window
         // Karte neu laden mit neuer Quelle
         InitializeMap();
         UpdateMapTileStatus();
+    }
+
+    private void MapModeRadio_Changed(object sender, RoutedEventArgs e)
+    {
+        // Guard: RadioButton fires Checked during initial binding before _currentSettings is fully populated
+        if (_currentSettings is null) return;
+
+        var mode = MapModeOnlineOsmRadio?.IsChecked == true ? "online-osm"
+                 : MapModeOnlineOwnRadio?.IsChecked  == true ? "online-own"
+                 : "offline";
+
+        if (mode == _currentSettings.MapMode) return;
+
+        // OSM mode forces standard map
+        var newSource = (mode == "online-osm") ? "osm" : _currentSettings.MapSource;
+        if (newSource != _currentSettings.MapSource)
+        {
+            foreach (System.Windows.Controls.ComboBoxItem item in MapSourceComboBox.Items)
+            {
+                if ((item.Tag as string) == "osm")
+                {
+                    MapSourceComboBox.SelectedItem = item;
+                    break;
+                }
+            }
+        }
+
+        _currentSettings = _currentSettings with { MapMode = mode, MapSource = newSource };
+        Services.SettingsService.Save(_currentSettings);
+        Services.Logger.WriteLine($"Map mode changed to: {mode}");
+
+        ApplyMapModeUi(mode);
+        InitializeMap();
+        UpdateMapTileStatus();
+    }
+
+    private void ApplyMapModeUi(string mode)
+    {
+        if (OsmWarnBorder is null) return; // Called before XAML is loaded
+
+        var isOsm     = mode == "online-osm";
+        var isOffline = mode != "online-own" && mode != "online-osm";
+
+        OsmWarnBorder.Visibility        = isOsm     ? Visibility.Visible   : Visibility.Collapsed;
+        MapSourceLockedHint.Visibility  = isOsm     ? Visibility.Visible   : Visibility.Collapsed;
+        TileServerPanel.Visibility      = isOsm     ? Visibility.Collapsed : Visibility.Visible;
+        TileDownloadPanel.Visibility    = isOffline ? Visibility.Visible   : Visibility.Collapsed;
+        MapSourceComboBox.IsEnabled     = !isOsm;
     }
 
     private async void ImportTilesFromZip_Click(object sender, RoutedEventArgs e)
@@ -1826,7 +1914,7 @@ public partial class MainWindow : Window
         {
             // Get current tile URL from TextBox
             var currentTileUrl = string.IsNullOrWhiteSpace(TileServerUrlTextBox.Text)
-                ? "https://tile.schwarzes-seelenreich.de/osm/{z}/{x}/{y}.png"
+                ? "https://tile.meshhessenclient.de/osm/{z}/{x}/{y}.png"
                 : TileServerUrlTextBox.Text.Trim();
 
             // Update the appropriate URL based on current map source
@@ -1878,7 +1966,8 @@ public partial class MainWindow : Window
                 SignalAntennaWindowDays: int.TryParse(AntennaDaysBox.Text, out var sad) ? Math.Max(1, sad) : 7,
                 PositionHistoryHours: int.TryParse((PositionHistoryComboBox.SelectedItem as System.Windows.Controls.ComboBoxItem)?.Tag as string, out var phh) ? phh : 24,
                 AutoTimeSyncOnConnect: AutoTimeSyncCheckBox?.IsChecked == true,
-                TimeSyncDriftThresholdSeconds: int.TryParse(TimeSyncDriftBox?.Text, out var tsd) ? Math.Max(60, tsd) : 300
+                TimeSyncDriftThresholdSeconds: int.TryParse(TimeSyncDriftBox?.Text, out var tsd) ? Math.Max(60, tsd) : 300,
+                MapMode: _currentSettings.MapMode
             );
             _currentSettings = settings;
             SettingsService.Save(settings);

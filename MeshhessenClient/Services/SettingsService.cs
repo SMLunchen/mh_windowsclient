@@ -34,7 +34,8 @@ public record AppSettings(
     int SignalAntennaWindowDays,             // Long analysis window for antenna trend (default 7d)
     int PositionHistoryHours,                // Hours of position history to show on map (0=unlimited, default 24)
     bool AutoTimeSyncOnConnect,              // Send time sync packet after connection init
-    int TimeSyncDriftThresholdSeconds);      // Trigger time sync if rx_time drifts more than N seconds (default 300)
+    int TimeSyncDriftThresholdSeconds,       // Trigger time sync if rx_time drifts more than N seconds (default 300)
+    string MapMode);                         // Tile fetch mode: "offline", "online-own", "online-osm"
 
 public static class SettingsService
 {
@@ -52,9 +53,9 @@ public static class SettingsService
             "192.168.1.1",
             4403,
             "osm",
-            "https://tile.schwarzes-seelenreich.de/osm/{z}/{x}/{y}.png",        // OSM
-            "https://tile.schwarzes-seelenreich.de/opentopo/{z}/{x}/{y}.png",   // OSM Topo
-            "https://tile.schwarzes-seelenreich.de/dark/{z}/{x}/{y}.png",       // OSM Dark
+            "https://tile.meshhessenclient.de/osm/{z}/{x}/{y}.png",        // OSM
+            "https://tile.meshhessenclient.de/opentopo/{z}/{x}/{y}.png",   // OSM Topo
+            "https://tile.meshhessenclient.de/dark/{z}/{x}/{y}.png",       // OSM Dark
             new Dictionary<uint, string>(),
             new Dictionary<uint, string>(),
             false,
@@ -71,7 +72,8 @@ public static class SettingsService
             7,                              // SignalAntennaWindowDays default 7d
             24,                             // PositionHistoryHours default 24h
             true,                           // AutoTimeSyncOnConnect default on
-            300);                           // TimeSyncDriftThresholdSeconds default 5min
+            300,                            // TimeSyncDriftThresholdSeconds default 5min
+            "offline");                     // MapMode default offline
 
         try
         {
@@ -185,7 +187,8 @@ public static class SettingsService
                 SignalAntennaWindowDays: values.TryGetValue("SignalAntennaWindowDays", out var sad) && int.TryParse(sad, out var sadInt) ? sadInt : defaults.SignalAntennaWindowDays,
                 PositionHistoryHours: values.TryGetValue("PositionHistoryHours", out var phh) && int.TryParse(phh, out var phhInt) ? phhInt : defaults.PositionHistoryHours,
                 AutoTimeSyncOnConnect: !values.TryGetValue("AutoTimeSyncOnConnect", out var ats) || !bool.TryParse(ats, out var atsBool) || atsBool,
-                TimeSyncDriftThresholdSeconds: values.TryGetValue("TimeSyncDriftThresholdSeconds", out var tsd) && int.TryParse(tsd, out var tsdInt) ? tsdInt : defaults.TimeSyncDriftThresholdSeconds
+                TimeSyncDriftThresholdSeconds: values.TryGetValue("TimeSyncDriftThresholdSeconds", out var tsd) && int.TryParse(tsd, out var tsdInt) ? tsdInt : defaults.TimeSyncDriftThresholdSeconds,
+                MapMode: values.TryGetValue("MapMode", out var mapMode) && !string.IsNullOrEmpty(mapMode) ? mapMode : defaults.MapMode
             );
         }
         catch (Exception ex)
@@ -228,7 +231,8 @@ public static class SettingsService
                 $"SignalAntennaWindowDays={settings.SignalAntennaWindowDays}",
                 $"PositionHistoryHours={settings.PositionHistoryHours}",
                 $"AutoTimeSyncOnConnect={settings.AutoTimeSyncOnConnect}",
-                $"TimeSyncDriftThresholdSeconds={settings.TimeSyncDriftThresholdSeconds}"
+                $"TimeSyncDriftThresholdSeconds={settings.TimeSyncDriftThresholdSeconds}",
+                $"MapMode={settings.MapMode}"
             };
 
             // Save node colors

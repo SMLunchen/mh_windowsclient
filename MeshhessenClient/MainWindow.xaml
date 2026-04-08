@@ -876,22 +876,68 @@
                             <!-- d) Karte / Tiles -->
                             <GroupBox Header="{DynamicResource StrMapGroup}" Margin="0,0,0,16">
                                 <StackPanel Margin="10">
+
+                                    <!-- Kartenstil -->
                                     <TextBlock Text="{DynamicResource StrMapSource}" Margin="0,0,0,4"/>
                                     <ComboBox x:Name="MapSourceComboBox"
-                                             Width="250" HorizontalAlignment="Left" Margin="0,0,0,10"
+                                             Width="250" HorizontalAlignment="Left" Margin="0,0,0,14"
                                              SelectionChanged="MapSourceComboBox_SelectionChanged">
                                         <ComboBoxItem Content="OpenStreetMap Standard" Tag="osm"/>
                                         <ComboBoxItem Content="OpenTopoMap" Tag="osmtopo"/>
                                         <ComboBoxItem Content="OpenStreetMap Dark" Tag="osmdark"/>
                                     </ComboBox>
-                                    <TextBlock Text="{DynamicResource StrTileServerUrl}" Margin="0,0,0,4"/>
-                                    <TextBox x:Name="TileServerUrlTextBox" HorizontalAlignment="Stretch" Margin="0,0,0,4"/>
-                                    <TextBlock Text="{DynamicResource StrTileServerUrlHint}"
-                                              FontStyle="Italic" Foreground="Gray" FontSize="11" Margin="0,0,0,10"/>
-                                    <Button Content="{DynamicResource StrDownloadTiles}" Width="200" HorizontalAlignment="Left"
-                                           Margin="0,0,0,6" Click="DownloadTiles_Click"/>
-                                    <Button Content="{DynamicResource StrImportTilesZip}" Width="200" HorizontalAlignment="Left"
-                                           Click="ImportTilesFromZip_Click"/>
+                                    <TextBlock x:Name="MapSourceLockedHint"
+                                              Text="{DynamicResource StrMapModeOnlineOsmSourceLocked}"
+                                              FontSize="11" FontStyle="Italic" Foreground="Gray"
+                                              Margin="0,-10,0,10" Visibility="Collapsed"/>
+
+                                    <!-- Karten-Modus -->
+                                    <TextBlock Text="{DynamicResource StrMapMode}" Margin="0,0,0,6" FontWeight="SemiBold"/>
+
+                                    <!-- Offline -->
+                                    <RadioButton x:Name="MapModeOfflineRadio" GroupName="MapMode"
+                                                Content="{DynamicResource StrMapModeOffline}"
+                                                Margin="0,0,0,2" Checked="MapModeRadio_Changed"/>
+                                    <TextBlock Text="{DynamicResource StrMapModeOfflineDesc}"
+                                              FontSize="11" Foreground="Gray" FontStyle="Italic"
+                                              TextWrapping="Wrap" Margin="20,0,0,8"/>
+
+                                    <!-- Online Meshhessen -->
+                                    <RadioButton x:Name="MapModeOnlineOwnRadio" GroupName="MapMode"
+                                                Content="{DynamicResource StrMapModeOnlineOwn}"
+                                                Margin="0,0,0,2" Checked="MapModeRadio_Changed"/>
+                                    <TextBlock Text="{DynamicResource StrMapModeOnlineOwnDesc}"
+                                              FontSize="11" Foreground="Gray" FontStyle="Italic"
+                                              TextWrapping="Wrap" Margin="20,0,0,8"/>
+
+                                    <!-- Online OSM -->
+                                    <RadioButton x:Name="MapModeOnlineOsmRadio" GroupName="MapMode"
+                                                Content="{DynamicResource StrMapModeOnlineOsm}"
+                                                Margin="0,0,0,2" Checked="MapModeRadio_Changed"/>
+                                    <Border x:Name="OsmWarnBorder"
+                                           Margin="20,2,0,10" Padding="8,6"
+                                           Background="#FFF8E1" BorderBrush="#FFB300" BorderThickness="1"
+                                           CornerRadius="3" Visibility="Collapsed">
+                                        <TextBlock Text="{DynamicResource StrMapModeOnlineOsmWarn}"
+                                                  FontSize="11" TextWrapping="Wrap" Foreground="#7B4700"/>
+                                    </Border>
+
+                                    <!-- Tile-Server URL (ausgeblendet im OSM-Online-Modus) -->
+                                    <StackPanel x:Name="TileServerPanel">
+                                        <TextBlock Text="{DynamicResource StrTileServerUrl}" Margin="0,4,0,4"/>
+                                        <TextBox x:Name="TileServerUrlTextBox" HorizontalAlignment="Stretch" Margin="0,0,0,4"/>
+                                        <TextBlock Text="{DynamicResource StrTileServerUrlHint}"
+                                                  FontStyle="Italic" Foreground="Gray" FontSize="11" Margin="0,0,0,10"/>
+                                    </StackPanel>
+
+                                    <!-- Download/Import (nur im Offline-Modus) -->
+                                    <StackPanel x:Name="TileDownloadPanel">
+                                        <Button Content="{DynamicResource StrDownloadTiles}" Width="200" HorizontalAlignment="Left"
+                                               Margin="0,0,0,6" Click="DownloadTiles_Click"/>
+                                        <Button Content="{DynamicResource StrImportTilesZip}" Width="200" HorizontalAlignment="Left"
+                                               Click="ImportTilesFromZip_Click"/>
+                                    </StackPanel>
+
                                 </StackPanel>
                             </GroupBox>
 
