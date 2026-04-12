@@ -22,6 +22,7 @@ message User {
   bool is_licensed = 6;
   Role role = 7;
   bytes public_key = 8;
+  optional bool is_unmessagable = 9;
 }
 
 message RouteDiscovery {
@@ -97,6 +98,15 @@ message DeviceMetrics {
   uint32 uptime_seconds = 5;
 }
 
+message MqttClientProxyMessage {
+  string topic = 1;
+  oneof payload_variant {
+    bytes data = 2;
+    string text = 3;
+  }
+  bool retained = 4;
+}
+
 message FromRadio {
   uint32 id = 1;
   oneof payload_variant {
@@ -108,6 +118,7 @@ message FromRadio {
     bool rebooted = 8;
     ModuleConfig module_config = 9;
     Channel channel = 10;
+    MqttClientProxyMessage mqtt_client_proxy_message = 14;
   }
 }
 
@@ -117,6 +128,7 @@ message ToRadio {
     uint32 want_config_id = 3;
     bool disconnect = 4;
     bytes xmodem_packet = 5;
+    MqttClientProxyMessage mqtt_client_proxy_message = 6;
   }
 }
 
@@ -182,11 +194,12 @@ enum GpsMode {
 message DeviceConfig {
   Role role = 1;
   // serial_enabled = 2 deprecated
-  // button_gpio = 4, buzzer_gpio = 5 (GPIO - skipped)
+  uint32 button_gpio = 4;
+  uint32 buzzer_gpio = 5;
   RebroadcastMode rebroadcast_mode = 6;
   uint32 node_info_broadcast_secs = 7;
   bool double_tap_as_button_press = 8;
-  // is_managed = 9 deprecated, disable_triple_click = 10
+  bool disable_triple_click = 10;
   string tzdef = 11;
   bool led_heartbeat_disabled = 12;
 }
@@ -194,21 +207,29 @@ message DeviceConfig {
 message PositionConfig {
   uint32 position_broadcast_secs = 1;
   bool position_broadcast_smart_enabled = 2;
-  uint32 gps_update_interval = 3;
-  uint32 position_broadcast_smart_minimum_distance = 4;
-  uint32 position_broadcast_smart_minimum_speed = 5;
-  GpsMode gps_mode = 6;
+  bool fixed_position = 3;
+  // gps_enabled = 4 deprecated
+  uint32 gps_update_interval = 5;
+  // gps_attempt_time = 6 deprecated
+  uint32 position_flags = 7;
+  uint32 rx_gpio = 8;
+  uint32 tx_gpio = 9;
+  uint32 broadcast_smart_minimum_distance = 10;
+  uint32 broadcast_smart_minimum_interval_secs = 11;
+  uint32 gps_en_gpio = 12;
+  GpsMode gps_mode = 13;
 }
 
 message PowerConfig {
   bool is_power_saving = 1;
   uint32 on_battery_shutdown_after_secs = 2;
-  float adc_multiplier_override = 3;    // preserved but not shown in UI
+  float adc_multiplier_override = 3;
   uint32 wait_bluetooth_secs = 4;
   // field 5 reserved/skipped in firmware
   uint32 sds_secs = 6;
   uint32 ls_secs = 7;
   uint32 min_wake_secs = 8;
+  uint32 device_battery_ina_address = 9;
 }
 
 message NetworkConfig {
@@ -217,14 +238,25 @@ message NetworkConfig {
   string wifi_ssid = 3;
   string wifi_psk = 4;
   string ntp_server = 5;
+  bool eth_enabled = 6;
+  uint32 address_mode = 7;   // 0=DHCP, 1=STATIC
+  // ipv4_config = 8 (nested, skip for now)
+  string rsyslog_server = 9;
 }
 
 message DisplayConfig {
   uint32 screen_on_secs = 1;
-  // gps_format = 2 deprecated in firmware
-  uint32 auto_screen_carousel_secs = 3; // seconds, 0=off
-  bool compass_north_top = 4;
+  // gps_format = 2 deprecated
+  uint32 auto_screen_carousel_secs = 3;
+  bool compass_north_top = 4;           // deprecated in 2.7.4
   bool flip_screen = 5;
+  uint32 units = 6;                     // 0=METRIC, 1=IMPERIAL
+  uint32 oled = 7;                      // 0=AUTO, 1=SSD1306, 2=SH1106, 3=SH1107
+  uint32 displaymode = 8;              // 0=DEFAULT, 1=TWOCOLOR, 2=INVERTED, 3=COLOR
+  bool heading_bold = 9;
+  bool wake_on_tap_or_motion = 10;
+  uint32 compass_orientation = 11;     // 0=0°, 1=90°, 2=180°, 3=270°
+  bool use_12h_clock = 12;
 }
 
 message LoRaConfig {
@@ -233,15 +265,17 @@ message LoRaConfig {
   uint32 bandwidth = 3;
   uint32 spread_factor = 4;
   uint32 coding_rate = 5;
-  uint32 frequency_offset = 6;
+  float frequency_offset = 6;
   Region region = 7;
   uint32 hop_limit = 8;
   bool tx_enabled = 9;
-  float tx_power = 10;
+  int32 tx_power = 10;
   uint32 channel_num = 11;
   bool override_duty_cycle = 12;
   bool sx126x_rx_boosted_gain = 13;
-  uint32 override_frequency = 14;
+  float override_frequency = 14;
+  bool ignore_mqtt = 104;
+  bool config_ok_to_mqtt = 105;
 }
 
 message BluetoothConfig {
@@ -500,6 +534,8 @@ enum Role {
   CLIENT_HIDDEN = 8;
   LOST_AND_FOUND = 9;
   TAK_TRACKER = 10;
+  ROUTER_LATE = 11;
+  CLIENT_BASE = 12;
 }
 
 enum ChannelRole {

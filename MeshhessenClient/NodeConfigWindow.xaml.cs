@@ -1,7 +1,9 @@
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
+using Google.Protobuf;
 using Meshtastic.Protobufs;
+using MeshhessenClient.Models;
 using MeshhessenClient.Services;
 
 namespace MeshhessenClient;
@@ -27,8 +29,14 @@ public partial class NodeConfigWindow : Window
     private CannedMessageConfig?       _loadedCannedMsg;
     private RangeTestConfig?           _loadedRangeTest;
     private SerialConfig?              _loadedSerial;
+    private SecurityConfig?            _loadedSecurity;
+    private readonly ChannelInfo?[] _loadedChannels = new ChannelInfo?[8];
 
-    private int _pendingRequests = 0;
+    // Loading progress tracking
+    private readonly HashSet<string> _expectedConfigs = new();
+    private readonly HashSet<string> _receivedConfigs = new();
+    private System.Threading.Timer? _loadingTimeoutTimer;
+    private bool _loadingDone;
 
     // Map Tag → content panel
     private Dictionary<string, FrameworkElement> _panels = new();
@@ -55,9 +63,12 @@ public partial class NodeConfigWindow : Window
         _protocolService.CannedMessageConfigReceived      += OnCannedMsgConfigReceived;
         _protocolService.RangeTestConfigReceived          += OnRangeTestConfigReceived;
         _protocolService.SerialConfigReceived             += OnSerialConfigReceived;
+        _protocolService.SecurityConfigReceived           += OnSecurityConfigReceived;
+        _protocolService.ChannelInfoReceived              += OnChannelInfoReceived;
 
         Closed += (s, e) =>
         {
+            _loadingTimeoutTimer?.Dispose();
             _protocolService.OwnerReceived                    -= OnOwnerReceived;
             _protocolService.DeviceConfigReceived             -= OnDeviceConfigReceived;
             _protocolService.PositionConfigReceived           -= OnPositionConfigReceived;
@@ -74,6 +85,8 @@ public partial class NodeConfigWindow : Window
             _protocolService.CannedMessageConfigReceived      -= OnCannedMsgConfigReceived;
             _protocolService.RangeTestConfigReceived          -= OnRangeTestConfigReceived;
             _protocolService.SerialConfigReceived             -= OnSerialConfigReceived;
+            _protocolService.SecurityConfigReceived           -= OnSecurityConfigReceived;
+            _protocolService.ChannelInfoReceived              -= OnChannelInfoReceived;
         };
 
         Loaded += (s, e) =>
@@ -97,6 +110,8 @@ public partial class NodeConfigWindow : Window
                 ["CannedMsg"]   = PanelCannedMsg,
                 ["RangeTest"]   = PanelRangeTest,
                 ["Serial"]      = PanelSerial,
+                ["Security"]    = PanelSecurity,
+                ["Channels"]    = PanelChannels,
             };
 
             // Select first real item (User)
@@ -126,9 +141,36 @@ public partial class NodeConfigWindow : Window
     {
         try
         {
-            _pendingRequests = 16;
-            UpdateStatus("Lade Konfiguration...");
+            _loadingDone = false;
+            _expectedConfigs.Clear();
+            _receivedConfigs.Clear();
+
+            // Register all configs we expect to receive
+            _expectedConfigs.UnionWith(new[]
+            {
+                "owner", "device", "lora", "position", "power", "network",
+                "display", "bluetooth", "mqtt", "telemetry", "neighborinfo",
+                "storeforward", "extnotif", "cannedmsg", "rangetest", "serial",
+                "security",
+                "ch0", "ch1", "ch2", "ch3", "ch4", "ch5", "ch6", "ch7"
+            });
+
+            UpdateStatus(Loc("StrNcLoadingProgress", "0", _expectedConfigs.Count.ToString()));
             SaveButton.IsEnabled = false;
+
+            // Start 30-second timeout
+            _loadingTimeoutTimer?.Dispose();
+            _loadingTimeoutTimer = new System.Threading.Timer(_ =>
+            {
+                Dispatcher.BeginInvoke(() =>
+                {
+                    if (_loadingDone) return;
+                    _loadingDone = true;
+                    var missing = _expectedConfigs.Except(_receivedConfigs).ToList();
+                    UpdateStatus(Loc("StrNcLoadingTimeout", string.Join(", ", missing)));
+                    SaveButton.IsEnabled = true;
+                });
+            }, null, 30000, System.Threading.Timeout.Infinite);
 
             await _protocolService.RequestOwnerAsync();
             await Delay();
@@ -161,6 +203,15 @@ public partial class NodeConfigWindow : Window
             await _protocolService.RequestRangeTestConfigAsync();
             await Delay();
             await _protocolService.RequestSerialConfigAsync();
+            await Delay();
+            await _protocolService.RequestSecurityConfigAsync();
+            await Delay();
+            // Request channels 0-7
+            for (int i = 0; i < 8; i++)
+            {
+                await _protocolService.RequestChannelConfigAsync(i);
+                await Delay();
+            }
         }
         catch (Exception ex)
         {
@@ -171,14 +222,30 @@ public partial class NodeConfigWindow : Window
     private static System.Threading.Tasks.Task Delay() =>
         System.Threading.Tasks.Task.Delay(200);
 
-    private void CheckAllLoaded()
+    private string Loc(string key, params string[] args)
     {
-        _pendingRequests--;
-        if (_pendingRequests <= 0)
+        var raw = (string?)Application.Current.TryFindResource(key) ?? key;
+        for (int i = 0; i < args.Length; i++)
+            raw = raw.Replace($"{{{i}}}", args[i]);
+        return raw;
+    }
+
+    private void MarkReceived(string key)
+    {
+        _receivedConfigs.Add(key);
+        if (_loadingDone) return;
+
+        var rcv = _receivedConfigs.Count;
+        var exp = _expectedConfigs.Count;
+        UpdateStatus(Loc("StrNcLoadingProgress", rcv.ToString(), exp.ToString()));
+
+        if (_receivedConfigs.IsSupersetOf(_expectedConfigs))
         {
-            var msg = (string?)Application.Current.TryFindResource("StrNcConfigLoaded")
-                      ?? "Configuration loaded.";
-            UpdateStatus(msg);
+            _loadingDone = true;
+            _loadingTimeoutTimer?.Dispose();
+            UpdateStatus(Loc("StrNcConfigLoaded") != "StrNcConfigLoaded"
+                ? Loc("StrNcConfigLoaded")
+                : "Konfiguration geladen.");
             SaveButton.IsEnabled = true;
         }
     }
@@ -219,7 +286,9 @@ public partial class NodeConfigWindow : Window
         {
             LongNameTextBox.Text  = user.LongName;
             ShortNameTextBox.Text = user.ShortName;
-            CheckAllLoaded();
+            IsLicensedCheckBox.IsChecked     = user.IsLicensed;
+            IsUnmessagableCheckBox.IsChecked = user.IsUnmessagable;
+            MarkReceived("owner");
         });
     }
 
@@ -230,11 +299,14 @@ public partial class NodeConfigWindow : Window
         {
             SelectComboBoxByTag(RoleComboBox, (int)config.Role);
             SelectComboBoxByTag(RebroadcastComboBox, (int)config.RebroadcastMode);
-            NodeInfoIntervalTextBox.Text  = SecondsToHumanTime(config.NodeInfoBroadcastSecs);
-            TzdefTextBox.Text             = config.Tzdef;
-            LedHeartbeatCheckBox.IsChecked = config.LedHeartbeatDisabled;
-            DoubleTapCheckBox.IsChecked   = config.DoubleTapAsButtonPress;
-            CheckAllLoaded();
+            NodeInfoIntervalTextBox.Text    = SecondsToHumanTime(config.NodeInfoBroadcastSecs);
+            TzdefTextBox.Text               = config.Tzdef;
+            LedHeartbeatCheckBox.IsChecked  = config.LedHeartbeatDisabled;
+            DoubleTapCheckBox.IsChecked     = config.DoubleTapAsButtonPress;
+            DisableTripleClickCheckBox.IsChecked = config.DisableTripleClick;
+            ButtonGpioTextBox.Text          = config.ButtonGpio > 0 ? config.ButtonGpio.ToString() : string.Empty;
+            BuzzerGpioTextBox.Text          = config.BuzzerGpio > 0 ? config.BuzzerGpio.ToString() : string.Empty;
+            MarkReceived("device");
         });
     }
 
@@ -244,12 +316,16 @@ public partial class NodeConfigWindow : Window
         Dispatcher.BeginInvoke(() =>
         {
             SelectComboBoxByTag(GpsModeComboBox, (int)config.GpsMode);
-            PosBroadcastSecsTextBox.Text  = SecondsToHumanTime(config.PositionBroadcastSecs);
+            FixedPositionCheckBox.IsChecked  = config.FixedPosition;
+            PosBroadcastSecsTextBox.Text     = SecondsToHumanTime(config.PositionBroadcastSecs);
             SmartBroadcastCheckBox.IsChecked = config.PositionBroadcastSmartEnabled;
-            MinDistanceTextBox.Text       = config.PositionBroadcastSmartMinimumDistance.ToString();
-            MinSpeedTextBox.Text          = config.PositionBroadcastSmartMinimumSpeed.ToString();
-            GpsUpdateIntervalTextBox.Text = config.GpsUpdateInterval.ToString();
-            CheckAllLoaded();
+            MinDistanceTextBox.Text          = config.BroadcastSmartMinimumDistance.ToString();
+            MinIntervalSecsTextBox.Text      = config.BroadcastSmartMinimumIntervalSecs.ToString();
+            GpsUpdateIntervalTextBox.Text    = config.GpsUpdateInterval.ToString();
+            GpsRxGpioTextBox.Text            = config.RxGpio > 0 ? config.RxGpio.ToString() : string.Empty;
+            GpsTxGpioTextBox.Text            = config.TxGpio > 0 ? config.TxGpio.ToString() : string.Empty;
+            GpsEnGpioTextBox.Text            = config.GpsEnGpio > 0 ? config.GpsEnGpio.ToString() : string.Empty;
+            MarkReceived("position");
         });
     }
 
@@ -261,14 +337,17 @@ public partial class NodeConfigWindow : Window
             SelectComboBoxByTag(LoraRegionComboBox, (int)config.Region, keepIfNotFound: true);
             LoraUsePresetCheckBox.IsChecked = config.UsePreset;
             SelectComboBoxByTag(LoraPresetComboBox, (int)config.ModemPreset, keepIfNotFound: true);
-            LoraPresetComboBox.IsEnabled   = config.UsePreset;
-            HopLimitTextBox.Text           = config.HopLimit.ToString();
-            TxEnabledCheckBox.IsChecked    = config.TxEnabled;
-            TxPowerTextBox.Text            = ((int)config.TxPower).ToString();
-            LoraChannelNumTextBox.Text     = config.ChannelNum.ToString();
+            LoraPresetComboBox.IsEnabled    = config.UsePreset;
+            HopLimitTextBox.Text            = config.HopLimit.ToString();
+            TxEnabledCheckBox.IsChecked     = config.TxEnabled;
+            TxPowerTextBox.Text             = config.TxPower.ToString();
+            LoraChannelNumTextBox.Text      = config.ChannelNum.ToString();
             LoraOverrideDutyCycleCheckBox.IsChecked = config.OverrideDutyCycle;
             LoraSx126xRxBoostedCheckBox.IsChecked   = config.Sx126XRxBoostedGain;
-            CheckAllLoaded();
+            LoraIgnoreMqttCheckBox.IsChecked = config.IgnoreMqtt;
+            LoraOkToMqttCheckBox.IsChecked   = config.ConfigOkToMqtt;
+            LoraOverrideFreqTextBox.Text     = config.OverrideFrequency > 0 ? config.OverrideFrequency.ToString("F3") : string.Empty;
+            MarkReceived("lora");
         });
     }
 
@@ -283,7 +362,9 @@ public partial class NodeConfigWindow : Window
             SdsSecsTextBox.Text             = config.SdsSecs.ToString();
             LsSecsTextBox.Text              = config.LsSecs.ToString();
             MinWakeSecsTextBox.Text         = config.MinWakeSecs.ToString();
-            CheckAllLoaded();
+            AdcMultTextBox.Text             = config.AdcMultiplierOverride > 0 ? config.AdcMultiplierOverride.ToString("F2") : string.Empty;
+            BatteryInaAddrTextBox.Text      = config.DeviceBatteryInaAddress > 0 ? $"0x{config.DeviceBatteryInaAddress:X2}" : string.Empty;
+            MarkReceived("power");
         });
     }
 
@@ -296,7 +377,10 @@ public partial class NodeConfigWindow : Window
             WifiSsidTextBox.Text          = config.WifiSsid;
             WifiPskBox.Text               = config.WifiPsk;   // device always returns empty (security)
             NtpServerTextBox.Text         = config.NtpServer;
-            CheckAllLoaded();
+            EthEnabledCheckBox.IsChecked  = config.EthEnabled;
+            SelectComboBoxByTag(AddressModeComboBox, (int)config.AddressMode);
+            RsyslogServerTextBox.Text     = config.RsyslogServer;
+            MarkReceived("network");
         });
     }
 
@@ -309,7 +393,14 @@ public partial class NodeConfigWindow : Window
             AutoCarouselSecsTextBox.Text      = config.AutoScreenCarouselSecs.ToString();
             CompassNorthTopCheckBox.IsChecked = config.CompassNorthTop;
             FlipScreenCheckBox.IsChecked      = config.FlipScreen;
-            CheckAllLoaded();
+            HeadingBoldCheckBox.IsChecked     = config.HeadingBold;
+            WakeOnTapCheckBox.IsChecked       = config.WakeOnTapOrMotion;
+            Use12hClockCheckBox.IsChecked     = config.Use12HClock;
+            SelectComboBoxByTag(DisplayUnitsComboBox, (int)config.Units);
+            SelectComboBoxByTag(DisplayModeComboBox, (int)config.Displaymode);
+            SelectComboBoxByTag(OledTypeComboBox, (int)config.Oled);
+            SelectComboBoxByTag(CompassOrientationComboBox, (int)config.CompassOrientation);
+            MarkReceived("display");
         });
     }
 
@@ -318,17 +409,17 @@ public partial class NodeConfigWindow : Window
         _loadedMqtt = config;
         Dispatcher.BeginInvoke(() =>
         {
-            MqttEnabledCheckBox.IsChecked    = config.Enabled;
-            MqttAddressTextBox.Text          = config.Address;
-            MqttUsernameTextBox.Text         = config.Username;
-            MqttPasswordBox.Password         = config.Password;
-            MqttEncryptionCheckBox.IsChecked = config.EncryptionEnabled;
-            MqttJsonCheckBox.IsChecked       = config.JsonEnabled;
-            MqttTlsCheckBox.IsChecked        = config.TlsEnabled;
-            MqttRootTextBox.Text             = config.Root;
-            MqttProxyCheckBox.IsChecked      = config.ProxyToClientEnabled;
+            MqttEnabledCheckBox.IsChecked      = config.Enabled;
+            MqttAddressTextBox.Text            = config.Address;
+            MqttUsernameTextBox.Text           = config.Username;
+            MqttPasswordBox.Text               = config.Password;
+            MqttEncryptionCheckBox.IsChecked   = config.EncryptionEnabled;
+            MqttJsonCheckBox.IsChecked         = config.JsonEnabled;
+            MqttTlsCheckBox.IsChecked          = config.TlsEnabled;
+            MqttRootTextBox.Text               = config.Root;
+            MqttProxyCheckBox.IsChecked        = config.ProxyToClientEnabled;
             MqttMapReportingCheckBox.IsChecked = config.MapReportingEnabled;
-            CheckAllLoaded();
+            MarkReceived("mqtt");
         });
     }
 
@@ -344,7 +435,7 @@ public partial class NodeConfigWindow : Window
             AirQualityIntervalTextBox.Text       = SecondsToHumanTime(config.AirQualityInterval);
             PowerIntervalTextBox.Text            = SecondsToHumanTime(config.PowerUpdateInterval);
             PowerMeasurementCheckBox.IsChecked   = config.PowerMeasurementEnabled;
-            CheckAllLoaded();
+            MarkReceived("telemetry");
         });
     }
 
@@ -357,7 +448,7 @@ public partial class NodeConfigWindow : Window
             SelectComboBoxByTag(BtModeComboBox, (int)config.Mode);
             BtFixedPinTextBox.Text      = config.FixedPin > 0 ? config.FixedPin.ToString() : string.Empty;
             BtFixedPinTextBox.IsEnabled = config.Mode == 1;
-            CheckAllLoaded();
+            MarkReceived("bluetooth");
         });
     }
 
@@ -368,7 +459,7 @@ public partial class NodeConfigWindow : Window
         {
             NiEnabledCheckBox.IsChecked = config.Enabled;
             NiIntervalTextBox.Text      = SecondsToHumanTime(config.UpdateInterval);
-            CheckAllLoaded();
+            MarkReceived("neighborinfo");
         });
     }
 
@@ -382,7 +473,7 @@ public partial class NodeConfigWindow : Window
             SfRecordsTextBox.Text          = config.Records.ToString();
             SfHistoryMaxTextBox.Text       = config.HistoryReturnMax.ToString();
             SfHistoryWindowTextBox.Text    = config.HistoryReturnWindow.ToString();
-            CheckAllLoaded();
+            MarkReceived("storeforward");
         });
     }
 
@@ -397,7 +488,7 @@ public partial class NodeConfigWindow : Window
             EnActiveCheckBox.IsChecked       = config.Active;
             EnAlertMessageCheckBox.IsChecked = config.AlertMessage;
             EnAlertBellCheckBox.IsChecked    = config.AlertBell;
-            CheckAllLoaded();
+            MarkReceived("extnotif");
         });
     }
 
@@ -411,7 +502,7 @@ public partial class NodeConfigWindow : Window
             CmAllowInputSourceTextBox.Text     = config.AllowInputSource;
             CmRotary1CheckBox.IsChecked        = config.Rotary1Enabled;
             CmUpdown1CheckBox.IsChecked        = config.Updown1Enabled;
-            CheckAllLoaded();
+            MarkReceived("cannedmsg");
         });
     }
 
@@ -423,7 +514,7 @@ public partial class NodeConfigWindow : Window
             RtEnabledCheckBox.IsChecked = config.Enabled;
             RtSenderTextBox.Text        = config.Sender.ToString();
             RtSaveCheckBox.IsChecked    = config.Save;
-            CheckAllLoaded();
+            MarkReceived("rangetest");
         });
     }
 
@@ -439,7 +530,56 @@ public partial class NodeConfigWindow : Window
             SelectComboBoxByTag(SerBaudComboBox, (int)config.Baud);
             SerTimeoutTextBox.Text       = config.Timeout.ToString();
             SelectComboBoxByTag(SerModeComboBox, (int)config.Mode);
-            CheckAllLoaded();
+            MarkReceived("serial");
+        });
+    }
+
+    private void OnSecurityConfigReceived(object? sender, SecurityConfig config)
+    {
+        _loadedSecurity = config;
+        Dispatcher.BeginInvoke(() =>
+        {
+            // Public key: hex display (read-only)
+            SecPublicKeyTextBox.Text = config.PublicKey != null && config.PublicKey.Length > 0
+                ? BitConverter.ToString(config.PublicKey.ToByteArray()).Replace("-", "").ToLowerInvariant()
+                : string.Empty;
+
+            // Admin keys: one Base64 per line
+            SecAdminKeyTextBox.Text = string.Join(Environment.NewLine,
+                config.AdminKey.Select(k => Convert.ToBase64String(k.ToByteArray())));
+
+            SecSerialEnabledCheckBox.IsChecked = config.SerialEnabled;
+            SecDebugLogCheckBox.IsChecked      = config.DebugLogApiEnabled;
+            SecIsManagedCheckBox.IsChecked     = config.IsManaged;
+            SecAdminChannelCheckBox.IsChecked  = config.AdminChannelEnabled;
+            MarkReceived("security");
+        });
+    }
+
+    private void OnChannelInfoReceived(object? sender, ChannelInfo info)
+    {
+        if (info.Index < 0 || info.Index >= 8) return;
+        _loadedChannels[info.Index] = info;
+
+        Dispatcher.BeginInvoke(() =>
+        {
+            // Set the row UI for this channel
+            var role = info.Role;
+            var name = string.IsNullOrEmpty(info.Name) ? $"Ch {info.Index}" : info.Name;
+
+            switch (info.Index)
+            {
+                case 0: Ch0Role.Text = role; Ch0Name.Text = name; Ch0Uplink.IsChecked = info.Uplink; Ch0Downlink.IsChecked = info.Downlink; break;
+                case 1: Ch1Role.Text = role; Ch1Name.Text = name; Ch1Uplink.IsChecked = info.Uplink; Ch1Downlink.IsChecked = info.Downlink; break;
+                case 2: Ch2Role.Text = role; Ch2Name.Text = name; Ch2Uplink.IsChecked = info.Uplink; Ch2Downlink.IsChecked = info.Downlink; break;
+                case 3: Ch3Role.Text = role; Ch3Name.Text = name; Ch3Uplink.IsChecked = info.Uplink; Ch3Downlink.IsChecked = info.Downlink; break;
+                case 4: Ch4Role.Text = role; Ch4Name.Text = name; Ch4Uplink.IsChecked = info.Uplink; Ch4Downlink.IsChecked = info.Downlink; break;
+                case 5: Ch5Role.Text = role; Ch5Name.Text = name; Ch5Uplink.IsChecked = info.Uplink; Ch5Downlink.IsChecked = info.Downlink; break;
+                case 6: Ch6Role.Text = role; Ch6Name.Text = name; Ch6Uplink.IsChecked = info.Uplink; Ch6Downlink.IsChecked = info.Downlink; break;
+                case 7: Ch7Role.Text = role; Ch7Name.Text = name; Ch7Uplink.IsChecked = info.Uplink; Ch7Downlink.IsChecked = info.Downlink; break;
+            }
+
+            MarkReceived($"ch{info.Index}");
         });
     }
 
@@ -599,8 +739,10 @@ public partial class NodeConfigWindow : Window
 
             // Owner
             var newOwner = _loadedOwner != null ? _loadedOwner.Clone() : new User();
-            newOwner.LongName  = LongNameTextBox.Text.Trim();
-            newOwner.ShortName = ShortNameTextBox.Text.Trim();
+            newOwner.LongName        = LongNameTextBox.Text.Trim();
+            newOwner.ShortName       = ShortNameTextBox.Text.Trim();
+            newOwner.IsLicensed      = IsLicensedCheckBox.IsChecked == true;
+            newOwner.IsUnmessagable  = IsUnmessagableCheckBox.IsChecked == true;
             await _protocolService.SetOwnerAsync(newOwner);
             await Delay();
 
@@ -612,6 +754,9 @@ public partial class NodeConfigWindow : Window
             newDevice.Tzdef                  = TzdefTextBox.Text.Trim();
             newDevice.LedHeartbeatDisabled   = LedHeartbeatCheckBox.IsChecked == true;
             newDevice.DoubleTapAsButtonPress = DoubleTapCheckBox.IsChecked == true;
+            newDevice.DisableTripleClick     = DisableTripleClickCheckBox.IsChecked == true;
+            newDevice.ButtonGpio             = uint.TryParse(ButtonGpioTextBox.Text, out var bgp) ? bgp : 0;
+            newDevice.BuzzerGpio             = uint.TryParse(BuzzerGpioTextBox.Text, out var bzg) ? bzg : 0;
             await _protocolService.SetDeviceConfigAsync(newDevice);
             await Delay();
 
@@ -619,15 +764,18 @@ public partial class NodeConfigWindow : Window
             if (_loadedLora != null)
             {
                 var newLora = _loadedLora.Clone();
-                newLora.Region            = (Meshtastic.Protobufs.Region)GetComboBoxTag(LoraRegionComboBox);
-                newLora.UsePreset         = LoraUsePresetCheckBox.IsChecked == true;
-                newLora.ModemPreset       = (Meshtastic.Protobufs.ModemPreset)GetComboBoxTag(LoraPresetComboBox);
-                newLora.HopLimit          = uint.TryParse(HopLimitTextBox.Text, out var hl) ? hl : 3;
-                newLora.TxEnabled         = TxEnabledCheckBox.IsChecked == true;
-                newLora.TxPower           = int.TryParse(TxPowerTextBox.Text, out var tp) ? tp : 0;
-                newLora.ChannelNum        = uint.TryParse(LoraChannelNumTextBox.Text, out var cn) ? cn : 0;
-                newLora.OverrideDutyCycle = LoraOverrideDutyCycleCheckBox.IsChecked == true;
+                newLora.Region              = (Meshtastic.Protobufs.Region)GetComboBoxTag(LoraRegionComboBox);
+                newLora.UsePreset           = LoraUsePresetCheckBox.IsChecked == true;
+                newLora.ModemPreset         = (Meshtastic.Protobufs.ModemPreset)GetComboBoxTag(LoraPresetComboBox);
+                newLora.HopLimit            = uint.TryParse(HopLimitTextBox.Text, out var hl) ? hl : 3;
+                newLora.TxEnabled           = TxEnabledCheckBox.IsChecked == true;
+                newLora.TxPower             = int.TryParse(TxPowerTextBox.Text, out var tp) ? tp : 0;
+                newLora.ChannelNum          = uint.TryParse(LoraChannelNumTextBox.Text, out var cn) ? cn : 0;
+                newLora.OverrideDutyCycle   = LoraOverrideDutyCycleCheckBox.IsChecked == true;
                 newLora.Sx126XRxBoostedGain = LoraSx126xRxBoostedCheckBox.IsChecked == true;
+                newLora.IgnoreMqtt          = LoraIgnoreMqttCheckBox.IsChecked == true;
+                newLora.ConfigOkToMqtt      = LoraOkToMqttCheckBox.IsChecked == true;
+                newLora.OverrideFrequency   = float.TryParse(LoraOverrideFreqTextBox.Text, out var ovf) ? ovf : 0f;
                 await _protocolService.SetLoRaConfigAsync(newLora);
                 await Delay();
             }
@@ -635,11 +783,15 @@ public partial class NodeConfigWindow : Window
             // Position Config
             var newPosition = _loadedPosition != null ? _loadedPosition.Clone() : new PositionConfig();
             newPosition.GpsMode                             = (GpsMode)GetComboBoxTag(GpsModeComboBox);
+            newPosition.FixedPosition                       = FixedPositionCheckBox.IsChecked == true;
             newPosition.PositionBroadcastSecs               = HumanTimeToSeconds(PosBroadcastSecsTextBox.Text);
             newPosition.PositionBroadcastSmartEnabled       = SmartBroadcastCheckBox.IsChecked == true;
-            newPosition.PositionBroadcastSmartMinimumDistance = uint.TryParse(MinDistanceTextBox.Text, out var md) ? md : 0;
-            newPosition.PositionBroadcastSmartMinimumSpeed  = uint.TryParse(MinSpeedTextBox.Text, out var ms) ? ms : 0;
+            newPosition.BroadcastSmartMinimumDistance       = uint.TryParse(MinDistanceTextBox.Text, out var md) ? md : 0;
+            newPosition.BroadcastSmartMinimumIntervalSecs   = uint.TryParse(MinIntervalSecsTextBox.Text, out var mis) ? mis : 0;
             newPosition.GpsUpdateInterval                   = uint.TryParse(GpsUpdateIntervalTextBox.Text, out var gu) ? gu : 0;
+            newPosition.RxGpio                              = uint.TryParse(GpsRxGpioTextBox.Text, out var rxg) ? rxg : 0;
+            newPosition.TxGpio                              = uint.TryParse(GpsTxGpioTextBox.Text, out var txg) ? txg : 0;
+            newPosition.GpsEnGpio                           = uint.TryParse(GpsEnGpioTextBox.Text, out var eng) ? eng : 0;
             await _protocolService.SetPositionConfigAsync(newPosition);
             await Delay();
 
@@ -653,6 +805,12 @@ public partial class NodeConfigWindow : Window
                 newPower.SdsSecs                    = uint.TryParse(SdsSecsTextBox.Text, out var sds) ? sds : 0;
                 newPower.LsSecs                     = uint.TryParse(LsSecsTextBox.Text, out var ls) ? ls : 0;
                 newPower.MinWakeSecs                = uint.TryParse(MinWakeSecsTextBox.Text, out var mw) ? mw : 0;
+                newPower.AdcMultiplierOverride       = float.TryParse(AdcMultTextBox.Text, out var adc) ? adc : 0f;
+                // Battery INA address: accept hex (0x..) or decimal
+                var inaText = BatteryInaAddrTextBox.Text.Trim();
+                newPower.DeviceBatteryInaAddress = inaText.StartsWith("0x", StringComparison.OrdinalIgnoreCase)
+                    ? (uint.TryParse(inaText[2..], System.Globalization.NumberStyles.HexNumber, null, out var inaH) ? inaH : 0)
+                    : (uint.TryParse(inaText, out var inaD) ? inaD : 0);
                 await _protocolService.SetPowerConfigAsync(newPower);
                 await Delay();
             }
@@ -661,10 +819,13 @@ public partial class NodeConfigWindow : Window
             if (_loadedNetwork != null)
             {
                 var newNetwork = _loadedNetwork.Clone();
-                newNetwork.WifiEnabled = WifiEnabledCheckBox.IsChecked == true;
-                newNetwork.WifiSsid    = WifiSsidTextBox.Text.Trim();
-                newNetwork.WifiPsk     = WifiPskBox.Text.Trim();
-                newNetwork.NtpServer   = NtpServerTextBox.Text.Trim();
+                newNetwork.WifiEnabled  = WifiEnabledCheckBox.IsChecked == true;
+                newNetwork.WifiSsid     = WifiSsidTextBox.Text.Trim();
+                newNetwork.WifiPsk      = WifiPskBox.Text.Trim();
+                newNetwork.NtpServer    = NtpServerTextBox.Text.Trim();
+                newNetwork.EthEnabled   = EthEnabledCheckBox.IsChecked == true;
+                newNetwork.AddressMode  = (uint)GetComboBoxTag(AddressModeComboBox);
+                newNetwork.RsyslogServer = RsyslogServerTextBox.Text.Trim();
                 await _protocolService.SetNetworkConfigAsync(newNetwork);
                 await Delay();
             }
@@ -677,6 +838,13 @@ public partial class NodeConfigWindow : Window
                 newDisplay.AutoScreenCarouselSecs = uint.TryParse(AutoCarouselSecsTextBox.Text, out var carousel) ? carousel : 0;
                 newDisplay.CompassNorthTop        = CompassNorthTopCheckBox.IsChecked == true;
                 newDisplay.FlipScreen             = FlipScreenCheckBox.IsChecked == true;
+                newDisplay.HeadingBold            = HeadingBoldCheckBox.IsChecked == true;
+                newDisplay.WakeOnTapOrMotion      = WakeOnTapCheckBox.IsChecked == true;
+                newDisplay.Use12HClock            = Use12hClockCheckBox.IsChecked == true;
+                newDisplay.Units                  = (uint)GetComboBoxTag(DisplayUnitsComboBox);
+                newDisplay.Displaymode            = (uint)GetComboBoxTag(DisplayModeComboBox);
+                newDisplay.Oled                   = (uint)GetComboBoxTag(OledTypeComboBox);
+                newDisplay.CompassOrientation     = (uint)GetComboBoxTag(CompassOrientationComboBox);
                 await _protocolService.SetDisplayConfigAsync(newDisplay);
                 await Delay();
             }
@@ -691,16 +859,16 @@ public partial class NodeConfigWindow : Window
 
             // MQTT Config
             var newMqtt = _loadedMqtt != null ? _loadedMqtt.Clone() : new MQTTConfig();
-            newMqtt.Enabled             = MqttEnabledCheckBox.IsChecked == true;
-            newMqtt.Address             = MqttAddressTextBox.Text.Trim();
-            newMqtt.Username            = MqttUsernameTextBox.Text.Trim();
-            newMqtt.Password            = MqttPasswordBox.Password;
-            newMqtt.EncryptionEnabled   = MqttEncryptionCheckBox.IsChecked == true;
-            newMqtt.JsonEnabled         = MqttJsonCheckBox.IsChecked == true;
-            newMqtt.TlsEnabled          = MqttTlsCheckBox.IsChecked == true;
-            newMqtt.Root                = MqttRootTextBox.Text.Trim();
+            newMqtt.Enabled              = MqttEnabledCheckBox.IsChecked == true;
+            newMqtt.Address              = MqttAddressTextBox.Text.Trim();
+            newMqtt.Username             = MqttUsernameTextBox.Text.Trim();
+            newMqtt.Password             = MqttPasswordBox.Text.Trim();
+            newMqtt.EncryptionEnabled    = MqttEncryptionCheckBox.IsChecked == true;
+            newMqtt.JsonEnabled          = MqttJsonCheckBox.IsChecked == true;
+            newMqtt.TlsEnabled           = MqttTlsCheckBox.IsChecked == true;
+            newMqtt.Root                 = MqttRootTextBox.Text.Trim();
             newMqtt.ProxyToClientEnabled = MqttProxyCheckBox.IsChecked == true;
-            newMqtt.MapReportingEnabled = MqttMapReportingCheckBox.IsChecked == true;
+            newMqtt.MapReportingEnabled  = MqttMapReportingCheckBox.IsChecked == true;
             await _protocolService.SetMqttConfigAsync(newMqtt);
             await Delay();
 
@@ -789,6 +957,51 @@ public partial class NodeConfigWindow : Window
                 newSer.Timeout  = uint.TryParse(SerTimeoutTextBox.Text, out var sto) ? sto : 0;
                 newSer.Mode     = (uint)GetComboBoxTag(SerModeComboBox);
                 await _protocolService.SetSerialConfigAsync(newSer);
+                await Delay();
+            }
+
+            // Security Config (only writable fields; public key is read-only)
+            if (_loadedSecurity != null)
+            {
+                var newSec = _loadedSecurity.Clone();
+                newSec.SerialEnabled      = SecSerialEnabledCheckBox.IsChecked == true;
+                newSec.DebugLogApiEnabled = SecDebugLogCheckBox.IsChecked == true;
+                newSec.IsManaged          = SecIsManagedCheckBox.IsChecked == true;
+                newSec.AdminChannelEnabled = SecAdminChannelCheckBox.IsChecked == true;
+                await _protocolService.SetSecurityConfigAsync(newSec);
+                await Delay();
+            }
+
+            // Channel uplink/downlink
+            var chBoxes = new (CheckBox? Up, CheckBox? Dn)[]
+            {
+                (Ch0Uplink, Ch0Downlink), (Ch1Uplink, Ch1Downlink),
+                (Ch2Uplink, Ch2Downlink), (Ch3Uplink, Ch3Downlink),
+                (Ch4Uplink, Ch4Downlink), (Ch5Uplink, Ch5Downlink),
+                (Ch6Uplink, Ch6Downlink), (Ch7Uplink, Ch7Downlink),
+            };
+            for (int i = 0; i < 8; i++)
+            {
+                var info = _loadedChannels[i];
+                if (info == null) continue;
+
+                bool newUplink   = chBoxes[i].Up?.IsChecked == true;
+                bool newDownlink = chBoxes[i].Dn?.IsChecked == true;
+                if (newUplink == info.Uplink && newDownlink == info.Downlink) continue; // no change
+
+                var ch = new Channel { Index = i };
+                var roleEnum = info.Role.ToUpperInvariant() switch
+                {
+                    "PRIMARY"   => ChannelRole.Primary,
+                    "SECONDARY" => ChannelRole.Secondary,
+                    _           => ChannelRole.Disabled
+                };
+                ch.Role = roleEnum;
+                var settings = new ChannelSettings { UplinkEnabled = newUplink, DownlinkEnabled = newDownlink };
+                if (!string.IsNullOrEmpty(info.Psk))
+                    settings.Psk = ByteString.CopyFrom(Convert.FromBase64String(info.Psk));
+                ch.Settings = settings;
+                await _protocolService.UpdateChannelUplinkDownlinkAsync(ch);
                 await Delay();
             }
 

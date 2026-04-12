@@ -52,6 +52,7 @@ public class MeshtasticProtocolService
     public event EventHandler<CannedMessageConfig>? CannedMessageConfigReceived;
     public event EventHandler<RangeTestConfig>? RangeTestConfigReceived;
     public event EventHandler<SerialConfig>? SerialConfigReceived;
+    public event EventHandler<SecurityConfig>? SecurityConfigReceived;
     public event EventHandler<User>? OwnerReceived;
     public event EventHandler<DeviceInfo>? DeviceInfoReceived;
     public event EventHandler<int>? PacketCountChanged;
@@ -62,6 +63,8 @@ public class MeshtasticProtocolService
     public event EventHandler<int>? TimeDriftDetected;  // arg: observed drift in seconds
     public event EventHandler<TelemetryDatabaseService.WaypointEntry>? WaypointReceived;
     public event EventHandler<uint>? WaypointDeleted;
+    /// <summary>Raised when the radio sends an MqttClientProxyMessage (device→broker direction).</summary>
+    public event EventHandler<MqttClientProxyMessage>? MqttProxyMessageReceived;
     public int TimeDriftThresholdSeconds { get; set; } = 300; // 5 minutes
 
     private DateTime _lastDriftCheck = DateTime.MinValue;
@@ -785,6 +788,10 @@ public class MeshtasticProtocolService
                 break;
 
             case FromRadio.PayloadVariantOneofCase.ModuleConfig:
+                break;
+
+            case FromRadio.PayloadVariantOneofCase.MqttClientProxyMessage:
+                MqttProxyMessageReceived?.Invoke(this, fromRadio.MqttClientProxyMessage);
                 break;
         }
     }
@@ -1997,6 +2004,31 @@ public class MeshtasticProtocolService
         await SendAdminMessageAsync(adminMsg);
     }
 
+    public async Task RequestSecurityConfigAsync()
+    {
+        var adminMsg = new AdminMessage { GetConfigRequest = (uint)AdminMessage.Types.ConfigType.SecurityConfig };
+        await SendAdminMessageAsync(adminMsg);
+    }
+
+    public async Task SetSecurityConfigAsync(SecurityConfig config)
+    {
+        await EnsureSessionKeyAsync();
+        var adminMsg = new AdminMessage { SetConfig = new Config { Security = config } };
+        await SendAdminMessageAsync(adminMsg);
+    }
+
+    public async Task RequestChannelConfigAsync(int channelIndex)
+    {
+        await RequestChannelAsync(channelIndex);
+    }
+
+    public async Task UpdateChannelUplinkDownlinkAsync(Channel channel)
+    {
+        await EnsureSessionKeyAsync();
+        var adminMsg = new AdminMessage { SetChannel = channel };
+        await SendAdminMessageAsync(adminMsg);
+    }
+
     public async Task SetSerialConfigAsync(SerialConfig config)
     {
         await EnsureSessionKeyAsync();
@@ -2037,6 +2069,16 @@ public class MeshtasticProtocolService
         await EnsureSessionKeyAsync();
         var adminMsg = new AdminMessage { SetModuleConfig = new ModuleConfig { NeighborInfo = config } };
         await SendAdminMessageAsync(adminMsg);
+    }
+
+    /// <summary>
+    /// Sends an MqttClientProxyMessage to the radio (broker→device direction).
+    /// Called by MqttProxyService when a message arrives from the MQTT broker.
+    /// </summary>
+    public async Task SendMqttProxyMessageAsync(MqttClientProxyMessage msg)
+    {
+        var toRadio = new ToRadio { MqttClientProxyMessage = msg };
+        await SendToRadioAsync(toRadio);
     }
 
     public async Task BeginEditSettingsAsync()
@@ -2214,6 +2256,7 @@ public class MeshtasticProtocolService
                             {
                                 Logger.WriteLine("SecurityConfig received but private key missing/invalid");
                             }
+                            SecurityConfigReceived?.Invoke(this, sec);
                             break;
                     }
                     break;

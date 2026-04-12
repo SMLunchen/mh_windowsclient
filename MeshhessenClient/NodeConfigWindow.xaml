@@ -183,6 +183,25 @@
                             <TextBlock Text="{DynamicResource StrNcNavSerial}" VerticalAlignment="Center"/>
                         </DockPanel>
                     </ListBoxItem>
+
+                    <!-- SECURITY + CHANNELS section -->
+                    <ListBoxItem Style="{StaticResource NavHeaderStyle}" Margin="0,8,0,2">
+                        <TextBlock Text="DEVICE"
+                                   Foreground="#F57C00"
+                                   FontSize="10" FontWeight="Bold" Padding="10,0,0,0"/>
+                    </ListBoxItem>
+                    <ListBoxItem Tag="Security">
+                        <DockPanel>
+                            <Rectangle DockPanel.Dock="Left" Width="3" Fill="#F57C00" Margin="0,3,8,3" RadiusX="1" RadiusY="1"/>
+                            <TextBlock Text="{DynamicResource StrNcNavSecurity}" VerticalAlignment="Center"/>
+                        </DockPanel>
+                    </ListBoxItem>
+                    <ListBoxItem Tag="Channels">
+                        <DockPanel>
+                            <Rectangle DockPanel.Dock="Left" Width="3" Fill="#F57C00" Margin="0,3,8,3" RadiusX="1" RadiusY="1"/>
+                            <TextBlock Text="{DynamicResource StrNcNavChannels}" VerticalAlignment="Center"/>
+                        </DockPanel>
+                    </ListBoxItem>
                 </ListBox>
             </Border>
 
@@ -202,6 +221,10 @@
                             <TextBlock Text="{DynamicResource StrNcShortName}" Margin="0,12,0,2"/>
                             <TextBox x:Name="ShortNameTextBox" MaxLength="4" Width="100" HorizontalAlignment="Left"/>
                             <TextBlock Text="{DynamicResource StrNcDescShortName}" Style="{StaticResource DescStyle}"/>
+                            <CheckBox x:Name="IsLicensedCheckBox" Content="{DynamicResource StrNcIsLicensed}" Margin="0,12,0,0"/>
+                            <TextBlock Text="{DynamicResource StrNcDescIsLicensed}" Style="{StaticResource DescStyle}"/>
+                            <CheckBox x:Name="IsUnmessagableCheckBox" Content="{DynamicResource StrNcIsUnmessagable}" Margin="0,8,0,0"/>
+                            <TextBlock Text="{DynamicResource StrNcDescIsUnmessagable}" Style="{StaticResource DescStyle}"/>
                         </StackPanel>
                     </StackPanel>
                 </ScrollViewer>
@@ -253,6 +276,14 @@
                             <CheckBox x:Name="LedHeartbeatCheckBox" Content="{DynamicResource StrNcLedHeartbeat}" Margin="0,12,0,0"/>
                             <CheckBox x:Name="DoubleTapCheckBox" Content="{DynamicResource StrNcDoubleTap}" Margin="0,8,0,0"/>
                             <TextBlock Text="{DynamicResource StrNcDescDoubleTap}" Style="{StaticResource DescStyle}"/>
+                            <CheckBox x:Name="DisableTripleClickCheckBox" Content="{DynamicResource StrNcDisableTripleClick}" Margin="0,8,0,0"/>
+                            <TextBlock Text="{DynamicResource StrNcDescDisableTripleClick}" Style="{StaticResource DescStyle}"/>
+                            <TextBlock Text="{DynamicResource StrNcButtonGpio}" Margin="0,12,0,2"/>
+                            <TextBox x:Name="ButtonGpioTextBox" Width="100" HorizontalAlignment="Left"/>
+                            <TextBlock Text="{DynamicResource StrNcDescButtonGpio}" Style="{StaticResource DescStyle}"/>
+                            <TextBlock Text="{DynamicResource StrNcBuzzerGpio}" Margin="0,8,0,2"/>
+                            <TextBox x:Name="BuzzerGpioTextBox" Width="100" HorizontalAlignment="Left"/>
+                            <TextBlock Text="{DynamicResource StrNcDescBuzzerGpio}" Style="{StaticResource DescStyle}"/>
                         </StackPanel>
                     </StackPanel>
                 </ScrollViewer>
@@ -313,6 +344,13 @@
                             <TextBlock Text="{DynamicResource StrNcDescDutyCycle}" Style="{StaticResource DescStyle}" Foreground="Orange"/>
                             <CheckBox x:Name="LoraSx126xRxBoostedCheckBox" Content="SX126x RX Boosted Gain" Margin="0,8,0,0"/>
                             <TextBlock Text="{DynamicResource StrNcDescSx126x}" Style="{StaticResource DescStyle}"/>
+                            <CheckBox x:Name="LoraIgnoreMqttCheckBox" Content="{DynamicResource StrNcIgnoreMqtt}" Margin="0,10,0,0"/>
+                            <TextBlock Text="{DynamicResource StrNcDescIgnoreMqtt}" Style="{StaticResource DescStyle}"/>
+                            <CheckBox x:Name="LoraOkToMqttCheckBox" Content="{DynamicResource StrNcOkToMqtt}" Margin="0,6,0,0"/>
+                            <TextBlock Text="{DynamicResource StrNcDescOkToMqtt}" Style="{StaticResource DescStyle}"/>
+                            <TextBlock Text="{DynamicResource StrNcOverrideFreq}" Margin="0,10,0,2"/>
+                            <TextBox x:Name="LoraOverrideFreqTextBox" Width="120" HorizontalAlignment="Left"/>
+                            <TextBlock Text="{DynamicResource StrNcDescOverrideFreq}" Style="{StaticResource DescStyle}"/>
                         </StackPanel>
                     </StackPanel>
                 </ScrollViewer>
@@ -331,6 +369,8 @@
                                 <ComboBoxItem Content="{DynamicResource StrNcGpsNotPresent}" Tag="2"/>
                             </ComboBox>
                             <TextBlock Text="{DynamicResource StrNcDescGpsMode}" Style="{StaticResource DescStyle}"/>
+                            <CheckBox x:Name="FixedPositionCheckBox" Content="{DynamicResource StrNcFixedPosition}" Margin="0,10,0,0"/>
+                            <TextBlock Text="{DynamicResource StrNcDescFixedPosition}" Style="{StaticResource DescStyle}"/>
                             <TextBlock Text="{DynamicResource StrNcPosBroadcast}" Margin="0,12,0,2"/>
                             <TextBox x:Name="PosBroadcastSecsTextBox" Width="160" HorizontalAlignment="Left"/>
                             <TextBlock Text="{DynamicResource StrNcDescPosBroadcast}" Style="{StaticResource DescStyle}"/>
@@ -339,12 +379,21 @@
                             <TextBlock Text="{DynamicResource StrNcMinDistance}" Margin="0,8,0,2"/>
                             <TextBox x:Name="MinDistanceTextBox" Width="120" HorizontalAlignment="Left"/>
                             <TextBlock Text="{DynamicResource StrNcDescMinDistance}" Style="{StaticResource DescStyle}"/>
-                            <TextBlock Text="{DynamicResource StrNcMinSpeed}" Margin="0,8,0,2"/>
-                            <TextBox x:Name="MinSpeedTextBox" Width="120" HorizontalAlignment="Left"/>
-                            <TextBlock Text="{DynamicResource StrNcDescMinSpeed}" Style="{StaticResource DescStyle}"/>
+                            <TextBlock Text="{DynamicResource StrNcMinIntervalSecs}" Margin="0,8,0,2"/>
+                            <TextBox x:Name="MinIntervalSecsTextBox" Width="120" HorizontalAlignment="Left"/>
+                            <TextBlock Text="{DynamicResource StrNcDescMinIntervalSecs}" Style="{StaticResource DescStyle}"/>
                             <TextBlock Text="{DynamicResource StrNcGpsUpdateInterval}" Margin="0,12,0,2"/>
                             <TextBox x:Name="GpsUpdateIntervalTextBox" Width="120" HorizontalAlignment="Left"/>
                             <TextBlock Text="{DynamicResource StrNcDescGpsInterval}" Style="{StaticResource DescStyle}"/>
+                            <TextBlock Text="{DynamicResource StrNcRxGpio}" Margin="0,10,0,2"/>
+                            <TextBox x:Name="GpsRxGpioTextBox" Width="100" HorizontalAlignment="Left"/>
+                            <TextBlock Text="{DynamicResource StrNcDescRxGpio}" Style="{StaticResource DescStyle}"/>
+                            <TextBlock Text="{DynamicResource StrNcTxGpioPos}" Margin="0,8,0,2"/>
+                            <TextBox x:Name="GpsTxGpioTextBox" Width="100" HorizontalAlignment="Left"/>
+                            <TextBlock Text="{DynamicResource StrNcDescTxGpioPos}" Style="{StaticResource DescStyle}"/>
+                            <TextBlock Text="{DynamicResource StrNcGpsEnGpio}" Margin="0,8,0,2"/>
+                            <TextBox x:Name="GpsEnGpioTextBox" Width="100" HorizontalAlignment="Left"/>
+                            <TextBlock Text="{DynamicResource StrNcDescGpsEnGpio}" Style="{StaticResource DescStyle}"/>
                         </StackPanel>
                     </StackPanel>
                 </ScrollViewer>
@@ -373,6 +422,12 @@
                             <TextBlock Text="{DynamicResource StrNcMinWakeSecs}" Margin="0,10,0,2"/>
                             <TextBox x:Name="MinWakeSecsTextBox" Width="160" HorizontalAlignment="Left"/>
                             <TextBlock Text="{DynamicResource StrNcDescMinWake}" Style="{StaticResource DescStyle}"/>
+                            <TextBlock Text="{DynamicResource StrNcAdcMult}" Margin="0,10,0,2"/>
+                            <TextBox x:Name="AdcMultTextBox" Width="120" HorizontalAlignment="Left"/>
+                            <TextBlock Text="{DynamicResource StrNcDescAdcMult}" Style="{StaticResource DescStyle}"/>
+                            <TextBlock Text="{DynamicResource StrNcBatteryInaAddr}" Margin="0,8,0,2"/>
+                            <TextBox x:Name="BatteryInaAddrTextBox" Width="120" HorizontalAlignment="Left"/>
+                            <TextBlock Text="{DynamicResource StrNcDescBatteryInaAddr}" Style="{StaticResource DescStyle}"/>
                         </StackPanel>
                     </StackPanel>
                 </ScrollViewer>
@@ -390,7 +445,7 @@
                             <TextBox x:Name="WifiSsidTextBox" MaxLength="32"/>
                             <TextBlock Text="{DynamicResource StrNcDescWifiSsid}" Style="{StaticResource DescStyle}"/>
                             <TextBlock Text="{DynamicResource StrNcWifiPsk}" Margin="0,10,0,2"/>
-                            <Grid Height="30">
+                            <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
@@ -413,6 +468,17 @@
                             <TextBlock Text="{DynamicResource StrNcNtpServer}" Margin="0,10,0,2"/>
                             <TextBox x:Name="NtpServerTextBox" MaxLength="64"/>
                             <TextBlock Text="{DynamicResource StrNcDescNtpServer}" Style="{StaticResource DescStyle}"/>
+                            <CheckBox x:Name="EthEnabledCheckBox" Content="{DynamicResource StrNcEthEnabled}" Margin="0,12,0,0"/>
+                            <TextBlock Text="{DynamicResource StrNcDescEthEnabled}" Style="{StaticResource DescStyle}"/>
+                            <TextBlock Text="{DynamicResource StrNcAddressMode}" Margin="0,10,0,2"/>
+                            <ComboBox x:Name="AddressModeComboBox" Width="160" HorizontalAlignment="Left">
+                                <ComboBoxItem Content="DHCP" Tag="0"/>
+                                <ComboBoxItem Content="STATIC" Tag="1"/>
+                            </ComboBox>
+                            <TextBlock Text="{DynamicResource StrNcDescAddressMode}" Style="{StaticResource DescStyle}"/>
+                            <TextBlock Text="{DynamicResource StrNcRsyslogServer}" Margin="0,10,0,2"/>
+                            <TextBox x:Name="RsyslogServerTextBox" MaxLength="64"/>
+                            <TextBlock Text="{DynamicResource StrNcDescRsyslogServer}" Style="{StaticResource DescStyle}"/>
                         </StackPanel>
                     </StackPanel>
                 </ScrollViewer>
@@ -434,6 +500,47 @@
                             <TextBlock Text="{DynamicResource StrNcDescCompassNorth}" Style="{StaticResource DescStyle}"/>
                             <CheckBox x:Name="FlipScreenCheckBox" Content="{DynamicResource StrNcFlipScreen}" Margin="0,8,0,0"/>
                             <TextBlock Text="{DynamicResource StrNcDescFlipScreen}" Style="{StaticResource DescStyle}"/>
+                            <CheckBox x:Name="HeadingBoldCheckBox" Content="{DynamicResource StrNcHeadingBold}" Margin="0,8,0,0"/>
+                            <TextBlock Text="{DynamicResource StrNcDescHeadingBold}" Style="{StaticResource DescStyle}"/>
+                            <CheckBox x:Name="WakeOnTapCheckBox" Content="{DynamicResource StrNcWakeOnTap}" Margin="0,8,0,0"/>
+                            <TextBlock Text="{DynamicResource StrNcDescWakeOnTap}" Style="{StaticResource DescStyle}"/>
+                            <CheckBox x:Name="Use12hClockCheckBox" Content="{DynamicResource StrNcUse12hClock}" Margin="0,8,0,0"/>
+                            <TextBlock Text="{DynamicResource StrNcDescUse12hClock}" Style="{StaticResource DescStyle}"/>
+                            <TextBlock Text="{DynamicResource StrNcDisplayUnits}" Margin="0,12,0,2"/>
+                            <ComboBox x:Name="DisplayUnitsComboBox" Width="160" HorizontalAlignment="Left">
+                                <ComboBoxItem Content="{DynamicResource StrNcMetric}" Tag="0"/>
+                                <ComboBoxItem Content="{DynamicResource StrNcImperial}" Tag="1"/>
+                            </ComboBox>
+                            <TextBlock Text="{DynamicResource StrNcDescDisplayUnits}" Style="{StaticResource DescStyle}"/>
+                            <TextBlock Text="{DynamicResource StrNcDisplayMode}" Margin="0,10,0,2"/>
+                            <ComboBox x:Name="DisplayModeComboBox" Width="180" HorizontalAlignment="Left">
+                                <ComboBoxItem Content="DEFAULT" Tag="0"/>
+                                <ComboBoxItem Content="TWOCOLOR" Tag="1"/>
+                                <ComboBoxItem Content="INVERTED" Tag="2"/>
+                                <ComboBoxItem Content="COLOR" Tag="3"/>
+                            </ComboBox>
+                            <TextBlock Text="{DynamicResource StrNcDescDisplayMode}" Style="{StaticResource DescStyle}"/>
+                            <TextBlock Text="{DynamicResource StrNcOledType}" Margin="0,10,0,2"/>
+                            <ComboBox x:Name="OledTypeComboBox" Width="180" HorizontalAlignment="Left">
+                                <ComboBoxItem Content="AUTO" Tag="0"/>
+                                <ComboBoxItem Content="SSD1306" Tag="1"/>
+                                <ComboBoxItem Content="SH1106" Tag="2"/>
+                                <ComboBoxItem Content="SH1107 (128×64)" Tag="3"/>
+                                <ComboBoxItem Content="SH1107 (128×128)" Tag="4"/>
+                            </ComboBox>
+                            <TextBlock Text="{DynamicResource StrNcDescOledType}" Style="{StaticResource DescStyle}"/>
+                            <TextBlock Text="{DynamicResource StrNcCompassOrientation}" Margin="0,10,0,2"/>
+                            <ComboBox x:Name="CompassOrientationComboBox" Width="200" HorizontalAlignment="Left">
+                                <ComboBoxItem Content="0°" Tag="0"/>
+                                <ComboBoxItem Content="90°" Tag="1"/>
+                                <ComboBoxItem Content="180°" Tag="2"/>
+                                <ComboBoxItem Content="270°" Tag="3"/>
+                                <ComboBoxItem Content="0° (Inverted)" Tag="4"/>
+                                <ComboBoxItem Content="90° (Inverted)" Tag="5"/>
+                                <ComboBoxItem Content="180° (Inverted)" Tag="6"/>
+                                <ComboBoxItem Content="270° (Inverted)" Tag="7"/>
+                            </ComboBox>
+                            <TextBlock Text="{DynamicResource StrNcDescCompassOrientation}" Style="{StaticResource DescStyle}"/>
                         </StackPanel>
                     </StackPanel>
                 </ScrollViewer>
@@ -478,7 +585,7 @@
                             <TextBlock Text="{DynamicResource StrNcMqttUsername}" Margin="0,8,0,2"/>
                             <TextBox x:Name="MqttUsernameTextBox"/>
                             <TextBlock Text="{DynamicResource StrNcMqttPassword}" Margin="0,8,0,2"/>
-                            <PasswordBox x:Name="MqttPasswordBox" Height="30"/>
+                            <TextBox x:Name="MqttPasswordBox" Height="30" MaxLength="63"/>
                             <CheckBox x:Name="MqttEncryptionCheckBox" Content="{DynamicResource StrNcMqttEncryption}" Margin="0,10,0,0"/>
                             <TextBlock Text="{DynamicResource StrNcDescMqttEncryption}" Style="{StaticResource DescStyle}"/>
                             <CheckBox x:Name="MqttJsonCheckBox" Content="{DynamicResource StrNcMqttJson}" Margin="0,6,0,0"/>
@@ -672,6 +779,184 @@
                                 <ComboBoxItem Content="CALTOPO — CalTopo/SARTopo" Tag="5"/>
                             </ComboBox>
                             <TextBlock Text="{DynamicResource StrNcDescSerMode}" Style="{StaticResource DescStyle}"/>
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- ═══════════════ SECURITY ═══════════════ -->
+                <ScrollViewer x:Name="PanelSecurity" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="0,0,16,12">
+                        <Border Background="#FFF3E0" Padding="16,10" Margin="0,0,0,12">
+                            <TextBlock Text="{DynamicResource StrNcNavSecurity}" FontWeight="SemiBold" FontSize="13" Foreground="#F57C00"/>
+                        </Border>
+                        <StackPanel Margin="16,0,0,0">
+                            <TextBlock Text="{DynamicResource StrNcSecPublicKey}" Margin="0,0,0,2"/>
+                            <TextBox x:Name="SecPublicKeyTextBox" IsReadOnly="True" FontFamily="Consolas" FontSize="11" Height="28"
+                                     Background="#F5F5F5" Foreground="Gray"/>
+                            <TextBlock Text="{DynamicResource StrNcDescSecPublicKey}" Style="{StaticResource DescStyle}"/>
+                            <TextBlock Text="{DynamicResource StrNcSecAdminKey}" Margin="0,12,0,2"/>
+                            <TextBox x:Name="SecAdminKeyTextBox" Height="70" AcceptsReturn="True" TextWrapping="NoWrap"
+                                     FontFamily="Consolas" FontSize="11" VerticalScrollBarVisibility="Auto"/>
+                            <TextBlock Text="{DynamicResource StrNcDescSecAdminKey}" Style="{StaticResource DescStyle}"/>
+                            <CheckBox x:Name="SecSerialEnabledCheckBox" Content="{DynamicResource StrNcSecSerialEnabled}" Margin="0,12,0,0"/>
+                            <TextBlock Text="{DynamicResource StrNcDescSecSerialEnabled}" Style="{StaticResource DescStyle}"/>
+                            <CheckBox x:Name="SecDebugLogCheckBox" Content="{DynamicResource StrNcSecDebugLog}" Margin="0,8,0,0"/>
+                            <TextBlock Text="{DynamicResource StrNcDescSecDebugLog}" Style="{StaticResource DescStyle}"/>
+                            <CheckBox x:Name="SecIsManagedCheckBox" Content="{DynamicResource StrNcSecIsManaged}" Margin="0,8,0,0"/>
+                            <TextBlock Text="{DynamicResource StrNcDescSecIsManaged}" Style="{StaticResource DescStyle}"/>
+                            <CheckBox x:Name="SecAdminChannelCheckBox" Content="{DynamicResource StrNcSecAdminChannel}" Margin="0,8,0,0"/>
+                            <TextBlock Text="{DynamicResource StrNcDescSecAdminChannel}" Style="{StaticResource DescStyle}"/>
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- ═══════════════ CHANNELS ═══════════════ -->
+                <ScrollViewer x:Name="PanelChannels" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="0,0,16,12">
+                        <Border Background="#FFF3E0" Padding="16,10" Margin="0,0,0,12">
+                            <TextBlock Text="{DynamicResource StrNcNavChannels}" FontWeight="SemiBold" FontSize="13" Foreground="#F57C00"/>
+                        </Border>
+                        <StackPanel Margin="16,0,0,0">
+                            <!-- Column headers -->
+                            <Grid Margin="0,0,0,6">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="24"/>
+                                    <ColumnDefinition Width="60"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="70"/>
+                                    <ColumnDefinition Width="80"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="#" FontWeight="SemiBold" FontSize="11" Foreground="Gray"/>
+                                <TextBlock Grid.Column="1" Text="Role" FontWeight="SemiBold" FontSize="11" Foreground="Gray"/>
+                                <TextBlock Grid.Column="2" Text="Name" FontWeight="SemiBold" FontSize="11" Foreground="Gray"/>
+                                <TextBlock Grid.Column="3" Text="{DynamicResource StrNcChannelUplink}" FontWeight="SemiBold" FontSize="11" Foreground="Gray" HorizontalAlignment="Center"/>
+                                <TextBlock Grid.Column="4" Text="{DynamicResource StrNcChannelDownlink}" FontWeight="SemiBold" FontSize="11" Foreground="Gray" HorizontalAlignment="Center"/>
+                            </Grid>
+                            <Rectangle Height="1" Fill="#E0E0E0" Margin="0,0,0,6"/>
+                            <!-- Channel 0 -->
+                            <Grid Margin="0,2">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="24"/>
+                                    <ColumnDefinition Width="60"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="70"/>
+                                    <ColumnDefinition Width="80"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="0" VerticalAlignment="Center" Foreground="Gray" FontSize="11"/>
+                                <TextBlock x:Name="Ch0Role" Grid.Column="1" VerticalAlignment="Center" FontSize="11"/>
+                                <TextBlock x:Name="Ch0Name" Grid.Column="2" VerticalAlignment="Center" Margin="4,0"/>
+                                <CheckBox x:Name="Ch0Uplink" Grid.Column="3" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <CheckBox x:Name="Ch0Downlink" Grid.Column="4" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Grid>
+                            <!-- Channel 1 -->
+                            <Grid Margin="0,2">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="24"/>
+                                    <ColumnDefinition Width="60"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="70"/>
+                                    <ColumnDefinition Width="80"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="1" VerticalAlignment="Center" Foreground="Gray" FontSize="11"/>
+                                <TextBlock x:Name="Ch1Role" Grid.Column="1" VerticalAlignment="Center" FontSize="11"/>
+                                <TextBlock x:Name="Ch1Name" Grid.Column="2" VerticalAlignment="Center" Margin="4,0"/>
+                                <CheckBox x:Name="Ch1Uplink" Grid.Column="3" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <CheckBox x:Name="Ch1Downlink" Grid.Column="4" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Grid>
+                            <!-- Channel 2 -->
+                            <Grid Margin="0,2">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="24"/>
+                                    <ColumnDefinition Width="60"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="70"/>
+                                    <ColumnDefinition Width="80"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="2" VerticalAlignment="Center" Foreground="Gray" FontSize="11"/>
+                                <TextBlock x:Name="Ch2Role" Grid.Column="1" VerticalAlignment="Center" FontSize="11"/>
+                                <TextBlock x:Name="Ch2Name" Grid.Column="2" VerticalAlignment="Center" Margin="4,0"/>
+                                <CheckBox x:Name="Ch2Uplink" Grid.Column="3" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <CheckBox x:Name="Ch2Downlink" Grid.Column="4" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Grid>
+                            <!-- Channel 3 -->
+                            <Grid Margin="0,2">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="24"/>
+                                    <ColumnDefinition Width="60"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="70"/>
+                                    <ColumnDefinition Width="80"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="3" VerticalAlignment="Center" Foreground="Gray" FontSize="11"/>
+                                <TextBlock x:Name="Ch3Role" Grid.Column="1" VerticalAlignment="Center" FontSize="11"/>
+                                <TextBlock x:Name="Ch3Name" Grid.Column="2" VerticalAlignment="Center" Margin="4,0"/>
+                                <CheckBox x:Name="Ch3Uplink" Grid.Column="3" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <CheckBox x:Name="Ch3Downlink" Grid.Column="4" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Grid>
+                            <!-- Channel 4 -->
+                            <Grid Margin="0,2">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="24"/>
+                                    <ColumnDefinition Width="60"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="70"/>
+                                    <ColumnDefinition Width="80"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="4" VerticalAlignment="Center" Foreground="Gray" FontSize="11"/>
+                                <TextBlock x:Name="Ch4Role" Grid.Column="1" VerticalAlignment="Center" FontSize="11"/>
+                                <TextBlock x:Name="Ch4Name" Grid.Column="2" VerticalAlignment="Center" Margin="4,0"/>
+                                <CheckBox x:Name="Ch4Uplink" Grid.Column="3" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <CheckBox x:Name="Ch4Downlink" Grid.Column="4" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Grid>
+                            <!-- Channel 5 -->
+                            <Grid Margin="0,2">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="24"/>
+                                    <ColumnDefinition Width="60"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="70"/>
+                                    <ColumnDefinition Width="80"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="5" VerticalAlignment="Center" Foreground="Gray" FontSize="11"/>
+                                <TextBlock x:Name="Ch5Role" Grid.Column="1" VerticalAlignment="Center" FontSize="11"/>
+                                <TextBlock x:Name="Ch5Name" Grid.Column="2" VerticalAlignment="Center" Margin="4,0"/>
+                                <CheckBox x:Name="Ch5Uplink" Grid.Column="3" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <CheckBox x:Name="Ch5Downlink" Grid.Column="4" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Grid>
+                            <!-- Channel 6 -->
+                            <Grid Margin="0,2">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="24"/>
+                                    <ColumnDefinition Width="60"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="70"/>
+                                    <ColumnDefinition Width="80"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="6" VerticalAlignment="Center" Foreground="Gray" FontSize="11"/>
+                                <TextBlock x:Name="Ch6Role" Grid.Column="1" VerticalAlignment="Center" FontSize="11"/>
+                                <TextBlock x:Name="Ch6Name" Grid.Column="2" VerticalAlignment="Center" Margin="4,0"/>
+                                <CheckBox x:Name="Ch6Uplink" Grid.Column="3" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <CheckBox x:Name="Ch6Downlink" Grid.Column="4" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Grid>
+                            <!-- Channel 7 -->
+                            <Grid Margin="0,2">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="24"/>
+                                    <ColumnDefinition Width="60"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="70"/>
+                                    <ColumnDefinition Width="80"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="7" VerticalAlignment="Center" Foreground="Gray" FontSize="11"/>
+                                <TextBlock x:Name="Ch7Role" Grid.Column="1" VerticalAlignment="Center" FontSize="11"/>
+                                <TextBlock x:Name="Ch7Name" Grid.Column="2" VerticalAlignment="Center" Margin="4,0"/>
+                                <CheckBox x:Name="Ch7Uplink" Grid.Column="3" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <CheckBox x:Name="Ch7Downlink" Grid.Column="4" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Grid>
+                            <TextBlock Margin="0,12,0,0" TextWrapping="Wrap" Foreground="Gray" FontSize="11"
+                                       Text="{DynamicResource StrNcDescChannelUplink}"/>
+                            <TextBlock Margin="0,4,0,0" TextWrapping="Wrap" Foreground="Gray" FontSize="11"
+                                       Text="{DynamicResource StrNcDescChannelDownlink}"/>
                         </StackPanel>
                     </StackPanel>
                 </ScrollViewer>

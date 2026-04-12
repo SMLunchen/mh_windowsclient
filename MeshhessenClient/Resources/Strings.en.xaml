@@ -377,6 +377,88 @@
     <sys:String x:Key="StrNcDescSerTimeout">Wait time in milliseconds until an incomplete packet is considered complete.</sys:String>
     <sys:String x:Key="StrNcDescSerMode">DEFAULT = text messages · NMEA = GPS coordinates as NMEA sentences · PROTO = raw protobuf packets (developer).</sys:String>
 
+    <!-- Node config: User extras -->
+    <sys:String x:Key="StrNcIsLicensed">Licensed Amateur Radio (HAM)</sys:String>
+    <sys:String x:Key="StrNcDescIsLicensed">Enable if you hold a valid amateur radio license. Long Name should then be your callsign. Allows wider bandwidth in some regions.</sys:String>
+    <sys:String x:Key="StrNcIsUnmessagable">Unmessagable</sys:String>
+    <sys:String x:Key="StrNcDescIsUnmessagable">When enabled, this node does not accept incoming direct messages.</sys:String>
+    <!-- Node config: Device GPIO -->
+    <sys:String x:Key="StrNcButtonGpio">Button GPIO Pin</sys:String>
+    <sys:String x:Key="StrNcDescButtonGpio">GPIO pin number for an external button. 0 = board default.</sys:String>
+    <sys:String x:Key="StrNcBuzzerGpio">Buzzer GPIO Pin</sys:String>
+    <sys:String x:Key="StrNcDescBuzzerGpio">GPIO pin number for an external buzzer. 0 = board default.</sys:String>
+    <sys:String x:Key="StrNcDisableTripleClick">Disable Triple Click</sys:String>
+    <sys:String x:Key="StrNcDescDisableTripleClick">Disables the triple-press user button function (GPS toggle).</sys:String>
+    <!-- Node config: LoRa extras -->
+    <sys:String x:Key="StrNcIgnoreMqtt">Ignore MQTT</sys:String>
+    <sys:String x:Key="StrNcDescIgnoreMqtt">Packets relayed via MQTT are ignored (not rebroadcast). Reduces mesh loops.</sys:String>
+    <sys:String x:Key="StrNcOkToMqtt">OK to MQTT</sys:String>
+    <sys:String x:Key="StrNcDescOkToMqtt">Sets the ok_to_mqtt bit on outgoing packets. Allows MQTT gateways to forward this packet.</sys:String>
+    <sys:String x:Key="StrNcOverrideFreq">Override Frequency (MHz)</sys:String>
+    <sys:String x:Key="StrNcDescOverrideFreq">Overrides the calculated channel frequency. For licensed HAM operators or developers only. 0 = automatic.</sys:String>
+    <!-- Node config: Position extras -->
+    <sys:String x:Key="StrNcFixedPosition">Fixed Position</sys:String>
+    <sys:String x:Key="StrNcDescFixedPosition">Node always broadcasts the same (manually set) position regardless of GPS.</sys:String>
+    <sys:String x:Key="StrNcMinIntervalSecs">Smart Broadcast Min. Interval (s)</sys:String>
+    <sys:String x:Key="StrNcDescMinIntervalSecs">Minimum wait time in seconds between two smart position broadcasts.</sys:String>
+    <sys:String x:Key="StrNcRxGpio">GPS RX GPIO</sys:String>
+    <sys:String x:Key="StrNcDescRxGpio">GPIO pin number for GPS RX. 0 = board default.</sys:String>
+    <sys:String x:Key="StrNcTxGpioPos">GPS TX GPIO</sys:String>
+    <sys:String x:Key="StrNcDescTxGpioPos">GPIO pin number for GPS TX. 0 = board default.</sys:String>
+    <sys:String x:Key="StrNcGpsEnGpio">GPS Enable GPIO</sys:String>
+    <sys:String x:Key="StrNcDescGpsEnGpio">GPIO pin to power the GPS module on/off. 0 = board default.</sys:String>
+    <!-- Node config: Power extras -->
+    <sys:String x:Key="StrNcAdcMult">ADC Multiplier Override</sys:String>
+    <sys:String x:Key="StrNcDescAdcMult">Correction factor for battery voltage measurement (e.g. 3.20). 0 = board default. Typical range: 2–6.</sys:String>
+    <sys:String x:Key="StrNcBatteryInaAddr">INA Battery I²C Address</sys:String>
+    <sys:String x:Key="StrNcDescBatteryInaAddr">I²C address of the INA2xx chip for battery voltage measurement (hex, e.g. 0x40). 0 = disabled.</sys:String>
+    <!-- Node config: Network extras -->
+    <sys:String x:Key="StrNcEthEnabled">Ethernet Enabled</sys:String>
+    <sys:String x:Key="StrNcDescEthEnabled">Enable Ethernet connection (only for boards with Ethernet port, e.g. T-ETH-Elite).</sys:String>
+    <sys:String x:Key="StrNcAddressMode">IP Address Mode</sys:String>
+    <sys:String x:Key="StrNcDescAddressMode">DHCP = automatic IP address from router. STATIC = fixed IP address.</sys:String>
+    <sys:String x:Key="StrNcRsyslogServer">Rsyslog Server</sys:String>
+    <sys:String x:Key="StrNcDescRsyslogServer">Address of a rsyslog server (IP:Port) for remote logging. Empty = disabled.</sys:String>
+    <!-- Node config: Display extras -->
+    <sys:String x:Key="StrNcDisplayUnits">Units</sys:String>
+    <sys:String x:Key="StrNcDescDisplayUnits">Metric (km, m) or Imperial (mi, ft) for distance displays.</sys:String>
+    <sys:String x:Key="StrNcMetric">Metric</sys:String>
+    <sys:String x:Key="StrNcImperial">Imperial</sys:String>
+    <sys:String x:Key="StrNcOledType">OLED Type</sys:String>
+    <sys:String x:Key="StrNcDescOledType">Override for automatic OLED detection. AUTO = autodetect.</sys:String>
+    <sys:String x:Key="StrNcDisplayMode">Display Mode</sys:String>
+    <sys:String x:Key="StrNcDescDisplayMode">DEFAULT = classic 128×64 · TWOCOLOR = for bicolor OLEDs · INVERTED = inverted title bar · COLOR = TFT color.</sys:String>
+    <sys:String x:Key="StrNcHeadingBold">Bold Heading</sys:String>
+    <sys:String x:Key="StrNcDescHeadingBold">Display first line of screen in pseudo-bold style.</sys:String>
+    <sys:String x:Key="StrNcWakeOnTap">Wake on Tap/Motion</sys:String>
+    <sys:String x:Key="StrNcDescWakeOnTap">Wake the display when motion or tap is detected by the accelerometer.</sys:String>
+    <sys:String x:Key="StrNcCompassOrientation">Compass Orientation</sys:String>
+    <sys:String x:Key="StrNcDescCompassOrientation">Rotation of compass output if the board is mounted at an angle.</sys:String>
+    <sys:String x:Key="StrNcUse12hClock">12-Hour Clock</sys:String>
+    <sys:String x:Key="StrNcDescUse12hClock">Display time in 12-hour (AM/PM) format instead of 24-hour.</sys:String>
+    <!-- Node config: Security panel -->
+    <sys:String x:Key="StrNcNavSecurity">Security</sys:String>
+    <sys:String x:Key="StrNcSecPublicKey">Public Key (Base64, read-only)</sys:String>
+    <sys:String x:Key="StrNcDescSecPublicKey">The node's public X25519 key. Sent to other nodes for PKI direct messages. Read-only.</sys:String>
+    <sys:String x:Key="StrNcSecAdminKey">Admin Keys (Base64, one per line)</sys:String>
+    <sys:String x:Key="StrNcDescSecAdminKey">Public keys authorized to send admin messages to this node. Max 3 entries, one per line.</sys:String>
+    <sys:String x:Key="StrNcSecSerialEnabled">Serial Console Enabled</sys:String>
+    <sys:String x:Key="StrNcDescSecSerialEnabled">Enables the serial console (Stream API). Disabling reduces CPU load.</sys:String>
+    <sys:String x:Key="StrNcSecDebugLog">Debug Log API Enabled</sys:String>
+    <sys:String x:Key="StrNcDescSecDebugLog">Live debug output over serial or Bluetooth. Normally disabled when an API client connects.</sys:String>
+    <sys:String x:Key="StrNcSecIsManaged">Managed Mode</sys:String>
+    <sys:String x:Key="StrNcDescSecIsManaged">Device is managed by a mesh administrator via admin keys. Some UI options will be restricted.</sys:String>
+    <sys:String x:Key="StrNcSecAdminChannel">Legacy Admin Channel</sys:String>
+    <sys:String x:Key="StrNcDescSecAdminChannel">Allow admin access via the unencrypted legacy admin channel. Enable only for backwards compatibility.</sys:String>
+    <!-- Node config: Channels panel -->
+    <sys:String x:Key="StrNcNavChannels">Channels</sys:String>
+    <sys:String x:Key="StrNcChannelUplink">Uplink</sys:String>
+    <sys:String x:Key="StrNcChannelDownlink">Downlink</sys:String>
+    <sys:String x:Key="StrNcDescChannelUplink">Uplink: received LoRa packets on this channel are forwarded to the MQTT broker.</sys:String>
+    <sys:String x:Key="StrNcDescChannelDownlink">Downlink: messages from the MQTT broker are sent into the mesh via this channel.</sys:String>
+    <sys:String x:Key="StrNcLoadingProgress">Loading configuration ({0}/{1})…</sys:String>
+    <sys:String x:Key="StrNcLoadingTimeout">Not all responses received — saving enabled anyway.</sys:String>
+
     <!-- DirectMessages window -->
     <sys:String x:Key="StrDmWindowTitle">Direct Messages</sys:String>
     <sys:String x:Key="StrNoActiveChats">No active chats</sys:String>

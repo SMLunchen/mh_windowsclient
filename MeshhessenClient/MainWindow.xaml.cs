@@ -21,6 +21,7 @@ using BruTile.Predefined;
 using NetTopologySuite.Geometries;
 using Mapsui.Nts;
 using LoRaConfig = Meshtastic.Protobufs.LoRaConfig;
+using MQTTConfig = Meshtastic.Protobufs.MQTTConfig;
 
 namespace MeshhessenClient;
 
@@ -152,6 +153,9 @@ public partial class MainWindow : Window
     // Node Public Key CSV
     private NodeKeyService? _nodeKeyService;
 
+    // MQTT Proxy
+    private MqttProxyService? _mqttProxyService;
+
     // Reconnect state
     private ConnectionParameters? _lastConnectionParams;
     private Services.ConnectionType _lastConnectionType;
@@ -194,6 +198,10 @@ public partial class MainWindow : Window
         _protocolService.TimeDriftDetected += OnTimeDriftDetected;
         _protocolService.WaypointReceived  += OnWaypointReceived;
         _protocolService.WaypointDeleted   += (s, id) => Dispatcher.Invoke(() => OnWaypointDeleted(id));
+        _protocolService.MqttConfigReceived += OnMqttConfigReceived;
+
+        _mqttProxyService = new MqttProxyService(_protocolService);
+        _mqttProxyService.StatusChanged += (s, msg) => Dispatcher.Invoke(() => UpdateStatusBar(msg));
 
         // LoadRegions / LoadModemPresets removed — now displayed as read-only TextBlocks in Settings right column
 
@@ -1528,10 +1536,16 @@ public partial class MainWindow : Window
                 _protocolService.TracerouteReceived += OnTracerouteReceived;
                 _protocolService.ReactionReceived += OnReactionReceived;
                 _protocolService.DeviceTelemetryReceived += OnDeviceTelemetryReceived;
+                _protocolService.MqttConfigReceived += OnMqttConfigReceived;
                 if (_db != null) _protocolService.SetDatabase(_db);
                 if (_nodeKeyService != null) _protocolService.SetNodeKeyService(_nodeKeyService);
                 _protocolService.SetPskMismatchAction(_currentSettings.NodeKeyMismatchAction);
                 _dmWindow?.UpdateProtocolService(_protocolService);
+
+                // Recreate proxy with new protocol service
+                _mqttProxyService?.Dispose();
+                _mqttProxyService = new MqttProxyService(_protocolService);
+                _mqttProxyService.StatusChanged += (s, msg) => Dispatcher.Invoke(() => UpdateStatusBar(msg));
 
                 // Wire up connection state changed
                 _connectionService.ConnectionStateChanged += OnConnectionStateChanged;
@@ -2093,6 +2107,10 @@ public partial class MainWindow : Window
                 // Only handle disconnection here - connection status is managed by Connect_Click
                 if (!isConnected)
                 {
+                    // Stop MQTT proxy on disconnect
+                    if (_mqttProxyService != null)
+                        _ = _mqttProxyService.StopAsync();
+
                     // Stop analysis timer on disconnect
                     _analysisTimer?.Dispose();
                     _analysisTimer = null;
@@ -2183,9 +2201,16 @@ public partial class MainWindow : Window
                 _protocolService.TracerouteReceived += OnTracerouteReceived;
                 _protocolService.ReactionReceived += OnReactionReceived;
                 _protocolService.DeviceTelemetryReceived += OnDeviceTelemetryReceived;
+                _protocolService.MqttConfigReceived += OnMqttConfigReceived;
                 if (_db != null) _protocolService.SetDatabase(_db);
                 if (_nodeKeyService != null) _protocolService.SetNodeKeyService(_nodeKeyService);
                 _protocolService.SetPskMismatchAction(_currentSettings.NodeKeyMismatchAction);
+
+                // Recreate proxy with new protocol service
+                _mqttProxyService?.Dispose();
+                _mqttProxyService = new MqttProxyService(_protocolService);
+                _mqttProxyService.StatusChanged += (s, msg) => Dispatcher.Invoke(() => UpdateStatusBar(msg));
+
                 _connectionService.ConnectionStateChanged += OnConnectionStateChanged;
 
                 await _connectionService.ConnectAsync(_lastConnectionParams!);
@@ -2617,6 +2642,15 @@ public partial class MainWindow : Window
                 Services.Logger.WriteLine($"ERROR updating LoRa config in UI: {ex.Message}");
             }
         });
+    }
+
+    private void OnMqttConfigReceived(object? sender, MQTTConfig mqttConfig)
+    {
+        if (_mqttProxyService == null) return;
+        if (!mqttConfig.Enabled || !mqttConfig.ProxyToClientEnabled) return;
+
+        Services.Logger.WriteLine($"OnMqttConfigReceived: proxy={mqttConfig.ProxyToClientEnabled}, broker={mqttConfig.Address}");
+        _ = _mqttProxyService.StartAsync(mqttConfig, _myNodeId);
     }
 
     private void OnPacketCountChanged(object? sender, int count)

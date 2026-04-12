@@ -47,6 +47,9 @@
     <!-- Crypto: X25519 ECDH + AES-CTR for PKI packet decryption -->
     <PackageReference Include="BouncyCastle.Cryptography" Version="2.4.0" />
 
+    <!-- MQTT Proxy-to-Client -->
+    <PackageReference Include="MQTTnet" Version="4.3.7.1207" />
+
     <!-- Offline Map -->
     <PackageReference Include="Mapsui" Version="4.1.7" />
     <PackageReference Include="Mapsui.Wpf" Version="4.1.7" />
