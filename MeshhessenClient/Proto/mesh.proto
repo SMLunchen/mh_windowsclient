@@ -203,26 +203,28 @@ message PositionConfig {
 message PowerConfig {
   bool is_power_saving = 1;
   uint32 on_battery_shutdown_after_secs = 2;
-  uint32 adc_multiplier_override = 3;
+  float adc_multiplier_override = 3;    // preserved but not shown in UI
   uint32 wait_bluetooth_secs = 4;
-  uint32 sds_secs = 5;
-  uint32 ls_secs = 6;
-  uint32 min_wake_secs = 7;
+  // field 5 reserved/skipped in firmware
+  uint32 sds_secs = 6;
+  uint32 ls_secs = 7;
+  uint32 min_wake_secs = 8;
 }
 
 message NetworkConfig {
   bool wifi_enabled = 1;
-  string wifi_ssid = 2;
-  string wifi_psk = 3;
-  string ntp_server = 4;
+  // field 2 reserved/skipped in firmware
+  string wifi_ssid = 3;
+  string wifi_psk = 4;
+  string ntp_server = 5;
 }
 
 message DisplayConfig {
   uint32 screen_on_secs = 1;
-  bool auto_screen_carousel_secs = 2;
-  bool compass_north_top = 3;
-  bool flip_screen = 4;
-  GpsCoordinateFormat gps_format = 5;
+  // gps_format = 2 deprecated in firmware
+  uint32 auto_screen_carousel_secs = 3; // seconds, 0=off
+  bool compass_north_top = 4;
+  bool flip_screen = 5;
 }
 
 message LoRaConfig {

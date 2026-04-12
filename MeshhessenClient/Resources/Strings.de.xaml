@@ -49,6 +49,10 @@
 
     <!-- Node config window -->
     <sys:String x:Key="StrLoadingConfig">Lade Konfiguration...</sys:String>
+    <sys:String x:Key="StrNcConfigLoaded">Konfiguration geladen. Hinweis: Gerät startet nach dem Speichern neu.</sys:String>
+    <sys:String x:Key="StrNcShowPassword">Passwort anzeigen</sys:String>
+    <sys:String x:Key="StrNcHidePassword">Passwort verbergen</sys:String>
+    <sys:String x:Key="StrNcWifiPskHint">— klicke 👁 um Passwort einzugeben (leer = unverändert) —</sys:String>
     <sys:String x:Key="StrConfigSaved">Gespeichert!</sys:String>
 
     <!-- Messages -->
@@ -211,6 +215,167 @@
     <sys:String x:Key="StrNcBtRebootHint">Hinweis: Nach Änderung der Bluetooth-Einstellungen startet das Gerät neu.</sys:String>
     <sys:String x:Key="StrNcNodeDbReset">NodeDB zurücksetzen...</sys:String>
     <sys:String x:Key="StrNcNodeDbResetTip">Löscht die bekannten Nodes auf dem Gerät (kein Factory Reset)</sys:String>
+    <sys:String x:Key="StrNcSaveRebootHint">Hinweis: Das Gerät startet nach dem Speichern neu.</sys:String>
+    <sys:String x:Key="StrNcSaveRebootWarning">Die Konfiguration wird gespeichert und das Gerät startet neu. Fortfahren?</sys:String>
+    <sys:String x:Key="StrNcSaveRebootTitle">Gerät neu starten?</sys:String>
+    <!-- Nav sections -->
+    <sys:String x:Key="StrNcSectionNode">NODE</sys:String>
+    <sys:String x:Key="StrNcSectionConfig">KONFIGURATION</sys:String>
+    <sys:String x:Key="StrNcSectionModules">MODULE</sys:String>
+    <!-- Nav items -->
+    <sys:String x:Key="StrNcNavUser">Benutzer</sys:String>
+    <sys:String x:Key="StrNcNavDevice">Gerät</sys:String>
+    <sys:String x:Key="StrNcNavLora">LoRa</sys:String>
+    <sys:String x:Key="StrNcNavPosition">Position</sys:String>
+    <sys:String x:Key="StrNcNavPower">Energie</sys:String>
+    <sys:String x:Key="StrNcNavNetwork">Netzwerk</sys:String>
+    <sys:String x:Key="StrNcNavDisplay">Display</sys:String>
+    <sys:String x:Key="StrNcNavBluetooth">Bluetooth</sys:String>
+    <sys:String x:Key="StrNcNavMqtt">MQTT</sys:String>
+    <sys:String x:Key="StrNcNavTelemetry">Telemetrie</sys:String>
+    <sys:String x:Key="StrNcNavNeighborInfo">Nachbarknoten</sys:String>
+    <sys:String x:Key="StrNcNavStoreForward">Nachrichtenspeicher</sys:String>
+    <sys:String x:Key="StrNcNavExtNotif">Ext. Benachrichtigung</sys:String>
+    <sys:String x:Key="StrNcNavCannedMsg">Vordef. Nachrichten</sys:String>
+    <sys:String x:Key="StrNcNavRangeTest">Reichweiten-Test</sys:String>
+    <sys:String x:Key="StrNcNavSerial">Seriell</sys:String>
+    <!-- Power config -->
+    <sys:String x:Key="StrNcPowerSaving">Stromspar-Modus</sys:String>
+    <sys:String x:Key="StrNcPowerSavingTip">Schaltet alles Mögliche ab um Strom zu sparen</sys:String>
+    <sys:String x:Key="StrNcShutdownAfterSecs">Abschalten nach (Sekunden, 0=nie)</sys:String>
+    <sys:String x:Key="StrNcWaitBtSecs">Bluetooth aus nach (Sekunden, 0=nie)</sys:String>
+    <sys:String x:Key="StrNcSdsSecs">Super-Deep-Sleep nach (Sekunden, 0=nie)</sys:String>
+    <sys:String x:Key="StrNcLsSecs">Light-Sleep nach (Sekunden, 0=nie)</sys:String>
+    <sys:String x:Key="StrNcMinWakeSecs">Min. Wachzeit nach Paketempfang (Sekunden)</sys:String>
+    <!-- Network config -->
+    <sys:String x:Key="StrNcWifiEnabled">WLAN aktivieren</sys:String>
+    <sys:String x:Key="StrNcWifiSsid">WLAN-Name (SSID)</sys:String>
+    <sys:String x:Key="StrNcWifiPsk">WLAN-Passwort</sys:String>
+    <sys:String x:Key="StrNcNtpServer">NTP-Server (Zeitserver)</sys:String>
+    <!-- Display config -->
+    <sys:String x:Key="StrNcScreenOnSecs">Display-Timeout (z.B. 1m, 30s, 0=immer an)</sys:String>
+    <sys:String x:Key="StrNcAutoCarousel">Auto-Bildschirmwechsel aktivieren</sys:String>
+    <sys:String x:Key="StrNcCompassNorthTop">Kompass zeigt immer nach Norden</sys:String>
+    <sys:String x:Key="StrNcFlipScreen">Display umdrehen</sys:String>
+    <sys:String x:Key="StrNcGpsFormat">GPS-Koordinatenformat</sys:String>
+    <!-- Neighbor Info module -->
+    <sys:String x:Key="StrNcNiEnabled">Nachbarknoten-Modul aktivieren</sys:String>
+    <sys:String x:Key="StrNcNiInterval">Update-Intervall (z.B. 4h, 6h)</sys:String>
+    <!-- Store & Forward module -->
+    <sys:String x:Key="StrNcSfEnabled">Nachrichtenspeicher aktivieren</sys:String>
+    <sys:String x:Key="StrNcSfHeartbeat">Heartbeat senden</sys:String>
+    <sys:String x:Key="StrNcSfRecords">Max. gespeicherte Nachrichten</sys:String>
+    <sys:String x:Key="StrNcSfHistoryMax">Max. Nachrichten in Verlaufsantwort</sys:String>
+    <sys:String x:Key="StrNcSfHistoryWindow">Zeitfenster Verlauf (Sekunden)</sys:String>
+    <!-- External Notification module -->
+    <sys:String x:Key="StrNcEnEnabled">Ext. Benachrichtigung aktivieren</sys:String>
+    <sys:String x:Key="StrNcEnOutputMs">Impulsdauer (ms)</sys:String>
+    <sys:String x:Key="StrNcEnOutput">Ausgangs-GPIO</sys:String>
+    <sys:String x:Key="StrNcEnActiveHigh">Aktiv-High (sonst Aktiv-Low)</sys:String>
+    <sys:String x:Key="StrNcEnAlertMessage">Bei Textnachricht benachrichtigen</sys:String>
+    <sys:String x:Key="StrNcEnAlertBell">Bei Bell-Zeichen benachrichtigen</sys:String>
+    <!-- Canned Messages module -->
+    <sys:String x:Key="StrNcCmEnabled">Modul aktivieren</sys:String>
+    <sys:String x:Key="StrNcCmSendBell">Bell-Zeichen mitsenden</sys:String>
+    <sys:String x:Key="StrNcCmAllowInputSource">Erlaubte Eingabequelle (leer=alle)</sys:String>
+    <sys:String x:Key="StrNcCmRotary1">Drehencoder 1 aktivieren</sys:String>
+    <sys:String x:Key="StrNcCmUpdown1">Auf/Ab-Encoder 1 aktivieren</sys:String>
+    <!-- Range Test module -->
+    <sys:String x:Key="StrNcRtEnabled">Reichweiten-Test aktivieren</sys:String>
+    <sys:String x:Key="StrNcRtSender">Sender-Intervall (Sekunden, 0=kein Sender)</sys:String>
+    <sys:String x:Key="StrNcRtSave">Ergebnisse auf SD-Karte speichern</sys:String>
+    <!-- Serial module -->
+    <sys:String x:Key="StrNcSerEnabled">Serielles Modul aktivieren</sys:String>
+    <sys:String x:Key="StrNcSerEcho">Echo</sys:String>
+    <sys:String x:Key="StrNcSerRxd">RX-Pin (GPIO)</sys:String>
+    <sys:String x:Key="StrNcSerTxd">TX-Pin (GPIO)</sys:String>
+    <sys:String x:Key="StrNcSerBaud">Baudrate</sys:String>
+    <sys:String x:Key="StrNcSerTimeout">Timeout (ms)</sys:String>
+    <sys:String x:Key="StrNcSerMode">Modus</sys:String>
+    <!-- Telemetry additions -->
+    <sys:String x:Key="StrNcPowerMeasurement">Energiemessung aktivieren</sys:String>
+
+    <!-- NodeConfig: new label strings (previously hardcoded) -->
+    <sys:String x:Key="StrNcDoubleTap">Double-tap als Tastendruck</sys:String>
+    <sys:String x:Key="StrNcDutyCycle">Duty-Cycle-Limit überschreiben</sys:String>
+    <sys:String x:Key="StrNcChannelNum">Channel Number</sys:String>
+    <sys:String x:Key="StrNcGpsUpdateInterval">GPS-Update-Intervall (Sek., 0=Standard)</sys:String>
+    <sys:String x:Key="StrNcMqttProxy">Proxy to Client</sys:String>
+    <sys:String x:Key="StrNcAutoCarouselSecs">Auto-Carousel (Sek., 0=aus)</sys:String>
+
+    <!-- NodeConfig: description strings -->
+    <sys:String x:Key="StrNcDescLongName">Vollständiger Name, der anderen Nutzern angezeigt wird (max. 39 Zeichen).</sys:String>
+    <sys:String x:Key="StrNcDescShortName">Kurzname für die Geräteanzeige (max. 4 Zeichen, z. B. Initialen).</sys:String>
+    <sys:String x:Key="StrNcDescRebroadcast">Steuert, welche empfangenen Pakete weitergeleitet werden. ALL = alles · LOCAL_ONLY = nur eigener Channel · NONE = nichts weiterleiten.</sys:String>
+    <sys:String x:Key="StrNcDescNodeInfo">Wie oft das Gerät seinen Namen/Status ins Mesh sendet (Sekunden). Standard: 900 s. 0 = Firmware-Standard.</sys:String>
+    <sys:String x:Key="StrNcDescTimezone">POSIX-Zeitzone für die interne Uhr des Geräts (z. B. für Datum/Uhrzeit-Anzeige auf dem Display).</sys:String>
+    <sys:String x:Key="StrNcDescDoubleTap">Beschleunigungssensor: Doppeltippen auf das Gehäuse löst den Tastenknopf aus (z. B. für GPS-Toggle).</sys:String>
+    <sys:String x:Key="StrNcDescLoraRegion">Gesetzliche Frequenzregion. In Deutschland / EU: EU_868 (868 MHz Band).</sys:String>
+    <sys:String x:Key="StrNcDescUsePreset">Empfohlen: Preset verwenden. Nur deaktivieren für manuelle Anpassung von Bandbreite und Spreading-Faktor.</sys:String>
+    <sys:String x:Key="StrNcDescModemPreset">Höherer Spreading Factor (SF) = bessere Empfindlichkeit und mehr Reichweite, aber geringerer Durchsatz. · VERY_LONG_SLOW (SF12, 62,5 kHz) = maximale Reichweite, ~90 bps · LONG_SLOW (SF12, 125 kHz) = sehr große Reichweite, ~180 bps · LONG_FAST (SF11, 250 kHz) = gute Reichweite, ~1 kbit/s – Meshtastic-Standard · SHORT_SLOW (SF8, 250 kHz) = deutlich kürzere Reichweite, ~8 kbit/s – Standard im Mesh Hessen für dichte Netze · SHORT_FAST (SF7) = kürzeste Reichweite, ~17 kbit/s. Alle Nodes im Mesh müssen dasselbe Preset verwenden.</sys:String>
+    <sys:String x:Key="StrNcDescHopLimit">Max. Anzahl Weiterleitungen (Hops) pro Paket. Standard: 3. Höhere Werte erhöhen die Netzlast erheblich.</sys:String>
+    <sys:String x:Key="StrNcDescTxPower">Sendeleistung in dBm. 0 = maximale für die gewählte Region erlaubte Leistung (empfohlen).</sys:String>
+    <sys:String x:Key="StrNcDescChannelNum">Frequenz-Slot innerhalb der Region. 0 = wird automatisch aus dem Channel-Namen berechnet (Hash) – Standard für alle normalen Setups. Nur manuell setzen, wenn ein bestimmter Frequenz-Slot gezielt genutzt werden soll (Experten-Einstellung).</sys:String>
+    <sys:String x:Key="StrNcDescDutyCycle">⚠ Achtung: Die meisten Funkregionen schreiben ein gesetzliches Duty-Cycle-Limit für LoRa-Sender vor. Das Überschreiten dieses Limits kann gegen lokale Funkregelungen verstoßen.</sys:String>
+    <sys:String x:Key="StrNcDescSx126x">Höhere Empfangsempfindlichkeit (~1–2 dB Gewinn) auf Kosten von ca. 2 mA Mehrverbrauch. Empfohlen für stationäre Nodes.</sys:String>
+    <sys:String x:Key="StrNcDescGpsMode">DISABLED = GPS abgeschaltet (spart Strom) · ENABLED = GPS aktiv · NOT_PRESENT = kein GPS-Modul verbaut.</sys:String>
+    <sys:String x:Key="StrNcDescPosBroadcast">Maximales Intervall zwischen zwei Positionssendungen (Sekunden). 0 = Smart Broadcast bestimmt das Intervall.</sys:String>
+    <sys:String x:Key="StrNcDescSmartBroadcast">Sendet Position nur, wenn sich das Gerät weit genug bewegt hat (Mindestabstand + Mindestgeschwindigkeit).</sys:String>
+    <sys:String x:Key="StrNcDescMinDistance">Mindestabstand in Metern, den das Gerät zurückgelegt haben muss, bevor eine neue Position gesendet wird.</sys:String>
+    <sys:String x:Key="StrNcDescMinSpeed">Mindestgeschwindigkeit in cm/s. Unter diesem Wert wird bei Stillstand keine neue Position gesendet.</sys:String>
+    <sys:String x:Key="StrNcDescGpsInterval">Wie oft das GPS-Modul neue Koordinaten abfragt. 0 = Firmware-Standard (ca. 30 s).</sys:String>
+    <sys:String x:Key="StrNcDescPowerSaving">Schläft so viel wie möglich: Display, GPS und Bluetooth werden abgeschaltet, die CPU wechselt in Deep/Light-Sleep. Das Gerät wacht nur auf, wenn ein LoRa-Paket empfangen wird oder ein Sleep-Zyklus abläuft. Nicht aktivieren, wenn das Gerät dauerhaft per Bluetooth oder USB verbunden sein soll.</sys:String>
+    <sys:String x:Key="StrNcDescShutdownAfter">Gerät schaltet sich automatisch ab, wenn es länger als diese Zeit vom Akku betrieben wird (kein USB). 0 = nie abschalten.</sys:String>
+    <sys:String x:Key="StrNcDescWaitBt">Bluetooth wird abgeschaltet, wenn seit dieser Zeit keine Verbindung bestand (Sekunden). 0 = Bluetooth dauerhaft aktiv.</sys:String>
+    <sys:String x:Key="StrNcDescSds">Super Deep Sleep: extremer Stromsparmodus – nur ein physischer Reset-Knopfdruck weckt das Gerät wieder auf (Sekunden). 0 = deaktiviert.</sys:String>
+    <sys:String x:Key="StrNcDescLs">Light Sleep: Gerät bleibt empfangsbereit (LoRa aktiv), CPU und andere Verbraucher schlafen (Sekunden). 0 = deaktiviert.</sys:String>
+    <sys:String x:Key="StrNcDescMinWake">Wie lange das Gerät nach dem Empfang eines Pakets wach bleibt, bevor es erneut schlafen geht (Sekunden).</sys:String>
+    <sys:String x:Key="StrNcDescWifiEnabled">Nur für ESP32-basierte Geräte (z. B. T-Beam, Heltec). nRF52-Geräte (RAK, T-Echo) haben kein WLAN-Modul.</sys:String>
+    <sys:String x:Key="StrNcDescWifiSsid">Name des WLAN-Netzwerks (SSID), mit dem sich das Gerät verbinden soll (max. 32 Zeichen).</sys:String>
+    <sys:String x:Key="StrNcDescWifiPsk">WLAN-Passwort. Das Gerät gibt dieses Feld aus Sicherheitsgründen leer zurück – es erscheint immer leer. Leer lassen = Passwort bleibt unverändert.</sys:String>
+    <sys:String x:Key="StrNcDescNtpServer">Zeitserver für automatische Zeitsynchronisation. Standard: meshtastic.pool.ntp.org</sys:String>
+    <sys:String x:Key="StrNcDescScreenOn">Wie lange das Display nach der letzten Aktion aktiv bleibt (Sekunden). 0 = Display immer an.</sys:String>
+    <sys:String x:Key="StrNcDescAutoCarousel">Wechselt automatisch zwischen den Display-Seiten. Angabe in Sekunden. 0 = deaktiviert.</sys:String>
+    <sys:String x:Key="StrNcDescCompassNorth">Kompassanzeige zeigt immer geographischen Norden oben (statt Fahrtrichtung).</sys:String>
+    <sys:String x:Key="StrNcDescFlipScreen">Dreht das Display um 180° (für umgekehrt montierte Gehäuse).</sys:String>
+    <sys:String x:Key="StrNcDescBtEnabled">Deaktivieren spart Strom – dann ist Verbindung nur noch über USB/Serial möglich.</sys:String>
+    <sys:String x:Key="StrNcDescBtPairing">RANDOM = neuer PIN bei jedem Koppeln (sicher) · FIXED = immer gleicher PIN · NO_PIN = kein PIN (unsicher).</sys:String>
+    <sys:String x:Key="StrNcDescMqttEnabled">Verbindet das Gerät als Gateway zwischen LoRa-Mesh und MQTT-Broker (Internet-Brücke für Nachrichten und Telemetrie).</sys:String>
+    <sys:String x:Key="StrNcDescMqttServer">Hostname oder IP des MQTT-Brokers. Standard: mqtt.meshtastic.org</sys:String>
+    <sys:String x:Key="StrNcDescMqttEncryption">Pakete werden verschlüsselt über MQTT übertragen (LoRa-Schlüssel verbleibt im Paket).</sys:String>
+    <sys:String x:Key="StrNcDescMqttJson">Sendet zusätzlich entschlüsselte Pakete als JSON-Text (z. B. für Home Assistant, Node-RED, Grafana).</sys:String>
+    <sys:String x:Key="StrNcDescMqttRootTopic">Basis-Topic für alle MQTT-Nachrichten dieses Geräts. Standard: msh</sys:String>
+    <sys:String x:Key="StrNcDescMqttProxy">Die verbundene App (Telefon/PC) leitet MQTT-Nachrichten für das Gerät weiter – kein direktes WLAN am Gerät nötig. Hinweis: Dieser Windows-Client unterstützt den Proxy-Modus aktuell nicht aktiv.</sys:String>
+    <sys:String x:Key="StrNcDescMqttMapReport">Sendet die eigene Position an die öffentliche Meshtastic-Weltkarte (map.meshtastic.org).</sys:String>
+    <sys:String x:Key="StrNcDescDeviceTelemetry">Gerätemetriken: Akku-%, Spannung, Kanalauslastung, TX-Airtime. Erscheinen im Telemetrie-Fenster des Clients.</sys:String>
+    <sys:String x:Key="StrNcDescEnvTelemetry">Umgebungssensoren (Temperatur, Luftfeuchte, Luftdruck) – benötigt angeschlossenen I²C-Sensor (z. B. BME280).</sys:String>
+    <sys:String x:Key="StrNcDescAirQuality">Luftqualitätssensor (PM2.5 u. a.) – benötigt angeschlossenen Sensor (z. B. PMSA003I).</sys:String>
+    <sys:String x:Key="StrNcDescPowerTelemetry">Energiemessung (Spannung/Strom) – benötigt INA2xx-Sensor.</sys:String>
+    <sys:String x:Key="StrNcDescNiEnabled">Das Gerät sendet periodisch eine Liste aller direkt empfangbaren Nachbar-Nodes (inkl. SNR-Werte). Nützlich für Netzwerkanalyse.</sys:String>
+    <sys:String x:Key="StrNcDescNiInterval">Mindestintervall laut Spezifikation: 4 h (14400 Sekunden). Kleinere Werte werden von der Firmware ignoriert.</sys:String>
+    <sys:String x:Key="StrNcDescSfEnabled">Speichert Nachrichten für temporär offline Nodes und sendet sie beim nächsten Kontakt nach. Benötigt dedizierten Server-Node (ESP32 mit ausreichend Speicher).</sys:String>
+    <sys:String x:Key="StrNcDescSfHeartbeat">Sendet regelmäßig einen Heartbeat, damit Clients wissen, dass der Store-and-Forward-Server erreichbar ist.</sys:String>
+    <sys:String x:Key="StrNcDescSfRecords">Maximale Anzahl gespeicherter Nachrichten auf dem Server-Node. 0 = Firmware-Limit.</sys:String>
+    <sys:String x:Key="StrNcDescSfHistoryMax">Maximale Anzahl Nachrichten, die auf eine einzelne Verlaufsanfrage gesendet werden.</sys:String>
+    <sys:String x:Key="StrNcDescSfHistoryWindow">Zeitraum in Sekunden, aus dem Nachrichten für eine Verlaufsanfrage zurückgesendet werden.</sys:String>
+    <sys:String x:Key="StrNcDescEnEnabled">Steuert einen externen GPIO-Ausgang (LED, Buzzer, Vibrationsmotor) bei eingehenden Nachrichten.</sys:String>
+    <sys:String x:Key="StrNcDescEnOutput">GPIO-Pin-Nummer des Ausgangssignals (z. B. 13 für eingebaute LED).</sys:String>
+    <sys:String x:Key="StrNcDescEnOutputMs">Dauer eines Signals in Millisekunden. Standard: 1000 ms (1 Sekunde).</sys:String>
+    <sys:String x:Key="StrNcDescEnActive">Aktiv-High = Pin auf HIGH zum Einschalten. Aktiv-Low = Pin auf LOW (für viele LEDs nötig).</sys:String>
+    <sys:String x:Key="StrNcDescEnBell">Bell = ASCII-Zeichen 0x07, das gezielt von anderen Nodes gesendet werden kann, um eine Benachrichtigung auszulösen.</sys:String>
+    <sys:String x:Key="StrNcDescCmEnabled">Ermöglicht das Senden vorgespeicherter Nachrichten direkt am Gerät über Drehencoder oder Auf/Ab-Tasten – ohne Smartphone.</sys:String>
+    <sys:String x:Key="StrNcDescCmSendBell">Fügt jeder gesendeten Nachricht ein Bell-Zeichen (0x07) bei – löst externe Benachrichtigungen beim Empfänger aus.</sys:String>
+    <sys:String x:Key="StrNcDescCmInput">Leer = alle Eingabequellen erlaubt. Mögliche Werte: rotary1, updown1, cardkb, serial (je nach Hardware).</sys:String>
+    <sys:String x:Key="StrNcDescCmRotary">Aktiviert Drehencoder 1 als Eingabe (KY-040 o. Ä., angeschlossen an die konfigurierten GPIO-Pins).</sys:String>
+    <sys:String x:Key="StrNcDescCmUpdown">Aktiviert Auf/Ab/Bestätigen-Tasten als Eingabe (3 separate GPIO-Pins).</sys:String>
+    <sys:String x:Key="StrNcDescRtEnabled">Sendet oder empfängt Testpakete zur Reichweitenmessung. Ein Node sendet (Intervall &gt; 0), alle anderen empfangen und loggen. ⚠ Bitte nach dem Test wieder deaktivieren – der Sender belastet den Kanal dauerhaft!</sys:String>
+    <sys:String x:Key="StrNcDescRtSender">Sendeintervall in Sekunden. 0 = Empfänger-Modus (kein Senden). Typischer Wert: 60 s. Nach Abschluss des Tests unbedingt auf 0 zurücksetzen und speichern!</sys:String>
+    <sys:String x:Key="StrNcDescRtSave">Speichert Testergebnisse als CSV-Datei auf der SD-Karte (nur ESP32 mit SD-Karten-Slot).</sys:String>
+    <sys:String x:Key="StrNcDescSerEnabled">Datenaustausch über serielle UART-Schnittstelle (zusätzlich zur USB-Verbindung), für Integration mit externen Systemen (Arduino, Raspberry Pi usw.).</sys:String>
+    <sys:String x:Key="StrNcDescSerEcho">Empfangene Daten werden direkt zurückgesendet (Echo-Modus zur Diagnose).</sys:String>
+    <sys:String x:Key="StrNcDescSerPins">GPIO-Pinnummern für den UART-Anschluss. 0 = Hardware-Standard des jeweiligen Boards.</sys:String>
+    <sys:String x:Key="StrNcDescSerTimeout">Wartezeit in Millisekunden, bis ein unvollständiges Paket als abgeschlossen gilt.</sys:String>
+    <sys:String x:Key="StrNcDescSerMode">DEFAULT = Textnachrichten · NMEA = GPS-Koordinaten als NMEA-Sätze ausgeben · PROTO = rohe Protobuf-Pakete (Entwickler).</sys:String>
 
     <!-- DirectMessages window -->
     <sys:String x:Key="StrDmWindowTitle">Direktnachrichten</sys:String>

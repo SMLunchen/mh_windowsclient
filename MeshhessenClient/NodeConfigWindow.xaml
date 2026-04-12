@@ -4,208 +4,683 @@
         xmlns:ui="http://schemas.modernwpf.com/2019"
         ui:WindowHelper.UseModernWindowStyle="True"
         Title="{DynamicResource StrNcWindowTitle}"
-        Width="520"
-        Height="560"
+        Width="760"
+        Height="620"
+        MinWidth="620"
+        MinHeight="500"
         WindowStartupLocation="CenterOwner">
 
-    <Grid Margin="12">
+    <Window.Resources>
+        <!-- Category colors -->
+        <SolidColorBrush x:Key="ColorNode"   Color="#00897B"/>
+        <SolidColorBrush x:Key="ColorConfig" Color="#1976D2"/>
+        <SolidColorBrush x:Key="ColorModule" Color="#388E3C"/>
+        <SolidColorBrush x:Key="BgNode"      Color="#E0F2F1"/>
+        <SolidColorBrush x:Key="BgConfig"    Color="#E3F2FD"/>
+        <SolidColorBrush x:Key="BgModule"    Color="#E8F5E9"/>
+
+        <!-- Non-selectable section header -->
+        <Style x:Key="NavHeaderStyle" TargetType="ListBoxItem">
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="IsHitTestVisible" Value="False"/>
+            <Setter Property="Padding" Value="10,8,8,2"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <ContentPresenter/>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Shared description TextBlock style -->
+        <Style x:Key="DescStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="Gray"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="Margin" Value="0,2,0,0"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="0">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0" x:Name="StatusText" Text="{DynamicResource StrLoadingConfig}" Margin="0,0,0,8" Foreground="Gray" FontStyle="Italic"/>
+        <!-- Status bar -->
+        <Border Grid.Row="0" Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}" Padding="12,6">
+            <TextBlock x:Name="StatusText" Text="{DynamicResource StrLoadingConfig}" Foreground="Gray" FontStyle="Italic"/>
+        </Border>
 
-        <TabControl Grid.Row="1" x:Name="ConfigTabs">
+        <!-- Two-panel layout -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="190"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
 
-            <!-- Tab: Benutzer -->
-            <TabItem Header="{DynamicResource StrNcTabUser}">
-                <ScrollViewer VerticalScrollBarVisibility="Auto">
-                    <StackPanel Margin="10">
-                        <TextBlock Text="{DynamicResource StrNcLongName}" Margin="0,8,0,2"/>
-                        <TextBox x:Name="LongNameTextBox" MaxLength="39"/>
-                        <TextBlock Text="{DynamicResource StrNcShortName}" Margin="0,10,0,2"/>
-                        <TextBox x:Name="ShortNameTextBox" MaxLength="4"/>
+            <!-- Left nav -->
+            <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}" BorderThickness="0,0,1,0">
+                <ListBox x:Name="NavList" SelectionChanged="NavList_SelectionChanged"
+                         Background="Transparent" BorderThickness="0"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+
+                    <!-- NODE section -->
+                    <ListBoxItem Style="{StaticResource NavHeaderStyle}" Margin="0,6,0,2">
+                        <TextBlock Text="{DynamicResource StrNcSectionNode}"
+                                   Foreground="{StaticResource ColorNode}"
+                                   FontSize="10" FontWeight="Bold" Padding="10,0,0,0"/>
+                    </ListBoxItem>
+                    <ListBoxItem Tag="User">
+                        <DockPanel>
+                            <Rectangle DockPanel.Dock="Left" Width="3" Fill="{StaticResource ColorNode}" Margin="0,3,8,3" RadiusX="1" RadiusY="1"/>
+                            <TextBlock Text="{DynamicResource StrNcNavUser}" VerticalAlignment="Center"/>
+                        </DockPanel>
+                    </ListBoxItem>
+
+                    <!-- CONFIG section -->
+                    <ListBoxItem Style="{StaticResource NavHeaderStyle}" Margin="0,8,0,2">
+                        <TextBlock Text="{DynamicResource StrNcSectionConfig}"
+                                   Foreground="{StaticResource ColorConfig}"
+                                   FontSize="10" FontWeight="Bold" Padding="10,0,0,0"/>
+                    </ListBoxItem>
+                    <ListBoxItem Tag="Device">
+                        <DockPanel>
+                            <Rectangle DockPanel.Dock="Left" Width="3" Fill="{StaticResource ColorConfig}" Margin="0,3,8,3" RadiusX="1" RadiusY="1"/>
+                            <TextBlock Text="{DynamicResource StrNcNavDevice}" VerticalAlignment="Center"/>
+                        </DockPanel>
+                    </ListBoxItem>
+                    <ListBoxItem Tag="Lora">
+                        <DockPanel>
+                            <Rectangle DockPanel.Dock="Left" Width="3" Fill="{StaticResource ColorConfig}" Margin="0,3,8,3" RadiusX="1" RadiusY="1"/>
+                            <TextBlock Text="{DynamicResource StrNcNavLora}" VerticalAlignment="Center"/>
+                        </DockPanel>
+                    </ListBoxItem>
+                    <ListBoxItem Tag="Position">
+                        <DockPanel>
+                            <Rectangle DockPanel.Dock="Left" Width="3" Fill="{StaticResource ColorConfig}" Margin="0,3,8,3" RadiusX="1" RadiusY="1"/>
+                            <TextBlock Text="{DynamicResource StrNcNavPosition}" VerticalAlignment="Center"/>
+                        </DockPanel>
+                    </ListBoxItem>
+                    <ListBoxItem Tag="Power">
+                        <DockPanel>
+                            <Rectangle DockPanel.Dock="Left" Width="3" Fill="{StaticResource ColorConfig}" Margin="0,3,8,3" RadiusX="1" RadiusY="1"/>
+                            <TextBlock Text="{DynamicResource StrNcNavPower}" VerticalAlignment="Center"/>
+                        </DockPanel>
+                    </ListBoxItem>
+                    <ListBoxItem Tag="Network">
+                        <DockPanel>
+                            <Rectangle DockPanel.Dock="Left" Width="3" Fill="{StaticResource ColorConfig}" Margin="0,3,8,3" RadiusX="1" RadiusY="1"/>
+                            <TextBlock Text="{DynamicResource StrNcNavNetwork}" VerticalAlignment="Center"/>
+                        </DockPanel>
+                    </ListBoxItem>
+                    <ListBoxItem Tag="Display">
+                        <DockPanel>
+                            <Rectangle DockPanel.Dock="Left" Width="3" Fill="{StaticResource ColorConfig}" Margin="0,3,8,3" RadiusX="1" RadiusY="1"/>
+                            <TextBlock Text="{DynamicResource StrNcNavDisplay}" VerticalAlignment="Center"/>
+                        </DockPanel>
+                    </ListBoxItem>
+                    <ListBoxItem Tag="Bluetooth">
+                        <DockPanel>
+                            <Rectangle DockPanel.Dock="Left" Width="3" Fill="{StaticResource ColorConfig}" Margin="0,3,8,3" RadiusX="1" RadiusY="1"/>
+                            <TextBlock Text="{DynamicResource StrNcNavBluetooth}" VerticalAlignment="Center"/>
+                        </DockPanel>
+                    </ListBoxItem>
+
+                    <!-- MODULES section -->
+                    <ListBoxItem Style="{StaticResource NavHeaderStyle}" Margin="0,8,0,2">
+                        <TextBlock Text="{DynamicResource StrNcSectionModules}"
+                                   Foreground="{StaticResource ColorModule}"
+                                   FontSize="10" FontWeight="Bold" Padding="10,0,0,0"/>
+                    </ListBoxItem>
+                    <ListBoxItem Tag="Mqtt">
+                        <DockPanel>
+                            <Rectangle DockPanel.Dock="Left" Width="3" Fill="{StaticResource ColorModule}" Margin="0,3,8,3" RadiusX="1" RadiusY="1"/>
+                            <TextBlock Text="{DynamicResource StrNcNavMqtt}" VerticalAlignment="Center"/>
+                        </DockPanel>
+                    </ListBoxItem>
+                    <ListBoxItem Tag="Telemetry">
+                        <DockPanel>
+                            <Rectangle DockPanel.Dock="Left" Width="3" Fill="{StaticResource ColorModule}" Margin="0,3,8,3" RadiusX="1" RadiusY="1"/>
+                            <TextBlock Text="{DynamicResource StrNcNavTelemetry}" VerticalAlignment="Center"/>
+                        </DockPanel>
+                    </ListBoxItem>
+                    <ListBoxItem Tag="NeighborInfo">
+                        <DockPanel>
+                            <Rectangle DockPanel.Dock="Left" Width="3" Fill="{StaticResource ColorModule}" Margin="0,3,8,3" RadiusX="1" RadiusY="1"/>
+                            <TextBlock Text="{DynamicResource StrNcNavNeighborInfo}" VerticalAlignment="Center"/>
+                        </DockPanel>
+                    </ListBoxItem>
+                    <ListBoxItem Tag="StoreForward">
+                        <DockPanel>
+                            <Rectangle DockPanel.Dock="Left" Width="3" Fill="{StaticResource ColorModule}" Margin="0,3,8,3" RadiusX="1" RadiusY="1"/>
+                            <TextBlock Text="{DynamicResource StrNcNavStoreForward}" VerticalAlignment="Center"/>
+                        </DockPanel>
+                    </ListBoxItem>
+                    <ListBoxItem Tag="ExtNotif">
+                        <DockPanel>
+                            <Rectangle DockPanel.Dock="Left" Width="3" Fill="{StaticResource ColorModule}" Margin="0,3,8,3" RadiusX="1" RadiusY="1"/>
+                            <TextBlock Text="{DynamicResource StrNcNavExtNotif}" VerticalAlignment="Center"/>
+                        </DockPanel>
+                    </ListBoxItem>
+                    <ListBoxItem Tag="CannedMsg">
+                        <DockPanel>
+                            <Rectangle DockPanel.Dock="Left" Width="3" Fill="{StaticResource ColorModule}" Margin="0,3,8,3" RadiusX="1" RadiusY="1"/>
+                            <TextBlock Text="{DynamicResource StrNcNavCannedMsg}" VerticalAlignment="Center"/>
+                        </DockPanel>
+                    </ListBoxItem>
+                    <ListBoxItem Tag="RangeTest">
+                        <DockPanel>
+                            <Rectangle DockPanel.Dock="Left" Width="3" Fill="{StaticResource ColorModule}" Margin="0,3,8,3" RadiusX="1" RadiusY="1"/>
+                            <TextBlock Text="{DynamicResource StrNcNavRangeTest}" VerticalAlignment="Center"/>
+                        </DockPanel>
+                    </ListBoxItem>
+                    <ListBoxItem Tag="Serial">
+                        <DockPanel>
+                            <Rectangle DockPanel.Dock="Left" Width="3" Fill="{StaticResource ColorModule}" Margin="0,3,8,3" RadiusX="1" RadiusY="1"/>
+                            <TextBlock Text="{DynamicResource StrNcNavSerial}" VerticalAlignment="Center"/>
+                        </DockPanel>
+                    </ListBoxItem>
+                </ListBox>
+            </Border>
+
+            <!-- Right content area — only one panel visible at a time -->
+            <Grid Grid.Column="1">
+
+                <!-- ═══════════════ USER ═══════════════ -->
+                <ScrollViewer x:Name="PanelUser" Visibility="Visible" VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="0,0,16,12">
+                        <Border Background="{StaticResource BgNode}" Padding="16,10" Margin="0,0,0,12">
+                            <TextBlock Text="{DynamicResource StrNcNavUser}" FontWeight="SemiBold" FontSize="13" Foreground="{StaticResource ColorNode}"/>
+                        </Border>
+                        <StackPanel Margin="16,0,0,0">
+                            <TextBlock Text="{DynamicResource StrNcLongName}" Margin="0,0,0,2"/>
+                            <TextBox x:Name="LongNameTextBox" MaxLength="39"/>
+                            <TextBlock Text="{DynamicResource StrNcDescLongName}" Style="{StaticResource DescStyle}"/>
+                            <TextBlock Text="{DynamicResource StrNcShortName}" Margin="0,12,0,2"/>
+                            <TextBox x:Name="ShortNameTextBox" MaxLength="4" Width="100" HorizontalAlignment="Left"/>
+                            <TextBlock Text="{DynamicResource StrNcDescShortName}" Style="{StaticResource DescStyle}"/>
+                        </StackPanel>
                     </StackPanel>
                 </ScrollViewer>
-            </TabItem>
 
-            <!-- Tab: Gerät -->
-            <TabItem Header="{DynamicResource StrNcTabDevice}">
-                <ScrollViewer VerticalScrollBarVisibility="Auto">
-                    <StackPanel Margin="10">
-                        <TextBlock Text="{DynamicResource StrNcRole}" Margin="0,8,0,2"/>
-                        <ComboBox x:Name="RoleComboBox" Width="200" HorizontalAlignment="Left">
-                            <ComboBoxItem Content="CLIENT" Tag="0"/>
-                            <ComboBoxItem Content="CLIENT_MUTE" Tag="1"/>
-                            <ComboBoxItem Content="ROUTER" Tag="2"/>
-                            <ComboBoxItem Content="ROUTER_CLIENT" Tag="3"/>
-                            <ComboBoxItem Content="REPEATER" Tag="4"/>
-                            <ComboBoxItem Content="TRACKER" Tag="5"/>
-                            <ComboBoxItem Content="SENSOR" Tag="6"/>
-                            <ComboBoxItem Content="TAK" Tag="7"/>
-                            <ComboBoxItem Content="CLIENT_HIDDEN" Tag="8"/>
-                        </ComboBox>
-                        <TextBlock Text="{DynamicResource StrNcRebroadcast}" Margin="0,10,0,2"/>
-                        <ComboBox x:Name="RebroadcastComboBox" Width="200" HorizontalAlignment="Left">
-                            <ComboBoxItem Content="ALL" Tag="0"/>
-                            <ComboBoxItem Content="ALL_SKIP_DECODING" Tag="1"/>
-                            <ComboBoxItem Content="LOCAL_ONLY" Tag="2"/>
-                            <ComboBoxItem Content="KNOWN_ONLY" Tag="3"/>
-                            <ComboBoxItem Content="NONE" Tag="4"/>
-                            <ComboBoxItem Content="CORE_PORTNUMS_ONLY" Tag="5"/>
-                        </ComboBox>
-                        <TextBlock Text="{DynamicResource StrNcNodeInfoInterval}" Margin="0,10,0,2"/>
-                        <TextBox x:Name="NodeInfoIntervalTextBox" Width="150" HorizontalAlignment="Left"/>
-                        <TextBlock Text="{DynamicResource StrNcTimezone}" Margin="0,10,0,2"/>
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBox x:Name="TzdefTextBox" Grid.Column="0" Margin="0,0,6,0"/>
-                            <Button Grid.Column="1" Content="{DynamicResource StrNcFromWindows}" ToolTip="{DynamicResource StrNcFromWindowsTip}" Click="TzFromWindows_Click" Padding="8,4"/>
-                        </Grid>
-                        <CheckBox x:Name="LedHeartbeatCheckBox" Content="{DynamicResource StrNcLedHeartbeat}" Margin="0,12,0,0"/>
+                <!-- ═══════════════ DEVICE ═══════════════ -->
+                <ScrollViewer x:Name="PanelDevice" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="0,0,16,12">
+                        <Border Background="{StaticResource BgConfig}" Padding="16,10" Margin="0,0,0,12">
+                            <TextBlock Text="{DynamicResource StrNcNavDevice}" FontWeight="SemiBold" FontSize="13" Foreground="{StaticResource ColorConfig}"/>
+                        </Border>
+                        <StackPanel Margin="16,0,0,0">
+                            <TextBlock Text="{DynamicResource StrNcRole}" Margin="0,0,0,2"/>
+                            <ComboBox x:Name="RoleComboBox" Width="220" HorizontalAlignment="Left">
+                                <ComboBoxItem Content="CLIENT" Tag="0"/>
+                                <ComboBoxItem Content="CLIENT_MUTE" Tag="1"/>
+                                <ComboBoxItem Content="ROUTER" Tag="2"/>
+                                <ComboBoxItem Content="ROUTER_CLIENT" Tag="3"/>
+                                <ComboBoxItem Content="REPEATER" Tag="4"/>
+                                <ComboBoxItem Content="TRACKER" Tag="5"/>
+                                <ComboBoxItem Content="SENSOR" Tag="6"/>
+                                <ComboBoxItem Content="TAK" Tag="7"/>
+                                <ComboBoxItem Content="CLIENT_HIDDEN" Tag="8"/>
+                                <ComboBoxItem Content="LOST_AND_FOUND" Tag="9"/>
+                                <ComboBoxItem Content="TAK_TRACKER" Tag="10"/>
+                            </ComboBox>
+                            <TextBlock Text="{DynamicResource StrNcRebroadcast}" Margin="0,12,0,2"/>
+                            <ComboBox x:Name="RebroadcastComboBox" Width="220" HorizontalAlignment="Left">
+                                <ComboBoxItem Content="ALL" Tag="0"/>
+                                <ComboBoxItem Content="ALL_SKIP_DECODING" Tag="1"/>
+                                <ComboBoxItem Content="LOCAL_ONLY" Tag="2"/>
+                                <ComboBoxItem Content="KNOWN_ONLY" Tag="3"/>
+                                <ComboBoxItem Content="NONE" Tag="4"/>
+                                <ComboBoxItem Content="CORE_PORTNUMS_ONLY" Tag="5"/>
+                            </ComboBox>
+                            <TextBlock Text="{DynamicResource StrNcDescRebroadcast}" Style="{StaticResource DescStyle}"/>
+                            <TextBlock Text="{DynamicResource StrNcNodeInfoInterval}" Margin="0,12,0,2"/>
+                            <TextBox x:Name="NodeInfoIntervalTextBox" Width="160" HorizontalAlignment="Left"/>
+                            <TextBlock Text="{DynamicResource StrNcDescNodeInfo}" Style="{StaticResource DescStyle}"/>
+                            <TextBlock Text="{DynamicResource StrNcTimezone}" Margin="0,12,0,2"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBox x:Name="TzdefTextBox" Grid.Column="0" Margin="0,0,6,0"/>
+                                <Button Grid.Column="1" Content="{DynamicResource StrNcFromWindows}" ToolTip="{DynamicResource StrNcFromWindowsTip}" Click="TzFromWindows_Click" Padding="8,4"/>
+                            </Grid>
+                            <TextBlock Text="{DynamicResource StrNcDescTimezone}" Style="{StaticResource DescStyle}"/>
+                            <CheckBox x:Name="LedHeartbeatCheckBox" Content="{DynamicResource StrNcLedHeartbeat}" Margin="0,12,0,0"/>
+                            <CheckBox x:Name="DoubleTapCheckBox" Content="{DynamicResource StrNcDoubleTap}" Margin="0,8,0,0"/>
+                            <TextBlock Text="{DynamicResource StrNcDescDoubleTap}" Style="{StaticResource DescStyle}"/>
+                        </StackPanel>
                     </StackPanel>
                 </ScrollViewer>
-            </TabItem>
 
-            <!-- Tab: LoRa -->
-            <TabItem Header="LoRa">
-                <ScrollViewer VerticalScrollBarVisibility="Auto">
-                    <StackPanel Margin="10">
-                        <TextBlock Text="Region" Margin="0,8,0,2"/>
-                        <ComboBox x:Name="LoraRegionComboBox" Width="150" HorizontalAlignment="Left">
-                            <ComboBoxItem Content="Unset" Tag="0"/>
-                            <ComboBoxItem Content="US" Tag="1"/>
-                            <ComboBoxItem Content="EU_433" Tag="2"/>
-                            <ComboBoxItem Content="EU_868" Tag="3"/>
-                            <ComboBoxItem Content="CN" Tag="4"/>
-                            <ComboBoxItem Content="JP" Tag="5"/>
-                            <ComboBoxItem Content="ANZ" Tag="6"/>
-                            <ComboBoxItem Content="KR" Tag="7"/>
-                            <ComboBoxItem Content="TW" Tag="8"/>
-                            <ComboBoxItem Content="RU" Tag="9"/>
-                            <ComboBoxItem Content="IN" Tag="10"/>
-                            <ComboBoxItem Content="NZ_865" Tag="11"/>
-                            <ComboBoxItem Content="TH" Tag="12"/>
-                            <ComboBoxItem Content="LORA_24" Tag="13"/>
-                            <ComboBoxItem Content="UA_868" Tag="14"/>
-                            <ComboBoxItem Content="MY_919" Tag="15"/>
-                            <ComboBoxItem Content="MY_433" Tag="16"/>
-                            <ComboBoxItem Content="SG_923" Tag="17"/>
-                            <ComboBoxItem Content="WLAN" Tag="18"/>
-                        </ComboBox>
-                        <CheckBox x:Name="LoraUsePresetCheckBox" Content="{DynamicResource StrNcUsePreset}" Margin="0,10,0,0" Checked="LoraUsePresetCheckBox_Changed" Unchecked="LoraUsePresetCheckBox_Changed"/>
-                        <TextBlock Text="{DynamicResource StrNcModemPreset}" Margin="0,8,0,2"/>
-                        <ComboBox x:Name="LoraPresetComboBox" Width="180" HorizontalAlignment="Left" IsEnabled="False">
-                            <ComboBoxItem Content="LONG_FAST" Tag="0"/>
-                            <ComboBoxItem Content="LONG_SLOW" Tag="1"/>
-                            <ComboBoxItem Content="VERY_LONG_SLOW" Tag="2"/>
-                            <ComboBoxItem Content="MEDIUM_SLOW" Tag="3"/>
-                            <ComboBoxItem Content="MEDIUM_FAST" Tag="4"/>
-                            <ComboBoxItem Content="SHORT_SLOW" Tag="5"/>
-                            <ComboBoxItem Content="SHORT_FAST" Tag="6"/>
-                            <ComboBoxItem Content="LONG_MODERATE" Tag="7"/>
-                        </ComboBox>
-                        <TextBlock Text="{DynamicResource StrNcHopLimit}" Margin="0,10,0,2"/>
-                        <TextBox x:Name="HopLimitTextBox" Width="60" HorizontalAlignment="Left"/>
-                        <CheckBox x:Name="TxEnabledCheckBox" Content="{DynamicResource StrNcTxEnabled}" Margin="0,10,0,0"/>
-                        <TextBlock Text="{DynamicResource StrNcTxPower}" Margin="0,8,0,2"/>
-                        <TextBox x:Name="TxPowerTextBox" Width="80" HorizontalAlignment="Left"/>
+                <!-- ═══════════════ LORA ═══════════════ -->
+                <ScrollViewer x:Name="PanelLora" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="0,0,16,12">
+                        <Border Background="{StaticResource BgConfig}" Padding="16,10" Margin="0,0,0,12">
+                            <TextBlock Text="{DynamicResource StrNcNavLora}" FontWeight="SemiBold" FontSize="13" Foreground="{StaticResource ColorConfig}"/>
+                        </Border>
+                        <StackPanel Margin="16,0,0,0">
+                            <TextBlock Text="Region" Margin="0,0,0,2"/>
+                            <ComboBox x:Name="LoraRegionComboBox" Width="160" HorizontalAlignment="Left">
+                                <ComboBoxItem Content="Unset" Tag="0"/>
+                                <ComboBoxItem Content="US" Tag="1"/>
+                                <ComboBoxItem Content="EU_868" Tag="3"/>
+                                <ComboBoxItem Content="CN" Tag="4"/>
+                                <ComboBoxItem Content="JP" Tag="5"/>
+                                <ComboBoxItem Content="ANZ" Tag="6"/>
+                                <ComboBoxItem Content="KR" Tag="7"/>
+                                <ComboBoxItem Content="TW" Tag="8"/>
+                                <ComboBoxItem Content="RU" Tag="9"/>
+                                <ComboBoxItem Content="IN" Tag="10"/>
+                                <ComboBoxItem Content="NZ_865" Tag="11"/>
+                                <ComboBoxItem Content="TH" Tag="12"/>
+                                <ComboBoxItem Content="UA_868" Tag="13"/>
+                                <ComboBoxItem Content="MY_919" Tag="14"/>
+                                <ComboBoxItem Content="SG_923" Tag="15"/>
+                                <ComboBoxItem Content="LORA_24" Tag="16"/>
+                            </ComboBox>
+                            <TextBlock Text="{DynamicResource StrNcDescLoraRegion}" Style="{StaticResource DescStyle}"/>
+                            <CheckBox x:Name="LoraUsePresetCheckBox" Content="{DynamicResource StrNcUsePreset}" Margin="0,12,0,0"
+                                      Checked="LoraUsePresetCheckBox_Changed" Unchecked="LoraUsePresetCheckBox_Changed"/>
+                            <TextBlock Text="{DynamicResource StrNcDescUsePreset}" Style="{StaticResource DescStyle}"/>
+                            <TextBlock Text="{DynamicResource StrNcModemPreset}" Margin="0,8,0,2"/>
+                            <ComboBox x:Name="LoraPresetComboBox" Width="200" HorizontalAlignment="Left" IsEnabled="False">
+                                <ComboBoxItem Content="LONG_FAST" Tag="0"/>
+                                <ComboBoxItem Content="LONG_SLOW" Tag="1"/>
+                                <ComboBoxItem Content="VERY_LONG_SLOW" Tag="2"/>
+                                <ComboBoxItem Content="MEDIUM_SLOW" Tag="3"/>
+                                <ComboBoxItem Content="MEDIUM_FAST" Tag="4"/>
+                                <ComboBoxItem Content="SHORT_SLOW" Tag="5"/>
+                                <ComboBoxItem Content="SHORT_FAST" Tag="6"/>
+                                <ComboBoxItem Content="LONG_MODERATE" Tag="7"/>
+                            </ComboBox>
+                            <TextBlock Text="{DynamicResource StrNcDescModemPreset}" Style="{StaticResource DescStyle}"/>
+                            <TextBlock Text="{DynamicResource StrNcHopLimit}" Margin="0,12,0,2"/>
+                            <TextBox x:Name="HopLimitTextBox" Width="60" HorizontalAlignment="Left"/>
+                            <TextBlock Text="{DynamicResource StrNcDescHopLimit}" Style="{StaticResource DescStyle}"/>
+                            <CheckBox x:Name="TxEnabledCheckBox" Content="{DynamicResource StrNcTxEnabled}" Margin="0,10,0,0"/>
+                            <TextBlock Text="{DynamicResource StrNcTxPower}" Margin="0,8,0,2"/>
+                            <TextBox x:Name="TxPowerTextBox" Width="80" HorizontalAlignment="Left"/>
+                            <TextBlock Text="{DynamicResource StrNcDescTxPower}" Style="{StaticResource DescStyle}"/>
+                            <TextBlock Text="{DynamicResource StrNcChannelNum}" Margin="0,12,0,2"/>
+                            <TextBox x:Name="LoraChannelNumTextBox" Width="80" HorizontalAlignment="Left"/>
+                            <TextBlock Text="{DynamicResource StrNcDescChannelNum}" Style="{StaticResource DescStyle}"/>
+                            <CheckBox x:Name="LoraOverrideDutyCycleCheckBox" Content="{DynamicResource StrNcDutyCycle}" Margin="0,10,0,0"/>
+                            <TextBlock Text="{DynamicResource StrNcDescDutyCycle}" Style="{StaticResource DescStyle}" Foreground="Orange"/>
+                            <CheckBox x:Name="LoraSx126xRxBoostedCheckBox" Content="SX126x RX Boosted Gain" Margin="0,8,0,0"/>
+                            <TextBlock Text="{DynamicResource StrNcDescSx126x}" Style="{StaticResource DescStyle}"/>
+                        </StackPanel>
                     </StackPanel>
                 </ScrollViewer>
-            </TabItem>
 
-            <!-- Tab: Position -->
-            <TabItem Header="Position">
-                <ScrollViewer VerticalScrollBarVisibility="Auto">
-                    <StackPanel Margin="10">
-                        <TextBlock Text="{DynamicResource StrNcGpsMode}" Margin="0,8,0,2"/>
-                        <ComboBox x:Name="GpsModeComboBox" Width="160" HorizontalAlignment="Left">
-                            <ComboBoxItem Content="{DynamicResource StrNcGpsDisabled}" Tag="0"/>
-                            <ComboBoxItem Content="{DynamicResource StrNcGpsActive}" Tag="1"/>
-                            <ComboBoxItem Content="{DynamicResource StrNcGpsNotPresent}" Tag="2"/>
-                        </ComboBox>
-                        <TextBlock Text="{DynamicResource StrNcPosBroadcast}" Margin="0,10,0,2"/>
-                        <TextBox x:Name="PosBroadcastSecsTextBox" Width="150" HorizontalAlignment="Left"/>
-                        <CheckBox x:Name="SmartBroadcastCheckBox" Content="{DynamicResource StrNcSmartBroadcast}" Margin="0,10,0,0"/>
-                        <TextBlock Text="{DynamicResource StrNcMinDistance}" Margin="0,8,0,2"/>
-                        <TextBox x:Name="MinDistanceTextBox" Width="120" HorizontalAlignment="Left"/>
-                        <TextBlock Text="{DynamicResource StrNcMinSpeed}" Margin="0,8,0,2"/>
-                        <TextBox x:Name="MinSpeedTextBox" Width="120" HorizontalAlignment="Left"/>
+                <!-- ═══════════════ POSITION ═══════════════ -->
+                <ScrollViewer x:Name="PanelPosition" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="0,0,16,12">
+                        <Border Background="{StaticResource BgConfig}" Padding="16,10" Margin="0,0,0,12">
+                            <TextBlock Text="{DynamicResource StrNcNavPosition}" FontWeight="SemiBold" FontSize="13" Foreground="{StaticResource ColorConfig}"/>
+                        </Border>
+                        <StackPanel Margin="16,0,0,0">
+                            <TextBlock Text="{DynamicResource StrNcGpsMode}" Margin="0,0,0,2"/>
+                            <ComboBox x:Name="GpsModeComboBox" Width="180" HorizontalAlignment="Left">
+                                <ComboBoxItem Content="{DynamicResource StrNcGpsDisabled}" Tag="0"/>
+                                <ComboBoxItem Content="{DynamicResource StrNcGpsActive}" Tag="1"/>
+                                <ComboBoxItem Content="{DynamicResource StrNcGpsNotPresent}" Tag="2"/>
+                            </ComboBox>
+                            <TextBlock Text="{DynamicResource StrNcDescGpsMode}" Style="{StaticResource DescStyle}"/>
+                            <TextBlock Text="{DynamicResource StrNcPosBroadcast}" Margin="0,12,0,2"/>
+                            <TextBox x:Name="PosBroadcastSecsTextBox" Width="160" HorizontalAlignment="Left"/>
+                            <TextBlock Text="{DynamicResource StrNcDescPosBroadcast}" Style="{StaticResource DescStyle}"/>
+                            <CheckBox x:Name="SmartBroadcastCheckBox" Content="{DynamicResource StrNcSmartBroadcast}" Margin="0,10,0,0"/>
+                            <TextBlock Text="{DynamicResource StrNcDescSmartBroadcast}" Style="{StaticResource DescStyle}"/>
+                            <TextBlock Text="{DynamicResource StrNcMinDistance}" Margin="0,8,0,2"/>
+                            <TextBox x:Name="MinDistanceTextBox" Width="120" HorizontalAlignment="Left"/>
+                            <TextBlock Text="{DynamicResource StrNcDescMinDistance}" Style="{StaticResource DescStyle}"/>
+                            <TextBlock Text="{DynamicResource StrNcMinSpeed}" Margin="0,8,0,2"/>
+                            <TextBox x:Name="MinSpeedTextBox" Width="120" HorizontalAlignment="Left"/>
+                            <TextBlock Text="{DynamicResource StrNcDescMinSpeed}" Style="{StaticResource DescStyle}"/>
+                            <TextBlock Text="{DynamicResource StrNcGpsUpdateInterval}" Margin="0,12,0,2"/>
+                            <TextBox x:Name="GpsUpdateIntervalTextBox" Width="120" HorizontalAlignment="Left"/>
+                            <TextBlock Text="{DynamicResource StrNcDescGpsInterval}" Style="{StaticResource DescStyle}"/>
+                        </StackPanel>
                     </StackPanel>
                 </ScrollViewer>
-            </TabItem>
 
-            <!-- Tab: MQTT -->
-            <TabItem Header="MQTT">
-                <ScrollViewer VerticalScrollBarVisibility="Auto">
-                    <StackPanel Margin="10">
-                        <CheckBox x:Name="MqttEnabledCheckBox" Content="{DynamicResource StrNcMqttEnabled}" Margin="0,8,0,8"/>
-                        <TextBlock Text="{DynamicResource StrNcMqttServer}" Margin="0,4,0,2"/>
-                        <TextBox x:Name="MqttAddressTextBox"/>
-                        <TextBlock Text="{DynamicResource StrNcMqttUsername}" Margin="0,8,0,2"/>
-                        <TextBox x:Name="MqttUsernameTextBox"/>
-                        <TextBlock Text="{DynamicResource StrNcMqttPassword}" Margin="0,8,0,2"/>
-                        <PasswordBox x:Name="MqttPasswordBox"/>
-                        <CheckBox x:Name="MqttEncryptionCheckBox" Content="{DynamicResource StrNcMqttEncryption}" Margin="0,10,0,0"/>
-                        <CheckBox x:Name="MqttJsonCheckBox" Content="{DynamicResource StrNcMqttJson}" Margin="0,4,0,0"/>
-                        <CheckBox x:Name="MqttTlsCheckBox" Content="{DynamicResource StrNcMqttTls}" Margin="0,4,0,0"/>
-                        <TextBlock Text="{DynamicResource StrNcMqttRootTopic}" Margin="0,8,0,2"/>
-                        <TextBox x:Name="MqttRootTextBox"/>
-                        <CheckBox x:Name="MqttProxyCheckBox" Content="Proxy to Client" Margin="0,10,0,0"/>
-                        <CheckBox x:Name="MqttMapReportingCheckBox" Content="{DynamicResource StrNcMqttMapReporting}" Margin="0,4,0,0"/>
+                <!-- ═══════════════ POWER ═══════════════ -->
+                <ScrollViewer x:Name="PanelPower" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="0,0,16,12">
+                        <Border Background="{StaticResource BgConfig}" Padding="16,10" Margin="0,0,0,12">
+                            <TextBlock Text="{DynamicResource StrNcNavPower}" FontWeight="SemiBold" FontSize="13" Foreground="{StaticResource ColorConfig}"/>
+                        </Border>
+                        <StackPanel Margin="16,0,0,0">
+                            <CheckBox x:Name="PowerSavingCheckBox" Content="{DynamicResource StrNcPowerSaving}" Margin="0,0,0,0"/>
+                            <TextBlock Text="{DynamicResource StrNcDescPowerSaving}" Style="{StaticResource DescStyle}"/>
+                            <TextBlock Text="{DynamicResource StrNcShutdownAfterSecs}" Margin="0,12,0,2"/>
+                            <TextBox x:Name="ShutdownAfterSecsTextBox" Width="160" HorizontalAlignment="Left"/>
+                            <TextBlock Text="{DynamicResource StrNcDescShutdownAfter}" Style="{StaticResource DescStyle}"/>
+                            <TextBlock Text="{DynamicResource StrNcWaitBtSecs}" Margin="0,10,0,2"/>
+                            <TextBox x:Name="WaitBtSecsTextBox" Width="160" HorizontalAlignment="Left"/>
+                            <TextBlock Text="{DynamicResource StrNcDescWaitBt}" Style="{StaticResource DescStyle}"/>
+                            <TextBlock Text="{DynamicResource StrNcSdsSecs}" Margin="0,10,0,2"/>
+                            <TextBox x:Name="SdsSecsTextBox" Width="160" HorizontalAlignment="Left"/>
+                            <TextBlock Text="{DynamicResource StrNcDescSds}" Style="{StaticResource DescStyle}"/>
+                            <TextBlock Text="{DynamicResource StrNcLsSecs}" Margin="0,10,0,2"/>
+                            <TextBox x:Name="LsSecsTextBox" Width="160" HorizontalAlignment="Left"/>
+                            <TextBlock Text="{DynamicResource StrNcDescLs}" Style="{StaticResource DescStyle}"/>
+                            <TextBlock Text="{DynamicResource StrNcMinWakeSecs}" Margin="0,10,0,2"/>
+                            <TextBox x:Name="MinWakeSecsTextBox" Width="160" HorizontalAlignment="Left"/>
+                            <TextBlock Text="{DynamicResource StrNcDescMinWake}" Style="{StaticResource DescStyle}"/>
+                        </StackPanel>
                     </StackPanel>
                 </ScrollViewer>
-            </TabItem>
 
-            <!-- Tab: Telemetrie -->
-            <TabItem Header="{DynamicResource StrNcTabTelemetry}">
-                <ScrollViewer VerticalScrollBarVisibility="Auto">
-                    <StackPanel Margin="10">
-                        <TextBlock Text="{DynamicResource StrNcDeviceTelemetry}" Margin="0,8,0,2"/>
-                        <TextBox x:Name="DeviceTelemetryIntervalTextBox" Width="150" HorizontalAlignment="Left"/>
-                        <TextBlock Text="{DynamicResource StrNcEnvironmentInterval}" Margin="0,8,0,2"/>
-                        <TextBox x:Name="EnvironmentIntervalTextBox" Width="150" HorizontalAlignment="Left"/>
-                        <CheckBox x:Name="FahrenheitCheckBox" Content="{DynamicResource StrNcFahrenheit}" Margin="0,10,0,0"/>
-                        <CheckBox x:Name="EnvironmentMeasurementCheckBox" Content="{DynamicResource StrNcEnvironmentMeasurement}" Margin="0,4,0,0"/>
-                        <TextBlock Text="{DynamicResource StrNcAirQualityInterval}" Margin="0,8,0,2"/>
-                        <TextBox x:Name="AirQualityIntervalTextBox" Width="150" HorizontalAlignment="Left"/>
-                        <TextBlock Text="{DynamicResource StrNcPowerInterval}" Margin="0,8,0,2"/>
-                        <TextBox x:Name="PowerIntervalTextBox" Width="150" HorizontalAlignment="Left"/>
+                <!-- ═══════════════ NETWORK ═══════════════ -->
+                <ScrollViewer x:Name="PanelNetwork" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="0,0,16,12">
+                        <Border Background="{StaticResource BgConfig}" Padding="16,10" Margin="0,0,0,12">
+                            <TextBlock Text="{DynamicResource StrNcNavNetwork}" FontWeight="SemiBold" FontSize="13" Foreground="{StaticResource ColorConfig}"/>
+                        </Border>
+                        <StackPanel Margin="16,0,0,0">
+                            <CheckBox x:Name="WifiEnabledCheckBox" Content="{DynamicResource StrNcWifiEnabled}" Margin="0,0,0,0"/>
+                            <TextBlock Text="{DynamicResource StrNcDescWifiEnabled}" Style="{StaticResource DescStyle}"/>
+                            <TextBlock Text="{DynamicResource StrNcWifiSsid}" Margin="0,12,0,2"/>
+                            <TextBox x:Name="WifiSsidTextBox" MaxLength="32"/>
+                            <TextBlock Text="{DynamicResource StrNcDescWifiSsid}" Style="{StaticResource DescStyle}"/>
+                            <TextBlock Text="{DynamicResource StrNcWifiPsk}" Margin="0,10,0,2"/>
+                            <Grid Height="30">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <!-- Actual edit box (starts collapsed, shown when eye is clicked) -->
+                                <TextBox x:Name="WifiPskBox" Grid.Column="0" Height="30" Visibility="Collapsed"/>
+                                <!-- Mask/placeholder (shown by default, hidden when editing) -->
+                                <TextBox x:Name="WifiPskMaskBox" Grid.Column="0" Height="30"
+                                         IsReadOnly="True" IsHitTestVisible="False"
+                                         Text="{DynamicResource StrNcWifiPskHint}"
+                                         Foreground="Gray" FontStyle="Italic"/>
+                                <ToggleButton x:Name="WifiPskToggle" Grid.Column="1"
+                                              Width="34" Height="30" Margin="4,0,0,0"
+                                              Content="👁"
+                                              ToolTip="{DynamicResource StrNcShowPassword}"
+                                              Checked="WifiPskToggle_Checked"
+                                              Unchecked="WifiPskToggle_Unchecked"/>
+                            </Grid>
+                            <TextBlock Text="{DynamicResource StrNcDescWifiPsk}" Style="{StaticResource DescStyle}"/>
+                            <TextBlock Text="{DynamicResource StrNcNtpServer}" Margin="0,10,0,2"/>
+                            <TextBox x:Name="NtpServerTextBox" MaxLength="64"/>
+                            <TextBlock Text="{DynamicResource StrNcDescNtpServer}" Style="{StaticResource DescStyle}"/>
+                        </StackPanel>
                     </StackPanel>
                 </ScrollViewer>
-            </TabItem>
 
-            <!-- Tab: Bluetooth -->
-            <TabItem Header="Bluetooth">
-                <ScrollViewer VerticalScrollBarVisibility="Auto">
-                    <StackPanel Margin="10">
-                        <CheckBox x:Name="BtEnabledCheckBox" Content="{DynamicResource StrNcBtEnabled}" Margin="0,8,0,0"/>
-                        <TextBlock Text="{DynamicResource StrNcBtPairingMode}" Margin="0,12,0,2"/>
-                        <ComboBox x:Name="BtModeComboBox" Width="180" HorizontalAlignment="Left"
-                                  SelectionChanged="BtModeComboBox_SelectionChanged">
-                            <ComboBoxItem Content="{DynamicResource StrNcBtRandomPin}" Tag="0"/>
-                            <ComboBoxItem Content="{DynamicResource StrNcBtFixedPin}" Tag="1"/>
-                            <ComboBoxItem Content="{DynamicResource StrNcBtNoPin}" Tag="2"/>
-                        </ComboBox>
-                        <TextBlock Text="{DynamicResource StrNcBtFixedPinLabel}" Margin="0,10,0,2"
-                                   x:Name="BtFixedPinLabel"/>
-                        <TextBox x:Name="BtFixedPinTextBox" Width="120" HorizontalAlignment="Left"
-                                 MaxLength="6" IsEnabled="False"/>
-                        <TextBlock Margin="0,12,0,0" TextWrapping="Wrap" Foreground="Gray"
-                                   Text="{DynamicResource StrNcBtRebootHint}"/>
+                <!-- ═══════════════ DISPLAY ═══════════════ -->
+                <ScrollViewer x:Name="PanelDisplay" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="0,0,16,12">
+                        <Border Background="{StaticResource BgConfig}" Padding="16,10" Margin="0,0,0,12">
+                            <TextBlock Text="{DynamicResource StrNcNavDisplay}" FontWeight="SemiBold" FontSize="13" Foreground="{StaticResource ColorConfig}"/>
+                        </Border>
+                        <StackPanel Margin="16,0,0,0">
+                            <TextBlock Text="{DynamicResource StrNcScreenOnSecs}" Margin="0,0,0,2"/>
+                            <TextBox x:Name="ScreenOnSecsTextBox" Width="160" HorizontalAlignment="Left"/>
+                            <TextBlock Text="{DynamicResource StrNcDescScreenOn}" Style="{StaticResource DescStyle}"/>
+                            <TextBlock Text="{DynamicResource StrNcAutoCarouselSecs}" Margin="0,10,0,2"/>
+                            <TextBox x:Name="AutoCarouselSecsTextBox" Width="100" HorizontalAlignment="Left"/>
+                            <TextBlock Text="{DynamicResource StrNcDescAutoCarousel}" Style="{StaticResource DescStyle}"/>
+                            <CheckBox x:Name="CompassNorthTopCheckBox" Content="{DynamicResource StrNcCompassNorthTop}" Margin="0,10,0,0"/>
+                            <TextBlock Text="{DynamicResource StrNcDescCompassNorth}" Style="{StaticResource DescStyle}"/>
+                            <CheckBox x:Name="FlipScreenCheckBox" Content="{DynamicResource StrNcFlipScreen}" Margin="0,8,0,0"/>
+                            <TextBlock Text="{DynamicResource StrNcDescFlipScreen}" Style="{StaticResource DescStyle}"/>
+                        </StackPanel>
                     </StackPanel>
                 </ScrollViewer>
-            </TabItem>
 
-        </TabControl>
+                <!-- ═══════════════ BLUETOOTH ═══════════════ -->
+                <ScrollViewer x:Name="PanelBluetooth" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="0,0,16,12">
+                        <Border Background="{StaticResource BgConfig}" Padding="16,10" Margin="0,0,0,12">
+                            <TextBlock Text="{DynamicResource StrNcNavBluetooth}" FontWeight="SemiBold" FontSize="13" Foreground="{StaticResource ColorConfig}"/>
+                        </Border>
+                        <StackPanel Margin="16,0,0,0">
+                            <CheckBox x:Name="BtEnabledCheckBox" Content="{DynamicResource StrNcBtEnabled}" Margin="0,0,0,0"/>
+                            <TextBlock Text="{DynamicResource StrNcDescBtEnabled}" Style="{StaticResource DescStyle}"/>
+                            <TextBlock Text="{DynamicResource StrNcBtPairingMode}" Margin="0,12,0,2"/>
+                            <ComboBox x:Name="BtModeComboBox" Width="200" HorizontalAlignment="Left"
+                                      SelectionChanged="BtModeComboBox_SelectionChanged">
+                                <ComboBoxItem Content="{DynamicResource StrNcBtRandomPin}" Tag="0"/>
+                                <ComboBoxItem Content="{DynamicResource StrNcBtFixedPin}" Tag="1"/>
+                                <ComboBoxItem Content="{DynamicResource StrNcBtNoPin}" Tag="2"/>
+                            </ComboBox>
+                            <TextBlock Text="{DynamicResource StrNcDescBtPairing}" Style="{StaticResource DescStyle}"/>
+                            <TextBlock Text="{DynamicResource StrNcBtFixedPinLabel}" Margin="0,10,0,2" x:Name="BtFixedPinLabel"/>
+                            <TextBox x:Name="BtFixedPinTextBox" Width="120" HorizontalAlignment="Left" MaxLength="6" IsEnabled="False"/>
+                            <TextBlock Margin="0,14,0,0" TextWrapping="Wrap" Foreground="Gray"
+                                       Text="{DynamicResource StrNcBtRebootHint}"/>
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
 
-        <!-- Buttons -->
-        <Grid Grid.Row="2" Margin="0,10,0,0">
+                <!-- ═══════════════ MQTT ═══════════════ -->
+                <ScrollViewer x:Name="PanelMqtt" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="0,0,16,12">
+                        <Border Background="{StaticResource BgModule}" Padding="16,10" Margin="0,0,0,12">
+                            <TextBlock Text="{DynamicResource StrNcNavMqtt}" FontWeight="SemiBold" FontSize="13" Foreground="{StaticResource ColorModule}"/>
+                        </Border>
+                        <StackPanel Margin="16,0,0,0">
+                            <CheckBox x:Name="MqttEnabledCheckBox" Content="{DynamicResource StrNcMqttEnabled}" Margin="0,0,0,0"/>
+                            <TextBlock Text="{DynamicResource StrNcDescMqttEnabled}" Style="{StaticResource DescStyle}"/>
+                            <TextBlock Text="{DynamicResource StrNcMqttServer}" Margin="0,10,0,2"/>
+                            <TextBox x:Name="MqttAddressTextBox"/>
+                            <TextBlock Text="{DynamicResource StrNcDescMqttServer}" Style="{StaticResource DescStyle}"/>
+                            <TextBlock Text="{DynamicResource StrNcMqttUsername}" Margin="0,8,0,2"/>
+                            <TextBox x:Name="MqttUsernameTextBox"/>
+                            <TextBlock Text="{DynamicResource StrNcMqttPassword}" Margin="0,8,0,2"/>
+                            <PasswordBox x:Name="MqttPasswordBox" Height="30"/>
+                            <CheckBox x:Name="MqttEncryptionCheckBox" Content="{DynamicResource StrNcMqttEncryption}" Margin="0,10,0,0"/>
+                            <TextBlock Text="{DynamicResource StrNcDescMqttEncryption}" Style="{StaticResource DescStyle}"/>
+                            <CheckBox x:Name="MqttJsonCheckBox" Content="{DynamicResource StrNcMqttJson}" Margin="0,6,0,0"/>
+                            <TextBlock Text="{DynamicResource StrNcDescMqttJson}" Style="{StaticResource DescStyle}"/>
+                            <CheckBox x:Name="MqttTlsCheckBox" Content="{DynamicResource StrNcMqttTls}" Margin="0,6,0,0"/>
+                            <TextBlock Text="{DynamicResource StrNcMqttRootTopic}" Margin="0,8,0,2"/>
+                            <TextBox x:Name="MqttRootTextBox"/>
+                            <TextBlock Text="{DynamicResource StrNcDescMqttRootTopic}" Style="{StaticResource DescStyle}"/>
+                            <CheckBox x:Name="MqttProxyCheckBox" Content="{DynamicResource StrNcMqttProxy}" Margin="0,10,0,0"/>
+                            <TextBlock Text="{DynamicResource StrNcDescMqttProxy}" Style="{StaticResource DescStyle}"/>
+                            <CheckBox x:Name="MqttMapReportingCheckBox" Content="{DynamicResource StrNcMqttMapReporting}" Margin="0,6,0,0"/>
+                            <TextBlock Text="{DynamicResource StrNcDescMqttMapReport}" Style="{StaticResource DescStyle}"/>
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- ═══════════════ TELEMETRY ═══════════════ -->
+                <ScrollViewer x:Name="PanelTelemetry" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="0,0,16,12">
+                        <Border Background="{StaticResource BgModule}" Padding="16,10" Margin="0,0,0,12">
+                            <TextBlock Text="{DynamicResource StrNcNavTelemetry}" FontWeight="SemiBold" FontSize="13" Foreground="{StaticResource ColorModule}"/>
+                        </Border>
+                        <StackPanel Margin="16,0,0,0">
+                            <TextBlock Text="{DynamicResource StrNcDeviceTelemetry}" Margin="0,0,0,2"/>
+                            <TextBox x:Name="DeviceTelemetryIntervalTextBox" Width="160" HorizontalAlignment="Left"/>
+                            <TextBlock Text="{DynamicResource StrNcDescDeviceTelemetry}" Style="{StaticResource DescStyle}"/>
+                            <TextBlock Text="{DynamicResource StrNcEnvironmentInterval}" Margin="0,10,0,2"/>
+                            <TextBox x:Name="EnvironmentIntervalTextBox" Width="160" HorizontalAlignment="Left"/>
+                            <TextBlock Text="{DynamicResource StrNcDescEnvTelemetry}" Style="{StaticResource DescStyle}"/>
+                            <CheckBox x:Name="EnvironmentMeasurementCheckBox" Content="{DynamicResource StrNcEnvironmentMeasurement}" Margin="0,8,0,0"/>
+                            <CheckBox x:Name="FahrenheitCheckBox" Content="{DynamicResource StrNcFahrenheit}" Margin="0,4,0,0"/>
+                            <TextBlock Text="{DynamicResource StrNcAirQualityInterval}" Margin="0,10,0,2"/>
+                            <TextBox x:Name="AirQualityIntervalTextBox" Width="160" HorizontalAlignment="Left"/>
+                            <TextBlock Text="{DynamicResource StrNcDescAirQuality}" Style="{StaticResource DescStyle}"/>
+                            <TextBlock Text="{DynamicResource StrNcPowerInterval}" Margin="0,10,0,2"/>
+                            <TextBox x:Name="PowerIntervalTextBox" Width="160" HorizontalAlignment="Left"/>
+                            <TextBlock Text="{DynamicResource StrNcDescPowerTelemetry}" Style="{StaticResource DescStyle}"/>
+                            <CheckBox x:Name="PowerMeasurementCheckBox" Content="{DynamicResource StrNcPowerMeasurement}" Margin="0,8,0,0"/>
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- ═══════════════ NEIGHBOR INFO ═══════════════ -->
+                <ScrollViewer x:Name="PanelNeighborInfo" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="0,0,16,12">
+                        <Border Background="{StaticResource BgModule}" Padding="16,10" Margin="0,0,0,12">
+                            <TextBlock Text="{DynamicResource StrNcNavNeighborInfo}" FontWeight="SemiBold" FontSize="13" Foreground="{StaticResource ColorModule}"/>
+                        </Border>
+                        <StackPanel Margin="16,0,0,0">
+                            <CheckBox x:Name="NiEnabledCheckBox" Content="{DynamicResource StrNcNiEnabled}" Margin="0,0,0,0"/>
+                            <TextBlock Text="{DynamicResource StrNcDescNiEnabled}" Style="{StaticResource DescStyle}"/>
+                            <TextBlock Text="{DynamicResource StrNcNiInterval}" Margin="0,12,0,2"/>
+                            <TextBox x:Name="NiIntervalTextBox" Width="160" HorizontalAlignment="Left"/>
+                            <TextBlock Text="{DynamicResource StrNcDescNiInterval}" Style="{StaticResource DescStyle}"/>
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- ═══════════════ STORE &amp; FORWARD ═══════════════ -->
+                <ScrollViewer x:Name="PanelStoreForward" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="0,0,16,12">
+                        <Border Background="{StaticResource BgModule}" Padding="16,10" Margin="0,0,0,12">
+                            <TextBlock Text="{DynamicResource StrNcNavStoreForward}" FontWeight="SemiBold" FontSize="13" Foreground="{StaticResource ColorModule}"/>
+                        </Border>
+                        <StackPanel Margin="16,0,0,0">
+                            <CheckBox x:Name="SfEnabledCheckBox" Content="{DynamicResource StrNcSfEnabled}" Margin="0,0,0,0"/>
+                            <TextBlock Text="{DynamicResource StrNcDescSfEnabled}" Style="{StaticResource DescStyle}"/>
+                            <CheckBox x:Name="SfHeartbeatCheckBox" Content="{DynamicResource StrNcSfHeartbeat}" Margin="0,10,0,0"/>
+                            <TextBlock Text="{DynamicResource StrNcDescSfHeartbeat}" Style="{StaticResource DescStyle}"/>
+                            <TextBlock Text="{DynamicResource StrNcSfRecords}" Margin="0,12,0,2"/>
+                            <TextBox x:Name="SfRecordsTextBox" Width="120" HorizontalAlignment="Left"/>
+                            <TextBlock Text="{DynamicResource StrNcDescSfRecords}" Style="{StaticResource DescStyle}"/>
+                            <TextBlock Text="{DynamicResource StrNcSfHistoryMax}" Margin="0,8,0,2"/>
+                            <TextBox x:Name="SfHistoryMaxTextBox" Width="120" HorizontalAlignment="Left"/>
+                            <TextBlock Text="{DynamicResource StrNcDescSfHistoryMax}" Style="{StaticResource DescStyle}"/>
+                            <TextBlock Text="{DynamicResource StrNcSfHistoryWindow}" Margin="0,8,0,2"/>
+                            <TextBox x:Name="SfHistoryWindowTextBox" Width="160" HorizontalAlignment="Left"/>
+                            <TextBlock Text="{DynamicResource StrNcDescSfHistoryWindow}" Style="{StaticResource DescStyle}"/>
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- ═══════════════ EXT. NOTIFICATION ═══════════════ -->
+                <ScrollViewer x:Name="PanelExtNotif" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="0,0,16,12">
+                        <Border Background="{StaticResource BgModule}" Padding="16,10" Margin="0,0,0,12">
+                            <TextBlock Text="{DynamicResource StrNcNavExtNotif}" FontWeight="SemiBold" FontSize="13" Foreground="{StaticResource ColorModule}"/>
+                        </Border>
+                        <StackPanel Margin="16,0,0,0">
+                            <CheckBox x:Name="EnEnabledCheckBox" Content="{DynamicResource StrNcEnEnabled}" Margin="0,0,0,0"/>
+                            <TextBlock Text="{DynamicResource StrNcDescEnEnabled}" Style="{StaticResource DescStyle}"/>
+                            <TextBlock Text="{DynamicResource StrNcEnOutput}" Margin="0,12,0,2"/>
+                            <TextBox x:Name="EnOutputTextBox" Width="100" HorizontalAlignment="Left"/>
+                            <TextBlock Text="{DynamicResource StrNcDescEnOutput}" Style="{StaticResource DescStyle}"/>
+                            <TextBlock Text="{DynamicResource StrNcEnOutputMs}" Margin="0,8,0,2"/>
+                            <TextBox x:Name="EnOutputMsTextBox" Width="120" HorizontalAlignment="Left"/>
+                            <TextBlock Text="{DynamicResource StrNcDescEnOutputMs}" Style="{StaticResource DescStyle}"/>
+                            <CheckBox x:Name="EnActiveCheckBox" Content="{DynamicResource StrNcEnActiveHigh}" Margin="0,10,0,0"/>
+                            <TextBlock Text="{DynamicResource StrNcDescEnActive}" Style="{StaticResource DescStyle}"/>
+                            <CheckBox x:Name="EnAlertMessageCheckBox" Content="{DynamicResource StrNcEnAlertMessage}" Margin="0,8,0,0"/>
+                            <CheckBox x:Name="EnAlertBellCheckBox" Content="{DynamicResource StrNcEnAlertBell}" Margin="0,4,0,0"/>
+                            <TextBlock Text="{DynamicResource StrNcDescEnBell}" Style="{StaticResource DescStyle}"/>
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- ═══════════════ CANNED MESSAGES ═══════════════ -->
+                <ScrollViewer x:Name="PanelCannedMsg" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="0,0,16,12">
+                        <Border Background="{StaticResource BgModule}" Padding="16,10" Margin="0,0,0,12">
+                            <TextBlock Text="{DynamicResource StrNcNavCannedMsg}" FontWeight="SemiBold" FontSize="13" Foreground="{StaticResource ColorModule}"/>
+                        </Border>
+                        <StackPanel Margin="16,0,0,0">
+                            <CheckBox x:Name="CmEnabledCheckBox" Content="{DynamicResource StrNcCmEnabled}" Margin="0,0,0,0"/>
+                            <TextBlock Text="{DynamicResource StrNcDescCmEnabled}" Style="{StaticResource DescStyle}"/>
+                            <CheckBox x:Name="CmSendBellCheckBox" Content="{DynamicResource StrNcCmSendBell}" Margin="0,10,0,0"/>
+                            <TextBlock Text="{DynamicResource StrNcDescCmSendBell}" Style="{StaticResource DescStyle}"/>
+                            <TextBlock Text="{DynamicResource StrNcCmAllowInputSource}" Margin="0,10,0,2"/>
+                            <TextBox x:Name="CmAllowInputSourceTextBox" Width="200" HorizontalAlignment="Left"/>
+                            <TextBlock Text="{DynamicResource StrNcDescCmInput}" Style="{StaticResource DescStyle}"/>
+                            <CheckBox x:Name="CmRotary1CheckBox" Content="{DynamicResource StrNcCmRotary1}" Margin="0,10,0,0"/>
+                            <TextBlock Text="{DynamicResource StrNcDescCmRotary}" Style="{StaticResource DescStyle}"/>
+                            <CheckBox x:Name="CmUpdown1CheckBox" Content="{DynamicResource StrNcCmUpdown1}" Margin="0,6,0,0"/>
+                            <TextBlock Text="{DynamicResource StrNcDescCmUpdown}" Style="{StaticResource DescStyle}"/>
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- ═══════════════ RANGE TEST ═══════════════ -->
+                <ScrollViewer x:Name="PanelRangeTest" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="0,0,16,12">
+                        <Border Background="{StaticResource BgModule}" Padding="16,10" Margin="0,0,0,12">
+                            <TextBlock Text="{DynamicResource StrNcNavRangeTest}" FontWeight="SemiBold" FontSize="13" Foreground="{StaticResource ColorModule}"/>
+                        </Border>
+                        <StackPanel Margin="16,0,0,0">
+                            <CheckBox x:Name="RtEnabledCheckBox" Content="{DynamicResource StrNcRtEnabled}" Margin="0,0,0,0"/>
+                            <TextBlock Text="{DynamicResource StrNcDescRtEnabled}" Style="{StaticResource DescStyle}"/>
+                            <TextBlock Text="{DynamicResource StrNcRtSender}" Margin="0,12,0,2"/>
+                            <TextBox x:Name="RtSenderTextBox" Width="160" HorizontalAlignment="Left"/>
+                            <TextBlock Text="{DynamicResource StrNcDescRtSender}" Style="{StaticResource DescStyle}"/>
+                            <CheckBox x:Name="RtSaveCheckBox" Content="{DynamicResource StrNcRtSave}" Margin="0,10,0,0"/>
+                            <TextBlock Text="{DynamicResource StrNcDescRtSave}" Style="{StaticResource DescStyle}"/>
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- ═══════════════ SERIAL ═══════════════ -->
+                <ScrollViewer x:Name="PanelSerial" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="0,0,16,12">
+                        <Border Background="{StaticResource BgModule}" Padding="16,10" Margin="0,0,0,12">
+                            <TextBlock Text="{DynamicResource StrNcNavSerial}" FontWeight="SemiBold" FontSize="13" Foreground="{StaticResource ColorModule}"/>
+                        </Border>
+                        <StackPanel Margin="16,0,0,0">
+                            <CheckBox x:Name="SerEnabledCheckBox" Content="{DynamicResource StrNcSerEnabled}" Margin="0,0,0,0"/>
+                            <TextBlock Text="{DynamicResource StrNcDescSerEnabled}" Style="{StaticResource DescStyle}"/>
+                            <CheckBox x:Name="SerEchoCheckBox" Content="{DynamicResource StrNcSerEcho}" Margin="0,10,0,0"/>
+                            <TextBlock Text="{DynamicResource StrNcDescSerEcho}" Style="{StaticResource DescStyle}"/>
+                            <TextBlock Text="{DynamicResource StrNcSerRxd}" Margin="0,10,0,2"/>
+                            <TextBox x:Name="SerRxdTextBox" Width="80" HorizontalAlignment="Left"/>
+                            <TextBlock Text="{DynamicResource StrNcSerTxd}" Margin="0,8,0,2"/>
+                            <TextBox x:Name="SerTxdTextBox" Width="80" HorizontalAlignment="Left"/>
+                            <TextBlock Text="{DynamicResource StrNcDescSerPins}" Style="{StaticResource DescStyle}"/>
+                            <TextBlock Text="{DynamicResource StrNcSerBaud}" Margin="0,8,0,2"/>
+                            <ComboBox x:Name="SerBaudComboBox" Width="160" HorizontalAlignment="Left">
+                                <ComboBoxItem Content="Default (38400)" Tag="0"/>
+                                <ComboBoxItem Content="110 Baud" Tag="1"/>
+                                <ComboBoxItem Content="300 Baud" Tag="2"/>
+                                <ComboBoxItem Content="600 Baud" Tag="3"/>
+                                <ComboBoxItem Content="1200 Baud" Tag="4"/>
+                                <ComboBoxItem Content="2400 Baud" Tag="5"/>
+                                <ComboBoxItem Content="4800 Baud" Tag="6"/>
+                                <ComboBoxItem Content="9600 Baud" Tag="7"/>
+                                <ComboBoxItem Content="19200 Baud" Tag="8"/>
+                                <ComboBoxItem Content="38400 Baud" Tag="9"/>
+                                <ComboBoxItem Content="57600 Baud" Tag="10"/>
+                                <ComboBoxItem Content="115200 Baud" Tag="11"/>
+                                <ComboBoxItem Content="230400 Baud" Tag="12"/>
+                                <ComboBoxItem Content="460800 Baud" Tag="13"/>
+                                <ComboBoxItem Content="921600 Baud" Tag="14"/>
+                            </ComboBox>
+                            <TextBlock Text="{DynamicResource StrNcSerTimeout}" Margin="0,8,0,2"/>
+                            <TextBox x:Name="SerTimeoutTextBox" Width="100" HorizontalAlignment="Left"/>
+                            <TextBlock Text="{DynamicResource StrNcDescSerTimeout}" Style="{StaticResource DescStyle}"/>
+                            <TextBlock Text="{DynamicResource StrNcSerMode}" Margin="0,8,0,2"/>
+                            <ComboBox x:Name="SerModeComboBox" Width="200" HorizontalAlignment="Left">
+                                <ComboBoxItem Content="DEFAULT — Textnachrichten" Tag="0"/>
+                                <ComboBoxItem Content="SIMPLE — einfache Ausgabe" Tag="1"/>
+                                <ComboBoxItem Content="PROTO — Protobuf binär" Tag="2"/>
+                                <ComboBoxItem Content="TEXTMSG — nur Text-Pakete" Tag="3"/>
+                                <ComboBoxItem Content="NMEA — GPS NMEA-Sätze" Tag="4"/>
+                                <ComboBoxItem Content="CALTOPO — CalTopo/SARTopo" Tag="5"/>
+                            </ComboBox>
+                            <TextBlock Text="{DynamicResource StrNcDescSerMode}" Style="{StaticResource DescStyle}"/>
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+
+            </Grid>
+        </Grid>
+
+        <!-- Bottom buttons -->
+        <Grid Grid.Row="2" Margin="12,8,12,10">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
                 <Button Content="{DynamicResource StrNcNodeDbReset}" Width="180"
                         ToolTip="{DynamicResource StrNcNodeDbResetTip}"
