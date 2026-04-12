@@ -402,10 +402,17 @@
                                         </StackPanel>
                                     </Grid>
                                     <TextBlock Text="{DynamicResource StrNcDescFixedCoords}" Style="{StaticResource DescStyle}" Margin="0,6,0,6"/>
-                                    <Button x:Name="PickFromMapButton" Click="PickFromMap_Click"
-                                            Content="{DynamicResource StrNcPickFromMap}"
-                                            ToolTip="{DynamicResource StrNcPickFromMapTip}"
-                                            HorizontalAlignment="Left" Padding="10,4"/>
+                                    <TextBlock Text="{DynamicResource StrNcPickFromMapHint}"
+                                               FontSize="11" Foreground="Gray" TextWrapping="Wrap" Margin="0,0,0,6"/>
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,4">
+                                        <Button x:Name="PickFromMapButton" Click="PickFromMap_Click"
+                                                Content="{DynamicResource StrNcPickFromMap}"
+                                                ToolTip="{DynamicResource StrNcPickFromMapTip}"
+                                                Padding="10,4" Margin="0,0,10,0"/>
+                                        <TextBlock VerticalAlignment="Center" FontSize="11" Foreground="Gray">
+                                            <Run Text="{DynamicResource StrNcMapCenterLabel}"/><Run Text=" "/><Run x:Name="MapCenterCoordRun" Text="–"/>
+                                        </TextBlock>
+                                    </StackPanel>
                                 </StackPanel>
                             </Border>
                             <TextBlock Text="{DynamicResource StrNcPosBroadcast}" Margin="0,12,0,2"/>

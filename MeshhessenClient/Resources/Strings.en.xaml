@@ -406,6 +406,8 @@
     <sys:String x:Key="StrNcDescFixedCoords">Decimal degrees, e.g. 50.123456 / 8.654321. Sent to node on save.</sys:String>
     <sys:String x:Key="StrNcPickFromMap">Pick from Map</sys:String>
     <sys:String x:Key="StrNcPickFromMapTip">Use current map center as fixed position</sys:String>
+    <sys:String x:Key="StrNcPickFromMapHint">Navigate the map to the desired location, then click this button.</sys:String>
+    <sys:String x:Key="StrNcMapCenterLabel">Current map center:</sys:String>
     <sys:String x:Key="StrNcMinIntervalSecs">Smart Broadcast Min. Interval (s)</sys:String>
     <sys:String x:Key="StrNcDescMinIntervalSecs">Minimum wait time in seconds between two smart position broadcasts.</sys:String>
     <sys:String x:Key="StrNcRxGpio">GPS RX GPIO</sys:String>

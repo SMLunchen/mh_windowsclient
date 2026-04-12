@@ -713,8 +713,21 @@ public partial class NodeConfigWindow : Window
     private void FixedPositionCheckBox_Changed(object sender, RoutedEventArgs e)
     {
         if (FixedPositionPanel != null)
+        {
             FixedPositionPanel.Visibility = FixedPositionCheckBox.IsChecked == true
                 ? Visibility.Visible : Visibility.Collapsed;
+            if (FixedPositionCheckBox.IsChecked == true)
+                RefreshMapCenterHint();
+        }
+    }
+
+    private void RefreshMapCenterHint()
+    {
+        if (_mapCenterProvider == null || MapCenterCoordRun == null) return;
+        var pos = _mapCenterProvider();
+        MapCenterCoordRun.Text = pos.HasValue
+            ? $"{pos.Value.lat:F5}, {pos.Value.lon:F5}"
+            : "–";
     }
 
     private void PickFromMap_Click(object sender, RoutedEventArgs e)
@@ -732,6 +745,7 @@ public partial class NodeConfigWindow : Window
         }
         FixedLatTextBox.Text = pos.Value.lat.ToString("F6", System.Globalization.CultureInfo.InvariantCulture);
         FixedLonTextBox.Text = pos.Value.lon.ToString("F6", System.Globalization.CultureInfo.InvariantCulture);
+        RefreshMapCenterHint();
     }
 
     private void BtModeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)

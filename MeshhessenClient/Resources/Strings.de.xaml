@@ -406,6 +406,8 @@
     <sys:String x:Key="StrNcDescFixedCoords">Dezimalgrad, z.B. 50.123456 / 8.654321. Wird beim Speichern an den Node übertragen.</sys:String>
     <sys:String x:Key="StrNcPickFromMap">Von Karte übernehmen</sys:String>
     <sys:String x:Key="StrNcPickFromMapTip">Aktuellen Kartenmittelpunkt als feste Position übernehmen</sys:String>
+    <sys:String x:Key="StrNcPickFromMapHint">Navigiere die Karte auf den gewünschten Standort, dann diesen Button klicken.</sys:String>
+    <sys:String x:Key="StrNcMapCenterLabel">Aktueller Kartenmittelpunkt:</sys:String>
     <sys:String x:Key="StrNcMinIntervalSecs">Mindestintervall Smart-Broadcast (s)</sys:String>
     <sys:String x:Key="StrNcDescMinIntervalSecs">Minimale Wartezeit in Sekunden zwischen zwei Smart-Positionssendungen.</sys:String>
     <sys:String x:Key="StrNcRxGpio">GPS RX GPIO</sys:String>
