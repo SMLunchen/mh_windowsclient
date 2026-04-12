@@ -138,6 +138,11 @@ message Channel {
   ChannelRole role = 3;
 }
 
+message ModuleSettings {
+  uint32 position_precision = 1;
+  bool is_client_muted = 2;
+}
+
 message ChannelSettings {
   uint32 channel_num = 1;
   bytes psk = 2;
@@ -145,6 +150,7 @@ message ChannelSettings {
   fixed32 id = 4;
   bool uplink_enabled = 5;
   bool downlink_enabled = 6;
+  ModuleSettings module_settings = 7;
 }
 
 message SecurityConfig {

@@ -11,6 +11,7 @@ namespace MeshhessenClient;
 public partial class NodeConfigWindow : Window
 {
     private readonly MeshtasticProtocolService _protocolService;
+    private Func<(double lat, double lon)?>? _mapCenterProvider;
 
     // Loaded configs (for clone-and-update pattern)
     private User?                      _loadedOwner;
@@ -41,10 +42,11 @@ public partial class NodeConfigWindow : Window
     // Map Tag → content panel
     private Dictionary<string, FrameworkElement> _panels = new();
 
-    public NodeConfigWindow(MeshtasticProtocolService protocolService)
+    public NodeConfigWindow(MeshtasticProtocolService protocolService, Func<(double lat, double lon)?>? mapCenterProvider = null)
     {
         InitializeComponent();
         _protocolService = protocolService;
+        _mapCenterProvider = mapCenterProvider;
 
         // Wire up events
         _protocolService.OwnerReceived                    += OnOwnerReceived;
@@ -114,6 +116,8 @@ public partial class NodeConfigWindow : Window
                 ["Channels"]    = PanelChannels,
             };
 
+            InitPrecisionComboBoxes();
+
             // Select first real item (User)
             foreach (ListBoxItem item in NavList.Items)
                 if (item.Tag is string) { NavList.SelectedItem = item; break; }
@@ -146,13 +150,13 @@ public partial class NodeConfigWindow : Window
             _receivedConfigs.Clear();
 
             // Register all configs we expect to receive
+            // Channels are NOT included — disabled channels never fire, so they'd block completion
             _expectedConfigs.UnionWith(new[]
             {
                 "owner", "device", "lora", "position", "power", "network",
                 "display", "bluetooth", "mqtt", "telemetry", "neighborinfo",
                 "storeforward", "extnotif", "cannedmsg", "rangetest", "serial",
-                "security",
-                "ch0", "ch1", "ch2", "ch3", "ch4", "ch5", "ch6", "ch7"
+                "security"
             });
 
             UpdateStatus(Loc("StrNcLoadingProgress", "0", _expectedConfigs.Count.ToString()));
@@ -317,6 +321,7 @@ public partial class NodeConfigWindow : Window
         {
             SelectComboBoxByTag(GpsModeComboBox, (int)config.GpsMode);
             FixedPositionCheckBox.IsChecked  = config.FixedPosition;
+            FixedPositionPanel.Visibility    = config.FixedPosition ? Visibility.Visible : Visibility.Collapsed;
             PosBroadcastSecsTextBox.Text     = SecondsToHumanTime(config.PositionBroadcastSecs);
             SmartBroadcastCheckBox.IsChecked = config.PositionBroadcastSmartEnabled;
             MinDistanceTextBox.Text          = config.BroadcastSmartMinimumDistance.ToString();
@@ -544,9 +549,20 @@ public partial class NodeConfigWindow : Window
                 ? BitConverter.ToString(config.PublicKey.ToByteArray()).Replace("-", "").ToLowerInvariant()
                 : string.Empty;
 
-            // Admin keys: one Base64 per line
-            SecAdminKeyTextBox.Text = string.Join(Environment.NewLine,
-                config.AdminKey.Select(k => Convert.ToBase64String(k.ToByteArray())));
+            // Private key: stored in box but masked; toggle reveals it
+            SecPrivKeyBox.Text = config.PrivateKey != null && config.PrivateKey.Length > 0
+                ? BitConverter.ToString(config.PrivateKey.ToByteArray()).Replace("-", "").ToLowerInvariant()
+                : string.Empty;
+            // Ensure masked view is visible
+            SecPrivKeyToggle.IsChecked = false;
+            SecPrivKeyMaskBox.Visibility = Visibility.Visible;
+            SecPrivKeyBox.Visibility     = Visibility.Collapsed;
+
+            // Admin keys: separate fields
+            var keys = config.AdminKey.ToList();
+            SecAdminKey1TextBox.Text = keys.Count > 0 ? Convert.ToBase64String(keys[0].ToByteArray()) : string.Empty;
+            SecAdminKey2TextBox.Text = keys.Count > 1 ? Convert.ToBase64String(keys[1].ToByteArray()) : string.Empty;
+            SecAdminKey3TextBox.Text = keys.Count > 2 ? Convert.ToBase64String(keys[2].ToByteArray()) : string.Empty;
 
             SecSerialEnabledCheckBox.IsChecked = config.SerialEnabled;
             SecDebugLogCheckBox.IsChecked      = config.DebugLogApiEnabled;
@@ -556,6 +572,21 @@ public partial class NodeConfigWindow : Window
         });
     }
 
+    private void SecPrivKeyToggle_Checked(object sender, RoutedEventArgs e)
+    {
+        SecPrivKeyMaskBox.Visibility = Visibility.Collapsed;
+        SecPrivKeyBox.Visibility     = Visibility.Visible;
+        SecPrivKeyBox.Focus();
+        SecPrivKeyToggle.ToolTip = Application.Current.TryFindResource("StrNcHidePassword");
+    }
+
+    private void SecPrivKeyToggle_Unchecked(object sender, RoutedEventArgs e)
+    {
+        SecPrivKeyBox.Visibility     = Visibility.Collapsed;
+        SecPrivKeyMaskBox.Visibility = Visibility.Visible;
+        SecPrivKeyToggle.ToolTip = Application.Current.TryFindResource("StrNcShowPassword");
+    }
+
     private void OnChannelInfoReceived(object? sender, ChannelInfo info)
     {
         if (info.Index < 0 || info.Index >= 8) return;
@@ -563,25 +594,32 @@ public partial class NodeConfigWindow : Window
 
         Dispatcher.BeginInvoke(() =>
         {
-            // Set the row UI for this channel
-            var role = info.Role;
-            var name = string.IsNullOrEmpty(info.Name) ? $"Ch {info.Index}" : info.Name;
+            bool isActive = !string.Equals(info.Role, "Disabled", StringComparison.OrdinalIgnoreCase);
+            var name = string.IsNullOrEmpty(info.Name) ? (isActive ? $"Ch {info.Index}" : "—") : info.Name;
 
-            switch (info.Index)
+            (TextBlock role, TextBlock nameTb, CheckBox up, CheckBox dn, ComboBox prec, Grid row) = info.Index switch
             {
-                case 0: Ch0Role.Text = role; Ch0Name.Text = name; Ch0Uplink.IsChecked = info.Uplink; Ch0Downlink.IsChecked = info.Downlink; break;
-                case 1: Ch1Role.Text = role; Ch1Name.Text = name; Ch1Uplink.IsChecked = info.Uplink; Ch1Downlink.IsChecked = info.Downlink; break;
-                case 2: Ch2Role.Text = role; Ch2Name.Text = name; Ch2Uplink.IsChecked = info.Uplink; Ch2Downlink.IsChecked = info.Downlink; break;
-                case 3: Ch3Role.Text = role; Ch3Name.Text = name; Ch3Uplink.IsChecked = info.Uplink; Ch3Downlink.IsChecked = info.Downlink; break;
-                case 4: Ch4Role.Text = role; Ch4Name.Text = name; Ch4Uplink.IsChecked = info.Uplink; Ch4Downlink.IsChecked = info.Downlink; break;
-                case 5: Ch5Role.Text = role; Ch5Name.Text = name; Ch5Uplink.IsChecked = info.Uplink; Ch5Downlink.IsChecked = info.Downlink; break;
-                case 6: Ch6Role.Text = role; Ch6Name.Text = name; Ch6Uplink.IsChecked = info.Uplink; Ch6Downlink.IsChecked = info.Downlink; break;
-                case 7: Ch7Role.Text = role; Ch7Name.Text = name; Ch7Uplink.IsChecked = info.Uplink; Ch7Downlink.IsChecked = info.Downlink; break;
-            }
-
-            MarkReceived($"ch{info.Index}");
+                0 => (Ch0Role, Ch0Name, Ch0Uplink, Ch0Downlink, Ch0Precision, ChRow0),
+                1 => (Ch1Role, Ch1Name, Ch1Uplink, Ch1Downlink, Ch1Precision, ChRow1),
+                2 => (Ch2Role, Ch2Name, Ch2Uplink, Ch2Downlink, Ch2Precision, ChRow2),
+                3 => (Ch3Role, Ch3Name, Ch3Uplink, Ch3Downlink, Ch3Precision, ChRow3),
+                4 => (Ch4Role, Ch4Name, Ch4Uplink, Ch4Downlink, Ch4Precision, ChRow4),
+                5 => (Ch5Role, Ch5Name, Ch5Uplink, Ch5Downlink, Ch5Precision, ChRow5),
+                6 => (Ch6Role, Ch6Name, Ch6Uplink, Ch6Downlink, Ch6Precision, ChRow6),
+                _ => (Ch7Role, Ch7Name, Ch7Uplink, Ch7Downlink, Ch7Precision, ChRow7),
+            };
+            role.Text = info.Role;
+            nameTb.Text = name;
+            up.IsChecked = info.Uplink;
+            dn.IsChecked = info.Downlink;
+            SelectComboBoxByTag(prec, (int)info.PositionPrecision);
+            // Dim disabled channels visually but keep all controls interactive
+            row.Opacity = isActive ? 1.0 : 0.45;
         });
     }
+
+    private static bool IsValidHex(string s) =>
+        s.Length % 2 == 0 && s.All(c => (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'));
 
     // ========== Interval helpers ==========
 
@@ -640,11 +678,60 @@ public partial class NodeConfigWindow : Window
         return 0;
     }
 
+    // ========== Precision ComboBox helpers ==========
+
+    private static readonly (string Label, uint Value)[] PrecisionOptions =
+    {
+        ("Kein Standort", 0),
+        ("~23km",        10),
+        ("~2.9km",       13),
+        ("~360m",        16),
+        ("~45m",         19),
+        ("Genau",        32),
+    };
+
+    private void InitPrecisionComboBoxes()
+    {
+        foreach (var cb in new[] { Ch0Precision, Ch1Precision, Ch2Precision, Ch3Precision,
+                                   Ch4Precision, Ch5Precision, Ch6Precision, Ch7Precision })
+        {
+            cb.Items.Clear();
+            foreach (var (label, value) in PrecisionOptions)
+                cb.Items.Add(new ComboBoxItem { Content = label, Tag = value.ToString() });
+            cb.SelectedIndex = 0;
+        }
+    }
+
+
     // ========== UI events ==========
 
     private void LoraUsePresetCheckBox_Changed(object sender, RoutedEventArgs e)
     {
         LoraPresetComboBox.IsEnabled = LoraUsePresetCheckBox.IsChecked == true;
+    }
+
+    private void FixedPositionCheckBox_Changed(object sender, RoutedEventArgs e)
+    {
+        if (FixedPositionPanel != null)
+            FixedPositionPanel.Visibility = FixedPositionCheckBox.IsChecked == true
+                ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private void PickFromMap_Click(object sender, RoutedEventArgs e)
+    {
+        if (_mapCenterProvider == null)
+        {
+            MessageBox.Show("Kein Kartenkontext verfügbar.", "Hinweis", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+        var pos = _mapCenterProvider();
+        if (pos == null)
+        {
+            MessageBox.Show("Konnte Kartenposition nicht lesen.", "Hinweis", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+        FixedLatTextBox.Text = pos.Value.lat.ToString("F6", System.Globalization.CultureInfo.InvariantCulture);
+        FixedLonTextBox.Text = pos.Value.lon.ToString("F6", System.Globalization.CultureInfo.InvariantCulture);
     }
 
     private void BtModeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -747,20 +834,21 @@ public partial class NodeConfigWindow : Window
             await Delay();
 
             // Device Config
-            var newDevice = _loadedDevice != null ? _loadedDevice.Clone() : new DeviceConfig();
-            newDevice.Role                   = (Role)GetComboBoxTag(RoleComboBox);
-            newDevice.RebroadcastMode        = (RebroadcastMode)GetComboBoxTag(RebroadcastComboBox);
-            newDevice.NodeInfoBroadcastSecs  = HumanTimeToSeconds(NodeInfoIntervalTextBox.Text);
-            newDevice.Tzdef                  = TzdefTextBox.Text.Trim();
-            newDevice.LedHeartbeatDisabled   = LedHeartbeatCheckBox.IsChecked == true;
-            newDevice.DoubleTapAsButtonPress = DoubleTapCheckBox.IsChecked == true;
-            newDevice.DisableTripleClick     = DisableTripleClickCheckBox.IsChecked == true;
-            newDevice.ButtonGpio             = uint.TryParse(ButtonGpioTextBox.Text, out var bgp) ? bgp : 0;
-            newDevice.BuzzerGpio             = uint.TryParse(BuzzerGpioTextBox.Text, out var bzg) ? bzg : 0;
-            await _protocolService.SetDeviceConfigAsync(newDevice);
-            await Delay();
-
-            // LoRa Config
+            if (_loadedDevice != null)
+            {
+                var newDevice = _loadedDevice.Clone();
+                newDevice.Role                   = (Role)GetComboBoxTag(RoleComboBox);
+                newDevice.RebroadcastMode        = (RebroadcastMode)GetComboBoxTag(RebroadcastComboBox);
+                newDevice.NodeInfoBroadcastSecs  = HumanTimeToSeconds(NodeInfoIntervalTextBox.Text);
+                newDevice.Tzdef                  = TzdefTextBox.Text.Trim();
+                newDevice.LedHeartbeatDisabled   = LedHeartbeatCheckBox.IsChecked == true;
+                newDevice.DoubleTapAsButtonPress = DoubleTapCheckBox.IsChecked == true;
+                newDevice.DisableTripleClick     = DisableTripleClickCheckBox.IsChecked == true;
+                newDevice.ButtonGpio             = uint.TryParse(ButtonGpioTextBox.Text, out var bgp) ? bgp : 0;
+                newDevice.BuzzerGpio             = uint.TryParse(BuzzerGpioTextBox.Text, out var bzg) ? bzg : 0;
+                await _protocolService.SetDeviceConfigAsync(newDevice);
+                await Delay();
+            }
             if (_loadedLora != null)
             {
                 var newLora = _loadedLora.Clone();
@@ -781,19 +869,34 @@ public partial class NodeConfigWindow : Window
             }
 
             // Position Config
-            var newPosition = _loadedPosition != null ? _loadedPosition.Clone() : new PositionConfig();
-            newPosition.GpsMode                             = (GpsMode)GetComboBoxTag(GpsModeComboBox);
-            newPosition.FixedPosition                       = FixedPositionCheckBox.IsChecked == true;
-            newPosition.PositionBroadcastSecs               = HumanTimeToSeconds(PosBroadcastSecsTextBox.Text);
-            newPosition.PositionBroadcastSmartEnabled       = SmartBroadcastCheckBox.IsChecked == true;
-            newPosition.BroadcastSmartMinimumDistance       = uint.TryParse(MinDistanceTextBox.Text, out var md) ? md : 0;
-            newPosition.BroadcastSmartMinimumIntervalSecs   = uint.TryParse(MinIntervalSecsTextBox.Text, out var mis) ? mis : 0;
-            newPosition.GpsUpdateInterval                   = uint.TryParse(GpsUpdateIntervalTextBox.Text, out var gu) ? gu : 0;
-            newPosition.RxGpio                              = uint.TryParse(GpsRxGpioTextBox.Text, out var rxg) ? rxg : 0;
-            newPosition.TxGpio                              = uint.TryParse(GpsTxGpioTextBox.Text, out var txg) ? txg : 0;
-            newPosition.GpsEnGpio                           = uint.TryParse(GpsEnGpioTextBox.Text, out var eng) ? eng : 0;
-            await _protocolService.SetPositionConfigAsync(newPosition);
-            await Delay();
+            if (_loadedPosition != null)
+            {
+                var newPosition = _loadedPosition.Clone();
+                newPosition.GpsMode                           = (GpsMode)GetComboBoxTag(GpsModeComboBox);
+                newPosition.FixedPosition                     = FixedPositionCheckBox.IsChecked == true;
+                newPosition.PositionBroadcastSecs             = HumanTimeToSeconds(PosBroadcastSecsTextBox.Text);
+                newPosition.PositionBroadcastSmartEnabled     = SmartBroadcastCheckBox.IsChecked == true;
+                newPosition.BroadcastSmartMinimumDistance     = uint.TryParse(MinDistanceTextBox.Text, out var md) ? md : 0;
+                newPosition.BroadcastSmartMinimumIntervalSecs = uint.TryParse(MinIntervalSecsTextBox.Text, out var mis) ? mis : 0;
+                newPosition.GpsUpdateInterval                 = uint.TryParse(GpsUpdateIntervalTextBox.Text, out var gu) ? gu : 0;
+                newPosition.RxGpio                            = uint.TryParse(GpsRxGpioTextBox.Text, out var rxg) ? rxg : 0;
+                newPosition.TxGpio                            = uint.TryParse(GpsTxGpioTextBox.Text, out var txg) ? txg : 0;
+                newPosition.GpsEnGpio                         = uint.TryParse(GpsEnGpioTextBox.Text, out var eng) ? eng : 0;
+                await _protocolService.SetPositionConfigAsync(newPosition);
+                await Delay();
+
+                // Feste Position übertragen wenn aktiviert und Koordinaten eingegeben
+                if (newPosition.FixedPosition &&
+                    double.TryParse(FixedLatTextBox.Text, System.Globalization.NumberStyles.Float,
+                        System.Globalization.CultureInfo.InvariantCulture, out double lat) &&
+                    double.TryParse(FixedLonTextBox.Text, System.Globalization.NumberStyles.Float,
+                        System.Globalization.CultureInfo.InvariantCulture, out double lon))
+                {
+                    int alt = int.TryParse(FixedAltTextBox.Text, out var a) ? a : 0;
+                    await _protocolService.SetFixedPositionAsync(lat, lon, alt);
+                    await Delay();
+                }
+            }
 
             // Power Config
             if (_loadedPower != null)
@@ -850,12 +953,15 @@ public partial class NodeConfigWindow : Window
             }
 
             // Bluetooth Config
-            var newBluetooth = _loadedBluetooth != null ? _loadedBluetooth.Clone() : new BluetoothConfig();
-            newBluetooth.Enabled  = BtEnabledCheckBox.IsChecked == true;
-            newBluetooth.Mode     = (uint)GetComboBoxTag(BtModeComboBox);
-            newBluetooth.FixedPin = uint.TryParse(BtFixedPinTextBox.Text.Trim(), out var pin) ? pin : 0;
-            await _protocolService.SetBluetoothConfigAsync(newBluetooth);
-            await Delay();
+            if (_loadedBluetooth != null)
+            {
+                var newBluetooth = _loadedBluetooth.Clone();
+                newBluetooth.Enabled  = BtEnabledCheckBox.IsChecked == true;
+                newBluetooth.Mode     = (uint)GetComboBoxTag(BtModeComboBox);
+                newBluetooth.FixedPin = uint.TryParse(BtFixedPinTextBox.Text.Trim(), out var pin) ? pin : 0;
+                await _protocolService.SetBluetoothConfigAsync(newBluetooth);
+                await Delay();
+            }
 
             // MQTT Config
             var newMqtt = _loadedMqtt != null ? _loadedMqtt.Clone() : new MQTTConfig();
@@ -873,16 +979,19 @@ public partial class NodeConfigWindow : Window
             await Delay();
 
             // Telemetry Config
-            var newTelemetry = _loadedTelemetry != null ? _loadedTelemetry.Clone() : new TelemetryConfig();
-            newTelemetry.DeviceUpdateInterval         = HumanTimeToSeconds(DeviceTelemetryIntervalTextBox.Text);
-            newTelemetry.EnvironmentUpdateInterval    = HumanTimeToSeconds(EnvironmentIntervalTextBox.Text);
-            newTelemetry.EnvironmentMeasurementEnabled = EnvironmentMeasurementCheckBox.IsChecked == true;
-            newTelemetry.EnvironmentDisplayFahrenheit = FahrenheitCheckBox.IsChecked == true;
-            newTelemetry.AirQualityInterval           = HumanTimeToSeconds(AirQualityIntervalTextBox.Text);
-            newTelemetry.PowerUpdateInterval          = HumanTimeToSeconds(PowerIntervalTextBox.Text);
-            newTelemetry.PowerMeasurementEnabled      = PowerMeasurementCheckBox.IsChecked == true;
-            await _protocolService.SetTelemetryConfigAsync(newTelemetry);
-            await Delay();
+            if (_loadedTelemetry != null)
+            {
+                var newTelemetry = _loadedTelemetry.Clone();
+                newTelemetry.DeviceUpdateInterval          = HumanTimeToSeconds(DeviceTelemetryIntervalTextBox.Text);
+                newTelemetry.EnvironmentUpdateInterval     = HumanTimeToSeconds(EnvironmentIntervalTextBox.Text);
+                newTelemetry.EnvironmentMeasurementEnabled = EnvironmentMeasurementCheckBox.IsChecked == true;
+                newTelemetry.EnvironmentDisplayFahrenheit  = FahrenheitCheckBox.IsChecked == true;
+                newTelemetry.AirQualityInterval            = HumanTimeToSeconds(AirQualityIntervalTextBox.Text);
+                newTelemetry.PowerUpdateInterval           = HumanTimeToSeconds(PowerIntervalTextBox.Text);
+                newTelemetry.PowerMeasurementEnabled       = PowerMeasurementCheckBox.IsChecked == true;
+                await _protocolService.SetTelemetryConfigAsync(newTelemetry);
+                await Delay();
+            }
 
             // Neighbor Info Config
             if (_loadedNeighborInfo != null)
@@ -960,46 +1069,77 @@ public partial class NodeConfigWindow : Window
                 await Delay();
             }
 
-            // Security Config (only writable fields; public key is read-only)
+            // Security Config
             if (_loadedSecurity != null)
             {
                 var newSec = _loadedSecurity.Clone();
-                newSec.SerialEnabled      = SecSerialEnabledCheckBox.IsChecked == true;
-                newSec.DebugLogApiEnabled = SecDebugLogCheckBox.IsChecked == true;
-                newSec.IsManaged          = SecIsManagedCheckBox.IsChecked == true;
+                newSec.SerialEnabled       = SecSerialEnabledCheckBox.IsChecked == true;
+                newSec.DebugLogApiEnabled  = SecDebugLogCheckBox.IsChecked == true;
+                newSec.IsManaged           = SecIsManagedCheckBox.IsChecked == true;
                 newSec.AdminChannelEnabled = SecAdminChannelCheckBox.IsChecked == true;
+
+                // Private key: only overwrite if user typed a new hex key (different from loaded)
+                var privHex = SecPrivKeyBox.Text.Trim().Replace(" ", "");
+                var loadedHex = _loadedSecurity.PrivateKey != null && _loadedSecurity.PrivateKey.Length > 0
+                    ? BitConverter.ToString(_loadedSecurity.PrivateKey.ToByteArray()).Replace("-", "").ToLowerInvariant()
+                    : string.Empty;
+                if (!string.Equals(privHex, loadedHex, StringComparison.OrdinalIgnoreCase)
+                    && privHex.Length == 64
+                    && IsValidHex(privHex))
+                {
+                    newSec.PrivateKey = ByteString.CopyFrom(Convert.FromHexString(privHex));
+                }
+
+                // Admin keys: rebuild repeated field from 3 text boxes
+                newSec.AdminKey.Clear();
+                foreach (var box in new[] { SecAdminKey1TextBox.Text.Trim(), SecAdminKey2TextBox.Text.Trim(), SecAdminKey3TextBox.Text.Trim() })
+                {
+                    if (string.IsNullOrEmpty(box)) continue;
+                    try { newSec.AdminKey.Add(ByteString.CopyFrom(Convert.FromBase64String(box))); }
+                    catch { /* skip invalid */ }
+                }
+
                 await _protocolService.SetSecurityConfigAsync(newSec);
                 await Delay();
             }
 
-            // Channel uplink/downlink
-            var chBoxes = new (CheckBox? Up, CheckBox? Dn)[]
+            // Channel settings: uplink/downlink/precision (only for active channels)
+            var chControls = new (CheckBox Up, CheckBox Dn, ComboBox Prec)[]
             {
-                (Ch0Uplink, Ch0Downlink), (Ch1Uplink, Ch1Downlink),
-                (Ch2Uplink, Ch2Downlink), (Ch3Uplink, Ch3Downlink),
-                (Ch4Uplink, Ch4Downlink), (Ch5Uplink, Ch5Downlink),
-                (Ch6Uplink, Ch6Downlink), (Ch7Uplink, Ch7Downlink),
+                (Ch0Uplink, Ch0Downlink, Ch0Precision),
+                (Ch1Uplink, Ch1Downlink, Ch1Precision),
+                (Ch2Uplink, Ch2Downlink, Ch2Precision),
+                (Ch3Uplink, Ch3Downlink, Ch3Precision),
+                (Ch4Uplink, Ch4Downlink, Ch4Precision),
+                (Ch5Uplink, Ch5Downlink, Ch5Precision),
+                (Ch6Uplink, Ch6Downlink, Ch6Precision),
+                (Ch7Uplink, Ch7Downlink, Ch7Precision),
             };
             for (int i = 0; i < 8; i++)
             {
                 var info = _loadedChannels[i];
                 if (info == null) continue;
 
-                bool newUplink   = chBoxes[i].Up?.IsChecked == true;
-                bool newDownlink = chBoxes[i].Dn?.IsChecked == true;
-                if (newUplink == info.Uplink && newDownlink == info.Downlink) continue; // no change
-
-                var ch = new Channel { Index = i };
-                var roleEnum = info.Role.ToUpperInvariant() switch
+                // Only save active channels (Primary/Secondary)
+                var loadedRole = info.Role.ToUpperInvariant() switch
                 {
                     "PRIMARY"   => ChannelRole.Primary,
                     "SECONDARY" => ChannelRole.Secondary,
                     _           => ChannelRole.Disabled
                 };
-                ch.Role = roleEnum;
+                if (loadedRole == ChannelRole.Disabled) continue;
+
+                bool newUplink    = chControls[i].Up.IsChecked == true;
+                bool newDownlink  = chControls[i].Dn.IsChecked == true;
+                uint newPrecision = (uint)GetComboBoxTag(chControls[i].Prec);
+
+                if (newUplink == info.Uplink && newDownlink == info.Downlink && newPrecision == info.PositionPrecision) continue;
+
+                var ch = new Channel { Index = i, Role = loadedRole };
                 var settings = new ChannelSettings { UplinkEnabled = newUplink, DownlinkEnabled = newDownlink };
                 if (!string.IsNullOrEmpty(info.Psk))
                     settings.Psk = ByteString.CopyFrom(Convert.FromBase64String(info.Psk));
+                settings.ModuleSettings = new ModuleSettings { PositionPrecision = newPrecision };
                 ch.Settings = settings;
                 await _protocolService.UpdateChannelUplinkDownlinkAsync(ch);
                 await Delay();

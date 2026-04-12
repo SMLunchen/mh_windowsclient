@@ -397,8 +397,15 @@
     <sys:String x:Key="StrNcOverrideFreq">Override Frequenz (MHz)</sys:String>
     <sys:String x:Key="StrNcDescOverrideFreq">Überschreibt die berechnete Kanalfrequenz. Nur für lizenzierte Funkamateure oder Entwickler. 0 = automatisch.</sys:String>
     <!-- Node config: Position extras -->
-    <sys:String x:Key="StrNcFixedPosition">Feste Position</sys:String>
+    <sys:String x:Key="StrNcFixedPosition">Feste Position aktivieren</sys:String>
     <sys:String x:Key="StrNcDescFixedPosition">Der Node sendet immer die gleiche (manuelle) Position, unabhängig vom GPS-Empfang.</sys:String>
+    <sys:String x:Key="StrNcFixedPosGroupHeader">Koordinaten der festen Position</sys:String>
+    <sys:String x:Key="StrNcFixedLat">Breitengrad (Latitude)</sys:String>
+    <sys:String x:Key="StrNcFixedLon">Längengrad (Longitude)</sys:String>
+    <sys:String x:Key="StrNcFixedAlt">Höhe (m)</sys:String>
+    <sys:String x:Key="StrNcDescFixedCoords">Dezimalgrad, z.B. 50.123456 / 8.654321. Wird beim Speichern an den Node übertragen.</sys:String>
+    <sys:String x:Key="StrNcPickFromMap">Von Karte übernehmen</sys:String>
+    <sys:String x:Key="StrNcPickFromMapTip">Aktuellen Kartenmittelpunkt als feste Position übernehmen</sys:String>
     <sys:String x:Key="StrNcMinIntervalSecs">Mindestintervall Smart-Broadcast (s)</sys:String>
     <sys:String x:Key="StrNcDescMinIntervalSecs">Minimale Wartezeit in Sekunden zwischen zwei Smart-Positionssendungen.</sys:String>
     <sys:String x:Key="StrNcRxGpio">GPS RX GPIO</sys:String>
@@ -450,8 +457,16 @@
     <sys:String x:Key="StrNcDescSecIsManaged">Gerät wird durch einen Mesh-Administrator via Admin-Schlüssel verwaltet. Einige UI-Optionen werden eingeschränkt.</sys:String>
     <sys:String x:Key="StrNcSecAdminChannel">Legacy Admin Channel</sys:String>
     <sys:String x:Key="StrNcDescSecAdminChannel">Erlaubt Admin-Zugriff über den unverschlüsselten Legacy-Admin-Kanal. Nur für Abwärtskompatibilität.</sys:String>
+    <sys:String x:Key="StrNcSecPrivateKey">Private Key</sys:String>
+    <sys:String x:Key="StrNcDescSecPrivateKey">Privater X25519-Schlüssel für PKI-Entschlüsselung. Ändere ihn nur, wenn du weißt, was du tust — damit verlierst du alle verschlüsselten Direktnachrichten.</sys:String>
+    <sys:String x:Key="StrNcSecAdminKey1">Admin Key 1</sys:String>
+    <sys:String x:Key="StrNcSecAdminKey2">Admin Key 2</sys:String>
+    <sys:String x:Key="StrNcSecAdminKey3">Admin Key 3</sys:String>
+    <sys:String x:Key="StrNcDescSecAdminKeys">Öffentliche Schlüssel von Admin-Geräten (Base64). Leeres Feld = nicht gesetzt.</sys:String>
     <!-- Node config: Channels panel -->
     <sys:String x:Key="StrNcNavChannels">Kanäle</sys:String>
+    <sys:String x:Key="StrNcChannelPosPrecision">Genauigkeit</sys:String>
+    <sys:String x:Key="StrNcDescChannelPosPrecision">Positions-Genauigkeit für diesen Kanal (0=aus, 10≈23km, 13≈2.8km, 16≈350m, 19≈44m, 32=exakt)</sys:String>
     <sys:String x:Key="StrNcChannelUplink">Uplink</sys:String>
     <sys:String x:Key="StrNcChannelDownlink">Downlink</sys:String>
     <sys:String x:Key="StrNcDescChannelUplink">Uplink: Empfangene LoRa-Pakete dieses Kanals werden an den MQTT-Broker weitergeleitet.</sys:String>

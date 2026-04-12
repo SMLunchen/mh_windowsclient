@@ -397,8 +397,15 @@
     <sys:String x:Key="StrNcOverrideFreq">Override Frequency (MHz)</sys:String>
     <sys:String x:Key="StrNcDescOverrideFreq">Overrides the calculated channel frequency. For licensed HAM operators or developers only. 0 = automatic.</sys:String>
     <!-- Node config: Position extras -->
-    <sys:String x:Key="StrNcFixedPosition">Fixed Position</sys:String>
+    <sys:String x:Key="StrNcFixedPosition">Enable Fixed Position</sys:String>
     <sys:String x:Key="StrNcDescFixedPosition">Node always broadcasts the same (manually set) position regardless of GPS.</sys:String>
+    <sys:String x:Key="StrNcFixedPosGroupHeader">Fixed Position Coordinates</sys:String>
+    <sys:String x:Key="StrNcFixedLat">Latitude</sys:String>
+    <sys:String x:Key="StrNcFixedLon">Longitude</sys:String>
+    <sys:String x:Key="StrNcFixedAlt">Altitude (m)</sys:String>
+    <sys:String x:Key="StrNcDescFixedCoords">Decimal degrees, e.g. 50.123456 / 8.654321. Sent to node on save.</sys:String>
+    <sys:String x:Key="StrNcPickFromMap">Pick from Map</sys:String>
+    <sys:String x:Key="StrNcPickFromMapTip">Use current map center as fixed position</sys:String>
     <sys:String x:Key="StrNcMinIntervalSecs">Smart Broadcast Min. Interval (s)</sys:String>
     <sys:String x:Key="StrNcDescMinIntervalSecs">Minimum wait time in seconds between two smart position broadcasts.</sys:String>
     <sys:String x:Key="StrNcRxGpio">GPS RX GPIO</sys:String>
@@ -450,8 +457,16 @@
     <sys:String x:Key="StrNcDescSecIsManaged">Device is managed by a mesh administrator via admin keys. Some UI options will be restricted.</sys:String>
     <sys:String x:Key="StrNcSecAdminChannel">Legacy Admin Channel</sys:String>
     <sys:String x:Key="StrNcDescSecAdminChannel">Allow admin access via the unencrypted legacy admin channel. Enable only for backwards compatibility.</sys:String>
+    <sys:String x:Key="StrNcSecPrivateKey">Private Key</sys:String>
+    <sys:String x:Key="StrNcDescSecPrivateKey">X25519 private key used for PKI decryption. Only change if you know what you're doing — you will lose access to all encrypted direct messages.</sys:String>
+    <sys:String x:Key="StrNcSecAdminKey1">Admin Key 1</sys:String>
+    <sys:String x:Key="StrNcSecAdminKey2">Admin Key 2</sys:String>
+    <sys:String x:Key="StrNcSecAdminKey3">Admin Key 3</sys:String>
+    <sys:String x:Key="StrNcDescSecAdminKeys">Public keys of admin devices (Base64). Leave blank = not set.</sys:String>
     <!-- Node config: Channels panel -->
     <sys:String x:Key="StrNcNavChannels">Channels</sys:String>
+    <sys:String x:Key="StrNcChannelPosPrecision">Precision</sys:String>
+    <sys:String x:Key="StrNcDescChannelPosPrecision">Position precision for this channel (0=off, 10≈23km, 13≈2.8km, 16≈350m, 19≈44m, 32=exact)</sys:String>
     <sys:String x:Key="StrNcChannelUplink">Uplink</sys:String>
     <sys:String x:Key="StrNcChannelDownlink">Downlink</sys:String>
     <sys:String x:Key="StrNcDescChannelUplink">Uplink: received LoRa packets on this channel are forwarded to the MQTT broker.</sys:String>

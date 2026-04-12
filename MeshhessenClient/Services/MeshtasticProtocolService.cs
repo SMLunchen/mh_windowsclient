@@ -308,14 +308,14 @@ public class MeshtasticProtocolService
 
             var channelInfo = new ChannelInfo
             {
-                Index = channel.Index,
-                Name = ExtractChannelName(channel),
-                Role = channel.Role.ToString(),
-                Psk = channel.Settings?.Psk != null && channel.Settings.Psk.Length > 0
-                    ? Convert.ToBase64String(channel.Settings.Psk.ToByteArray())
-                    : "",
-                Uplink = channel.Settings?.UplinkEnabled ?? false,
-                Downlink = channel.Settings?.DownlinkEnabled ?? false
+                Index             = channel.Index,
+                Name              = ExtractChannelName(channel),
+                Role              = channel.Role.ToString(),
+                Psk               = channel.Settings?.Psk != null && channel.Settings.Psk.Length > 0
+                    ? Convert.ToBase64String(channel.Settings.Psk.ToByteArray()) : "",
+                Uplink            = channel.Settings?.UplinkEnabled ?? false,
+                Downlink          = channel.Settings?.DownlinkEnabled ?? false,
+                PositionPrecision = channel.Settings?.ModuleSettings?.PositionPrecision ?? 0
             };
             ChannelInfoReceived?.Invoke(this, channelInfo);
             await Task.Delay(50);
@@ -1548,14 +1548,14 @@ public class MeshtasticProtocolService
 
                     var channelInfo = new ChannelInfo
                     {
-                        Index = channel.Index,
-                        Name = channelName,
-                        Role = channel.Role.ToString(),
-                        Psk = channel.Settings?.Psk != null && channel.Settings.Psk.Length > 0
-                            ? Convert.ToBase64String(channel.Settings.Psk.ToByteArray())
-                            : "",
-                        Uplink = channel.Settings?.UplinkEnabled ?? false,
-                        Downlink = channel.Settings?.DownlinkEnabled ?? false
+                        Index             = channel.Index,
+                        Name              = channelName,
+                        Role              = channel.Role.ToString(),
+                        Psk               = channel.Settings?.Psk != null && channel.Settings.Psk.Length > 0
+                            ? Convert.ToBase64String(channel.Settings.Psk.ToByteArray()) : "",
+                        Uplink            = channel.Settings?.UplinkEnabled ?? false,
+                        Downlink          = channel.Settings?.DownlinkEnabled ?? false,
+                        PositionPrecision = channel.Settings?.ModuleSettings?.PositionPrecision ?? 0
                     };
                     ChannelInfoReceived?.Invoke(this, channelInfo);
                 }
@@ -1955,6 +1955,20 @@ public class MeshtasticProtocolService
         await SendAdminMessageAsync(adminMsg);
     }
 
+    public async Task SetFixedPositionAsync(double latDeg, double lonDeg, int altitudeM)
+    {
+        await EnsureSessionKeyAsync();
+        var position = new Position
+        {
+            LatitudeI  = (int)(latDeg  * 1e7),
+            LongitudeI = (int)(lonDeg  * 1e7),
+            Altitude   = altitudeM,
+            Time       = (uint)DateTimeOffset.UtcNow.ToUnixTimeSeconds()
+        };
+        var adminMsg = new AdminMessage { SetPosition = position };
+        await SendAdminMessageAsync(adminMsg);
+    }
+
     public async Task SetLoRaConfigAsync(LoRaConfig config)
     {
         await EnsureSessionKeyAsync();
@@ -2184,16 +2198,18 @@ public class MeshtasticProtocolService
                         shouldFireChannelEvent = !_isInitializing;
                     }
 
-                    if (shouldFireChannelEvent && channel.Role != ChannelRole.Disabled)
+                    if (shouldFireChannelEvent)
                     {
                         var channelInfo = new ChannelInfo
                         {
-                            Index = channel.Index,
-                            Name = channelName,
-                            Role = channel.Role.ToString(),
-                            Psk = channel.Settings?.Psk != null && channel.Settings.Psk.Length > 0
-                                ? Convert.ToBase64String(channel.Settings.Psk.ToByteArray())
-                                : ""
+                            Index             = channel.Index,
+                            Name              = channelName,
+                            Role              = channel.Role.ToString(),
+                            Psk               = channel.Settings?.Psk != null && channel.Settings.Psk.Length > 0
+                                ? Convert.ToBase64String(channel.Settings.Psk.ToByteArray()) : "",
+                            Uplink            = channel.Settings?.UplinkEnabled ?? false,
+                            Downlink          = channel.Settings?.DownlinkEnabled ?? false,
+                            PositionPrecision = channel.Settings?.ModuleSettings?.PositionPrecision ?? 0
                         };
                         ChannelInfoReceived?.Invoke(this, channelInfo);
                     }

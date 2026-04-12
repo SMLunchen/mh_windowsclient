@@ -1978,7 +1978,10 @@ public partial class MainWindow : Window
 
     private int FindFirstFreeChannelIndex()
     {
-        var usedIndices = _channels.Select(c => c.Index).ToHashSet();
+        var usedIndices = _channels
+            .Where(c => !c.Role.Equals("DISABLED", StringComparison.OrdinalIgnoreCase))
+            .Select(c => c.Index)
+            .ToHashSet();
         for (int i = 1; i < 8; i++)
         {
             if (!usedIndices.Contains(i))
@@ -2515,9 +2518,12 @@ public partial class MainWindow : Window
             {
                 var existing = _channels.FirstOrDefault(c => c.Index == channel.Index);
                 if (existing != null)
-                {
                     _channels.Remove(existing);
-                }
+
+                // Disabled-Kanäle nicht in die Liste aufnehmen
+                if (channel.Role.Equals("DISABLED", StringComparison.OrdinalIgnoreCase))
+                    return;
+
                 // Sortiert einfügen nach Channel-Index
                 int insertAt = 0;
                 for (int i = 0; i < _channels.Count; i++)
@@ -3900,7 +3906,7 @@ public partial class MainWindow : Window
     {
         try
         {
-            var win = new NodeConfigWindow(_protocolService) { Owner = this };
+            var win = new NodeConfigWindow(_protocolService, GetMapCenter) { Owner = this };
             win.Show();
         }
         catch (Exception ex)
@@ -3908,6 +3914,18 @@ public partial class MainWindow : Window
             Services.Logger.WriteLine($"ERROR opening NodeConfigWindow: {ex.Message}");
             MessageBox.Show($"Fehler beim Öffnen der Node-Konfiguration: {ex.Message}", "Fehler", MessageBoxButton.OK, MessageBoxImage.Error);
         }
+    }
+
+    private (double lat, double lon)? GetMapCenter()
+    {
+        try
+        {
+            if (MapControl?.Map == null) return null;
+            var vp = MapControl.Map.Navigator.Viewport;
+            var (lon, lat) = Mapsui.Projections.SphericalMercator.ToLonLat(vp.CenterX, vp.CenterY);
+            return (lat, lon);
+        }
+        catch { return null; }
     }
 
     // ========== Node Pinning ==========
