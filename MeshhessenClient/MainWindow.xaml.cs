@@ -162,6 +162,12 @@ public partial class MainWindow : Window
     private bool _intentionalDisconnect = false;
     private bool _isReconnecting = false;
 
+    // Easter Eggs
+    private System.Threading.Timer? _midnightTimer;
+    private bool _midnightFiredToday = false;
+    private int _logoClickCount = 0;
+    private DateTime _lastLogoClick = DateTime.MinValue;
+
     public MainWindow()
     {
         InitializeComponent();
@@ -174,6 +180,8 @@ public partial class MainWindow : Window
         FooterVersionText.Text = versionStr;
 
         Loaded += (_, _) => _ = CheckForUpdateAsync();
+        _midnightTimer = new System.Threading.Timer(_ => CheckMidnight(), null,
+            TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30));
 
         // Initialize with Serial connection (default)
         _connectionService = new SerialConnectionService();
@@ -5374,5 +5382,153 @@ public partial class MainWindow : Window
     {
         _replyToMessage = null;
         ReplyIndicatorPanel.Visibility = Visibility.Collapsed;
+    }
+
+    // ═══════════════════════════════════════════
+    // Easter Eggs
+    // ═══════════════════════════════════════════
+
+    private void CheckMidnight()
+    {
+        var now = DateTime.Now;
+        if (now.Hour == 0 && now.Minute == 0 && !_midnightFiredToday)
+        {
+            _midnightFiredToday = true;
+            Dispatcher.BeginInvoke(ShowMidnightMesh);
+        }
+        else if (now.Hour != 0)
+        {
+            _midnightFiredToday = false;
+        }
+    }
+
+    private void ShowMidnightMesh()
+    {
+        var myShortName = _allNodes.FirstOrDefault(n => n.NodeId == _myNodeId)?.ShortName
+                          ?? "MH";
+
+        var lines = new[]
+        {
+            "- - - - - - - - - - - - - - - - - - - -",
+            $"SENDESTELLE {myShortName.ToUpper()}",
+            "SENDELEISTUNG WIRD JETZT REDUZIERT",
+            "NACHT-BETRIEB AKTIV — 73 DE MH",
+            "- - - - - - - - - - - - - - - - - - - -"
+        };
+        var msg = new MessageItem
+        {
+            Time        = "00:00",
+            From        = "⚡ SENDESTELLE",
+            Message     = string.Join("\n", lines),
+            ChannelName = "SYSTEM",
+            IsOwnMessage = false
+        };
+        _allMessages.Add(msg);
+        _messages.Add(msg);
+
+        // Scroll to bottom
+        if (MessageListView.Items.Count > 0)
+            MessageListView.ScrollIntoView(MessageListView.Items[^1]);
+    }
+
+    private void Logo_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        var now = DateTime.Now;
+        if ((now - _lastLogoClick).TotalSeconds > 3)
+            _logoClickCount = 0;
+        _lastLogoClick = now;
+        _logoClickCount++;
+
+        if (_logoClickCount >= 5)
+        {
+            _logoClickCount = 0;
+            ShowLogoEasterEgg();
+        }
+    }
+
+    private void ShowLogoEasterEgg()
+    {
+        var myShortName = _allNodes.FirstOrDefault(n => n.NodeId == _myNodeId)?.ShortName ?? "MH";
+        // Classic ham radio CQ call: CQ CQ CQ DE [CALLSIGN] MESHHESSEN QTH HESSEN 73 SK
+        var cwText = $"CQ DE {myShortName.ToUpper()} MESHHESSEN 73 SK";
+        Task.Run(() => BeepMorse(cwText));
+    }
+
+    private static void BeepMorse(string text)
+    {
+        const int Freq      = 700;
+        const int Dot       = 80;
+        const int Dash      = 240;
+        const int ElemGap   = 80;
+        const int LetterGap = 240;
+        const int WordGap   = 560;
+
+        var table = new Dictionary<char, string>
+        {
+            {'A',".-"},  {'B',"-..."}, {'C',"-.-."}, {'D',"-.."}, {'E',"."},
+            {'F',"..-."}, {'G',"--."}, {'H',"...."}, {'I',".."}, {'J',".---"},
+            {'K',"-.-"}, {'L',".-.."}, {'M',"--"},  {'N',"-."},  {'O',"---"},
+            {'P',".--."}, {'Q',"--.-"}, {'R',".-."}, {'S',"..."}, {'T',"-"},
+            {'U',"..-"}, {'V',"...-"}, {'W',".--"}, {'X',"-..-"}, {'Y',"-.--"},
+            {'Z',"--.."},
+            {'0',"-----"}, {'1',".----"}, {'2',"..---"}, {'3',"...--"},
+            {'4',"....-"}, {'5',"....."}, {'6',"-...."}, {'7',"--..."},
+            {'8',"---.."}, {'9',"----."}
+        };
+
+        bool firstLetter = true;
+        foreach (char c in text)
+        {
+            if (c == ' ') { System.Threading.Thread.Sleep(WordGap); firstLetter = true; continue; }
+            if (!table.TryGetValue(c, out var code)) continue;
+
+            if (!firstLetter) System.Threading.Thread.Sleep(LetterGap);
+            firstLetter = false;
+
+            bool firstElem = true;
+            foreach (char sym in code)
+            {
+                if (!firstElem) System.Threading.Thread.Sleep(ElemGap);
+                firstElem = false;
+                PlaySineTone(Freq, sym == '.' ? Dot : Dash);
+            }
+        }
+    }
+
+    private static void PlaySineTone(int freqHz, int durationMs)
+    {
+        const int SampleRate = 44100;
+        const int FadeMs     = 8; // Fade-in/out in ms — eliminiert Knackgeräusche
+        int totalSamples = SampleRate * durationMs / 1000;
+        int fadeSamples  = SampleRate * FadeMs / 1000;
+
+        using var ms = new System.IO.MemoryStream();
+        using var bw = new System.IO.BinaryWriter(ms);
+
+        // WAV-Header (PCM, Mono, 16-bit)
+        bw.Write(System.Text.Encoding.ASCII.GetBytes("RIFF"));
+        bw.Write(36 + totalSamples * 2);
+        bw.Write(System.Text.Encoding.ASCII.GetBytes("WAVE"));
+        bw.Write(System.Text.Encoding.ASCII.GetBytes("fmt "));
+        bw.Write(16); bw.Write((short)1); bw.Write((short)1);
+        bw.Write(SampleRate); bw.Write(SampleRate * 2);
+        bw.Write((short)2); bw.Write((short)16);
+        bw.Write(System.Text.Encoding.ASCII.GetBytes("data"));
+        bw.Write(totalSamples * 2);
+
+        for (int i = 0; i < totalSamples; i++)
+        {
+            // Lineare Hüllkurve: sanftes Ein- und Ausblenden
+            double env = 1.0;
+            if (i < fadeSamples)                        env = (double)i / fadeSamples;
+            else if (i >= totalSamples - fadeSamples)   env = (double)(totalSamples - i) / fadeSamples;
+
+            double sample = Math.Sin(2 * Math.PI * freqHz * i / SampleRate) * env * 0.75;
+            bw.Write((short)(sample * 32767));
+        }
+
+        ms.Position = 0;
+        using var player = new System.Media.SoundPlayer(ms);
+        player.PlaySync();
     }
 }

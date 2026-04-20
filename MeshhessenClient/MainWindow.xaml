@@ -351,7 +351,8 @@
                                  SelectionChanged="MessageChannelFilter_Changed"
                                  DisplayMemberPath="Name"/>
                         <Image x:Name="mh_logo_wide_top" Grid.Column="2" Height="56" Width="286"
-                               Source="/logo_mh_wide.jpg" HorizontalAlignment="Right"/>
+                               Source="/logo_mh_wide.jpg" HorizontalAlignment="Right"
+                               Cursor="Arrow" MouseLeftButtonUp="Logo_Click"/>
                     </Grid>
 
                     <!-- Message List – Chat Bubble Layout -->
