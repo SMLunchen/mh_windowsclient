@@ -346,7 +346,9 @@
     <sys:String x:Key="StrNcDescMqttJson">Sendet zusätzlich entschlüsselte Pakete als JSON-Text (z. B. für Home Assistant, Node-RED, Grafana).</sys:String>
     <sys:String x:Key="StrNcDescMqttRootTopic">Basis-Topic für alle MQTT-Nachrichten dieses Geräts. Standard: msh</sys:String>
     <sys:String x:Key="StrNcDescMqttProxy">Die verbundene App (Telefon/PC) leitet MQTT-Nachrichten für das Gerät weiter – kein direktes WLAN am Gerät nötig. Hinweis: Dieser Windows-Client unterstützt den Proxy-Modus aktuell nicht aktiv.</sys:String>
-    <sys:String x:Key="StrNcDescMqttMapReport">Sendet die eigene Position an die öffentliche Meshtastic-Weltkarte (map.meshtastic.org).</sys:String>
+    <sys:String x:Key="StrNcDescMqttMapReport">Sendet die eigene Position an die öffentliche Meshtastic-Weltkarte (map.meshtastic.org) und an map.meshhessen.de.</sys:String>
+    <sys:String x:Key="StrNcMqttMapReportPrecision">Genauigkeit Map Report</sys:String>
+    <sys:String x:Key="StrNcDescMqttMapReportPrecision">Positions-Genauigkeit für Map-Report-Pakete. Empfohlen: ~370m oder höher für öffentliche Karten.</sys:String>
     <sys:String x:Key="StrNcDescDeviceTelemetry">Gerätemetriken: Akku-%, Spannung, Kanalauslastung, TX-Airtime. Erscheinen im Telemetrie-Fenster des Clients.</sys:String>
     <sys:String x:Key="StrNcDescEnvTelemetry">Umgebungssensoren (Temperatur, Luftfeuchte, Luftdruck) – benötigt angeschlossenen I²C-Sensor (z. B. BME280).</sys:String>
     <sys:String x:Key="StrNcDescAirQuality">Luftqualitätssensor (PM2.5 u. a.) – benötigt angeschlossenen Sensor (z. B. PMSA003I).</sys:String>
@@ -404,10 +406,16 @@
     <sys:String x:Key="StrNcFixedLon">Längengrad (Longitude)</sys:String>
     <sys:String x:Key="StrNcFixedAlt">Höhe (m)</sys:String>
     <sys:String x:Key="StrNcDescFixedCoords">Dezimalgrad, z.B. 50.123456 / 8.654321. Wird beim Speichern an den Node übertragen.</sys:String>
-    <sys:String x:Key="StrNcPickFromMap">Von Karte übernehmen</sys:String>
-    <sys:String x:Key="StrNcPickFromMapTip">Aktuellen Kartenmittelpunkt als feste Position übernehmen</sys:String>
-    <sys:String x:Key="StrNcPickFromMapHint">Navigiere die Karte auf den gewünschten Standort, dann diesen Button klicken.</sys:String>
+    <sys:String x:Key="StrNcPickFromMap">Von Karte wählen</sys:String>
+    <sys:String x:Key="StrNcPickFromMapTip">Öffnet ein Kartenfenster – dort auf den gewünschten Punkt klicken</sys:String>
+    <sys:String x:Key="StrNcPickFromMapHint">Klicke auf „Von Karte wählen", um ein Kartenfenster zu öffnen und den Standort dort auszuwählen.</sys:String>
     <sys:String x:Key="StrNcMapCenterLabel">Aktueller Kartenmittelpunkt:</sys:String>
+    <sys:String x:Key="StrNcUseCurrentPos">Eigener Kartenpin</sys:String>
+    <sys:String x:Key="StrNcUseCurrentPosTip">Übernimmt die eigene Position (gesetzt per Rechtsklick → „Meine Position setzen" auf der Karte)</sys:String>
+    <sys:String x:Key="StrMapPickerTitle">Position auswählen</sys:String>
+    <sys:String x:Key="StrMapPickerHint">Klicke auf die Karte, um einen Punkt zu wählen – dann „Übernehmen".</sys:String>
+    <sys:String x:Key="StrMapPickerAccept">Übernehmen</sys:String>
+    <sys:String x:Key="StrMapPickerCancel">Abbrechen</sys:String>
     <sys:String x:Key="StrNcMinIntervalSecs">Mindestintervall Smart-Broadcast (s)</sys:String>
     <sys:String x:Key="StrNcDescMinIntervalSecs">Minimale Wartezeit in Sekunden zwischen zwei Smart-Positionssendungen.</sys:String>
     <sys:String x:Key="StrNcRxGpio">GPS RX GPIO</sys:String>
@@ -467,10 +475,14 @@
     <sys:String x:Key="StrNcDescSecAdminKeys">Öffentliche Schlüssel von Admin-Geräten (Base64). Leeres Feld = nicht gesetzt.</sys:String>
     <!-- Node config: Channels panel -->
     <sys:String x:Key="StrNcNavChannels">Kanäle</sys:String>
+    <sys:String x:Key="StrNcChannelRole">Rolle</sys:String>
+    <sys:String x:Key="StrNcChannelName">Name</sys:String>
     <sys:String x:Key="StrNcChannelPosPrecision">Genauigkeit</sys:String>
-    <sys:String x:Key="StrNcDescChannelPosPrecision">Positions-Genauigkeit für diesen Kanal (0=aus, 10≈23km, 13≈2.8km, 16≈350m, 19≈44m, 32=exakt)</sys:String>
+    <sys:String x:Key="StrNcDescChannelPosPrecision">Positions-Genauigkeit für diesen Kanal. Bit 10–19: von ~23km bis ~45m. 0=deaktiviert, 32=exakt.</sys:String>
     <sys:String x:Key="StrNcChannelUplink">Uplink</sys:String>
     <sys:String x:Key="StrNcChannelDownlink">Downlink</sys:String>
+    <sys:String x:Key="StrNcPrecNone">Kein Standort</sys:String>
+    <sys:String x:Key="StrNcPrecExact">Exakt</sys:String>
     <sys:String x:Key="StrNcDescChannelUplink">Uplink: Empfangene LoRa-Pakete dieses Kanals werden an den MQTT-Broker weitergeleitet.</sys:String>
     <sys:String x:Key="StrNcDescChannelDownlink">Downlink: Vom MQTT-Broker empfangene Nachrichten werden über diesen Kanal ins Mesh gesendet.</sys:String>
     <sys:String x:Key="StrNcLoadingProgress">Lade Konfiguration ({0}/{1})…</sys:String>

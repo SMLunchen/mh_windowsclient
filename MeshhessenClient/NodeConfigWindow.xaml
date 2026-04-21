@@ -408,6 +408,10 @@
                                         <Button x:Name="PickFromMapButton" Click="PickFromMap_Click"
                                                 Content="{DynamicResource StrNcPickFromMap}"
                                                 ToolTip="{DynamicResource StrNcPickFromMapTip}"
+                                                Padding="10,4" Margin="0,0,8,0"/>
+                                        <Button x:Name="UseCurrentPosButton" Click="UseCurrentPosition_Click"
+                                                Content="{DynamicResource StrNcUseCurrentPos}"
+                                                ToolTip="{DynamicResource StrNcUseCurrentPosTip}"
                                                 Padding="10,4" Margin="0,0,10,0"/>
                                         <TextBlock VerticalAlignment="Center" FontSize="11" Foreground="Gray">
                                             <Run Text="{DynamicResource StrNcMapCenterLabel}"/><Run Text=" "/><Run x:Name="MapCenterCoordRun" Text="–"/>
@@ -642,6 +646,9 @@
                             <TextBlock Text="{DynamicResource StrNcDescMqttProxy}" Style="{StaticResource DescStyle}"/>
                             <CheckBox x:Name="MqttMapReportingCheckBox" Content="{DynamicResource StrNcMqttMapReporting}" Margin="0,6,0,0"/>
                             <TextBlock Text="{DynamicResource StrNcDescMqttMapReport}" Style="{StaticResource DescStyle}"/>
+                            <TextBlock Text="{DynamicResource StrNcMqttMapReportPrecision}" Margin="0,8,0,2"/>
+                            <ComboBox x:Name="MqttMapReportPrecisionComboBox" Width="160" HorizontalAlignment="Left" FontSize="12" Height="26"/>
+                            <TextBlock Text="{DynamicResource StrNcDescMqttMapReportPrecision}" Style="{StaticResource DescStyle}"/>
                         </StackPanel>
                     </StackPanel>
                 </ScrollViewer>
@@ -899,11 +906,11 @@
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="58"/>
                                     <ColumnDefinition Width="68"/>
-                                    <ColumnDefinition Width="96"/>
+                                    <ColumnDefinition Width="116"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Grid.Column="0" Text="#" FontWeight="SemiBold" FontSize="11" Foreground="Gray"/>
-                                <TextBlock Grid.Column="1" Text="Role" FontWeight="SemiBold" FontSize="11" Foreground="Gray"/>
-                                <TextBlock Grid.Column="2" Text="Name" FontWeight="SemiBold" FontSize="11" Foreground="Gray" Margin="4,0"/>
+                                <TextBlock Grid.Column="1" Text="{DynamicResource StrNcChannelRole}" FontWeight="SemiBold" FontSize="11" Foreground="Gray"/>
+                                <TextBlock Grid.Column="2" Text="{DynamicResource StrNcChannelName}" FontWeight="SemiBold" FontSize="11" Foreground="Gray" Margin="4,0"/>
                                 <TextBlock Grid.Column="3" Text="{DynamicResource StrNcChannelUplink}" FontWeight="SemiBold" FontSize="11" Foreground="Gray" HorizontalAlignment="Center"/>
                                 <TextBlock Grid.Column="4" Text="{DynamicResource StrNcChannelDownlink}" FontWeight="SemiBold" FontSize="11" Foreground="Gray" HorizontalAlignment="Center"/>
                                 <TextBlock Grid.Column="5" Text="{DynamicResource StrNcChannelPosPrecision}" FontWeight="SemiBold" FontSize="11" Foreground="Gray" HorizontalAlignment="Center"/>
@@ -918,7 +925,7 @@
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="58"/>
                                     <ColumnDefinition Width="68"/>
-                                    <ColumnDefinition Width="96"/>
+                                    <ColumnDefinition Width="116"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Grid.Column="0" Text="0" VerticalAlignment="Center" Foreground="Gray" FontSize="11"/>
                                 <TextBlock x:Name="Ch0Role" Grid.Column="1" VerticalAlignment="Center" FontSize="10" Foreground="DarkGray"/>
@@ -935,7 +942,7 @@
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="58"/>
                                     <ColumnDefinition Width="68"/>
-                                    <ColumnDefinition Width="96"/>
+                                    <ColumnDefinition Width="116"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Grid.Column="0" Text="1" VerticalAlignment="Center" Foreground="Gray" FontSize="11"/>
                                 <TextBlock x:Name="Ch1Role" Grid.Column="1" VerticalAlignment="Center" FontSize="10" Foreground="DarkGray"/>
@@ -952,7 +959,7 @@
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="58"/>
                                     <ColumnDefinition Width="68"/>
-                                    <ColumnDefinition Width="96"/>
+                                    <ColumnDefinition Width="116"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Grid.Column="0" Text="2" VerticalAlignment="Center" Foreground="Gray" FontSize="11"/>
                                 <TextBlock x:Name="Ch2Role" Grid.Column="1" VerticalAlignment="Center" FontSize="10" Foreground="DarkGray"/>
@@ -969,7 +976,7 @@
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="58"/>
                                     <ColumnDefinition Width="68"/>
-                                    <ColumnDefinition Width="96"/>
+                                    <ColumnDefinition Width="116"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Grid.Column="0" Text="3" VerticalAlignment="Center" Foreground="Gray" FontSize="11"/>
                                 <TextBlock x:Name="Ch3Role" Grid.Column="1" VerticalAlignment="Center" FontSize="10" Foreground="DarkGray"/>
@@ -986,7 +993,7 @@
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="58"/>
                                     <ColumnDefinition Width="68"/>
-                                    <ColumnDefinition Width="96"/>
+                                    <ColumnDefinition Width="116"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Grid.Column="0" Text="4" VerticalAlignment="Center" Foreground="Gray" FontSize="11"/>
                                 <TextBlock x:Name="Ch4Role" Grid.Column="1" VerticalAlignment="Center" FontSize="10" Foreground="DarkGray"/>
@@ -1003,7 +1010,7 @@
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="58"/>
                                     <ColumnDefinition Width="68"/>
-                                    <ColumnDefinition Width="96"/>
+                                    <ColumnDefinition Width="116"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Grid.Column="0" Text="5" VerticalAlignment="Center" Foreground="Gray" FontSize="11"/>
                                 <TextBlock x:Name="Ch5Role" Grid.Column="1" VerticalAlignment="Center" FontSize="10" Foreground="DarkGray"/>
@@ -1020,7 +1027,7 @@
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="58"/>
                                     <ColumnDefinition Width="68"/>
-                                    <ColumnDefinition Width="96"/>
+                                    <ColumnDefinition Width="116"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Grid.Column="0" Text="6" VerticalAlignment="Center" Foreground="Gray" FontSize="11"/>
                                 <TextBlock x:Name="Ch6Role" Grid.Column="1" VerticalAlignment="Center" FontSize="10" Foreground="DarkGray"/>
@@ -1037,7 +1044,7 @@
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="58"/>
                                     <ColumnDefinition Width="68"/>
-                                    <ColumnDefinition Width="96"/>
+                                    <ColumnDefinition Width="116"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Grid.Column="0" Text="7" VerticalAlignment="Center" Foreground="Gray" FontSize="11"/>
                                 <TextBlock x:Name="Ch7Role" Grid.Column="1" VerticalAlignment="Center" FontSize="10" Foreground="DarkGray"/>

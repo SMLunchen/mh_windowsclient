@@ -782,6 +782,15 @@ public partial class MainWindow : Window
                         OpenTracerouteForNode(_mapContextMenuNode);
                 };
                 menu.Items.Add(traceItem);
+
+                // Telemetry
+                var telItem = new MenuItem { Header = Loc("StrTelemetry") };
+                telItem.Click += (s, ev) =>
+                {
+                    if (_mapContextMenuNode != null)
+                        OpenTelemetryForNode(_mapContextMenuNode);
+                };
+                menu.Items.Add(telItem);
             }
             else if (hitWaypoint != null)
             {
@@ -1198,32 +1207,7 @@ public partial class MainWindow : Window
         e.Handled = true;
     }
 
-    private class LocalFileTileProvider : ITileProvider
-    {
-        private readonly string _baseDir;
-        private readonly string _sourceFolder;
-
-        public LocalFileTileProvider(string baseDir, string sourceFolder)
-        {
-            _baseDir = baseDir;
-            _sourceFolder = sourceFolder;
-        }
-
-        public Task<byte[]?> GetTileAsync(TileInfo tileInfo)
-        {
-            var z = tileInfo.Index.Level;
-            var x = tileInfo.Index.Col;
-            // BruTile TMS hat Row 0 im Süden, OSM-Dateien haben Y=0 im Norden → konvertieren
-            var yOsm = (1 << z) - 1 - tileInfo.Index.Row;
-            // Neuer Pfad: maptiles/{source}/{z}/{x}/{y}.png
-            var path = Path.Combine(_baseDir, _sourceFolder, z.ToString(), x.ToString(), $"{yOsm}.png");
-            if (File.Exists(path))
-            {
-                try { return Task.FromResult<byte[]?>(File.ReadAllBytes(path)); } catch { }
-            }
-            return Task.FromResult<byte[]?>(null);
-        }
-    }
+    // LocalFileTileProvider moved to Services/LocalFileTileProvider.cs
 
     #endregion
 
@@ -3914,7 +3898,7 @@ public partial class MainWindow : Window
     {
         try
         {
-            var win = new NodeConfigWindow(_protocolService, GetMapCenter) { Owner = this };
+            var win = new NodeConfigWindow(_protocolService, GetMapCenter, GetMyPosition, BuildTileLayer) { Owner = this };
             win.Show();
         }
         catch (Exception ex)
@@ -3934,6 +3918,29 @@ public partial class MainWindow : Window
             return (lat, lon);
         }
         catch { return null; }
+    }
+
+    private (double lat, double lon)? GetMyPosition()
+    {
+        if (_currentSettings.MyLatitude != 0 || _currentSettings.MyLongitude != 0)
+            return (_currentSettings.MyLatitude, _currentSettings.MyLongitude);
+        return null;
+    }
+
+    private Mapsui.Tiling.Layers.TileLayer BuildTileLayer()
+    {
+        var tileDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "maptiles");
+        var sourceFolder = _currentSettings.MapSource;
+        var schema = new BruTile.Predefined.GlobalSphericalMercator(BruTile.YAxis.TMS, 0, 18, "OSM");
+        BruTile.ITileProvider tileProvider = _currentSettings.MapMode switch
+        {
+            "online-osm" => new Services.CachingHttpTileProvider(tileDir, "osm_online",
+                "https://tile.openstreetmap.org/{z}/{x}/{y}.png", useHttpCacheHeaders: true),
+            "online-own" => new Services.CachingHttpTileProvider(tileDir, sourceFolder,
+                GetUrlForSource(sourceFolder), useHttpCacheHeaders: false),
+            _ => new Services.LocalFileTileProvider(tileDir, sourceFolder)
+        };
+        return new Mapsui.Tiling.Layers.TileLayer(new BruTile.TileSource(tileProvider, schema)) { Name = "OSM" };
     }
 
     // ========== Node Pinning ==========
@@ -5165,10 +5172,9 @@ public partial class MainWindow : Window
         ToolTipService.SetToolTip(led, tooltip);
     }
 
-    private void NodeContextMenu_Telemetry_Click(object sender, RoutedEventArgs e)
+    private void OpenTelemetryForNode(NodeInfo node)
     {
-        if (NodesListView.SelectedItem is not NodeInfo node || _db == null) return;
-
+        if (_db == null) return;
         var nodeNames = _allNodes.ToDictionary(n => n.NodeId, n => n.Name);
         var win = new TelemetryWindow(node, _db, nodeNames, _currentSettings.MyLatitude, _currentSettings.MyLongitude,
             _currentSettings.SignalWeatherWindowHours, _currentSettings.SignalAntennaWindowDays)
@@ -5176,6 +5182,12 @@ public partial class MainWindow : Window
             Owner = this
         };
         win.Show();
+    }
+
+    private void NodeContextMenu_Telemetry_Click(object sender, RoutedEventArgs e)
+    {
+        if (NodesListView.SelectedItem is not NodeInfo node) return;
+        OpenTelemetryForNode(node);
     }
 
     // Context menu handlers for traceroute
@@ -5457,11 +5469,11 @@ public partial class MainWindow : Window
     private static void BeepMorse(string text)
     {
         const int Freq      = 700;
-        const int Dot       = 80;
-        const int Dash      = 240;
-        const int ElemGap   = 80;
-        const int LetterGap = 240;
-        const int WordGap   = 560;
+        const int Dot       = 50;
+        const int Dash      = 150;
+        const int ElemGap   = 50;
+        const int LetterGap = 150;
+        const int WordGap   = 350;
 
         var table = new Dictionary<char, string>
         {

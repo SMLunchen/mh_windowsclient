@@ -346,7 +346,9 @@
     <sys:String x:Key="StrNcDescMqttJson">Also publishes decrypted packets as JSON (e.g. for Home Assistant, Node-RED, Grafana).</sys:String>
     <sys:String x:Key="StrNcDescMqttRootTopic">Base MQTT topic for all messages from this device. Default: msh</sys:String>
     <sys:String x:Key="StrNcDescMqttProxy">The connected app (phone/PC) forwards MQTT messages for the device – no direct Wi-Fi on the device needed. Note: This Windows client does not actively implement the proxy mode.</sys:String>
-    <sys:String x:Key="StrNcDescMqttMapReport">Publishes the device's position to the public Meshtastic world map (map.meshtastic.org).</sys:String>
+    <sys:String x:Key="StrNcDescMqttMapReport">Publishes the device's position to the public Meshtastic world map (map.meshtastic.org) and to map.meshhessen.de.</sys:String>
+    <sys:String x:Key="StrNcMqttMapReportPrecision">Map Report Precision</sys:String>
+    <sys:String x:Key="StrNcDescMqttMapReportPrecision">Position precision for map report packets. Recommended: ~370m or higher for public maps.</sys:String>
     <sys:String x:Key="StrNcDescDeviceTelemetry">Device metrics: battery %, voltage, channel utilisation, TX airtime. Visible in the client's telemetry window.</sys:String>
     <sys:String x:Key="StrNcDescEnvTelemetry">Environmental sensors (temperature, humidity, pressure) – requires connected I²C sensor (e.g. BME280).</sys:String>
     <sys:String x:Key="StrNcDescAirQuality">Air quality sensor (PM2.5 etc.) – requires connected sensor (e.g. PMSA003I).</sys:String>
@@ -405,9 +407,15 @@
     <sys:String x:Key="StrNcFixedAlt">Altitude (m)</sys:String>
     <sys:String x:Key="StrNcDescFixedCoords">Decimal degrees, e.g. 50.123456 / 8.654321. Sent to node on save.</sys:String>
     <sys:String x:Key="StrNcPickFromMap">Pick from Map</sys:String>
-    <sys:String x:Key="StrNcPickFromMapTip">Use current map center as fixed position</sys:String>
-    <sys:String x:Key="StrNcPickFromMapHint">Navigate the map to the desired location, then click this button.</sys:String>
+    <sys:String x:Key="StrNcPickFromMapTip">Opens a map window — click the desired location there</sys:String>
+    <sys:String x:Key="StrNcPickFromMapHint">Click "Pick from Map" to open a map window and select the location there.</sys:String>
     <sys:String x:Key="StrNcMapCenterLabel">Current map center:</sys:String>
+    <sys:String x:Key="StrNcUseCurrentPos">Own Map Pin</sys:String>
+    <sys:String x:Key="StrNcUseCurrentPosTip">Uses your own position (set via right-click → "Set My Position" on the map)</sys:String>
+    <sys:String x:Key="StrMapPickerTitle">Pick Location</sys:String>
+    <sys:String x:Key="StrMapPickerHint">Click on the map to select a point, then click "Accept".</sys:String>
+    <sys:String x:Key="StrMapPickerAccept">Accept</sys:String>
+    <sys:String x:Key="StrMapPickerCancel">Cancel</sys:String>
     <sys:String x:Key="StrNcMinIntervalSecs">Smart Broadcast Min. Interval (s)</sys:String>
     <sys:String x:Key="StrNcDescMinIntervalSecs">Minimum wait time in seconds between two smart position broadcasts.</sys:String>
     <sys:String x:Key="StrNcRxGpio">GPS RX GPIO</sys:String>
@@ -467,10 +475,14 @@
     <sys:String x:Key="StrNcDescSecAdminKeys">Public keys of admin devices (Base64). Leave blank = not set.</sys:String>
     <!-- Node config: Channels panel -->
     <sys:String x:Key="StrNcNavChannels">Channels</sys:String>
+    <sys:String x:Key="StrNcChannelRole">Role</sys:String>
+    <sys:String x:Key="StrNcChannelName">Name</sys:String>
     <sys:String x:Key="StrNcChannelPosPrecision">Precision</sys:String>
-    <sys:String x:Key="StrNcDescChannelPosPrecision">Position precision for this channel (0=off, 10≈23km, 13≈2.8km, 16≈350m, 19≈44m, 32=exact)</sys:String>
+    <sys:String x:Key="StrNcDescChannelPosPrecision">Position precision for this channel. Bits 10–19: from ~23km down to ~45m. 0=off, 32=exact.</sys:String>
     <sys:String x:Key="StrNcChannelUplink">Uplink</sys:String>
     <sys:String x:Key="StrNcChannelDownlink">Downlink</sys:String>
+    <sys:String x:Key="StrNcPrecNone">No Location</sys:String>
+    <sys:String x:Key="StrNcPrecExact">Exact</sys:String>
     <sys:String x:Key="StrNcDescChannelUplink">Uplink: received LoRa packets on this channel are forwarded to the MQTT broker.</sys:String>
     <sys:String x:Key="StrNcDescChannelDownlink">Downlink: messages from the MQTT broker are sent into the mesh via this channel.</sys:String>
     <sys:String x:Key="StrNcLoadingProgress">Loading configuration ({0}/{1})…</sys:String>

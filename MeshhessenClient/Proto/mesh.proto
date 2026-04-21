@@ -316,6 +316,7 @@ message MQTTConfig {
   string root = 8;
   bool proxy_to_client_enabled = 9;
   bool map_reporting_enabled = 10;
+  uint32 map_report_precision = 11;
 }
 
 message SerialConfig {

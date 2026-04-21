@@ -12,6 +12,8 @@ public partial class NodeConfigWindow : Window
 {
     private readonly MeshtasticProtocolService _protocolService;
     private Func<(double lat, double lon)?>? _mapCenterProvider;
+    private Func<(double lat, double lon)?>? _myPosProvider;
+    private Func<Mapsui.Tiling.Layers.TileLayer>? _tileLayerFactory;
 
     // Loaded configs (for clone-and-update pattern)
     private User?                      _loadedOwner;
@@ -42,11 +44,13 @@ public partial class NodeConfigWindow : Window
     // Map Tag → content panel
     private Dictionary<string, FrameworkElement> _panels = new();
 
-    public NodeConfigWindow(MeshtasticProtocolService protocolService, Func<(double lat, double lon)?>? mapCenterProvider = null)
+    public NodeConfigWindow(MeshtasticProtocolService protocolService, Func<(double lat, double lon)?>? mapCenterProvider = null, Func<(double lat, double lon)?>? myPosProvider = null, Func<Mapsui.Tiling.Layers.TileLayer>? tileLayerFactory = null)
     {
         InitializeComponent();
         _protocolService = protocolService;
         _mapCenterProvider = mapCenterProvider;
+        _myPosProvider = myPosProvider;
+        _tileLayerFactory = tileLayerFactory;
 
         // Wire up events
         _protocolService.OwnerReceived                    += OnOwnerReceived;
@@ -424,6 +428,7 @@ public partial class NodeConfigWindow : Window
             MqttRootTextBox.Text               = config.Root;
             MqttProxyCheckBox.IsChecked        = config.ProxyToClientEnabled;
             MqttMapReportingCheckBox.IsChecked = config.MapReportingEnabled;
+            SelectComboBoxByTag(MqttMapReportPrecisionComboBox, (int)config.MapReportPrecision);
             MarkReceived("mqtt");
         });
     }
@@ -680,24 +685,42 @@ public partial class NodeConfigWindow : Window
 
     // ========== Precision ComboBox helpers ==========
 
-    private static readonly (string Label, uint Value)[] PrecisionOptions =
+    private static readonly (string LabelKey, string Distance, uint Value)[] PrecisionOptions =
     {
-        ("Kein Standort", 0),
-        ("~23km",        10),
-        ("~2.9km",       13),
-        ("~360m",        16),
-        ("~45m",         19),
-        ("Genau",        32),
+        ("StrNcPrecNone", "",       0),
+        ("",              "~23km",  10),
+        ("",              "~11km",  11),
+        ("",              "~5.7km", 12),
+        ("",              "~2.9km", 13),
+        ("",              "~1.4km", 14),
+        ("",              "~720m",  15),
+        ("",              "~360m",  16),
+        ("",              "~180m",  17),
+        ("",              "~90m",   18),
+        ("",              "~45m",   19),
+        ("StrNcPrecExact","",       32),
     };
+
+    private string PrecisionLabel(int index)
+    {
+        var (key, dist, _) = PrecisionOptions[index];
+        if (!string.IsNullOrEmpty(key)) return Loc(key);
+        return dist;
+    }
 
     private void InitPrecisionComboBoxes()
     {
         foreach (var cb in new[] { Ch0Precision, Ch1Precision, Ch2Precision, Ch3Precision,
-                                   Ch4Precision, Ch5Precision, Ch6Precision, Ch7Precision })
+                                   Ch4Precision, Ch5Precision, Ch6Precision, Ch7Precision,
+                                   MqttMapReportPrecisionComboBox })
         {
+            if (cb == null) continue;
             cb.Items.Clear();
-            foreach (var (label, value) in PrecisionOptions)
-                cb.Items.Add(new ComboBoxItem { Content = label, Tag = value.ToString() });
+            for (int i = 0; i < PrecisionOptions.Length; i++)
+            {
+                var (_, _, value) = PrecisionOptions[i];
+                cb.Items.Add(new ComboBoxItem { Content = PrecisionLabel(i), Tag = value.ToString() });
+            }
             cb.SelectedIndex = 0;
         }
     }
@@ -732,15 +755,43 @@ public partial class NodeConfigWindow : Window
 
     private void PickFromMap_Click(object sender, RoutedEventArgs e)
     {
-        if (_mapCenterProvider == null)
+        // Get initial center: prefer current fixed-pos values, fall back to mapCenterProvider
+        double initLat = 50.5, initLon = 9.0;
+        if (double.TryParse(FixedLatTextBox.Text, System.Globalization.NumberStyles.Float,
+                System.Globalization.CultureInfo.InvariantCulture, out double parsedLat) &&
+            double.TryParse(FixedLonTextBox.Text, System.Globalization.NumberStyles.Float,
+                System.Globalization.CultureInfo.InvariantCulture, out double parsedLon) &&
+            parsedLat != 0 && parsedLon != 0)
         {
-            MessageBox.Show("Kein Kartenkontext verfügbar.", "Hinweis", MessageBoxButton.OK, MessageBoxImage.Information);
+            initLat = parsedLat;
+            initLon = parsedLon;
+        }
+        else if (_mapCenterProvider != null)
+        {
+            var center = _mapCenterProvider();
+            if (center.HasValue) { initLat = center.Value.lat; initLon = center.Value.lon; }
+        }
+
+        var picker = new MapPickerWindow(initLat, initLon, _tileLayerFactory) { Owner = this };
+        if (picker.ShowDialog() == true && picker.SelectedPosition.HasValue)
+        {
+            FixedLatTextBox.Text = picker.SelectedPosition.Value.lat.ToString("F6", System.Globalization.CultureInfo.InvariantCulture);
+            FixedLonTextBox.Text = picker.SelectedPosition.Value.lon.ToString("F6", System.Globalization.CultureInfo.InvariantCulture);
+            RefreshMapCenterHint();
+        }
+    }
+
+    private void UseCurrentPosition_Click(object sender, RoutedEventArgs e)
+    {
+        if (_myPosProvider == null)
+        {
+            MessageBox.Show(Loc("StrHint"), Loc("StrHint"), MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
-        var pos = _mapCenterProvider();
-        if (pos == null)
+        var pos = _myPosProvider();
+        if (pos == null || (pos.Value.lat == 0 && pos.Value.lon == 0))
         {
-            MessageBox.Show("Konnte Kartenposition nicht lesen.", "Hinweis", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show(Loc("StrHint"), Loc("StrHint"), MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
         FixedLatTextBox.Text = pos.Value.lat.ToString("F6", System.Globalization.CultureInfo.InvariantCulture);
@@ -989,6 +1040,7 @@ public partial class NodeConfigWindow : Window
             newMqtt.Root                 = MqttRootTextBox.Text.Trim();
             newMqtt.ProxyToClientEnabled = MqttProxyCheckBox.IsChecked == true;
             newMqtt.MapReportingEnabled  = MqttMapReportingCheckBox.IsChecked == true;
+            newMqtt.MapReportPrecision   = (uint)GetComboBoxTag(MqttMapReportPrecisionComboBox);
             await _protocolService.SetMqttConfigAsync(newMqtt);
             await Delay();
 
