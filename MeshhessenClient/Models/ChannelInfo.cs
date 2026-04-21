@@ -8,4 +8,5 @@ public class ChannelInfo
     public string Role { get; set; } = string.Empty;
     public bool Downlink { get; set; }
     public bool Uplink { get; set; }
+    public uint PositionPrecision { get; set; }
 }

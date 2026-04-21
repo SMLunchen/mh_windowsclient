@@ -4,7 +4,7 @@ Der **Meshhessen Client** ist ein **kostenloser, nativer Windows-Client für Mes
 
 ![Windows](https://img.shields.io/badge/Windows-10%2F11-blue)
 ![.NET](https://img.shields.io/badge/.NET-8.0-purple)
-![Status](https://img.shields.io/badge/Status-v1.5.8-yellow)
+![Status](https://img.shields.io/badge/Status-v1.5.9-yellow)
 ![License](https://img.shields.io/github/license/SMLunchen/mh_windowsclient)
 ![Stars](https://img.shields.io/github/stars/SMLunchen/mh_windowsclient)
 
@@ -107,7 +107,9 @@ Der **Meshhessen Client** ist ein **kostenloser, nativer Windows-Client für Mes
 * **Node-Farben** – Nodes individuell einfärben (Karte + Listen)
 * **Node-Notizen** – Freitext-Notizen pro Node
 * **Nodes anpinnen** – Nodes in der Liste oben fixieren (unabhängig von Sortierung)
-* **Node-Konfiguration** – Einstellungen des verbundenen Geräts anpassen
+* **Node-Konfiguration** – vollständige Gerätekonfiguration direkt aus dem Client (Device, LoRa, Position, Power, Network, Display, Bluetooth, Security, MQTT, Telemetrie, Kanäle u.v.m.)
+  * **Feste Position (Fixed Position)** – Breitengrad, Längengrad und Höhe manuell eingeben und an den Node übertragen; Koordinaten mit einem Klick vom aktuellen Kartenmittelpunkt übernehmen
+  * **Kanal-Konfiguration** – MQTT-Uplink/Downlink und Positions-Präzision pro Kanal direkt einstellen (wie Android-App)
 * **BT-PIN ändern** – Bluetooth-PIN direkt aus dem Client setzen
 
 ### ⚙️ Verbindung & System
@@ -328,7 +330,7 @@ Meshhessen Client · Windows-Client für Meshtastic-Geräte · Meshtastic Window
 
  ![Windows](https://img.shields.io/badge/Windows-10%2F11-blue)
  ![.NET](https://img.shields.io/badge/.NET-8.0-purple)
- ![Status](https://img.shields.io/badge/Status-v1.5.8-yellow)
+ ![Status](https://img.shields.io/badge/Status-v1.5.9-yellow)
  ![License](https://img.shields.io/github/license/SMLunchen/mh_windowsclient)
  ![Stars](https://img.shields.io/github/stars/SMLunchen/mh_windowsclient)
 
@@ -429,7 +431,9 @@ Meshhessen Client · Windows-Client für Meshtastic-Geräte · Meshtastic Window
 * **Node colors** – color-code nodes individually (map + lists)
 * **Node notes** – free-text annotations per node
 * **Pin nodes** – pin nodes to the top of the list (independent of sorting)
-* **Node configuration** – adjust settings of the connected device
+* **Node configuration** – full device configuration directly from the client (device, LoRa, position, power, network, display, Bluetooth, security, MQTT, telemetry, channels, and more)
+  * **Fixed Position** – enter latitude, longitude, and altitude manually and transmit to the node; pick coordinates from the current map center with one click
+  * **Channel configuration** – set MQTT uplink/downlink and position precision per channel directly (like the Android app)
 * **Change BT PIN** – set Bluetooth PIN directly from the client
 
 ### ⚙️ Connection & System

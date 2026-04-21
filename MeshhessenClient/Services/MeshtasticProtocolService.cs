@@ -40,9 +40,19 @@ public class MeshtasticProtocolService
     public event EventHandler<LoRaConfig>? LoRaConfigReceived;
     public event EventHandler<DeviceConfig>? DeviceConfigReceived;
     public event EventHandler<PositionConfig>? PositionConfigReceived;
+    public event EventHandler<PowerConfig>? PowerConfigReceived;
+    public event EventHandler<NetworkConfig>? NetworkConfigReceived;
+    public event EventHandler<DisplayConfig>? DisplayConfigReceived;
     public event EventHandler<MQTTConfig>? MqttConfigReceived;
     public event EventHandler<TelemetryConfig>? TelemetryConfigReceived;
     public event EventHandler<BluetoothConfig>? BluetoothConfigReceived;
+    public event EventHandler<NeighborInfoConfig>? NeighborInfoConfigReceived;
+    public event EventHandler<StoreForwardConfig>? StoreForwardConfigReceived;
+    public event EventHandler<ExternalNotificationConfig>? ExternalNotificationConfigReceived;
+    public event EventHandler<CannedMessageConfig>? CannedMessageConfigReceived;
+    public event EventHandler<RangeTestConfig>? RangeTestConfigReceived;
+    public event EventHandler<SerialConfig>? SerialConfigReceived;
+    public event EventHandler<SecurityConfig>? SecurityConfigReceived;
     public event EventHandler<User>? OwnerReceived;
     public event EventHandler<DeviceInfo>? DeviceInfoReceived;
     public event EventHandler<int>? PacketCountChanged;
@@ -53,6 +63,8 @@ public class MeshtasticProtocolService
     public event EventHandler<int>? TimeDriftDetected;  // arg: observed drift in seconds
     public event EventHandler<TelemetryDatabaseService.WaypointEntry>? WaypointReceived;
     public event EventHandler<uint>? WaypointDeleted;
+    /// <summary>Raised when the radio sends an MqttClientProxyMessage (device→broker direction).</summary>
+    public event EventHandler<MqttClientProxyMessage>? MqttProxyMessageReceived;
     public int TimeDriftThresholdSeconds { get; set; } = 300; // 5 minutes
 
     private DateTime _lastDriftCheck = DateTime.MinValue;
@@ -296,14 +308,14 @@ public class MeshtasticProtocolService
 
             var channelInfo = new ChannelInfo
             {
-                Index = channel.Index,
-                Name = ExtractChannelName(channel),
-                Role = channel.Role.ToString(),
-                Psk = channel.Settings?.Psk != null && channel.Settings.Psk.Length > 0
-                    ? Convert.ToBase64String(channel.Settings.Psk.ToByteArray())
-                    : "",
-                Uplink = channel.Settings?.UplinkEnabled ?? false,
-                Downlink = channel.Settings?.DownlinkEnabled ?? false
+                Index             = channel.Index,
+                Name              = ExtractChannelName(channel),
+                Role              = channel.Role.ToString(),
+                Psk               = channel.Settings?.Psk != null && channel.Settings.Psk.Length > 0
+                    ? Convert.ToBase64String(channel.Settings.Psk.ToByteArray()) : "",
+                Uplink            = channel.Settings?.UplinkEnabled ?? false,
+                Downlink          = channel.Settings?.DownlinkEnabled ?? false,
+                PositionPrecision = channel.Settings?.ModuleSettings?.PositionPrecision ?? 0
             };
             ChannelInfoReceived?.Invoke(this, channelInfo);
             await Task.Delay(50);
@@ -776,6 +788,10 @@ public class MeshtasticProtocolService
                 break;
 
             case FromRadio.PayloadVariantOneofCase.ModuleConfig:
+                break;
+
+            case FromRadio.PayloadVariantOneofCase.MqttClientProxyMessage:
+                MqttProxyMessageReceived?.Invoke(this, fromRadio.MqttClientProxyMessage);
                 break;
         }
     }
@@ -1532,14 +1548,14 @@ public class MeshtasticProtocolService
 
                     var channelInfo = new ChannelInfo
                     {
-                        Index = channel.Index,
-                        Name = channelName,
-                        Role = channel.Role.ToString(),
-                        Psk = channel.Settings?.Psk != null && channel.Settings.Psk.Length > 0
-                            ? Convert.ToBase64String(channel.Settings.Psk.ToByteArray())
-                            : "",
-                        Uplink = channel.Settings?.UplinkEnabled ?? false,
-                        Downlink = channel.Settings?.DownlinkEnabled ?? false
+                        Index             = channel.Index,
+                        Name              = channelName,
+                        Role              = channel.Role.ToString(),
+                        Psk               = channel.Settings?.Psk != null && channel.Settings.Psk.Length > 0
+                            ? Convert.ToBase64String(channel.Settings.Psk.ToByteArray()) : "",
+                        Uplink            = channel.Settings?.UplinkEnabled ?? false,
+                        Downlink          = channel.Settings?.DownlinkEnabled ?? false,
+                        PositionPrecision = channel.Settings?.ModuleSettings?.PositionPrecision ?? 0
                     };
                     ChannelInfoReceived?.Invoke(this, channelInfo);
                 }
@@ -1862,6 +1878,60 @@ public class MeshtasticProtocolService
         await SendAdminMessageAsync(adminMsg);
     }
 
+    public async Task RequestPowerConfigAsync()
+    {
+        var adminMsg = new AdminMessage { GetConfigRequest = 2 }; // POWER = 2
+        await SendAdminMessageAsync(adminMsg);
+    }
+
+    public async Task RequestNetworkConfigAsync()
+    {
+        var adminMsg = new AdminMessage { GetConfigRequest = 3 }; // NETWORK = 3
+        await SendAdminMessageAsync(adminMsg);
+    }
+
+    public async Task RequestDisplayConfigAsync()
+    {
+        var adminMsg = new AdminMessage { GetConfigRequest = 4 }; // DISPLAY = 4
+        await SendAdminMessageAsync(adminMsg);
+    }
+
+    public async Task RequestSerialConfigAsync()
+    {
+        var adminMsg = new AdminMessage { GetModuleConfigRequest = 1 }; // SERIAL = 1
+        await SendAdminMessageAsync(adminMsg);
+    }
+
+    public async Task RequestExternalNotificationConfigAsync()
+    {
+        var adminMsg = new AdminMessage { GetModuleConfigRequest = 2 }; // EXT_NOTIF = 2
+        await SendAdminMessageAsync(adminMsg);
+    }
+
+    public async Task RequestStoreForwardConfigAsync()
+    {
+        var adminMsg = new AdminMessage { GetModuleConfigRequest = 3 }; // STORE_FORWARD = 3
+        await SendAdminMessageAsync(adminMsg);
+    }
+
+    public async Task RequestRangeTestConfigAsync()
+    {
+        var adminMsg = new AdminMessage { GetModuleConfigRequest = 4 }; // RANGE_TEST = 4
+        await SendAdminMessageAsync(adminMsg);
+    }
+
+    public async Task RequestCannedMessageConfigAsync()
+    {
+        var adminMsg = new AdminMessage { GetModuleConfigRequest = 6 }; // CANNED_MSG = 6
+        await SendAdminMessageAsync(adminMsg);
+    }
+
+    public async Task RequestNeighborInfoConfigAsync()
+    {
+        var adminMsg = new AdminMessage { GetModuleConfigRequest = 9 }; // NEIGHBOR_INFO = 9
+        await SendAdminMessageAsync(adminMsg);
+    }
+
     // ========== Config Set Methods ==========
 
     public async Task SetOwnerAsync(User user)
@@ -1882,6 +1952,20 @@ public class MeshtasticProtocolService
     {
         await EnsureSessionKeyAsync();
         var adminMsg = new AdminMessage { SetConfig = new Config { Position = config } };
+        await SendAdminMessageAsync(adminMsg);
+    }
+
+    public async Task SetFixedPositionAsync(double latDeg, double lonDeg, int altitudeM)
+    {
+        await EnsureSessionKeyAsync();
+        var position = new Position
+        {
+            LatitudeI  = (int)(latDeg  * 1e7),
+            LongitudeI = (int)(lonDeg  * 1e7),
+            Altitude   = altitudeM,
+            Time       = (uint)DateTimeOffset.UtcNow.ToUnixTimeSeconds()
+        };
+        var adminMsg = new AdminMessage { SetPosition = position };
         await SendAdminMessageAsync(adminMsg);
     }
 
@@ -1910,6 +1994,125 @@ public class MeshtasticProtocolService
     {
         await EnsureSessionKeyAsync();
         var adminMsg = new AdminMessage { SetConfig = new Config { Bluetooth = config } };
+        await SendAdminMessageAsync(adminMsg);
+    }
+
+    public async Task SetPowerConfigAsync(PowerConfig config)
+    {
+        await EnsureSessionKeyAsync();
+        var adminMsg = new AdminMessage { SetConfig = new Config { Power = config } };
+        await SendAdminMessageAsync(adminMsg);
+    }
+
+    public async Task SetNetworkConfigAsync(NetworkConfig config)
+    {
+        await EnsureSessionKeyAsync();
+        var adminMsg = new AdminMessage { SetConfig = new Config { Network = config } };
+        await SendAdminMessageAsync(adminMsg);
+    }
+
+    public async Task SetDisplayConfigAsync(DisplayConfig config)
+    {
+        await EnsureSessionKeyAsync();
+        var adminMsg = new AdminMessage { SetConfig = new Config { Display = config } };
+        await SendAdminMessageAsync(adminMsg);
+    }
+
+    public async Task RequestSecurityConfigAsync()
+    {
+        var adminMsg = new AdminMessage { GetConfigRequest = (uint)AdminMessage.Types.ConfigType.SecurityConfig };
+        await SendAdminMessageAsync(adminMsg);
+    }
+
+    public async Task SetSecurityConfigAsync(SecurityConfig config)
+    {
+        await EnsureSessionKeyAsync();
+        var adminMsg = new AdminMessage { SetConfig = new Config { Security = config } };
+        await SendAdminMessageAsync(adminMsg);
+    }
+
+    public async Task RequestChannelConfigAsync(int channelIndex)
+    {
+        await RequestChannelAsync(channelIndex);
+    }
+
+    public async Task UpdateChannelUplinkDownlinkAsync(Channel channel)
+    {
+        await EnsureSessionKeyAsync();
+        var adminMsg = new AdminMessage { SetChannel = channel };
+        await SendAdminMessageAsync(adminMsg);
+    }
+
+    public async Task SetSerialConfigAsync(SerialConfig config)
+    {
+        await EnsureSessionKeyAsync();
+        var adminMsg = new AdminMessage { SetModuleConfig = new ModuleConfig { Serial = config } };
+        await SendAdminMessageAsync(adminMsg);
+    }
+
+    public async Task SetExternalNotificationConfigAsync(ExternalNotificationConfig config)
+    {
+        await EnsureSessionKeyAsync();
+        var adminMsg = new AdminMessage { SetModuleConfig = new ModuleConfig { ExternalNotification = config } };
+        await SendAdminMessageAsync(adminMsg);
+    }
+
+    public async Task SetStoreForwardConfigAsync(StoreForwardConfig config)
+    {
+        await EnsureSessionKeyAsync();
+        var adminMsg = new AdminMessage { SetModuleConfig = new ModuleConfig { StoreForward = config } };
+        await SendAdminMessageAsync(adminMsg);
+    }
+
+    public async Task SetRangeTestConfigAsync(RangeTestConfig config)
+    {
+        await EnsureSessionKeyAsync();
+        var adminMsg = new AdminMessage { SetModuleConfig = new ModuleConfig { RangeTest = config } };
+        await SendAdminMessageAsync(adminMsg);
+    }
+
+    public async Task SetCannedMessageConfigAsync(CannedMessageConfig config)
+    {
+        await EnsureSessionKeyAsync();
+        var adminMsg = new AdminMessage { SetModuleConfig = new ModuleConfig { CannedMessage = config } };
+        await SendAdminMessageAsync(adminMsg);
+    }
+
+    public async Task SetNeighborInfoConfigAsync(NeighborInfoConfig config)
+    {
+        await EnsureSessionKeyAsync();
+        var adminMsg = new AdminMessage { SetModuleConfig = new ModuleConfig { NeighborInfo = config } };
+        await SendAdminMessageAsync(adminMsg);
+    }
+
+    /// <summary>
+    /// Sends an MqttClientProxyMessage to the radio (broker→device direction).
+    /// Called by MqttProxyService when a message arrives from the MQTT broker.
+    /// </summary>
+    public async Task SendMqttProxyMessageAsync(MqttClientProxyMessage msg)
+    {
+        var toRadio = new ToRadio { MqttClientProxyMessage = msg };
+        await SendToRadioAsync(toRadio);
+    }
+
+    public async Task BeginEditSettingsAsync()
+    {
+        await EnsureSessionKeyAsync();
+        var adminMsg = new AdminMessage { BeginEditSettings = true };
+        await SendAdminMessageAsync(adminMsg);
+    }
+
+    public async Task CommitEditSettingsAsync()
+    {
+        await EnsureSessionKeyAsync();
+        var adminMsg = new AdminMessage { CommitEditSettings = true };
+        await SendAdminMessageAsync(adminMsg);
+    }
+
+    public async Task RebootAsync(int delaySecs = 3)
+    {
+        await EnsureSessionKeyAsync();
+        var adminMsg = new AdminMessage { RebootSeconds = delaySecs };
         await SendAdminMessageAsync(adminMsg);
     }
 
@@ -1995,16 +2198,18 @@ public class MeshtasticProtocolService
                         shouldFireChannelEvent = !_isInitializing;
                     }
 
-                    if (shouldFireChannelEvent && channel.Role != ChannelRole.Disabled)
+                    if (shouldFireChannelEvent)
                     {
                         var channelInfo = new ChannelInfo
                         {
-                            Index = channel.Index,
-                            Name = channelName,
-                            Role = channel.Role.ToString(),
-                            Psk = channel.Settings?.Psk != null && channel.Settings.Psk.Length > 0
-                                ? Convert.ToBase64String(channel.Settings.Psk.ToByteArray())
-                                : ""
+                            Index             = channel.Index,
+                            Name              = channelName,
+                            Role              = channel.Role.ToString(),
+                            Psk               = channel.Settings?.Psk != null && channel.Settings.Psk.Length > 0
+                                ? Convert.ToBase64String(channel.Settings.Psk.ToByteArray()) : "",
+                            Uplink            = channel.Settings?.UplinkEnabled ?? false,
+                            Downlink          = channel.Settings?.DownlinkEnabled ?? false,
+                            PositionPrecision = channel.Settings?.ModuleSettings?.PositionPrecision ?? 0
                         };
                         ChannelInfoReceived?.Invoke(this, channelInfo);
                     }
@@ -2044,6 +2249,18 @@ public class MeshtasticProtocolService
                             BluetoothConfigReceived?.Invoke(this, config.Bluetooth);
                             break;
 
+                        case Config.PayloadVariantOneofCase.Power:
+                            PowerConfigReceived?.Invoke(this, config.Power);
+                            break;
+
+                        case Config.PayloadVariantOneofCase.Network:
+                            NetworkConfigReceived?.Invoke(this, config.Network);
+                            break;
+
+                        case Config.PayloadVariantOneofCase.Display:
+                            DisplayConfigReceived?.Invoke(this, config.Display);
+                            break;
+
                         case Config.PayloadVariantOneofCase.Security:
                             var sec = config.Security;
                             if (sec.PrivateKey != null && sec.PrivateKey.Length == 32)
@@ -2055,6 +2272,7 @@ public class MeshtasticProtocolService
                             {
                                 Logger.WriteLine("SecurityConfig received but private key missing/invalid");
                             }
+                            SecurityConfigReceived?.Invoke(this, sec);
                             break;
                     }
                     break;
@@ -2087,6 +2305,30 @@ public class MeshtasticProtocolService
 
                         case ModuleConfig.PayloadVariantOneofCase.Telemetry:
                             TelemetryConfigReceived?.Invoke(this, moduleConfig.Telemetry);
+                            break;
+
+                        case ModuleConfig.PayloadVariantOneofCase.Serial:
+                            SerialConfigReceived?.Invoke(this, moduleConfig.Serial);
+                            break;
+
+                        case ModuleConfig.PayloadVariantOneofCase.ExternalNotification:
+                            ExternalNotificationConfigReceived?.Invoke(this, moduleConfig.ExternalNotification);
+                            break;
+
+                        case ModuleConfig.PayloadVariantOneofCase.StoreForward:
+                            StoreForwardConfigReceived?.Invoke(this, moduleConfig.StoreForward);
+                            break;
+
+                        case ModuleConfig.PayloadVariantOneofCase.RangeTest:
+                            RangeTestConfigReceived?.Invoke(this, moduleConfig.RangeTest);
+                            break;
+
+                        case ModuleConfig.PayloadVariantOneofCase.CannedMessage:
+                            CannedMessageConfigReceived?.Invoke(this, moduleConfig.CannedMessage);
+                            break;
+
+                        case ModuleConfig.PayloadVariantOneofCase.NeighborInfo:
+                            NeighborInfoConfigReceived?.Invoke(this, moduleConfig.NeighborInfo);
                             break;
                     }
                     break;

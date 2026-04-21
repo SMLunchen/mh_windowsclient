@@ -41,7 +41,7 @@
     "url": "https://smlunchen.github.io/mh_windowsclient/",
     "downloadUrl": "https://github.com/SMLunchen/mh_windowsclient/releases/latest",
     "author": { "@type": "Organization", "name": "Meshhessen Community", "url": "https://www.meshhessen.de" },
-    "softwareVersion": "1.5.8",
+    "softwareVersion": "1.5.9",
     "screenshot": "https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map.png",
     "keywords": "Meshtastic, Windows, LoRa, Mesh, Telemetrie, Traceroute, Offline-Karte, PKI"
   }
@@ -312,8 +312,8 @@
 <main>
 
   <div class="whats-new">
-    <span class="vbadge">v1.5.8</span>
-    <span class="summary">Persistente Nachrichten-DB, DM-History, Online-Karten, HTTP/3 und mehr.</span>
+    <span class="vbadge">v1.5.9</span>
+    <span class="summary">Feste Position via Karte, Kanal-Uplink/Downlink, Kanalverwaltung-Fix und mehr.</span>
     <a href="changelog.html">Changelog ansehen →</a>
   </div>
 
@@ -384,13 +384,16 @@
       </ul>
     </div>
     <div class="card" style="--card-accent:#56d364">
-      <h3>🔧 Node-Verwaltung</h3>
+      <span class="badge-new">NEU</span>
+      <h3>🔧 Node-Verwaltung &amp; Konfiguration</h3>
       <ul>
         <li>Node-Farben individuell wählbar (Karte + Liste)</li>
         <li>Freitext-Notizen pro Node</li>
         <li>Nodes anpinnen (oben fixieren, unabhängig von Sortierung)</li>
         <li>Schnellfilter für die Node-Liste</li>
-        <li>Node-Konfiguration direkt aus dem Client</li>
+        <li><strong>Vollständige Node-Konfiguration</strong> (Device, LoRa, Position, Power, Network, Display, BT, Security, MQTT, Telemetrie, Kanäle)</li>
+        <li><strong>Feste Position</strong> – Lat/Lon/Höhe eingeben oder direkt vom Kartenmittelpunkt übernehmen</li>
+        <li><strong>Kanal-Konfiguration</strong> – MQTT-Uplink/Downlink &amp; Positions-Präzision pro Kanal</li>
         <li>Bluetooth-PIN direkt ändern</li>
         <li>Meshhessen-Schnellkonfiguration (One-Click Short Slow + EU868)</li>
       </ul>
@@ -693,8 +696,8 @@
 <main>
 
   <div class="whats-new">
-    <span class="vbadge">NEW</span>
-    <span class="summary">Persistent message DB, DM history, online maps, HTTP/3 and more.</span>
+    <span class="vbadge">v1.5.9</span>
+    <span class="summary">Fixed position via map, channel uplink/downlink, channel management fix and more.</span>
     <a href="changelog.html">View changelog →</a>
   </div>
 
@@ -765,13 +768,16 @@
       </ul>
     </div>
     <div class="card" style="--card-accent:#56d364">
-      <h3>🔧 Node Management</h3>
+      <span class="badge-new">NEW</span>
+      <h3>🔧 Node Management &amp; Config</h3>
       <ul>
         <li>Individual node colors (map + list)</li>
         <li>Free-text notes per node</li>
         <li>Pin nodes to top (independent of sort order)</li>
         <li>Quick filter for the node list</li>
-        <li>Node configuration directly from the client</li>
+        <li><strong>Full node configuration</strong> (device, LoRa, position, power, network, display, BT, security, MQTT, telemetry, channels)</li>
+        <li><strong>Fixed position</strong> – enter lat/lon/altitude or pick from current map center</li>
+        <li><strong>Channel config</strong> – MQTT uplink/downlink &amp; position precision per channel</li>
         <li>Change Bluetooth PIN directly</li>
         <li>Meshhessen quick-config (one-click Short Slow + EU868)</li>
       </ul>

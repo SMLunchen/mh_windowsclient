@@ -43,5 +43,7 @@ message AdminMessage {
     bool nodedb_reset = 100;
     bool get_device_metadata_request = 12;
     DeviceMetadata get_device_metadata_response = 13;
+    Position set_position = 88;
+    bool remove_position = 89;
   }
 }

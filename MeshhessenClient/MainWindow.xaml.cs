@@ -21,6 +21,7 @@ using BruTile.Predefined;
 using NetTopologySuite.Geometries;
 using Mapsui.Nts;
 using LoRaConfig = Meshtastic.Protobufs.LoRaConfig;
+using MQTTConfig = Meshtastic.Protobufs.MQTTConfig;
 
 namespace MeshhessenClient;
 
@@ -152,11 +153,20 @@ public partial class MainWindow : Window
     // Node Public Key CSV
     private NodeKeyService? _nodeKeyService;
 
+    // MQTT Proxy
+    private MqttProxyService? _mqttProxyService;
+
     // Reconnect state
     private ConnectionParameters? _lastConnectionParams;
     private Services.ConnectionType _lastConnectionType;
     private bool _intentionalDisconnect = false;
     private bool _isReconnecting = false;
+
+    // Easter Eggs
+    private System.Threading.Timer? _midnightTimer;
+    private bool _midnightFiredToday = false;
+    private int _logoClickCount = 0;
+    private DateTime _lastLogoClick = DateTime.MinValue;
 
     public MainWindow()
     {
@@ -170,6 +180,8 @@ public partial class MainWindow : Window
         FooterVersionText.Text = versionStr;
 
         Loaded += (_, _) => _ = CheckForUpdateAsync();
+        _midnightTimer = new System.Threading.Timer(_ => CheckMidnight(), null,
+            TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30));
 
         // Initialize with Serial connection (default)
         _connectionService = new SerialConnectionService();
@@ -194,6 +206,10 @@ public partial class MainWindow : Window
         _protocolService.TimeDriftDetected += OnTimeDriftDetected;
         _protocolService.WaypointReceived  += OnWaypointReceived;
         _protocolService.WaypointDeleted   += (s, id) => Dispatcher.Invoke(() => OnWaypointDeleted(id));
+        _protocolService.MqttConfigReceived += OnMqttConfigReceived;
+
+        _mqttProxyService = new MqttProxyService(_protocolService);
+        _mqttProxyService.StatusChanged += (s, msg) => Dispatcher.Invoke(() => UpdateStatusBar(msg));
 
         // LoadRegions / LoadModemPresets removed — now displayed as read-only TextBlocks in Settings right column
 
@@ -766,6 +782,15 @@ public partial class MainWindow : Window
                         OpenTracerouteForNode(_mapContextMenuNode);
                 };
                 menu.Items.Add(traceItem);
+
+                // Telemetry
+                var telItem = new MenuItem { Header = Loc("StrTelemetry") };
+                telItem.Click += (s, ev) =>
+                {
+                    if (_mapContextMenuNode != null)
+                        OpenTelemetryForNode(_mapContextMenuNode);
+                };
+                menu.Items.Add(telItem);
             }
             else if (hitWaypoint != null)
             {
@@ -1182,32 +1207,7 @@ public partial class MainWindow : Window
         e.Handled = true;
     }
 
-    private class LocalFileTileProvider : ITileProvider
-    {
-        private readonly string _baseDir;
-        private readonly string _sourceFolder;
-
-        public LocalFileTileProvider(string baseDir, string sourceFolder)
-        {
-            _baseDir = baseDir;
-            _sourceFolder = sourceFolder;
-        }
-
-        public Task<byte[]?> GetTileAsync(TileInfo tileInfo)
-        {
-            var z = tileInfo.Index.Level;
-            var x = tileInfo.Index.Col;
-            // BruTile TMS hat Row 0 im Süden, OSM-Dateien haben Y=0 im Norden → konvertieren
-            var yOsm = (1 << z) - 1 - tileInfo.Index.Row;
-            // Neuer Pfad: maptiles/{source}/{z}/{x}/{y}.png
-            var path = Path.Combine(_baseDir, _sourceFolder, z.ToString(), x.ToString(), $"{yOsm}.png");
-            if (File.Exists(path))
-            {
-                try { return Task.FromResult<byte[]?>(File.ReadAllBytes(path)); } catch { }
-            }
-            return Task.FromResult<byte[]?>(null);
-        }
-    }
+    // LocalFileTileProvider moved to Services/LocalFileTileProvider.cs
 
     #endregion
 
@@ -1528,10 +1528,16 @@ public partial class MainWindow : Window
                 _protocolService.TracerouteReceived += OnTracerouteReceived;
                 _protocolService.ReactionReceived += OnReactionReceived;
                 _protocolService.DeviceTelemetryReceived += OnDeviceTelemetryReceived;
+                _protocolService.MqttConfigReceived += OnMqttConfigReceived;
                 if (_db != null) _protocolService.SetDatabase(_db);
                 if (_nodeKeyService != null) _protocolService.SetNodeKeyService(_nodeKeyService);
                 _protocolService.SetPskMismatchAction(_currentSettings.NodeKeyMismatchAction);
                 _dmWindow?.UpdateProtocolService(_protocolService);
+
+                // Recreate proxy with new protocol service
+                _mqttProxyService?.Dispose();
+                _mqttProxyService = new MqttProxyService(_protocolService);
+                _mqttProxyService.StatusChanged += (s, msg) => Dispatcher.Invoke(() => UpdateStatusBar(msg));
 
                 // Wire up connection state changed
                 _connectionService.ConnectionStateChanged += OnConnectionStateChanged;
@@ -1964,7 +1970,10 @@ public partial class MainWindow : Window
 
     private int FindFirstFreeChannelIndex()
     {
-        var usedIndices = _channels.Select(c => c.Index).ToHashSet();
+        var usedIndices = _channels
+            .Where(c => !c.Role.Equals("DISABLED", StringComparison.OrdinalIgnoreCase))
+            .Select(c => c.Index)
+            .ToHashSet();
         for (int i = 1; i < 8; i++)
         {
             if (!usedIndices.Contains(i))
@@ -2093,6 +2102,10 @@ public partial class MainWindow : Window
                 // Only handle disconnection here - connection status is managed by Connect_Click
                 if (!isConnected)
                 {
+                    // Stop MQTT proxy on disconnect
+                    if (_mqttProxyService != null)
+                        _ = _mqttProxyService.StopAsync();
+
                     // Stop analysis timer on disconnect
                     _analysisTimer?.Dispose();
                     _analysisTimer = null;
@@ -2183,9 +2196,16 @@ public partial class MainWindow : Window
                 _protocolService.TracerouteReceived += OnTracerouteReceived;
                 _protocolService.ReactionReceived += OnReactionReceived;
                 _protocolService.DeviceTelemetryReceived += OnDeviceTelemetryReceived;
+                _protocolService.MqttConfigReceived += OnMqttConfigReceived;
                 if (_db != null) _protocolService.SetDatabase(_db);
                 if (_nodeKeyService != null) _protocolService.SetNodeKeyService(_nodeKeyService);
                 _protocolService.SetPskMismatchAction(_currentSettings.NodeKeyMismatchAction);
+
+                // Recreate proxy with new protocol service
+                _mqttProxyService?.Dispose();
+                _mqttProxyService = new MqttProxyService(_protocolService);
+                _mqttProxyService.StatusChanged += (s, msg) => Dispatcher.Invoke(() => UpdateStatusBar(msg));
+
                 _connectionService.ConnectionStateChanged += OnConnectionStateChanged;
 
                 await _connectionService.ConnectAsync(_lastConnectionParams!);
@@ -2490,9 +2510,12 @@ public partial class MainWindow : Window
             {
                 var existing = _channels.FirstOrDefault(c => c.Index == channel.Index);
                 if (existing != null)
-                {
                     _channels.Remove(existing);
-                }
+
+                // Disabled-Kanäle nicht in die Liste aufnehmen
+                if (channel.Role.Equals("DISABLED", StringComparison.OrdinalIgnoreCase))
+                    return;
+
                 // Sortiert einfügen nach Channel-Index
                 int insertAt = 0;
                 for (int i = 0; i < _channels.Count; i++)
@@ -2617,6 +2640,15 @@ public partial class MainWindow : Window
                 Services.Logger.WriteLine($"ERROR updating LoRa config in UI: {ex.Message}");
             }
         });
+    }
+
+    private void OnMqttConfigReceived(object? sender, MQTTConfig mqttConfig)
+    {
+        if (_mqttProxyService == null) return;
+        if (!mqttConfig.Enabled || !mqttConfig.ProxyToClientEnabled) return;
+
+        Services.Logger.WriteLine($"OnMqttConfigReceived: proxy={mqttConfig.ProxyToClientEnabled}, broker={mqttConfig.Address}");
+        _ = _mqttProxyService.StartAsync(mqttConfig, _myNodeId);
     }
 
     private void OnPacketCountChanged(object? sender, int count)
@@ -3866,7 +3898,7 @@ public partial class MainWindow : Window
     {
         try
         {
-            var win = new NodeConfigWindow(_protocolService) { Owner = this };
+            var win = new NodeConfigWindow(_protocolService, GetMapCenter, GetMyPosition, BuildTileLayer) { Owner = this };
             win.Show();
         }
         catch (Exception ex)
@@ -3874,6 +3906,41 @@ public partial class MainWindow : Window
             Services.Logger.WriteLine($"ERROR opening NodeConfigWindow: {ex.Message}");
             MessageBox.Show($"Fehler beim Öffnen der Node-Konfiguration: {ex.Message}", "Fehler", MessageBoxButton.OK, MessageBoxImage.Error);
         }
+    }
+
+    private (double lat, double lon)? GetMapCenter()
+    {
+        try
+        {
+            if (MapControl?.Map == null) return null;
+            var vp = MapControl.Map.Navigator.Viewport;
+            var (lon, lat) = Mapsui.Projections.SphericalMercator.ToLonLat(vp.CenterX, vp.CenterY);
+            return (lat, lon);
+        }
+        catch { return null; }
+    }
+
+    private (double lat, double lon)? GetMyPosition()
+    {
+        if (_currentSettings.MyLatitude != 0 || _currentSettings.MyLongitude != 0)
+            return (_currentSettings.MyLatitude, _currentSettings.MyLongitude);
+        return null;
+    }
+
+    private Mapsui.Tiling.Layers.TileLayer BuildTileLayer()
+    {
+        var tileDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "maptiles");
+        var sourceFolder = _currentSettings.MapSource;
+        var schema = new BruTile.Predefined.GlobalSphericalMercator(BruTile.YAxis.TMS, 0, 18, "OSM");
+        BruTile.ITileProvider tileProvider = _currentSettings.MapMode switch
+        {
+            "online-osm" => new Services.CachingHttpTileProvider(tileDir, "osm_online",
+                "https://tile.openstreetmap.org/{z}/{x}/{y}.png", useHttpCacheHeaders: true),
+            "online-own" => new Services.CachingHttpTileProvider(tileDir, sourceFolder,
+                GetUrlForSource(sourceFolder), useHttpCacheHeaders: false),
+            _ => new Services.LocalFileTileProvider(tileDir, sourceFolder)
+        };
+        return new Mapsui.Tiling.Layers.TileLayer(new BruTile.TileSource(tileProvider, schema)) { Name = "OSM" };
     }
 
     // ========== Node Pinning ==========
@@ -5105,10 +5172,9 @@ public partial class MainWindow : Window
         ToolTipService.SetToolTip(led, tooltip);
     }
 
-    private void NodeContextMenu_Telemetry_Click(object sender, RoutedEventArgs e)
+    private void OpenTelemetryForNode(NodeInfo node)
     {
-        if (NodesListView.SelectedItem is not NodeInfo node || _db == null) return;
-
+        if (_db == null) return;
         var nodeNames = _allNodes.ToDictionary(n => n.NodeId, n => n.Name);
         var win = new TelemetryWindow(node, _db, nodeNames, _currentSettings.MyLatitude, _currentSettings.MyLongitude,
             _currentSettings.SignalWeatherWindowHours, _currentSettings.SignalAntennaWindowDays)
@@ -5116,6 +5182,12 @@ public partial class MainWindow : Window
             Owner = this
         };
         win.Show();
+    }
+
+    private void NodeContextMenu_Telemetry_Click(object sender, RoutedEventArgs e)
+    {
+        if (NodesListView.SelectedItem is not NodeInfo node) return;
+        OpenTelemetryForNode(node);
     }
 
     // Context menu handlers for traceroute
@@ -5322,5 +5394,153 @@ public partial class MainWindow : Window
     {
         _replyToMessage = null;
         ReplyIndicatorPanel.Visibility = Visibility.Collapsed;
+    }
+
+    // ═══════════════════════════════════════════
+    // Easter Eggs
+    // ═══════════════════════════════════════════
+
+    private void CheckMidnight()
+    {
+        var now = DateTime.Now;
+        if (now.Hour == 0 && now.Minute == 0 && !_midnightFiredToday)
+        {
+            _midnightFiredToday = true;
+            Dispatcher.BeginInvoke(ShowMidnightMesh);
+        }
+        else if (now.Hour != 0)
+        {
+            _midnightFiredToday = false;
+        }
+    }
+
+    private void ShowMidnightMesh()
+    {
+        var myShortName = _allNodes.FirstOrDefault(n => n.NodeId == _myNodeId)?.ShortName
+                          ?? "MH";
+
+        var lines = new[]
+        {
+            "- - - - - - - - - - - - - - - - - - - -",
+            $"SENDESTELLE {myShortName.ToUpper()}",
+            "SENDELEISTUNG WIRD JETZT REDUZIERT",
+            "NACHT-BETRIEB AKTIV — 73 DE MH",
+            "- - - - - - - - - - - - - - - - - - - -"
+        };
+        var msg = new MessageItem
+        {
+            Time        = "00:00",
+            From        = "⚡ SENDESTELLE",
+            Message     = string.Join("\n", lines),
+            ChannelName = "SYSTEM",
+            IsOwnMessage = false
+        };
+        _allMessages.Add(msg);
+        _messages.Add(msg);
+
+        // Scroll to bottom
+        if (MessageListView.Items.Count > 0)
+            MessageListView.ScrollIntoView(MessageListView.Items[^1]);
+    }
+
+    private void Logo_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        var now = DateTime.Now;
+        if ((now - _lastLogoClick).TotalSeconds > 3)
+            _logoClickCount = 0;
+        _lastLogoClick = now;
+        _logoClickCount++;
+
+        if (_logoClickCount >= 5)
+        {
+            _logoClickCount = 0;
+            ShowLogoEasterEgg();
+        }
+    }
+
+    private void ShowLogoEasterEgg()
+    {
+        var myShortName = _allNodes.FirstOrDefault(n => n.NodeId == _myNodeId)?.ShortName ?? "MH";
+        // Classic ham radio CQ call: CQ CQ CQ DE [CALLSIGN] MESHHESSEN QTH HESSEN 73 SK
+        var cwText = $"CQ DE {myShortName.ToUpper()} MESHHESSEN 73 SK";
+        Task.Run(() => BeepMorse(cwText));
+    }
+
+    private static void BeepMorse(string text)
+    {
+        const int Freq      = 700;
+        const int Dot       = 50;
+        const int Dash      = 150;
+        const int ElemGap   = 50;
+        const int LetterGap = 150;
+        const int WordGap   = 350;
+
+        var table = new Dictionary<char, string>
+        {
+            {'A',".-"},  {'B',"-..."}, {'C',"-.-."}, {'D',"-.."}, {'E',"."},
+            {'F',"..-."}, {'G',"--."}, {'H',"...."}, {'I',".."}, {'J',".---"},
+            {'K',"-.-"}, {'L',".-.."}, {'M',"--"},  {'N',"-."},  {'O',"---"},
+            {'P',".--."}, {'Q',"--.-"}, {'R',".-."}, {'S',"..."}, {'T',"-"},
+            {'U',"..-"}, {'V',"...-"}, {'W',".--"}, {'X',"-..-"}, {'Y',"-.--"},
+            {'Z',"--.."},
+            {'0',"-----"}, {'1',".----"}, {'2',"..---"}, {'3',"...--"},
+            {'4',"....-"}, {'5',"....."}, {'6',"-...."}, {'7',"--..."},
+            {'8',"---.."}, {'9',"----."}
+        };
+
+        bool firstLetter = true;
+        foreach (char c in text)
+        {
+            if (c == ' ') { System.Threading.Thread.Sleep(WordGap); firstLetter = true; continue; }
+            if (!table.TryGetValue(c, out var code)) continue;
+
+            if (!firstLetter) System.Threading.Thread.Sleep(LetterGap);
+            firstLetter = false;
+
+            bool firstElem = true;
+            foreach (char sym in code)
+            {
+                if (!firstElem) System.Threading.Thread.Sleep(ElemGap);
+                firstElem = false;
+                PlaySineTone(Freq, sym == '.' ? Dot : Dash);
+            }
+        }
+    }
+
+    private static void PlaySineTone(int freqHz, int durationMs)
+    {
+        const int SampleRate = 44100;
+        const int FadeMs     = 8; // Fade-in/out in ms — eliminiert Knackgeräusche
+        int totalSamples = SampleRate * durationMs / 1000;
+        int fadeSamples  = SampleRate * FadeMs / 1000;
+
+        using var ms = new System.IO.MemoryStream();
+        using var bw = new System.IO.BinaryWriter(ms);
+
+        // WAV-Header (PCM, Mono, 16-bit)
+        bw.Write(System.Text.Encoding.ASCII.GetBytes("RIFF"));
+        bw.Write(36 + totalSamples * 2);
+        bw.Write(System.Text.Encoding.ASCII.GetBytes("WAVE"));
+        bw.Write(System.Text.Encoding.ASCII.GetBytes("fmt "));
+        bw.Write(16); bw.Write((short)1); bw.Write((short)1);
+        bw.Write(SampleRate); bw.Write(SampleRate * 2);
+        bw.Write((short)2); bw.Write((short)16);
+        bw.Write(System.Text.Encoding.ASCII.GetBytes("data"));
+        bw.Write(totalSamples * 2);
+
+        for (int i = 0; i < totalSamples; i++)
+        {
+            // Lineare Hüllkurve: sanftes Ein- und Ausblenden
+            double env = 1.0;
+            if (i < fadeSamples)                        env = (double)i / fadeSamples;
+            else if (i >= totalSamples - fadeSamples)   env = (double)(totalSamples - i) / fadeSamples;
+
+            double sample = Math.Sin(2 * Math.PI * freqHz * i / SampleRate) * env * 0.75;
+            bw.Write((short)(sample * 32767));
+        }
+
+        ms.Position = 0;
+        using var player = new System.Media.SoundPlayer(ms);
+        player.PlaySync();
     }
 }
