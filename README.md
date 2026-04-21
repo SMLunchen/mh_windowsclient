@@ -8,7 +8,7 @@ Der **Meshhessen Client** ist ein **kostenloser, nativer Windows-Client für Mes
 ![License](https://img.shields.io/github/license/SMLunchen/mh_windowsclient)
 ![Stars](https://img.shields.io/github/stars/SMLunchen/mh_windowsclient)
 
-> **English summary:** Free Windows app for Meshtastic devices – offline map (OSM/OpenTopo), telemetry, traceroute, PKI decryption, USB/Serial/TCP/BLE support. No installation, no cloud. By the Meshhessen community (Hesse, Germany). [→ English version below](#meshhessen-client--windows-client-for-meshtastic-devices-wpf--net-8)
+> **English summary:** Free Windows app for Meshtastic devices – offline map (OSM/OpenTopo), telemetry, traceroute, PKI decryption, full device configuration, USB/Serial/TCP/BLE support. No installation, no cloud. By the Meshhessen community (Hesse, Germany). [→ English version below](#meshhessen-client--windows-client-for-meshtastic-devices-wpf--net-8)
 
 
 ## 🚀 Schnellstart
@@ -107,9 +107,17 @@ Der **Meshhessen Client** ist ein **kostenloser, nativer Windows-Client für Mes
 * **Node-Farben** – Nodes individuell einfärben (Karte + Listen)
 * **Node-Notizen** – Freitext-Notizen pro Node
 * **Nodes anpinnen** – Nodes in der Liste oben fixieren (unabhängig von Sortierung)
-* **Node-Konfiguration** – vollständige Gerätekonfiguration direkt aus dem Client (Device, LoRa, Position, Power, Network, Display, Bluetooth, Security, MQTT, Telemetrie, Kanäle u.v.m.)
-  * **Feste Position (Fixed Position)** – Breitengrad, Längengrad und Höhe manuell eingeben und an den Node übertragen; Koordinaten mit einem Klick vom aktuellen Kartenmittelpunkt übernehmen
-  * **Kanal-Konfiguration** – MQTT-Uplink/Downlink und Positions-Präzision pro Kanal direkt einstellen (wie Android-App)
+* **Node-Konfiguration** – vollständige Gerätekonfiguration direkt aus dem Client, alle Module auf einer Seite:
+  * **Gerät & LoRa:** Region, Modem-Preset, TX-Power, Hop-Limit, Geräterolle, Rebroadcast-Modus
+  * **Position:** GPS-Modus, Smart-Broadcast, feste Position mit Koordinaten-Eingabe; „Von Karte wählen" öffnet ein eigenes Kartenfenster (honoriert Offline-/Online-Einstellungen); „Eigener Kartenpin" übernimmt die per Rechtsklick gesetzte Position
+  * **Netzwerk:** WLAN SSID/PSK, DHCP/statische IP, Ethernet, NTP-Server, Syslog
+  * **Display:** Screen-Timeout, Carousel, Kompass, 12h-Uhr, metrisch/imperial, Display-Modus, OLED-Typ
+  * **MQTT:** Server, Credentials, TLS, JSON-Modus, Root-Topic, Proxy-Modus, Map-Reporting mit Genauigkeitsstufe (Bits 10–19), MQTT-Proxy-Client-Funktion
+  * **Telemetrie:** Geräte-, Umgebungs-, Luftqualitäts- und Energiemetrik-Intervalle
+  * **Bluetooth:** Aktivieren, Pairing-Modus, fixer PIN
+  * **Security:** Public/Private Key anzeigen & generieren, Admin-Schlüssel, Managed Mode
+  * **Kanäle:** Alle 8 Kanäle – Rolle, Name, Uplink, Downlink, Positions-Genauigkeit (Bits 10–19, ~23 km bis ~45 m)
+  * **Weitere Module:** Nachbar-Info, Store & Forward, Externe Benachrichtigung, Canned Messages, Range Test, Serial
 * **BT-PIN ändern** – Bluetooth-PIN direkt aus dem Client setzen
 
 ### ⚙️ Verbindung & System
@@ -230,7 +238,7 @@ In den Einstellungen unter **Karte / Tiles** stehen drei Modi zur Verfügung:
 * Tab **„🗺️ Karte"** öffnen
 * Rechtsklick auf Karte → eigenen Standort setzen
 * Node-Pins erscheinen automatisch sobald GPS-Daten empfangen werden
-* Rechtsklick auf Node → Farbe setzen, DM senden, Notiz bearbeiten, Traceroute starten
+* Rechtsklick auf Node → Farbe setzen, DM senden, Notiz bearbeiten, Traceroute starten, Telemetrie öffnen
 
 
 ## 📝 Nachrichten-Logs
@@ -431,9 +439,17 @@ Meshhessen Client · Windows-Client für Meshtastic-Geräte · Meshtastic Window
 * **Node colors** – color-code nodes individually (map + lists)
 * **Node notes** – free-text annotations per node
 * **Pin nodes** – pin nodes to the top of the list (independent of sorting)
-* **Node configuration** – full device configuration directly from the client (device, LoRa, position, power, network, display, Bluetooth, security, MQTT, telemetry, channels, and more)
-  * **Fixed Position** – enter latitude, longitude, and altitude manually and transmit to the node; pick coordinates from the current map center with one click
-  * **Channel configuration** – set MQTT uplink/downlink and position precision per channel directly (like the Android app)
+* **Node configuration** – full device configuration directly from the client, all modules in one window:
+  * **Device & LoRa:** region, modem preset, TX power, hop limit, device role, rebroadcast mode
+  * **Position:** GPS mode, smart broadcast, fixed position with coordinate input; "Pick from Map" opens a dedicated map picker window (respects offline/online settings); "Own Map Pin" copies the position set via right-click
+  * **Network:** Wi-Fi SSID/PSK, DHCP/static IP, Ethernet, NTP server, syslog
+  * **Display:** screen timeout, carousel, compass, 12h clock, metric/imperial, display mode, OLED type
+  * **MQTT:** server, credentials, TLS, JSON mode, root topic, proxy mode, map reporting with precision level (bits 10–19), MQTT proxy client
+  * **Telemetry:** device, environment, air quality and power metric intervals
+  * **Bluetooth:** enable, pairing mode, fixed PIN
+  * **Security:** display & generate public/private key, admin keys, managed mode
+  * **Channels:** all 8 channels – role, name, uplink, downlink, position precision (bits 10–19, ~23 km to ~45 m)
+  * **Additional modules:** neighbor info, store & forward, external notification, canned messages, range test, serial
 * **Change BT PIN** – set Bluetooth PIN directly from the client
 
 ### ⚙️ Connection & System
@@ -486,7 +502,7 @@ The Meshhessen Client is a community project of the Meshtastic community in Hess
 * Open the **"🗺️ Map"** tab
 * Right-click on map → set own location
 * Node pins appear automatically once GPS data is received
-* Right-click on a node → set color, send DM, edit note, start traceroute
+* Right-click on a node → set color, send DM, edit note, start traceroute, open telemetry
 
 
 ## 🏗️ Technical Overview

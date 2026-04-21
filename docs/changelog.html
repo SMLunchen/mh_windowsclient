@@ -172,11 +172,76 @@
 <div class="section active" id="de">
 <main>
 
-  <!-- ── v1.5.8 ── -->
-  <div class="version-entry upcoming">
+  <!-- ── v1.5.9 ── -->
+  <div class="version-entry current">
     <div class="version-header">
-      <span class="version-tag tag-upcoming">v1.5.8</span>
-      <span class="version-tag tag-upcoming" style="font-size:0.7rem; opacity:0.8;">in Arbeit</span>
+      <span class="version-tag tag-latest">v1.5.9</span>
+      <span class="version-date">2026-04-21</span>
+      Vollständige Node-Konfiguration, Kartenauswahl &amp; Map-Report
+    </div>
+    <p class="version-desc">Komplett überarbeitetes Einstellungsfenster mit allen Firmware-Modulen, eigenem Karten-Picker, vollständiger Positions-Präzision und Telemetrie im Karten-Kontextmenü.</p>
+
+    <div class="cl-section added">
+      <h3>✨ Hinzugefügt</h3>
+
+      <div class="cl-group">
+        <div class="cl-group-title">Node-Konfiguration – alle Module</div>
+        <ul class="cl-list">
+          <li><strong>Gerät &amp; LoRa:</strong> Region, Modem-Preset (oder manuelle Parameter: Bandbreite, SF, Coding Rate), TX-Power, Hop-Limit, Geräterolle, Rebroadcast-Modus, LED-Heartbeat, Doppeltap-Aktion</li>
+          <li><strong>Position:</strong> GPS-Modus, GPS-Intervall, Baudrate, RX/TX-GPIO, Smart-Broadcast, Mindestdistanz, Mindestintervall</li>
+          <li><strong>Netzwerk:</strong> WLAN SSID/PSK, DHCP / statische IP (IP, Gateway, Subnetz, DNS), Ethernet, NTP-Server, Syslog</li>
+          <li><strong>Display:</strong> Screen-Timeout, Carousel-Intervall, Kompass-Ausrichtung, 12h-Uhr, metrisch/imperial, Display-Modus, OLED-Typ, Flip, Wake-on-Tap</li>
+          <li><strong>MQTT:</strong> Server, Credentials, TLS, JSON-Modus, Root-Topic, Proxy-Modus</li>
+          <li><strong>Telemetrie:</strong> Geräte-, Umgebungs-, Luftqualitäts- und Energiemetrik-Intervalle; Messung-Checkboxen; Fahrenheit-Option</li>
+          <li><strong>Bluetooth:</strong> Aktivieren, Pairing-Modus (RANDOM / FIXED / NO_PIN), fixer PIN</li>
+          <li><strong>Security:</strong> Public Key anzeigen, Private Key generieren/importieren; Admin-Schlüssel 1–3; Managed Mode</li>
+          <li><strong>Weitere Module:</strong> Nachbar-Info, Store &amp; Forward, Externe Benachrichtigung, Canned Messages, Range Test, Serial — alle vollständig konfigurierbar</li>
+        </ul>
+      </div>
+
+      <div class="cl-group">
+        <div class="cl-group-title">Kanalverwaltung</div>
+        <ul class="cl-list">
+          <li>Alle 8 Kanäle: Rolle, Name, Uplink, Downlink, Positions-Genauigkeit</li>
+          <li><strong>Positions-Genauigkeit vollständig:</strong> alle Bits 10–19 (~23 km bis ~45 m), 0 = kein Standort, 32 = Exakt — bisher fehlende Zwischenwerte (~11 km, ~5.7 km, ~1.4 km, ~740 m, ~180 m, ~90 m) ergänzt</li>
+          <li>Spaltenköpfe und Optionen vollständig i18n (DE + EN); ComboBox-Spalte verbreitert (kein Abschneiden mehr)</li>
+        </ul>
+      </div>
+
+      <div class="cl-group">
+        <div class="cl-group-title">Map Reporting</div>
+        <ul class="cl-list">
+          <li><strong>Genauigkeitsstufe für Map-Report-Pakete</strong> einstellbar (neues Proto-Feld <code>map_report_precision</code>)</li>
+          <li>Beschreibung verweist jetzt auch auf <strong>map.meshhessen.de</strong></li>
+        </ul>
+      </div>
+
+      <div class="cl-group">
+        <div class="cl-group-title">Positions-Auswahl</div>
+        <ul class="cl-list">
+          <li><strong>„Von Karte wählen"</strong> öffnet jetzt ein eigenes <code>MapPickerWindow</code> — honoriert die aktuellen Karteneinstellungen (offline / online-own / online-osm)</li>
+          <li><strong>„Eigener Kartenpin"</strong> — neuer Button übernimmt die per Rechtsklick gesetzte eigene Position direkt in die Felder für feste Position</li>
+          <li><code>LocalFileTileProvider</code> nach <code>Services/</code> ausgelagert (gemeinsame Nutzung durch Hauptkarte und Picker)</li>
+        </ul>
+      </div>
+
+      <div class="cl-group">
+        <div class="cl-group-title">Karte</div>
+        <ul class="cl-list">
+          <li><strong>Telemetrie im Rechtsklick-Kontextmenü</strong> für alle Nodes auf der Karte (nach Traceroute)</li>
+          <li><code>OpenTelemetryForNode()</code> als gemeinsamer Helper — auch vom Nodes-Listenmenü genutzt</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider" />
+
+  <!-- ── v1.5.8 ── -->
+  <div class="version-entry old">
+    <div class="version-header">
+      <span class="version-tag tag-release">v1.5.8</span>
+      <span class="version-date">2026-04-13</span>
       Online-Karten, persistente DB &amp; mehr
     </div>
     <p class="version-desc">Drei Kartenmodi, HTTP/3, persistente Nachrichten-DB, DM-History und Verbindung merken.</p>
@@ -536,11 +601,76 @@
 <div class="section" id="en">
 <main>
 
-  <!-- ── v1.5.8 ── -->
-  <div class="version-entry upcoming">
+  <!-- ── v1.5.9 ── -->
+  <div class="version-entry current">
     <div class="version-header">
-      <span class="version-tag tag-upcoming">v1.5.8</span>
-      <span class="version-tag tag-upcoming" style="font-size:0.7rem; opacity:0.8;">in progress</span>
+      <span class="version-tag tag-latest">v1.5.9</span>
+      <span class="version-date">2026-04-21</span>
+      Full Node Configuration, Map Picker &amp; Map Report
+    </div>
+    <p class="version-desc">Fully redesigned settings window covering all firmware modules, dedicated map picker window, complete position precision levels and telemetry in the map context menu.</p>
+
+    <div class="cl-section added">
+      <h3>✨ Added</h3>
+
+      <div class="cl-group">
+        <div class="cl-group-title">Node Configuration – all modules</div>
+        <ul class="cl-list">
+          <li><strong>Device &amp; LoRa:</strong> region, modem preset (or manual: bandwidth, SF, coding rate), TX power, hop limit, device role, rebroadcast mode, LED heartbeat, double-tap action</li>
+          <li><strong>Position:</strong> GPS mode, GPS interval, baud rate, RX/TX GPIO, smart broadcast, min distance, min interval</li>
+          <li><strong>Network:</strong> Wi-Fi SSID/PSK, DHCP / static IP (IP, gateway, subnet, DNS), Ethernet, NTP server, syslog</li>
+          <li><strong>Display:</strong> screen timeout, carousel interval, compass orientation, 12h clock, metric/imperial, display mode, OLED type, flip, wake-on-tap</li>
+          <li><strong>MQTT:</strong> server, credentials, TLS, JSON mode, root topic, proxy mode</li>
+          <li><strong>Telemetry:</strong> device, environment, air quality and power metric intervals; measurement checkboxes; Fahrenheit option</li>
+          <li><strong>Bluetooth:</strong> enable, pairing mode (RANDOM / FIXED / NO_PIN), fixed PIN</li>
+          <li><strong>Security:</strong> display public key, generate/import private key; admin keys 1–3; managed mode</li>
+          <li><strong>Additional modules:</strong> neighbor info, store &amp; forward, external notification, canned messages, range test, serial — all fully configurable</li>
+        </ul>
+      </div>
+
+      <div class="cl-group">
+        <div class="cl-group-title">Channel Management</div>
+        <ul class="cl-list">
+          <li>All 8 channels: role, name, uplink, downlink, position precision</li>
+          <li><strong>Complete position precision:</strong> all bits 10–19 (~23 km to ~45 m), 0 = no location, 32 = exact — previously missing intermediate steps (~11 km, ~5.7 km, ~1.4 km, ~740 m, ~180 m, ~90 m) added</li>
+          <li>Column headers and dropdown options fully i18n (DE + EN); combobox column widened (no clipping)</li>
+        </ul>
+      </div>
+
+      <div class="cl-group">
+        <div class="cl-group-title">Map Reporting</div>
+        <ul class="cl-list">
+          <li><strong>Position precision for map report packets</strong> now configurable (new proto field <code>map_report_precision</code>)</li>
+          <li>Description now also references <strong>map.meshhessen.de</strong></li>
+        </ul>
+      </div>
+
+      <div class="cl-group">
+        <div class="cl-group-title">Position Picker</div>
+        <ul class="cl-list">
+          <li><strong>"Pick from Map"</strong> now opens a dedicated <code>MapPickerWindow</code> — honours current map settings (offline / online-own / online-osm)</li>
+          <li><strong>"Own Map Pin"</strong> — new button copies the position set via right-click directly into the fixed position fields</li>
+          <li><code>LocalFileTileProvider</code> extracted to <code>Services/</code> (shared by main map and picker)</li>
+        </ul>
+      </div>
+
+      <div class="cl-group">
+        <div class="cl-group-title">Map</div>
+        <ul class="cl-list">
+          <li><strong>Telemetry in the right-click context menu</strong> for all nodes on the map (after Traceroute)</li>
+          <li><code>OpenTelemetryForNode()</code> extracted as a shared helper — also used by the node list menu</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider" />
+
+  <!-- ── v1.5.8 ── -->
+  <div class="version-entry old">
+    <div class="version-header">
+      <span class="version-tag tag-release">v1.5.8</span>
+      <span class="version-date">2026-04-13</span>
       Online Maps, Persistent DB &amp; More
     </div>
     <p class="version-desc">Three map modes, HTTP/3, persistent message DB, DM history and remember connection.</p>
