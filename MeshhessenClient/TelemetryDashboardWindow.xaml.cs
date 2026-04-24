@@ -228,20 +228,27 @@ public partial class TelemetryDashboardWindow : Window
         {
             if (FileExists(StoreFile))
                 _store = JsonSerializer.Deserialize<DashboardStore>(
-                    ReadAllText(StoreFile)) ?? new();
+                    ReadAllText(StoreFile), _jsonOptions) ?? new();
         }
         catch { _store = new(); }
     }
+
+    private static readonly JsonSerializerOptions _jsonOptions = new()
+    {
+        WriteIndented    = true,
+        NumberHandling   = System.Text.Json.Serialization.JsonNumberHandling.AllowNamedFloatingPointLiterals,
+    };
 
     private void SaveStore()
     {
         try
         {
-            WriteAllText(StoreFile,
-                JsonSerializer.Serialize(_store,
-                    new JsonSerializerOptions { WriteIndented = true }));
+            WriteAllText(StoreFile, JsonSerializer.Serialize(_store, _jsonOptions));
         }
-        catch { }
+        catch (Exception ex)
+        {
+            Services.Logger.WriteLine($"[Dashboard] SaveStore failed: {ex.Message}");
+        }
     }
 
     // ── Combo management ─────────────────────────────────────────────────────
