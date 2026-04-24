@@ -57,10 +57,13 @@ Der **Meshhessen Client** ist ein **kostenloser, nativer Windows-Client für Mes
 ### 📊 Telemetrie & Statistik
 
 * **Persistente Telemetrie-Datenbank** – empfangene Paket- und Gerätedaten werden lokal in einer SQLite-Datenbank gespeichert
-* **Telemetrie-Dashboard** – frei konfigurierbares Widget-Dashboard mit benannten Dashboards:
-  * Vier Widget-Typen: Zeitverlauf (Linienchart), Balkendiagramm (aktueller Vergleich), Gauge (Einzelwert), Heatmap (Stunde × Tag)
-  * Multi-Node-Support, alle Metriken: SNR, RSSI, Batterie, Spannung, Kanal-/TX-Auslastung, Temperatur, Luftfeuchtigkeit, Luftdruck
-  * Persistenz in `dashboards.json`, dunkles OxyPlot-Theme
+* **Telemetrie-Dashboard** – frei konfigurierbares Widget-Dashboard mit benannten Dashboards (📊-Button in der Toolbar):
+  * **11 Widget-Typen:** Linie, Fläche, Balken, Scatter, Gauge, Stat-Wert, Heatmap, Histogramm, Candlestick, State-Timeline, Uhrzeit
+  * Multi-Node-Support, alle Metriken: SNR, RSSI, Batterie, Spannung, Kanal-/TX-Auslastung, Temperatur, Luftfeuchtigkeit, Luftdruck, Pakete/h
+  * Widgets per Drag-and-Drop anordnen, frei skalierbar (Resize-Griff), editierbar, Auto-Refresh
+  * Dark & Light Mode, Theme-adaptiv (OxyPlot + WPF)
+  * Persistenz in `dashboards.json`
+  * **Unabhängiges Fenster** – kann auf einem zweiten Monitor platziert werden
 * **Node-Statistik-Fenster** – detaillierte Auswertung pro Node:
   * Tag/Nacht-Auswertung der Empfangsqualität
   * Zeitreihen-Graphen für SNR, RSSI, Paketrate und Gerätedaten (Batterie, Spannung)
@@ -112,7 +115,11 @@ Der **Meshhessen Client** ist ein **kostenloser, nativer Windows-Client für Mes
 * **Node-Notizen** – Freitext-Notizen pro Node
 * **Nodes anpinnen** – Nodes in der Liste oben fixieren (unabhängig von Sortierung)
 * **Favoriten** – Nodes als Favoriten markieren (★-Symbol, Rechtsklick-Menü); wird mit dem Gerät synchronisiert (`add_favorite_node` / `remove_favorite_node`); Favoriten erscheinen oben in der Liste
-* **Fernverwaltung** – vollständige Remote-Admin-Oberfläche für Favoriten-Nodes: alle Konfigurations-Reiter (Besitzer, Gerät, Position, LoRa, Bluetooth, Netzwerk, Anzeige, Kanäle, Steuerung), Session-Schlüssel-Handshake, konfigurierbarer Timeout
+* **Fernverwaltung** – vollständige Remote-Admin-Oberfläche für Favoriten-Nodes:
+  * Alle Konfigurations-Reiter: Besitzer, Gerät, Position, LoRa, Bluetooth, Netzwerk, Anzeige, Kanäle, **Sicherheit**, Steuerung
+  * **Sicherheits-Reiter:** Public Key (read-only), Admin-Schlüssel 1–3 (Base64), Flags (Admin Channel, Managed Mode, Serial, Debug Log)
+  * **Favoriten remote verwalten:** Knoten auf dem Remote-Gerät als Favorit setzen oder entfernen
+  * Session-Schlüssel-Handshake, konfigurierbarer Timeout, per-Channel Retry + Neu-laden
 * **Node-Konfiguration** – vollständige Gerätekonfiguration direkt aus dem Client, alle Module auf einer Seite:
   * **Gerät & LoRa:** Region, Modem-Preset, TX-Power, Hop-Limit, Geräterolle, Rebroadcast-Modus
   * **Position:** GPS-Modus, Smart-Broadcast, feste Position mit Koordinaten-Eingabe; „Von Karte wählen" öffnet ein eigenes Kartenfenster (honoriert Offline-/Online-Einstellungen); „Eigener Kartenpin" übernimmt die per Rechtsklick gesetzte Position

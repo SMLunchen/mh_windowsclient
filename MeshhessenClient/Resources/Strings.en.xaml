@@ -67,6 +67,7 @@
     <sys:String x:Key="StrDevice">Device:</sys:String>
     <sys:String x:Key="StrScanDevices">Search devices</sys:String>
     <sys:String x:Key="StrOpenDms">Open direct messages</sys:String>
+    <sys:String x:Key="StrOpenDashboard">Open telemetry dashboard</sys:String>
 
     <!-- Alert -->
     <sys:String x:Key="StrAlertReceived">Emergency call received!</sys:String>
@@ -965,6 +966,7 @@ Green ≤15% | Yellow 15–25% | Red &gt;25% | Gray = no airtime data</sys:Strin
     <sys:String x:Key="StrRaTabNetwork">Network</sys:String>
     <sys:String x:Key="StrRaTabDisplay">Display</sys:String>
     <sys:String x:Key="StrRaTabChannels">Channels</sys:String>
+    <sys:String x:Key="StrRaTabSecurity">Security</sys:String>
     <sys:String x:Key="StrRaTabControl">Control</sys:String>
     <!-- Owner tab -->
     <sys:String x:Key="StrRaOwnerShortName">Short name (max. 4 characters)</sys:String>
@@ -1013,6 +1015,12 @@ Green ≤15% | Yellow 15–25% | Red &gt;25% | Gray = no airtime data</sys:Strin
     <sys:String x:Key="StrRaShutdown">⏹ Shutdown</sys:String>
     <sys:String x:Key="StrRaNodeDbReset">⚠️ Clear node DB: Removes all known nodes from the device database.</sys:String>
     <sys:String x:Key="StrRaNodeDbResetBtn">⚠️ Clear node DB</sys:String>
+    <sys:String x:Key="StrRaFavoritesSection">Manage favorites on remote node</sys:String>
+    <sys:String x:Key="StrRaFavoritesDesc">Add or remove a node as a favorite on the remote device. The node will then be prioritized in the remote node's contact list.</sys:String>
+    <sys:String x:Key="StrRaFavoritesAdd">⭐ Add as favorite</sys:String>
+    <sys:String x:Key="StrRaFavoritesRemove">✕ Remove favorite</sys:String>
+    <sys:String x:Key="StrRaFavoritesAdded">Node "{0}" was added as a favorite on the remote device.</sys:String>
+    <sys:String x:Key="StrRaFavoritesRemoved">Node "{0}" was removed from favorites on the remote device.</sys:String>
     <!-- Bottom buttons -->
     <sys:String x:Key="StrRaRefresh">🔄 Reload</sys:String>
     <sys:String x:Key="StrRaSave">💾 Save</sys:String>

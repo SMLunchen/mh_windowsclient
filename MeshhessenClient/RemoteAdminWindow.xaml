@@ -334,6 +334,67 @@
                 </ScrollViewer>
             </TabItem>
 
+            <!-- Security -->
+            <TabItem Header="{DynamicResource StrRaTabSecurity}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="12,12,12,8">
+                        <!-- Public key — read-only -->
+                        <TextBlock Text="{DynamicResource StrNcSecPublicKey}" FontSize="12"
+                                   Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"/>
+                        <TextBox x:Name="SecPublicKey" IsReadOnly="True"
+                                 FontFamily="Consolas" FontSize="11"
+                                 Margin="0,4,0,4"/>
+                        <TextBlock Text="{DynamicResource StrNcDescSecPublicKey}" FontSize="10"
+                                   Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                                   TextWrapping="Wrap" Margin="0,0,0,12"/>
+
+                        <!-- Admin keys -->
+                        <TextBlock Text="{DynamicResource StrNcSecAdminKey1}" FontSize="12"
+                                   Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"/>
+                        <TextBox x:Name="SecAdminKey1" FontFamily="Consolas" FontSize="11"
+                                 Margin="0,4,0,4"/>
+                        <TextBlock Text="{DynamicResource StrNcSecAdminKey2}" FontSize="12"
+                                   Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"/>
+                        <TextBox x:Name="SecAdminKey2" FontFamily="Consolas" FontSize="11"
+                                 Margin="0,4,0,4"/>
+                        <TextBlock Text="{DynamicResource StrNcSecAdminKey3}" FontSize="12"
+                                   Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"/>
+                        <TextBox x:Name="SecAdminKey3" FontFamily="Consolas" FontSize="11"
+                                 Margin="0,4,0,4"/>
+                        <TextBlock Text="{DynamicResource StrNcDescSecAdminKeys}" FontSize="10"
+                                   Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                                   TextWrapping="Wrap" Margin="0,0,0,12"/>
+
+                        <Separator Margin="0,0,0,12"/>
+
+                        <!-- Flags -->
+                        <CheckBox x:Name="SecAdminChannelEnabled"
+                                  Content="{DynamicResource StrNcSecAdminChannel}" Margin="0,0,0,4"/>
+                        <TextBlock Text="{DynamicResource StrNcDescSecAdminChannel}" FontSize="10"
+                                   Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                                   TextWrapping="Wrap" Margin="0,0,0,8"/>
+
+                        <CheckBox x:Name="SecIsManaged"
+                                  Content="{DynamicResource StrNcSecIsManaged}" Margin="0,0,0,4"/>
+                        <TextBlock Text="{DynamicResource StrNcDescSecIsManaged}" FontSize="10"
+                                   Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                                   TextWrapping="Wrap" Margin="0,0,0,8"/>
+
+                        <CheckBox x:Name="SecSerialEnabled"
+                                  Content="{DynamicResource StrNcSecSerialEnabled}" Margin="0,0,0,4"/>
+                        <TextBlock Text="{DynamicResource StrNcDescSecSerialEnabled}" FontSize="10"
+                                   Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                                   TextWrapping="Wrap" Margin="0,0,0,8"/>
+
+                        <CheckBox x:Name="SecDebugLogEnabled"
+                                  Content="{DynamicResource StrNcSecDebugLog}" Margin="0,0,0,4"/>
+                        <TextBlock Text="{DynamicResource StrNcDescSecDebugLog}" FontSize="10"
+                                   Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                                   TextWrapping="Wrap" Margin="0,0,0,8"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
             <!-- Control -->
             <TabItem Header="{DynamicResource StrRaTabControl}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
@@ -354,6 +415,24 @@
                         <Button x:Name="NodeDbResetButton" Content="{DynamicResource StrRaNodeDbResetBtn}"
                                 Width="200" HorizontalAlignment="Left"
                                 Click="NodeDbResetButton_Click"/>
+
+                        <Separator Margin="0,16,0,12"/>
+
+                        <!-- Remote node favorites management -->
+                        <TextBlock Text="{DynamicResource StrRaFavoritesSection}"
+                                   FontWeight="SemiBold" Margin="0,0,0,4"/>
+                        <TextBlock Text="{DynamicResource StrRaFavoritesDesc}"
+                                   TextWrapping="Wrap" Margin="0,0,0,10"
+                                   Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"/>
+                        <ComboBox x:Name="FavoriteNodeCombo" Margin="0,0,0,8"/>
+                        <StackPanel Orientation="Horizontal">
+                            <Button x:Name="AddFavoriteNodeButton"
+                                    Content="{DynamicResource StrRaFavoritesAdd}"
+                                    Width="160" Click="AddFavoriteNode_Click" Margin="0,0,8,0"/>
+                            <Button x:Name="RemoveFavoriteNodeButton"
+                                    Content="{DynamicResource StrRaFavoritesRemove}"
+                                    Width="160" Click="RemoveFavoriteNode_Click"/>
+                        </StackPanel>
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>

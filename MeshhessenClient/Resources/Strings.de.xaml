@@ -67,6 +67,7 @@
     <sys:String x:Key="StrDevice">Gerät:</sys:String>
     <sys:String x:Key="StrScanDevices">Geräte suchen</sys:String>
     <sys:String x:Key="StrOpenDms">Direktnachrichten öffnen</sys:String>
+    <sys:String x:Key="StrOpenDashboard">Telemetrie-Dashboard öffnen</sys:String>
 
     <!-- Alert -->
     <sys:String x:Key="StrAlertReceived">Notruf empfangen!</sys:String>
@@ -965,6 +966,7 @@ Grün ≤15% | Gelb 15–25% | Rot &gt;25% | Grau = keine Airtime-Daten</sys:Str
     <sys:String x:Key="StrRaTabNetwork">Netzwerk</sys:String>
     <sys:String x:Key="StrRaTabDisplay">Anzeige</sys:String>
     <sys:String x:Key="StrRaTabChannels">Kanäle</sys:String>
+    <sys:String x:Key="StrRaTabSecurity">Sicherheit</sys:String>
     <sys:String x:Key="StrRaTabControl">Steuerung</sys:String>
     <!-- Owner tab -->
     <sys:String x:Key="StrRaOwnerShortName">Kurzname (max. 4 Zeichen)</sys:String>
@@ -1013,6 +1015,12 @@ Grün ≤15% | Gelb 15–25% | Rot &gt;25% | Grau = keine Airtime-Daten</sys:Str
     <sys:String x:Key="StrRaShutdown">⏹ Herunterfahren</sys:String>
     <sys:String x:Key="StrRaNodeDbReset">⚠️ Node-DB löschen: Entfernt alle bekannten Knoten aus der Datenbank des Geräts.</sys:String>
     <sys:String x:Key="StrRaNodeDbResetBtn">⚠️ Node-DB löschen</sys:String>
+    <sys:String x:Key="StrRaFavoritesSection">Favoriten auf Remote-Knoten verwalten</sys:String>
+    <sys:String x:Key="StrRaFavoritesDesc">Markiere oder entferne einen Knoten als Favoriten auf dem entfernten Gerät. Der Knoten wird dann in der Kontaktliste des Remote-Knotens priorisiert angezeigt.</sys:String>
+    <sys:String x:Key="StrRaFavoritesAdd">⭐ Als Favorit setzen</sys:String>
+    <sys:String x:Key="StrRaFavoritesRemove">✕ Favorit entfernen</sys:String>
+    <sys:String x:Key="StrRaFavoritesAdded">Knoten „{0}" wurde auf dem Remote-Gerät als Favorit gesetzt.</sys:String>
+    <sys:String x:Key="StrRaFavoritesRemoved">Knoten „{0}" wurde auf dem Remote-Gerät aus den Favoriten entfernt.</sys:String>
     <!-- Bottom buttons -->
     <sys:String x:Key="StrRaRefresh">🔄 Neu laden</sys:String>
     <sys:String x:Key="StrRaSave">💾 Speichern</sys:String>

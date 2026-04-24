@@ -5289,6 +5289,13 @@ public partial class MainWindow : Window
         OpenTelemetryForNode(node);
     }
 
+    private void OpenDashboardMain_Click(object sender, RoutedEventArgs e)
+    {
+        if (_db == null) return;
+        var nodeNames = _allNodes.ToDictionary(n => n.NodeId, n => n.Name);
+        new TelemetryDashboardWindow(_db, nodeNames).Show();
+    }
+
     // Context menu handlers for traceroute
     private void NodeContextMenu_Traceroute_Click(object sender, RoutedEventArgs e)
     {

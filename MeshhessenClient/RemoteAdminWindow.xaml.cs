@@ -24,6 +24,7 @@ public partial class RemoteAdminWindow : Window
     private BluetoothConfig? _loadedBt;
     private NetworkConfig? _loadedNetwork;
     private DisplayConfig? _loadedDisplay;
+    private SecurityConfig? _loadedSecurity;
     private readonly Channel?[] _loadedChannels = new Channel?[8];
 
     public RemoteAdminWindow(
@@ -43,6 +44,7 @@ public partial class RemoteAdminWindow : Window
         TimeoutBox.Text = (timeoutMs / 1000).ToString();
         _uiReady = true;
         UpdateFavoriteButton();
+        PopulateFavoriteNodeCombo();
 
         Loaded += async (_, _) => await ConnectAndLoadAsync();
     }
@@ -230,6 +232,20 @@ public partial class RemoteAdminWindow : Window
 
         await Task.Delay(200);
 
+        // Security config
+        var secResp = await _svc.SendRemoteAdminRequestAsync(
+            _targetNode.NodeId,
+            new AdminMessage { GetConfigRequest = (uint)AdminMessage.Types.ConfigType.SecurityConfig },
+            _timeoutMs);
+        if (secResp?.PayloadVariantCase == AdminMessage.PayloadVariantOneofCase.GetConfigResponse &&
+            secResp.GetConfigResponse.PayloadVariantCase == Config.PayloadVariantOneofCase.Security)
+        {
+            _loadedSecurity = secResp.GetConfigResponse.Security;
+            Dispatcher.Invoke(() => ApplySecurityConfig(_loadedSecurity));
+        }
+
+        await Task.Delay(200);
+
         // Channels 0-7 — with one automatic retry per failed channel, plus per-row reload button
         Dispatcher.Invoke(() => ChannelsPanel.Children.Clear());
         for (int i = 0; i < 8; i++)
@@ -316,6 +332,39 @@ public partial class RemoteAdminWindow : Window
         DisplayFlipScreen.IsChecked = d.FlipScreen;
         SelectComboByTag(DisplayUnitsCombo, (int)d.Units);
         SelectComboByTag(OledTypeCombo, (int)d.Oled);
+    }
+
+    private void ApplySecurityConfig(SecurityConfig s)
+    {
+        SecPublicKey.Text = s.PublicKey != null && s.PublicKey.Length > 0
+            ? BitConverter.ToString(s.PublicKey.ToByteArray()).Replace("-", "").ToLowerInvariant()
+            : string.Empty;
+
+        var keys = s.AdminKey.ToList();
+        SecAdminKey1.Text = keys.Count > 0 ? Convert.ToBase64String(keys[0].ToByteArray()) : string.Empty;
+        SecAdminKey2.Text = keys.Count > 1 ? Convert.ToBase64String(keys[1].ToByteArray()) : string.Empty;
+        SecAdminKey3.Text = keys.Count > 2 ? Convert.ToBase64String(keys[2].ToByteArray()) : string.Empty;
+
+        SecAdminChannelEnabled.IsChecked = s.AdminChannelEnabled;
+        SecIsManaged.IsChecked           = s.IsManaged;
+        SecSerialEnabled.IsChecked       = s.SerialEnabled;
+        SecDebugLogEnabled.IsChecked     = s.DebugLogApiEnabled;
+    }
+
+    private void PopulateFavoriteNodeCombo()
+    {
+        FavoriteNodeCombo.Items.Clear();
+        var nodes = _svc.GetKnownNodes()
+            .Where(kv => kv.Key != _targetNode.NodeId)
+            .OrderBy(kv => kv.Value.Name);
+        foreach (var kv in nodes)
+            FavoriteNodeCombo.Items.Add(new ComboBoxItem
+            {
+                Tag     = kv.Key,
+                Content = $"{kv.Value.Name}  (!{kv.Key:x8})"
+            });
+        if (FavoriteNodeCombo.Items.Count > 0)
+            FavoriteNodeCombo.SelectedIndex = 0;
     }
 
     private void AddOrUpdateChannelRow(int index, Channel? ch)
@@ -519,6 +568,29 @@ public partial class RemoteAdminWindow : Window
                 await Task.Delay(200);
             }
 
+            // Security config
+            if (_loadedSecurity != null)
+            {
+                var s = _loadedSecurity.Clone();
+                s.AdminChannelEnabled = SecAdminChannelEnabled.IsChecked == true;
+                s.IsManaged           = SecIsManaged.IsChecked           == true;
+                s.SerialEnabled       = SecSerialEnabled.IsChecked       == true;
+                s.DebugLogApiEnabled  = SecDebugLogEnabled.IsChecked     == true;
+
+                // Rebuild admin keys from the three text boxes
+                s.AdminKey.Clear();
+                foreach (var box in new[] { SecAdminKey1.Text.Trim(), SecAdminKey2.Text.Trim(), SecAdminKey3.Text.Trim() })
+                {
+                    if (string.IsNullOrEmpty(box)) continue;
+                    try { s.AdminKey.Add(Google.Protobuf.ByteString.CopyFrom(Convert.FromBase64String(box))); }
+                    catch { /* skip malformed key */ }
+                }
+
+                await _svc.SendRemoteAdminWriteAsync(_targetNode.NodeId,
+                    new AdminMessage { SetConfig = new Config { Security = s } });
+                await Task.Delay(200);
+            }
+
             await _svc.SendRemoteAdminWriteAsync(_targetNode.NodeId,
                 new AdminMessage { CommitEditSettings = true });
 
@@ -588,6 +660,28 @@ public partial class RemoteAdminWindow : Window
             _ = _svc.AddFavoriteNodeAsync(_targetNode.NodeId);
         else
             _ = _svc.RemoveFavoriteNodeAsync(_targetNode.NodeId);
+    }
+
+    private async void AddFavoriteNode_Click(object sender, RoutedEventArgs e)
+    {
+        if (FavoriteNodeCombo.SelectedItem is not ComboBoxItem item || item.Tag is not uint nodeId) return;
+        await _svc.SendRemoteAdminWriteAsync(_targetNode.NodeId,
+            new AdminMessage { AddFavoriteNode = nodeId });
+        MessageBox.Show(
+            string.Format(Loc("StrRaFavoritesAdded"), item.Content),
+            Loc("StrRemoteAdminTitle"),
+            MessageBoxButton.OK, MessageBoxImage.Information);
+    }
+
+    private async void RemoveFavoriteNode_Click(object sender, RoutedEventArgs e)
+    {
+        if (FavoriteNodeCombo.SelectedItem is not ComboBoxItem item || item.Tag is not uint nodeId) return;
+        await _svc.SendRemoteAdminWriteAsync(_targetNode.NodeId,
+            new AdminMessage { RemoveFavoriteNode = nodeId });
+        MessageBox.Show(
+            string.Format(Loc("StrRaFavoritesRemoved"), item.Content),
+            Loc("StrRemoteAdminTitle"),
+            MessageBoxButton.OK, MessageBoxImage.Information);
     }
 
     private void CloseButton_Click(object sender, RoutedEventArgs e) => Close();

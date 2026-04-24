@@ -11,6 +11,22 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ### ✨ Hinzugefügt
 
+#### Remote-Verwaltung – Sicherheits-Tab
+- **Neuer „Sicherheit"-Reiter** in der Fernverwaltung (Remote Admin) für `Config.SecurityConfig`
+  - **Öffentlicher Schlüssel** (Public Key) read-only als Hex-Darstellung (Consolas)
+  - **Admin-Schlüssel 1–3** (Base64) editierbar — autorisierte Admin-Geräte
+  - **Flags:** Legacy Admin Channel, Managed Mode, Serial Console, Debug Log API
+  - Wird automatisch beim Öffnen mit geladen (GetConfigRequest = SecurityConfig)
+  - Wird mit „Speichern" an das Remote-Gerät übertragen
+- **Favoriten auf Remote-Knoten verwalten** – neuer Abschnitt im Steuerung-Reiter:
+  - ComboBox mit allen bekannten Knoten
+  - „Als Favorit setzen" / „Favorit entfernen" – sendet `add_favorite_node` / `remove_favorite_node` an den Remote-Node
+  - Bestätigung per MessageBox nach erfolgtem Senden
+
+#### Telemetrie-Dashboard
+- **Dashboard-Button in der Hauptleiste** (📊 Toolbar) – Dashboard direkt ohne Umweg über das Telemetrie-Kontextmenü öffnen
+- **Dashboard ist jetzt ein unabhängiges Fenster** – schließt sich nicht mehr mit dem Telemetrie-Fenster; kann auf einem zweiten Monitor platziert werden
+
 #### Persistente Nachrichten-Datenbank
 - **SQLite-Nachrichtenspeicher** für Kanal- und DM-Nachrichten (optional, in Einstellungen aktivierbar)
   - Je Kanal eine eigene DB-Datei (`messages/channel_{index}_{name}.db`), DMs in `messages/dm.db`

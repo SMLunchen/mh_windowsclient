@@ -222,7 +222,7 @@ public partial class TelemetryWindow : Window
 
     private void OpenDashboard_Click(object sender, RoutedEventArgs e)
     {
-        var win = new TelemetryDashboardWindow(_db, _nodeNames) { Owner = this };
+        var win = new TelemetryDashboardWindow(_db, _nodeNames);
         win.Show();
     }
 
