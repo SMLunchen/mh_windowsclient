@@ -48,7 +48,7 @@ public partial class MainWindow : Window
     private ObservableCollection<ChannelInfo> _channels = new();
     private ObservableCollection<Models.BluetoothDeviceInfo> _bluetoothDevices = new();
     private int _activeChannelIndex = 0;
-    private bool _showEncryptedMessages = true;
+    private bool _showEncryptedMessages = false;
     private ChannelInfo? _messageChannelFilter = null;
     private DirectMessagesWindow? _dmWindow = null;
     private uint _myNodeId = 0;
@@ -68,7 +68,7 @@ public partial class MainWindow : Window
     private AppSettings _currentSettings = new(
         false,
         string.Empty,
-        true,
+        false,
         50.9,
         9.5,
         string.Empty,
@@ -453,6 +453,7 @@ public partial class MainWindow : Window
         catch (Exception ex)
         {
             Services.Logger.WriteLine($"ERROR loading settings: {ex.Message}");
+            _showEncryptedMessages = false;
         }
     }
 
@@ -1002,6 +1003,7 @@ public partial class MainWindow : Window
                 _currentSettings.MyLatitude, _currentSettings.MyLongitude)
             { Owner = this };
             win.Show();
+            win.Activate();
         }
 
         MapStatusText.Text = sb.ToString();
@@ -3115,6 +3117,7 @@ public partial class MainWindow : Window
             else
             {
                 _dmWindow.Show();
+                _dmWindow.Activate();
             }
 
             // Reset Button-Hervorhebung
