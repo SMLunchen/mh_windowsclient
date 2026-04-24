@@ -1034,6 +1034,7 @@ public partial class MainWindow : Window
             _dmWindow.SetMessageDbManager(_messageDbManager);
             _dmWindow.Show();
         }
+        _dmWindow.Activate();
         _dmWindow.OpenChatWithNode(node.NodeId, node.Name, node.ColorHex);
     }
 
@@ -3960,6 +3961,7 @@ public partial class MainWindow : Window
         var timeout = _currentSettings.RemoteAdminTimeoutSeconds * 1000;
         var win = new RemoteAdminWindow(_protocolService, selected, timeout, selected.IsFavorite) { Owner = this };
         win.Show();
+        win.Activate();
     }
 
     private void NodeConfig_Click(object sender, RoutedEventArgs e)
@@ -3968,6 +3970,7 @@ public partial class MainWindow : Window
         {
             var win = new NodeConfigWindow(_protocolService, GetMapCenter, GetMyPosition, BuildTileLayer) { Owner = this };
             win.Show();
+            win.Activate();
         }
         catch (Exception ex)
         {
@@ -5281,6 +5284,7 @@ public partial class MainWindow : Window
             Owner = this
         };
         win.Show();
+        win.Activate();
     }
 
     private void NodeContextMenu_Telemetry_Click(object sender, RoutedEventArgs e)
@@ -5293,7 +5297,9 @@ public partial class MainWindow : Window
     {
         if (_db == null) return;
         var nodeNames = _allNodes.ToDictionary(n => n.NodeId, n => n.Name);
-        new TelemetryDashboardWindow(_db, nodeNames).Show();
+        var dash = new TelemetryDashboardWindow(_db, nodeNames);
+        dash.Show();
+        dash.Activate();
     }
 
     // Context menu handlers for traceroute
@@ -5321,6 +5327,7 @@ public partial class MainWindow : Window
             Owner = this
         };
         win.Show();
+        win.Activate();
     }
 
     // ═══════════════════════════════════════════════════════════════════════

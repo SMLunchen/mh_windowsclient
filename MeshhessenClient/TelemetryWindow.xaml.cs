@@ -213,17 +213,16 @@ public partial class TelemetryWindow : Window
 
     private void OpenPlotWindow_Click(object sender, RoutedEventArgs e)
     {
-        var win = new PlotWindow(_db, _nodeNames, preselectedNodeId: _node.NodeId)
-        {
-            Owner = this
-        };
+        var win = new PlotWindow(_db, _nodeNames, preselectedNodeId: _node.NodeId) { Owner = this };
         win.Show();
+        win.Activate();
     }
 
     private void OpenDashboard_Click(object sender, RoutedEventArgs e)
     {
         var win = new TelemetryDashboardWindow(_db, _nodeNames);
         win.Show();
+        win.Activate();
     }
 
     private static void SetLed(Ellipse led, LedState state, string tooltip)

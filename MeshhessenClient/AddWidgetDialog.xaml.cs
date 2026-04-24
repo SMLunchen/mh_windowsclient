@@ -23,6 +23,9 @@ public class AddWidgetDialog : Window
     private readonly StackPanel _metricSection;
     private readonly StackPanel _daysSection;
     private readonly StackPanel _nodeSection;
+    private readonly StackPanel _chartOptionsSection;
+    private readonly TextBox    _thresholdBox;
+    private readonly CheckBox   _maCheckBox;
     private readonly Dictionary<uint, string> _nodeNames;
     private readonly List<(uint id, string label)> _allNodes;
 
@@ -52,6 +55,9 @@ public class AddWidgetDialog : Window
         ("histogram",   "StrWidgetTypeHistogram",   false),
         ("candlestick", "StrWidgetTypeCandlestick", false),
         ("stateline",   "StrWidgetTypeStateline",   false),
+        ("ranking",     "StrWidgetTypeRanking",     true),
+        ("multistat",   "StrWidgetTypeMultiStat",   true),
+        ("meshhealth",  "StrWidgetTypeMeshHealth",  true),
         ("clock",       "StrWidgetTypeClock",       false),
     };
 
@@ -170,8 +176,21 @@ public class AddWidgetDialog : Window
 
         // ── Title ──
         outerStack.Children.Add(MakeLabel(Loc("StrAddWidgetCustomTitle"), fgSubColor));
-        _titleBox = new TextBox { Margin = new Thickness(0, 0, 0, 18) };
+        _titleBox = new TextBox { Margin = new Thickness(0, 0, 0, 12) };
         outerStack.Children.Add(_titleBox);
+
+        // ── Chart options (threshold + MA) — only for line/area ──
+        _chartOptionsSection = new StackPanel { Margin = new Thickness(0, 0, 0, 6) };
+        _chartOptionsSection.Children.Add(MakeLabel(Loc("StrDashboardThreshold") + " (leer = aus):", fgSubColor));
+        _thresholdBox = new TextBox { Margin = new Thickness(0, 0, 0, 8) };
+        _chartOptionsSection.Children.Add(_thresholdBox);
+        _maCheckBox = new CheckBox
+        {
+            Content = Loc("StrDashboardMovingAvg"),
+            Margin  = new Thickness(0, 0, 0, 12),
+        };
+        _chartOptionsSection.Children.Add(_maCheckBox);
+        outerStack.Children.Add(_chartOptionsSection);
 
         // ── Buttons ──
         var btnRow = new StackPanel
@@ -211,12 +230,22 @@ public class AddWidgetDialog : Window
         foreach (ComboBoxItem item in _daysCombo.Items)
             if (item.Tag is int d && d == existing.Days) { _daysCombo.SelectedItem = item; break; }
 
-        _titleBox.Text = existing.Title;
+        _titleBox.Text        = existing.Title;
+        _thresholdBox.Text    = double.IsNaN(existing.Threshold) ? "" : existing.Threshold.ToString("G4");
+        _maCheckBox.IsChecked = existing.ShowMovingAverage;
 
+        // Must match SelectionMode: Add() throws on Single; use SelectedItem instead
         _nodeListBox.SelectedItems.Clear();
         foreach (ListBoxItem item in _nodeListBox.Items)
-            if (item.Tag is uint id && existing.NodeIds.Contains(id))
-                _nodeListBox.SelectedItems.Add(item);
+        {
+            if (item.Tag is not uint id || !existing.NodeIds.Contains(id)) continue;
+            if (_nodeListBox.SelectionMode == SelectionMode.Single)
+            {
+                _nodeListBox.SelectedItem = item;
+                break;
+            }
+            _nodeListBox.SelectedItems.Add(item);
+        }
     }
 
     // ── Filtering ────────────────────────────────────────────────────────────
@@ -266,10 +295,12 @@ public class AddWidgetDialog : Window
     private void UpdateSectionVisibility()
     {
         string type = CurrentType;
-        bool isClock = type == "clock";
-        _metricSection.Visibility = isClock ? Visibility.Collapsed : Visibility.Visible;
-        _daysSection.Visibility   = isClock ? Visibility.Collapsed : Visibility.Visible;
-        _nodeSection.Visibility   = isClock ? Visibility.Collapsed : Visibility.Visible;
+        bool isClock   = type == "clock";
+        bool showChart = type is "line" or "area";
+        _metricSection.Visibility       = isClock ? Visibility.Collapsed : Visibility.Visible;
+        _daysSection.Visibility         = isClock ? Visibility.Collapsed : Visibility.Visible;
+        _nodeSection.Visibility         = isClock ? Visibility.Collapsed : Visibility.Visible;
+        _chartOptionsSection.Visibility = showChart ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void UpdateNodeSelectionMode()
@@ -340,13 +371,22 @@ public class AddWidgetDialog : Window
         if (singleOnly && nodeIds.Count > 1)
             nodeIds = nodeIds.Take(1).ToList();
 
+        double threshold = double.TryParse(
+            _thresholdBox.Text.Replace(",", "."),
+            System.Globalization.NumberStyles.Any,
+            System.Globalization.CultureInfo.InvariantCulture, out double tv)
+            ? tv : double.NaN;
+        bool showMA = _maCheckBox.IsChecked == true;
+
         Result = new DashboardWidget(
-            Id:      Guid.NewGuid().ToString("N")[..8],
-            Type:    type,
-            Metric:  metric,
-            NodeIds: nodeIds,
-            Days:    days,
-            Title:   title);
+            Id:                Guid.NewGuid().ToString("N")[..8],
+            Type:              type,
+            Metric:            metric,
+            NodeIds:           nodeIds,
+            Days:              days,
+            Title:             title,
+            Threshold:         threshold,
+            ShowMovingAverage: showMA);
         DialogResult = true;
         Close();
     }

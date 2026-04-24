@@ -1079,4 +1079,18 @@ Grün ≤15% | Gelb 15–25% | Rot &gt;25% | Grau = keine Airtime-Daten</sys:Str
     <sys:String x:Key="StrDays30">30 Tage</sys:String>
     <sys:String x:Key="StrDaysAll">Gesamt</sys:String>
 
+    <sys:String x:Key="StrWidgetTypeRanking">Ranking (Tabelle)</sys:String>
+    <sys:String x:Key="StrWidgetTypeMultiStat">Multi-Stat (Kacheln)</sys:String>
+    <sys:String x:Key="StrWidgetTypeMeshHealth">Mesh-Health (Ampel)</sys:String>
+    <sys:String x:Key="StrDashboardExportCsv">CSV exportieren</sys:String>
+    <sys:String x:Key="StrDashboardExportDone">Exportiert nach: {0}</sys:String>
+    <sys:String x:Key="StrDashboardThreshold">Schwellwert</sys:String>
+    <sys:String x:Key="StrDashboardMovingAvg">Gleitender Ø</sys:String>
+    <sys:String x:Key="StrDashboardNoData">Keine Daten</sys:String>
+    <sys:String x:Key="StrRankingNode">Knoten</sys:String>
+    <sys:String x:Key="StrMeshHealthOffline">Offline</sys:String>
+    <sys:String x:Key="StrMeshHealthGood">Gut</sys:String>
+    <sys:String x:Key="StrMeshHealthWeak">Schwach</sys:String>
+    <sys:String x:Key="StrMeshHealthPoor">Schlecht</sys:String>
+
 </ResourceDictionary>

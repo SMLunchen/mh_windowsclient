@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
@@ -10,6 +11,7 @@ using MeshhessenClient.Models;
 using MeshhessenClient.Services;
 using ModernWpf;
 using OxyPlot;
+using OxyPlot.Annotations;
 using OxyPlot.Axes;
 using OxyPlot.Legends;
 using OxyPlot.Series;
@@ -188,10 +190,6 @@ public partial class TelemetryDashboardWindow : Window
             DateTime.Now.ToString("HH:mm:ss"));
     }
 
-    /// <summary>
-    /// Re-render each card's CONTENT in place without rebuilding the container.
-    /// Preserves current size (even if the user is in mid-resize) and drag state.
-    /// </summary>
     private void RefreshAllCardsInPlace()
     {
         if (_current == null) return;
@@ -200,12 +198,14 @@ public partial class TelemetryDashboardWindow : Window
             if (container.Tag is not DashboardWidget w) continue;
             if (container.Children.OfType<Border>().FirstOrDefault(b => b.Tag as string == "card") is not Border card) continue;
             if (card.Child is not DockPanel dock) continue;
-
-            // Content is the second child (after header)
-            if (dock.Children.Count < 2) continue;
+            var oldContent = dock.Children.OfType<UIElement>()
+                .FirstOrDefault(c => (c as FrameworkElement)?.Tag as string == "widgetcontent");
+            if (oldContent == null) continue;
+            int idx = dock.Children.IndexOf(oldContent);
+            dock.Children.Remove(oldContent);
             var newContent = BuildWidgetContent(w);
-            dock.Children.RemoveAt(1);
-            dock.Children.Add(newContent);
+            if (newContent is FrameworkElement fe) fe.Tag = "widgetcontent";
+            dock.Children.Insert(idx, newContent);
         }
     }
 
@@ -351,9 +351,40 @@ public partial class TelemetryDashboardWindow : Window
         EmptyState.Visibility = Visibility.Collapsed;
         foreach (var w in _current.Widgets)
             WidgetPanel.Children.Add(BuildCard(w));
+
+        // Allow dropping onto empty panel space → move to end
+        WidgetPanel.AllowDrop = true;
+        WidgetPanel.Drop -= WidgetPanel_Drop;
+        WidgetPanel.Drop += WidgetPanel_Drop;
+        WidgetPanel.DragOver -= WidgetPanel_DragOver;
+        WidgetPanel.DragOver += WidgetPanel_DragOver;
+
         UpdateStatus();
         LastRefreshText.Text = string.Format(Loc("StrDashboardLastRefreshed"),
             DateTime.Now.ToString("HH:mm:ss"));
+    }
+
+    private void WidgetPanel_DragOver(object sender, DragEventArgs e)
+    {
+        if (e.Data.GetDataPresent("widget_id")) { e.Effects = DragDropEffects.Move; e.Handled = true; }
+    }
+
+    private void WidgetPanel_Drop(object sender, DragEventArgs e)
+    {
+        if (!e.Data.GetDataPresent("widget_id") || _current == null) return;
+        string srcId = (string)e.Data.GetData("widget_id")!;
+        // Move dragged widget to the end if it was dropped on panel background
+        var srcIdx = _current.Widgets.FindIndex(x => x.Id == srcId);
+        if (srcIdx < 0 || srcIdx == _current.Widgets.Count - 1) return;
+        var newWidgets = new List<DashboardWidget>(_current.Widgets);
+        var item = newWidgets[srcIdx];
+        newWidgets.RemoveAt(srcIdx);
+        newWidgets.Add(item);
+        var dashIdx = _store.Dashboards.IndexOf(_current);
+        _current = _current with { Widgets = newWidgets };
+        _store.Dashboards[dashIdx] = _current;
+        SaveStore();
+        RenderCurrentDashboard();
     }
 
     private void UpdateStatus()
@@ -445,11 +476,22 @@ public partial class TelemetryDashboardWindow : Window
             Padding    = new Thickness(2, 0, 2, 0),
         };
         DockPanel.SetDock(dragHandle, Dock.Left);
+        // Track start point; only initiate DoDragDrop after minimum system drag distance
+        var dragStartPoint = new System.Windows.Point(-1, -1);
+        dragHandle.PreviewMouseLeftButtonDown += (_, e) =>
+            dragStartPoint = e.GetPosition(dragHandle);
+        dragHandle.PreviewMouseLeftButtonUp += (_, _) =>
+            dragStartPoint = new System.Windows.Point(-1, -1);
         dragHandle.MouseMove += (_, e) =>
         {
-            if (e.LeftButton == System.Windows.Input.MouseButtonState.Pressed)
-                DragDrop.DoDragDrop(container,
-                    new DataObject("widget_id", w.Id), DragDropEffects.Move);
+            if (e.LeftButton != System.Windows.Input.MouseButtonState.Pressed) return;
+            if (dragStartPoint.X < 0) return;
+            var pos  = e.GetPosition(dragHandle);
+            bool far = Math.Abs(pos.X - dragStartPoint.X) > SystemParameters.MinimumHorizontalDragDistance
+                    || Math.Abs(pos.Y - dragStartPoint.Y) > SystemParameters.MinimumVerticalDragDistance;
+            if (!far) return;
+            dragStartPoint = new System.Windows.Point(-1, -1);
+            DragDrop.DoDragDrop(dragHandle, new DataObject("widget_id", w.Id), DragDropEffects.Move);
         };
         header.Children.Add(dragHandle);
 
@@ -491,23 +533,52 @@ public partial class TelemetryDashboardWindow : Window
         headerBorder.Child = header;
         dock.Children.Add(headerBorder);
 
-        // Content
-        dock.Children.Add(BuildWidgetContent(w));
+        // Time-range presets bar — only for OxyPlot chart types
+        bool isChartType = w.Type is "line" or "area" or "bar" or "scatter"
+                                    or "heatmap" or "histogram" or "candlestick" or "stateline";
+        if (isChartType)
+        {
+            var presetsBar = BuildTimePresetsBar(w);
+            DockPanel.SetDock(presetsBar, Dock.Top);
+            dock.Children.Add(presetsBar);
+        }
+
+        // Content — tagged so RefreshAllCardsInPlace can find it
+        var widgetContent = BuildWidgetContent(w);
+        if (widgetContent is FrameworkElement wfe) wfe.Tag = "widgetcontent";
+        dock.Children.Add(widgetContent);
         card.Child = dock;
         container.Children.Add(card);
 
-        // Drop target for reordering
+        // Context menu: CSV export
+        var ctxMenu = new ContextMenu();
+        var exportItem = new MenuItem
+        {
+            Header = Loc("StrDashboardExportCsv"),
+            Tag    = w,
+        };
+        exportItem.Click += (_, _) => ExportWidgetCsv(w);
+        ctxMenu.Items.Add(exportItem);
+        container.ContextMenu = ctxMenu;
+
+        // Drop target for reordering — with visual highlight feedback
         container.AllowDrop = true;
         container.DragEnter += (_, e) =>
         {
-            if (e.Data.GetDataPresent("widget_id")) e.Effects = DragDropEffects.Move;
+            if (!e.Data.GetDataPresent("widget_id")) return;
+            string srcId = (string)e.Data.GetData("widget_id")!;
+            if (srcId != w.Id) card.BorderBrush = new SolidColorBrush(Color.FromRgb(31, 111, 235));
+            e.Effects = DragDropEffects.Move;
         };
+        container.DragLeave += (_, _) =>
+            card.BorderBrush = new SolidColorBrush(_borderCol);
         container.DragOver += (_, e) =>
         {
             if (e.Data.GetDataPresent("widget_id")) { e.Effects = DragDropEffects.Move; e.Handled = true; }
         };
         container.Drop += (_, e) =>
         {
+            card.BorderBrush = new SolidColorBrush(_borderCol);
             if (!e.Data.GetDataPresent("widget_id")) return;
             string srcId = (string)e.Data.GetData("widget_id")!;
             if (srcId != w.Id) ReorderWidgets(srcId, w.Id);
@@ -560,6 +631,9 @@ public partial class TelemetryDashboardWindow : Window
                 "histogram"   => BuildPlotContent(BuildHistogramModel(w)),
                 "candlestick" => BuildPlotContent(BuildCandlestickModel(w)),
                 "stateline"   => BuildPlotContent(BuildStatelineModel(w)),
+                "ranking"     => BuildRankingContent(w),
+                "multistat"   => BuildMultiStatContent(w),
+                "meshhealth"  => BuildMeshHealthContent(w),
                 _             => BuildPlotContent(BuildLineModel(w)),
             };
         }
@@ -588,6 +662,9 @@ public partial class TelemetryDashboardWindow : Window
         "histogram"   => Color.FromRgb( 63, 185, 126),
         "candlestick" => Color.FromRgb(240,  76,  76),
         "stateline"   => Color.FromRgb(  0, 205, 218),
+        "ranking"     => Color.FromRgb( 63, 185, 126),
+        "multistat"   => Color.FromRgb(  0, 205, 218),
+        "meshhealth"  => Color.FromRgb(255, 171,  76),
         _             => Color.FromRgb(139, 148, 158),
     };
 
@@ -604,6 +681,9 @@ public partial class TelemetryDashboardWindow : Window
         "histogram"   => "▦",
         "candlestick" => "🕯",
         "stateline"   => "▬",
+        "ranking"     => "⊞",
+        "multistat"   => "⊟",
+        "meshhealth"  => "⬤",
         _             => "▪",
     };
 
@@ -1026,19 +1106,38 @@ public partial class TelemetryDashboardWindow : Window
         {
             var pts = _db.GetTimeSeries(new[] { nodeId }, w.Metric, w.Days);
             if (pts.Count == 0) continue;
+            var oxy  = Palette[ci % Palette.Length];
             var line = new LineSeries
             {
                 Title               = NodeLabel(nodeId),
-                Color               = Palette[ci % Palette.Length],
+                Color               = oxy,
                 StrokeThickness     = 1.8,
                 MarkerType          = MarkerType.None,
                 TrackerFormatString = "{0}\n{2:dd.MM HH:mm}\n{4:F2} " + unit,
             };
-            foreach (var p in pts.OrderBy(x => x.Timestamp))
-                line.Points.Add(new DataPoint(DateTimeAxis.ToDouble(p.Timestamp), p.Value));
+            var sorted = pts.OrderBy(x => x.Timestamp)
+                            .Select(p => new DataPoint(DateTimeAxis.ToDouble(p.Timestamp), p.Value))
+                            .ToList();
+            foreach (var dp in sorted) line.Points.Add(dp);
             model.Series.Add(line);
+
+            if (w.ShowMovingAverage && sorted.Count > 5)
+            {
+                var maLine = new LineSeries
+                {
+                    Title           = $"MA({NodeLabel(nodeId)})",
+                    Color           = OxyColor.FromAColor(180, oxy),
+                    StrokeThickness = 1.5,
+                    LineStyle       = LineStyle.Dash,
+                    MarkerType      = MarkerType.None,
+                    TrackerFormatString = "{0} MA\n{2:dd.MM HH:mm}\n{4:F2} " + unit,
+                };
+                foreach (var dp in MovingAverage(sorted)) maLine.Points.Add(dp);
+                model.Series.Add(maLine);
+            }
             ci++;
         }
+        AddThresholdAnnotation(model, w);
         return model;
     }
 
@@ -1066,12 +1165,58 @@ public partial class TelemetryDashboardWindow : Window
                 MarkerType      = MarkerType.None,
                 TrackerFormatString = "{0}\n{2:dd.MM HH:mm}\n{4:F2} " + unit,
             };
-            foreach (var p in pts.OrderBy(x => x.Timestamp))
-                series.Points.Add(new DataPoint(DateTimeAxis.ToDouble(p.Timestamp), p.Value));
+            var sorted = pts.OrderBy(x => x.Timestamp)
+                            .Select(p => new DataPoint(DateTimeAxis.ToDouble(p.Timestamp), p.Value))
+                            .ToList();
+            foreach (var dp in sorted) series.Points.Add(dp);
             model.Series.Add(series);
+
+            if (w.ShowMovingAverage && sorted.Count > 5)
+            {
+                var maLine = new LineSeries
+                {
+                    Title           = $"MA({NodeLabel(nodeId)})",
+                    Color           = OxyColor.FromAColor(200, oxy),
+                    StrokeThickness = 1.5,
+                    LineStyle       = LineStyle.Dash,
+                    MarkerType      = MarkerType.None,
+                    TrackerFormatString = "{0} MA\n{2:dd.MM HH:mm}\n{4:F2} " + unit,
+                };
+                foreach (var dp in MovingAverage(sorted)) maLine.Points.Add(dp);
+                model.Series.Add(maLine);
+            }
             ci++;
         }
+        AddThresholdAnnotation(model, w);
         return model;
+    }
+
+    private static void AddThresholdAnnotation(PlotModel model, DashboardWidget w)
+    {
+        if (double.IsNaN(w.Threshold)) return;
+        model.Annotations.Add(new LineAnnotation
+        {
+            Type            = LineAnnotationType.Horizontal,
+            Y               = w.Threshold,
+            Color           = OxyColor.FromArgb(200, 240, 76, 76),
+            StrokeThickness = 1.5,
+            LineStyle       = LineStyle.Dash,
+            Text            = $"⊥ {w.Threshold:G4}",
+            TextColor       = OxyColor.FromArgb(200, 240, 76, 76),
+            FontSize        = 9,
+        });
+    }
+
+    private static IEnumerable<DataPoint> MovingAverage(IList<DataPoint> points, int window = 12)
+    {
+        for (int i = 0; i < points.Count; i++)
+        {
+            int start = Math.Max(0, i - window + 1);
+            double sum = 0;
+            int cnt = 0;
+            for (int j = start; j <= i; j++) { sum += points[j].Y; cnt++; }
+            yield return new DataPoint(points[i].X, sum / cnt);
+        }
     }
 
     // ── Bar chart ─────────────────────────────────────────────────────────────
@@ -1519,6 +1664,523 @@ public partial class TelemetryDashboardWindow : Window
         return dlg.ShowDialog() == true && !string.IsNullOrWhiteSpace(box.Text)
             ? box.Text.Trim()
             : null;
+    }
+
+    // ── Time-presets bar ──────────────────────────────────────────────────────
+
+    private FrameworkElement BuildTimePresetsBar(DashboardWidget w)
+    {
+        var panel = new WrapPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Margin      = new Thickness(8, 3, 8, 3),
+        };
+
+        var presets = new (int days, string label)[]
+        {
+            (1, "1d"), (7, "7d"), (14, "14d"), (30, "30d"), (0, Loc("StrDaysAll")),
+        };
+        foreach (var (days, label) in presets)
+        {
+            bool active = w.Days == days;
+            var btn = new Button
+            {
+                Content    = label,
+                Margin     = new Thickness(0, 0, 3, 0),
+                Padding    = new Thickness(5, 1, 5, 1),
+                FontSize   = 10,
+                Tag        = (w.Id, days),
+                Foreground = new SolidColorBrush(active ? WpfPalette[0] : _fgSub),
+                FontWeight = active ? System.Windows.FontWeights.SemiBold
+                                    : System.Windows.FontWeights.Normal,
+            };
+            btn.Click += (_, _) =>
+            {
+                var (wid, d) = ((string, int))btn.Tag!;
+                UpdateWidgetDays(wid, d);
+            };
+            panel.Children.Add(btn);
+        }
+
+        panel.Children.Add(new TextBlock
+        {
+            Text = " | ",
+            Foreground = new SolidColorBrush(_fgMuted),
+            VerticalAlignment = System.Windows.VerticalAlignment.Center,
+            FontSize = 10,
+        });
+
+        var maBtn = new Button
+        {
+            Content    = "⌀ MA",
+            Margin     = new Thickness(0, 0, 3, 0),
+            Padding    = new Thickness(5, 1, 5, 1),
+            FontSize   = 10,
+            ToolTip    = Loc("StrDashboardMovingAvg"),
+            Tag        = w.Id,
+            Foreground = new SolidColorBrush(w.ShowMovingAverage ? WpfPalette[0] : _fgSub),
+            FontWeight = w.ShowMovingAverage ? System.Windows.FontWeights.SemiBold
+                                             : System.Windows.FontWeights.Normal,
+        };
+        maBtn.Click += (_, _) => ToggleMovingAverage((string)maBtn.Tag!);
+        panel.Children.Add(maBtn);
+
+        panel.Children.Add(new TextBlock
+        {
+            Text = " " + Loc("StrDashboardThreshold") + ":",
+            Foreground = new SolidColorBrush(_fgSub),
+            FontSize = 10,
+            VerticalAlignment = System.Windows.VerticalAlignment.Center,
+        });
+
+        var threshBox = new TextBox
+        {
+            Width   = 52,
+            Height  = 20,
+            FontSize = 10,
+            Padding = new Thickness(3, 0, 3, 0),
+            Text    = double.IsNaN(w.Threshold) ? "" : w.Threshold.ToString("G4"),
+            Tag     = w.Id,
+            VerticalAlignment = System.Windows.VerticalAlignment.Center,
+            Margin  = new Thickness(3, 0, 0, 0),
+            ToolTip = Loc("StrDashboardThreshold"),
+        };
+        threshBox.LostFocus += (_, _) =>
+        {
+            string id  = (string)threshBox.Tag!;
+            double val = double.TryParse(threshBox.Text.Replace(",", "."),
+                System.Globalization.NumberStyles.Any,
+                System.Globalization.CultureInfo.InvariantCulture, out double v)
+                ? v : double.NaN;
+            UpdateWidgetThreshold(id, val);
+        };
+        panel.Children.Add(threshBox);
+
+        return new Border
+        {
+            Background      = new SolidColorBrush(_bgHeader),
+            BorderThickness = new Thickness(0, 0, 0, 1),
+            BorderBrush     = new SolidColorBrush(_borderCol),
+            Child           = panel,
+            Tag             = "presetsbar",
+        };
+    }
+
+    private void UpdateWidgetDays(string widgetId, int newDays)
+    {
+        if (_current == null) return;
+        int dashIdx = _store.Dashboards.IndexOf(_current);
+        if (dashIdx < 0) return;
+        int wIdx = _current.Widgets.FindIndex(x => x.Id == widgetId);
+        if (wIdx < 0) return;
+        var updated = _current.Widgets[wIdx] with { Days = newDays };
+        CommitWidgetUpdate(dashIdx, wIdx, updated);
+        RefreshCardById(widgetId, updated);
+    }
+
+    private void ToggleMovingAverage(string widgetId)
+    {
+        if (_current == null) return;
+        int dashIdx = _store.Dashboards.IndexOf(_current);
+        if (dashIdx < 0) return;
+        int wIdx = _current.Widgets.FindIndex(x => x.Id == widgetId);
+        if (wIdx < 0) return;
+        var old     = _current.Widgets[wIdx];
+        var updated = old with { ShowMovingAverage = !old.ShowMovingAverage };
+        CommitWidgetUpdate(dashIdx, wIdx, updated);
+        RefreshCardById(widgetId, updated);
+    }
+
+    private void UpdateWidgetThreshold(string widgetId, double threshold)
+    {
+        if (_current == null) return;
+        int dashIdx = _store.Dashboards.IndexOf(_current);
+        if (dashIdx < 0) return;
+        int wIdx = _current.Widgets.FindIndex(x => x.Id == widgetId);
+        if (wIdx < 0) return;
+        var old = _current.Widgets[wIdx];
+        bool sameNaN = double.IsNaN(old.Threshold) && double.IsNaN(threshold);
+        if (sameNaN) return;
+        if (!double.IsNaN(old.Threshold) && !double.IsNaN(threshold) &&
+            Math.Abs(old.Threshold - threshold) < 1e-9) return;
+        var updated = old with { Threshold = threshold };
+        CommitWidgetUpdate(dashIdx, wIdx, updated);
+        RefreshCardById(widgetId, updated);
+    }
+
+    private void CommitWidgetUpdate(int dashIdx, int widgetIdx, DashboardWidget updated)
+    {
+        var newWidgets = new List<DashboardWidget>(_current!.Widgets);
+        newWidgets[widgetIdx] = updated;
+        _current = _current with { Widgets = newWidgets };
+        _store.Dashboards[dashIdx] = _current;
+        foreach (Grid g in WidgetPanel.Children.OfType<Grid>())
+            if (g.Tag is DashboardWidget tw && tw.Id == updated.Id) { g.Tag = updated; break; }
+        SaveStore();
+    }
+
+    private void RefreshCardById(string widgetId, DashboardWidget? withWidget = null)
+    {
+        for (int i = 0; i < WidgetPanel.Children.Count; i++)
+        {
+            if (WidgetPanel.Children[i] is not Grid container) continue;
+            if (container.Tag is not DashboardWidget tw || tw.Id != widgetId) continue;
+            var w       = withWidget ?? tw;
+            var newCard = BuildCard(w);
+            // Preserve the current size
+            if (newCard is Grid ng)
+            {
+                ng.Width  = container.Width;
+                ng.Height = container.Height;
+                ng.Tag    = w with { Width = container.Width, Height = container.Height };
+            }
+            WidgetPanel.Children.RemoveAt(i);
+            WidgetPanel.Children.Insert(i, newCard);
+            return;
+        }
+    }
+
+    // ── Node-Ranking widget ───────────────────────────────────────────────────
+
+    private FrameworkElement BuildRankingContent(DashboardWidget w)
+    {
+        (_, _, string unit) = MetricRange(w.Metric);
+        var nodeIds = w.NodeIds.Count > 0 ? w.NodeIds : _nodeNames.Keys.ToList();
+
+        var rows = nodeIds
+            .Select(id =>
+            {
+                var pts = _db.GetTimeSeries(new[] { id }, w.Metric, w.Days > 0 ? w.Days : 7);
+                double val = pts.Count > 0
+                    ? pts.OrderByDescending(p => p.Timestamp).First().Value
+                    : double.NaN;
+                return (id, val);
+            })
+            .Where(x => !double.IsNaN(x.val))
+            .OrderByDescending(x => x.val)
+            .ToList();
+
+        var grid = new Grid { Margin = new Thickness(8, 6, 8, 4) };
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(30) });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+        grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        AddRankingCell(grid, "#",                0, 0, _fgMuted, true);
+        AddRankingCell(grid, Loc("StrRankingNode"), 1, 0, _fgMuted, true);
+        AddRankingCell(grid, unit,               2, 0, _fgMuted, true);
+
+        if (rows.Count == 0)
+        {
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            var noData = new TextBlock
+            {
+                Text       = Loc("StrDashboardNoData"),
+                Foreground = new SolidColorBrush(_fgMuted),
+                FontSize   = 11,
+                Margin     = new Thickness(4, 8, 4, 4),
+            };
+            Grid.SetRow(noData, 1);
+            Grid.SetColumnSpan(noData, 3);
+            grid.Children.Add(noData);
+        }
+        else
+        {
+            for (int i = 0; i < rows.Count; i++)
+            {
+                var (id, val) = rows[i];
+                Color rowColor = i == 0 ? WpfPalette[1]
+                               : i == 1 ? WpfPalette[2]
+                               : _fgMain;
+                grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+                int row = i + 1;
+                AddRankingCell(grid, $"{i + 1}",  0, row, rowColor, false);
+                AddRankingCell(grid, NodeLabel(id), 1, row, _fgMain, false);
+                AddRankingCell(grid, $"{val:F1}",  2, row, rowColor, false);
+            }
+        }
+
+        return new Border
+        {
+            Child = new ScrollViewer
+            {
+                Content = grid,
+                VerticalScrollBarVisibility   = ScrollBarVisibility.Auto,
+                HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
+            },
+            Padding = new Thickness(2),
+        };
+    }
+
+    private void AddRankingCell(Grid grid, string text, int col, int row, Color color, bool header)
+    {
+        var tb = new TextBlock
+        {
+            Text         = text,
+            Foreground   = new SolidColorBrush(color),
+            FontSize     = header ? 10 : 11,
+            FontWeight   = header ? System.Windows.FontWeights.SemiBold
+                                  : System.Windows.FontWeights.Normal,
+            Padding      = new Thickness(3, 2, 3, 2),
+            TextTrimming = TextTrimming.CharacterEllipsis,
+        };
+        Grid.SetRow(tb,    row);
+        Grid.SetColumn(tb, col);
+        grid.Children.Add(tb);
+    }
+
+    // ── Multi-Node-Stat widget ────────────────────────────────────────────────
+
+    private FrameworkElement BuildMultiStatContent(DashboardWidget w)
+    {
+        (_, _, string unit) = MetricRange(w.Metric);
+        var nodeIds = w.NodeIds.Count > 0 ? w.NodeIds : _nodeNames.Keys.Take(8).ToList();
+
+        var wrap = new WrapPanel { Margin = new Thickness(6), Orientation = Orientation.Horizontal };
+
+        int ci = 0;
+        foreach (var id in nodeIds)
+        {
+            var values = _db.GetTimeSeries(new[] { id }, w.Metric, w.Days > 0 ? w.Days : 7)
+                            .Select(p => p.Value).ToList();
+            double last = values.Count > 0
+                ? _db.GetTimeSeries(new[] { id }, w.Metric, w.Days > 0 ? w.Days : 7)
+                      .OrderByDescending(p => p.Timestamp).First().Value
+                : double.NaN;
+            double min = values.Count > 0 ? values.Min() : double.NaN;
+            double max = values.Count > 0 ? values.Max() : double.NaN;
+            double avg = values.Count > 0 ? values.Average() : double.NaN;
+
+            Color accent = WpfPalette[ci % WpfPalette.Length];
+            string name  = NodeLabel(id);
+
+            var tile = new Border
+            {
+                Background      = new SolidColorBrush(Color.FromArgb(20, accent.R, accent.G, accent.B)),
+                BorderBrush     = new SolidColorBrush(Color.FromArgb(60, accent.R, accent.G, accent.B)),
+                BorderThickness = new Thickness(1),
+                CornerRadius    = new CornerRadius(5),
+                Margin          = new Thickness(3),
+                Padding         = new Thickness(8, 5, 8, 5),
+                MinWidth        = 110,
+            };
+
+            var tileGrid = new Grid();
+            tileGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            tileGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            tileGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+
+            var nameText = new TextBlock
+            {
+                Text         = name.Length > 14 ? name[..14] : name,
+                FontSize     = 10,
+                FontWeight   = System.Windows.FontWeights.SemiBold,
+                Foreground   = new SolidColorBrush(accent),
+                TextTrimming = TextTrimming.CharacterEllipsis,
+            };
+            Grid.SetRow(nameText, 0);
+
+            var bigText = new TextBlock
+            {
+                Text                = double.IsNaN(last) ? "–" : $"{last:F1}",
+                FontSize            = 22,
+                FontWeight          = System.Windows.FontWeights.Light,
+                Foreground          = new SolidColorBrush(_fgMain),
+                HorizontalAlignment = System.Windows.HorizontalAlignment.Center,
+            };
+            Grid.SetRow(bigText, 1);
+
+            var statsRow = new StackPanel { Orientation = Orientation.Horizontal };
+            statsRow.Children.Add(MakeMultiStatMini("↓", min, _fgMuted));
+            statsRow.Children.Add(MakeMultiStatMini(" ⌀", avg, _fgSub));
+            statsRow.Children.Add(MakeMultiStatMini(" ↑", max, _fgMuted));
+            Grid.SetRow(statsRow, 2);
+
+            tileGrid.Children.Add(nameText);
+            tileGrid.Children.Add(bigText);
+            tileGrid.Children.Add(statsRow);
+            tile.Child = tileGrid;
+            wrap.Children.Add(tile);
+            ci++;
+        }
+
+        return new Border
+        {
+            Child = new ScrollViewer
+            {
+                Content = wrap,
+                VerticalScrollBarVisibility   = ScrollBarVisibility.Auto,
+                HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
+            },
+        };
+    }
+
+    private TextBlock MakeMultiStatMini(string prefix, double val, Color color) => new()
+    {
+        Text       = double.IsNaN(val) ? $"{prefix}–" : $"{prefix}{val:F1}",
+        FontSize   = 9,
+        Foreground = new SolidColorBrush(color),
+        Margin     = new Thickness(0, 0, 3, 0),
+    };
+
+    // ── Mesh-Health widget ────────────────────────────────────────────────────
+
+    private FrameworkElement BuildMeshHealthContent(DashboardWidget w)
+    {
+        var nodeIds     = w.NodeIds.Count > 0 ? w.NodeIds : _nodeNames.Keys.ToList();
+        int lookbackDays = w.Days > 0 ? w.Days : 1;
+
+        var wrap = new WrapPanel { Margin = new Thickness(6), Orientation = Orientation.Horizontal };
+
+        foreach (var id in nodeIds)
+        {
+            var pts = _db.GetTimeSeries(new[] { id }, "snr", lookbackDays);
+            double lastSnr = pts.Count > 0
+                ? pts.OrderByDescending(p => p.Timestamp).First().Value
+                : double.NaN;
+            bool stale = pts.Count == 0 ||
+                         (DateTime.UtcNow - pts.Max(p => p.Timestamp)).TotalHours > 24;
+
+            Color ledColor;
+            string status;
+            if (stale || double.IsNaN(lastSnr))
+            {
+                ledColor = Color.FromRgb(240,  76,  76);
+                status   = Loc("StrMeshHealthOffline");
+            }
+            else if (lastSnr >= -5)
+            {
+                ledColor = Color.FromRgb( 63, 185, 126);
+                status   = Loc("StrMeshHealthGood");
+            }
+            else if (lastSnr >= -15)
+            {
+                ledColor = Color.FromRgb(255, 171,  76);
+                status   = Loc("StrMeshHealthWeak");
+            }
+            else
+            {
+                ledColor = Color.FromRgb(240,  76,  76);
+                status   = Loc("StrMeshHealthPoor");
+            }
+
+            string name = NodeLabel(id);
+
+            var tile = new Border
+            {
+                Background      = new SolidColorBrush(Color.FromArgb(12, ledColor.R, ledColor.G, ledColor.B)),
+                BorderBrush     = new SolidColorBrush(Color.FromArgb(40, ledColor.R, ledColor.G, ledColor.B)),
+                BorderThickness = new Thickness(1),
+                CornerRadius    = new CornerRadius(5),
+                Margin          = new Thickness(3),
+                Padding         = new Thickness(8, 6, 8, 6),
+                MinWidth        = 110,
+                ToolTip         = $"{name}  SNR: {(double.IsNaN(lastSnr) ? "–" : $"{lastSnr:F1} dB")}  {status}",
+            };
+
+            var row = new StackPanel
+            {
+                Orientation       = Orientation.Horizontal,
+                VerticalAlignment = System.Windows.VerticalAlignment.Center,
+            };
+
+            var led = new System.Windows.Shapes.Ellipse
+            {
+                Width  = 10,
+                Height = 10,
+                Fill   = new SolidColorBrush(ledColor),
+                Effect = new DropShadowEffect
+                {
+                    Color       = ledColor,
+                    BlurRadius  = 6,
+                    ShadowDepth = 0,
+                    Opacity     = 0.7,
+                },
+                Margin            = new Thickness(0, 0, 7, 0),
+                VerticalAlignment = System.Windows.VerticalAlignment.Center,
+            };
+            row.Children.Add(led);
+
+            var info = new StackPanel { VerticalAlignment = System.Windows.VerticalAlignment.Center };
+            info.Children.Add(new TextBlock
+            {
+                Text         = name.Length > 14 ? name[..14] : name,
+                FontSize     = 11,
+                Foreground   = new SolidColorBrush(_fgMain),
+                TextTrimming = TextTrimming.CharacterEllipsis,
+            });
+            info.Children.Add(new TextBlock
+            {
+                Text       = double.IsNaN(lastSnr) ? "–" : $"{lastSnr:F1} dB",
+                FontSize   = 9,
+                Foreground = new SolidColorBrush(_fgMuted),
+            });
+            row.Children.Add(info);
+
+            tile.Child = row;
+            wrap.Children.Add(tile);
+        }
+
+        if (wrap.Children.Count == 0)
+            wrap.Children.Add(new TextBlock
+            {
+                Text       = Loc("StrDashboardNoData"),
+                Foreground = new SolidColorBrush(_fgMuted),
+                FontSize   = 11,
+                Margin     = new Thickness(4),
+            });
+
+        return new Border
+        {
+            Child = new ScrollViewer
+            {
+                Content = wrap,
+                VerticalScrollBarVisibility   = ScrollBarVisibility.Auto,
+                HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
+            },
+        };
+    }
+
+    // ── CSV Export ────────────────────────────────────────────────────────────
+
+    private void ExportWidgetCsv(DashboardWidget w)
+    {
+        (_, _, string unit) = MetricRange(w.Metric);
+        var dlg = new Microsoft.Win32.SaveFileDialog
+        {
+            Title    = Loc("StrDashboardExportCsv"),
+            Filter   = "CSV (*.csv)|*.csv",
+            FileName = $"{w.Title}_{w.Metric}_{DateTime.Now:yyyyMMdd_HHmm}.csv",
+        };
+        if (dlg.ShowDialog() != true) return;
+
+        try
+        {
+            var nodeIds = w.NodeIds.Count > 0 ? w.NodeIds : _nodeNames.Keys.ToList();
+            var sb = new StringBuilder();
+            sb.AppendLine($"Timestamp,Node,{w.Metric} ({unit})");
+
+            foreach (var id in nodeIds)
+            {
+                string name = NodeLabel(id);
+                var pts = _db.GetTimeSeries(new[] { id }, w.Metric, w.Days > 0 ? w.Days : 30)
+                             .OrderBy(p => p.Timestamp);
+                foreach (var p in pts)
+                    sb.AppendLine($"{p.Timestamp:yyyy-MM-dd HH:mm:ss},{name},{p.Value:F4}");
+            }
+
+            System.IO.File.WriteAllText(dlg.FileName, sb.ToString(), Encoding.UTF8);
+            MessageBox.Show(
+                string.Format(Loc("StrDashboardExportDone"), dlg.FileName),
+                Loc("StrDashboardTitle"),
+                MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Export fehlgeschlagen: {ex.Message}",
+                Loc("StrDashboardTitle"),
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
     }
 }
 
