@@ -220,6 +220,12 @@ public partial class TelemetryWindow : Window
         win.Show();
     }
 
+    private void OpenDashboard_Click(object sender, RoutedEventArgs e)
+    {
+        var win = new TelemetryDashboardWindow(_db, _nodeNames) { Owner = this };
+        win.Show();
+    }
+
     private static void SetLed(Ellipse led, LedState state, string tooltip)
     {
         led.Fill = state switch

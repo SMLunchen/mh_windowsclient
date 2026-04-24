@@ -4,11 +4,11 @@ Der **Meshhessen Client** ist ein **kostenloser, nativer Windows-Client für Mes
 
 ![Windows](https://img.shields.io/badge/Windows-10%2F11-blue)
 ![.NET](https://img.shields.io/badge/.NET-8.0-purple)
-![Status](https://img.shields.io/badge/Status-v1.5.9-yellow)
+![Status](https://img.shields.io/badge/Status-v1.5.10-yellow)
 ![License](https://img.shields.io/github/license/SMLunchen/mh_windowsclient)
 ![Stars](https://img.shields.io/github/stars/SMLunchen/mh_windowsclient)
 
-> **English summary:** Free Windows app for Meshtastic devices – offline map (OSM/OpenTopo), telemetry, traceroute, PKI decryption, full device configuration, USB/Serial/TCP/BLE support. No installation, no cloud. By the Meshhessen community (Hesse, Germany). [→ English version below](#meshhessen-client--windows-client-for-meshtastic-devices-wpf--net-8)
+> **English summary:** Free Windows app for Meshtastic devices – offline map (OSM/OpenTopo), telemetry, traceroute, PKI decryption, full device configuration, USB/Serial/TCP/BLE support, remote admin, favorites & telemetry dashboard. No installation, no cloud. By the Meshhessen community (Hesse, Germany). [→ English version below](#meshhessen-client--windows-client-for-meshtastic-devices-wpf--net-8)
 
 
 ## 🚀 Schnellstart
@@ -57,6 +57,10 @@ Der **Meshhessen Client** ist ein **kostenloser, nativer Windows-Client für Mes
 ### 📊 Telemetrie & Statistik
 
 * **Persistente Telemetrie-Datenbank** – empfangene Paket- und Gerätedaten werden lokal in einer SQLite-Datenbank gespeichert
+* **Telemetrie-Dashboard** – frei konfigurierbares Widget-Dashboard mit benannten Dashboards:
+  * Vier Widget-Typen: Zeitverlauf (Linienchart), Balkendiagramm (aktueller Vergleich), Gauge (Einzelwert), Heatmap (Stunde × Tag)
+  * Multi-Node-Support, alle Metriken: SNR, RSSI, Batterie, Spannung, Kanal-/TX-Auslastung, Temperatur, Luftfeuchtigkeit, Luftdruck
+  * Persistenz in `dashboards.json`, dunkles OxyPlot-Theme
 * **Node-Statistik-Fenster** – detaillierte Auswertung pro Node:
   * Tag/Nacht-Auswertung der Empfangsqualität
   * Zeitreihen-Graphen für SNR, RSSI, Paketrate und Gerätedaten (Batterie, Spannung)
@@ -107,6 +111,8 @@ Der **Meshhessen Client** ist ein **kostenloser, nativer Windows-Client für Mes
 * **Node-Farben** – Nodes individuell einfärben (Karte + Listen)
 * **Node-Notizen** – Freitext-Notizen pro Node
 * **Nodes anpinnen** – Nodes in der Liste oben fixieren (unabhängig von Sortierung)
+* **Favoriten** – Nodes als Favoriten markieren (★-Symbol, Rechtsklick-Menü); wird mit dem Gerät synchronisiert (`add_favorite_node` / `remove_favorite_node`); Favoriten erscheinen oben in der Liste
+* **Fernverwaltung** – vollständige Remote-Admin-Oberfläche für Favoriten-Nodes: alle Konfigurations-Reiter (Besitzer, Gerät, Position, LoRa, Bluetooth, Netzwerk, Anzeige, Kanäle, Steuerung), Session-Schlüssel-Handshake, konfigurierbarer Timeout
 * **Node-Konfiguration** – vollständige Gerätekonfiguration direkt aus dem Client, alle Module auf einer Seite:
   * **Gerät & LoRa:** Region, Modem-Preset, TX-Power, Hop-Limit, Geräterolle, Rebroadcast-Modus
   * **Position:** GPS-Modus, Smart-Broadcast, feste Position mit Koordinaten-Eingabe; „Von Karte wählen" öffnet ein eigenes Kartenfenster (honoriert Offline-/Online-Einstellungen); „Eigener Kartenpin" übernimmt die per Rechtsklick gesetzte Position
@@ -338,7 +344,7 @@ Meshhessen Client · Windows-Client für Meshtastic-Geräte · Meshtastic Window
 
  ![Windows](https://img.shields.io/badge/Windows-10%2F11-blue)
  ![.NET](https://img.shields.io/badge/.NET-8.0-purple)
- ![Status](https://img.shields.io/badge/Status-v1.5.9-yellow)
+ ![Status](https://img.shields.io/badge/Status-v1.5.10-yellow)
  ![License](https://img.shields.io/github/license/SMLunchen/mh_windowsclient)
  ![Stars](https://img.shields.io/github/stars/SMLunchen/mh_windowsclient)
 
@@ -389,6 +395,10 @@ Meshhessen Client · Windows-Client für Meshtastic-Geräte · Meshtastic Window
 ### 📊 Telemetry & Statistics
 
 * **Persistent telemetry database** – received packet and device data is stored locally in a SQLite database
+* **Telemetry Dashboard** – freely configurable widget dashboard with named dashboards:
+  * Four widget types: line chart (time series), bar chart (current comparison), gauge (single value), heatmap (hour × day)
+  * Multi-node support, all metrics: SNR, RSSI, battery, voltage, channel/TX utilization, temperature, humidity, pressure
+  * Persisted in `dashboards.json`, dark OxyPlot theme
 * **Node statistics window** – detailed analysis per node:
   * Day/night breakdown of reception quality
   * Time-series graphs for SNR, RSSI, packet rate and device data (battery, voltage)
@@ -439,6 +449,8 @@ Meshhessen Client · Windows-Client für Meshtastic-Geräte · Meshtastic Window
 * **Node colors** – color-code nodes individually (map + lists)
 * **Node notes** – free-text annotations per node
 * **Pin nodes** – pin nodes to the top of the list (independent of sorting)
+* **Favorites** – mark nodes as favorites (★ icon, right-click menu); synced with the device (`add_favorite_node` / `remove_favorite_node`); favorites shown at the top of the list
+* **Remote Administration** – full remote admin UI for favorite nodes: all configuration tabs (Owner, Device, Position, LoRa, Bluetooth, Network, Display, Channels, Control), session-key handshake, configurable timeout
 * **Node configuration** – full device configuration directly from the client, all modules in one window:
   * **Device & LoRa:** region, modem preset, TX power, hop limit, device role, rebroadcast mode
   * **Position:** GPS mode, smart broadcast, fixed position with coordinate input; "Pick from Map" opens a dedicated map picker window (respects offline/online settings); "Own Map Pin" copies the position set via right-click

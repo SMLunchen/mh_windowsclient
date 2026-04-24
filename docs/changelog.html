@@ -172,10 +172,59 @@
 <div class="section active" id="de">
 <main>
 
-  <!-- ── v1.5.9 ── -->
+  <!-- ── v1.5.10 ── -->
   <div class="version-entry current">
     <div class="version-header">
-      <span class="version-tag tag-latest">v1.5.9</span>
+      <span class="version-tag tag-latest">v1.5.10</span>
+      <span class="version-date">2026-04-23</span>
+      Favoriten, Fernverwaltung &amp; Telemetrie-Dashboard
+    </div>
+    <p class="version-desc">Nodes als Favoriten markieren (sync mit Gerät), vollständige Remote-Admin-Oberfläche für entfernte Knoten, konfigurierbarer Timeout, neues Dashboard für Telemetriedaten mit vier Widget-Typen.</p>
+
+    <div class="cl-section added">
+      <h3>✨ Hinzugefügt</h3>
+
+      <div class="cl-group">
+        <div class="cl-group-title">Favoriten</div>
+        <ul class="cl-list">
+          <li><strong>Stern-Symbol</strong> in der Node-Liste; per Rechtsklick als Favorit markieren/entfernen</li>
+          <li>Sync mit dem Gerät via <code>add_favorite_node</code> / <code>remove_favorite_node</code> Admin-Nachrichten</li>
+          <li>Favoriten werden in der Liste oben angezeigt (vor gepinnten Nodes)</li>
+          <li>Persistenz in <code>meshhessen-client.ini</code></li>
+        </ul>
+      </div>
+
+      <div class="cl-group">
+        <div class="cl-group-title">Fernverwaltung (Remote Admin)</div>
+        <ul class="cl-list">
+          <li>Schaltfläche „Fernverwaltung" im Node-Konfigurations-Bereich (nur sichtbar bei verbundenem Gerät)</li>
+          <li>Node-Auswahl aus der Favoritenliste; Session-Schlüssel-Handshake vor dem Laden</li>
+          <li>Vollständiges Admin-Fenster: Reiter Besitzer, Gerät, Position, LoRa, Bluetooth, Netzwerk, Anzeige, Kanäle, Steuerung</li>
+          <li>Feste GPS-Koordinaten via separatem <code>set_position</code>-Befehl</li>
+          <li>Ferngesteuerter Neustart, Herunterfahren, Node-DB-Reset</li>
+          <li>Favoriten-Status direkt im Remote-Admin-Fenster umschalten</li>
+          <li>Konfigurierbarer Anfrage-Timeout (Standard 30 s, einstellbar in Einstellungen)</li>
+        </ul>
+      </div>
+
+      <div class="cl-group">
+        <div class="cl-group-title">Telemetrie-Dashboard</div>
+        <ul class="cl-list">
+          <li>Neuer „Dashboard öffnen"-Button im Telemetrie-Fenster</li>
+          <li>Benannte Dashboards erstellen, umbenennen und löschen; Persistenz in <code>dashboards.json</code></li>
+          <li>Vier Widget-Typen: <strong>Zeitverlauf</strong> (OxyPlot-Linienchart, Mehrfach-Node), <strong>Balkendiagramm</strong> (aktueller Vergleich), <strong>Gauge</strong> (Einzelwert + Fortschrittsbalken), <strong>Heatmap</strong> (Stunde × Tag)</li>
+          <li>Neue Metriken: Temperatur, Luftfeuchtigkeit, Luftdruck aus Umgebungs-Telemetrie</li>
+          <li>Voreingestellte Achsen-Bereiche: SNR −20…+20 dB, RSSI −130…−20 dBm, Batterie 0…100 %, Temperatur −20…60 °C</li>
+          <li>Dunkles OxyPlot-Theme passend zum App-Design</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── v1.5.9 ── -->
+  <div class="version-entry old">
+    <div class="version-header">
+      <span class="version-tag">v1.5.9</span>
       <span class="version-date">2026-04-21</span>
       Vollständige Node-Konfiguration, Kartenauswahl &amp; Map-Report
     </div>
@@ -601,10 +650,59 @@
 <div class="section" id="en">
 <main>
 
-  <!-- ── v1.5.9 ── -->
+  <!-- ── v1.5.10 ── -->
   <div class="version-entry current">
     <div class="version-header">
-      <span class="version-tag tag-latest">v1.5.9</span>
+      <span class="version-tag tag-latest">v1.5.10</span>
+      <span class="version-date">2026-04-23</span>
+      Favorites, Remote Admin &amp; Telemetry Dashboard
+    </div>
+    <p class="version-desc">Mark nodes as favorites (synced with device), full remote admin UI for remote nodes, configurable timeout, new telemetry dashboard with four widget types.</p>
+
+    <div class="cl-section added">
+      <h3>✨ Added</h3>
+
+      <div class="cl-group">
+        <div class="cl-group-title">Favorites</div>
+        <ul class="cl-list">
+          <li><strong>Star icon</strong> in the node list; right-click to mark/unmark as favorite</li>
+          <li>Synced with device via <code>add_favorite_node</code> / <code>remove_favorite_node</code> admin messages</li>
+          <li>Favorites shown at the top of the node list (above pinned nodes)</li>
+          <li>Persisted in <code>meshhessen-client.ini</code></li>
+        </ul>
+      </div>
+
+      <div class="cl-group">
+        <div class="cl-group-title">Remote Administration</div>
+        <ul class="cl-list">
+          <li>"Remote Admin" button in the node configuration section (enabled when connected)</li>
+          <li>Node selector from favorites list; session-key handshake before loading</li>
+          <li>Full admin window: tabs for Owner, Device, Position, LoRa, Bluetooth, Network, Display, Channels, Control</li>
+          <li>Fixed GPS coordinates sent via separate <code>set_position</code> command</li>
+          <li>Remote reboot, shutdown, node DB reset</li>
+          <li>Toggle favorite status directly from the remote admin window</li>
+          <li>Configurable request timeout (default 30 s, adjustable in settings)</li>
+        </ul>
+      </div>
+
+      <div class="cl-group">
+        <div class="cl-group-title">Telemetry Dashboard</div>
+        <ul class="cl-list">
+          <li>New "Open Dashboard" button in the Telemetry window</li>
+          <li>Create, rename and delete named dashboards; persisted in <code>dashboards.json</code></li>
+          <li>Four widget types: <strong>Line chart</strong> (OxyPlot, multi-node), <strong>Bar chart</strong> (current comparison), <strong>Gauge</strong> (single value + progress bar), <strong>Heatmap</strong> (hour × day)</li>
+          <li>New metrics: temperature, humidity, pressure from environment telemetry</li>
+          <li>Pre-configured axis ranges: SNR −20…+20 dB, RSSI −130…−20 dBm, Battery 0…100 %, Temperature −20…60 °C</li>
+          <li>Dark OxyPlot theme matching the app design</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── v1.5.9 ── -->
+  <div class="version-entry old">
+    <div class="version-header">
+      <span class="version-tag">v1.5.9</span>
       <span class="version-date">2026-04-21</span>
       Full Node Configuration, Map Picker &amp; Map Report
     </div>

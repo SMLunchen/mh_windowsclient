@@ -45,5 +45,7 @@ message AdminMessage {
     DeviceMetadata get_device_metadata_response = 13;
     Position set_position = 88;
     bool remove_position = 89;
+    uint32 add_favorite_node = 36;
+    uint32 remove_favorite_node = 37;
   }
 }

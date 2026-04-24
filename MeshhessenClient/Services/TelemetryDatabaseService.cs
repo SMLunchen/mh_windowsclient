@@ -596,23 +596,31 @@ LIMIT 50";
     // ── Query: Time series (for PlotWindow) ──────────────────────────────────
 
     /// <summary>
-    /// Available metrics: snr, rssi, battery, voltage, channel_util, air_tx_util, hop_count
+    /// Available metrics: snr, rssi, battery, voltage, channel_util, air_tx_util, hop_count,
+    /// temperature, humidity, pressure, packet_count (aggregated per hour).
     /// </summary>
     public List<TimeSeriesPoint> GetTimeSeries(IEnumerable<uint> nodeIds, string metric, int days)
     {
+        // packet_count is an aggregate (packets per hour bucket) — handled separately
+        if (string.Equals(metric, "packet_count", StringComparison.OrdinalIgnoreCase))
+            return QueryPacketCountSeries(nodeIds, days);
+
         long since = Since(days);
         var result = new List<TimeSeriesPoint>();
 
         (string table, string col) = metric.ToLowerInvariant() switch
         {
-            "snr"          => ("packet_rx",         "rx_snr"),
-            "rssi"         => ("packet_rx",         "rx_rssi"),
-            "hop_count"    => ("packet_rx",         "hop_count"),
-            "battery"      => ("device_telemetry",  "battery_percent"),
-            "voltage"      => ("device_telemetry",  "voltage"),
-            "channel_util" => ("device_telemetry",  "channel_utilization"),
-            "air_tx_util"  => ("device_telemetry",  "air_util_tx"),
-            _              => ("packet_rx",         "rx_snr"),
+            "snr"          => ("packet_rx",             "rx_snr"),
+            "rssi"         => ("packet_rx",             "rx_rssi"),
+            "hop_count"    => ("packet_rx",             "hop_count"),
+            "battery"      => ("device_telemetry",      "battery_percent"),
+            "voltage"      => ("device_telemetry",      "voltage"),
+            "channel_util" => ("device_telemetry",      "channel_utilization"),
+            "air_tx_util"  => ("device_telemetry",      "air_util_tx"),
+            "temperature"  => ("environment_telemetry", "temperature"),
+            "humidity"     => ("environment_telemetry", "relative_humidity"),
+            "pressure"     => ("environment_telemetry", "barometric_pressure"),
+            _              => ("packet_rx",             "rx_snr"),
         };
 
         using var con = Open();
@@ -635,6 +643,177 @@ LIMIT 50";
             }
         }
 
+        return result;
+    }
+
+    // ── Query: Packet count per time bucket ─────────────────────────────────
+
+    /// <summary>
+    /// Returns packets-per-hour time series for each node. Value = count within the hour bucket.
+    /// </summary>
+    private List<TimeSeriesPoint> QueryPacketCountSeries(IEnumerable<uint> nodeIds, int days)
+    {
+        long since = Since(days);
+        const int bucketSec = 3600;
+        var result = new List<TimeSeriesPoint>();
+
+        using var con = Open();
+        foreach (var nodeId in nodeIds)
+        {
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = $@"
+SELECT (timestamp / {bucketSec}) * {bucketSec} AS bucket, COUNT(*) AS cnt
+FROM packet_rx
+WHERE node_id = $n AND timestamp >= $s
+GROUP BY bucket
+ORDER BY bucket";
+            cmd.Parameters.AddWithValue("$n", (long)nodeId);
+            cmd.Parameters.AddWithValue("$s", since);
+            using var r = cmd.ExecuteReader();
+            while (r.Read())
+            {
+                result.Add(new TimeSeriesPoint
+                {
+                    NodeId    = nodeId,
+                    Timestamp = FromUnix(r.GetInt64(0)),
+                    Value     = r.GetInt64(1),
+                    Metric    = "packet_count",
+                });
+            }
+        }
+        return result;
+    }
+
+    // ── Query: Heatmap (hour-of-day × day) ──────────────────────────────────
+
+    /// <summary>
+    /// Returns a 2D array [dayIndex, hourOfDay] with average metric value (or NaN if no data).
+    /// dayIndex 0 = oldest day, dayIndex days-1 = most recent day.
+    /// </summary>
+    public double[,] GetHeatmapData(uint nodeId, string metric, int days)
+    {
+        int effectiveDays = days > 0 ? days : 30;
+        long since = Since(effectiveDays);
+
+        // packet_count: count packets per (day, hour) cell
+        if (string.Equals(metric, "packet_count", StringComparison.OrdinalIgnoreCase))
+            return BuildPacketCountHeatmap(nodeId, effectiveDays, since);
+
+        (string table, string col) = metric.ToLowerInvariant() switch
+        {
+            "snr"          => ("packet_rx",             "rx_snr"),
+            "rssi"         => ("packet_rx",             "rx_rssi"),
+            "battery"      => ("device_telemetry",      "battery_percent"),
+            "temperature"  => ("environment_telemetry", "temperature"),
+            "humidity"     => ("environment_telemetry", "relative_humidity"),
+            _              => ("packet_rx",             "rx_snr"),
+        };
+
+        var sums   = new double[effectiveDays, 24];
+        var counts = new int[effectiveDays, 24];
+
+        using var con = Open();
+        using var cmd = con.CreateCommand();
+        cmd.CommandText = $"SELECT timestamp, {col} FROM {table} WHERE node_id=$n AND timestamp>=$s AND {col} IS NOT NULL ORDER BY timestamp";
+        cmd.Parameters.AddWithValue("$n", (long)nodeId);
+        cmd.Parameters.AddWithValue("$s", since);
+
+        using var r = cmd.ExecuteReader();
+        long nowUnix = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        while (r.Read())
+        {
+            long ts  = r.GetInt64(0);
+            double v = r.GetDouble(1);
+            var dt   = DateTimeOffset.FromUnixTimeSeconds(ts).ToLocalTime();
+            int hour = dt.Hour;
+            int day  = (int)((nowUnix - ts) / 86400);
+            int dayIdx = effectiveDays - 1 - day;
+            if (dayIdx < 0 || dayIdx >= effectiveDays) continue;
+            sums[dayIdx, hour]   += v;
+            counts[dayIdx, hour] += 1;
+        }
+
+        var result = new double[effectiveDays, 24];
+        for (int d = 0; d < effectiveDays; d++)
+            for (int h = 0; h < 24; h++)
+                result[d, h] = counts[d, h] > 0 ? sums[d, h] / counts[d, h] : double.NaN;
+        return result;
+    }
+
+    private double[,] BuildPacketCountHeatmap(uint nodeId, int days, long since)
+    {
+        var result   = new double[days, 24];
+        long nowUnix = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+
+        using var con = Open();
+        using var cmd = con.CreateCommand();
+        cmd.CommandText = "SELECT timestamp FROM packet_rx WHERE node_id=$n AND timestamp>=$s";
+        cmd.Parameters.AddWithValue("$n", (long)nodeId);
+        cmd.Parameters.AddWithValue("$s", since);
+        using var r = cmd.ExecuteReader();
+        while (r.Read())
+        {
+            long ts = r.GetInt64(0);
+            var dt  = DateTimeOffset.FromUnixTimeSeconds(ts).ToLocalTime();
+            int hour = dt.Hour;
+            int day  = (int)((nowUnix - ts) / 86400);
+            int dayIdx = days - 1 - day;
+            if (dayIdx >= 0 && dayIdx < days)
+                result[dayIdx, hour] += 1;
+        }
+        return result;
+    }
+
+    // ── Query: Candlestick (daily OHLC) ─────────────────────────────────────
+
+    public record CandlePoint(DateTime Time, double Open, double High, double Low, double Close);
+
+    public List<CandlePoint> GetCandlestickData(uint nodeId, string metric, int days)
+    {
+        var pts = GetTimeSeries(new[] { nodeId }, metric, days)
+                  .OrderBy(p => p.Timestamp).ToList();
+        if (pts.Count == 0) return new();
+
+        return pts.GroupBy(p => p.Timestamp.Date)
+                  .OrderBy(g => g.Key)
+                  .Select(g =>
+                  {
+                      var vals = g.OrderBy(x => x.Timestamp).Select(x => x.Value).ToList();
+                      return new CandlePoint(
+                          DateTime.SpecifyKind(g.Key, DateTimeKind.Utc),
+                          vals.First(), vals.Max(), vals.Min(), vals.Last());
+                  })
+                  .ToList();
+    }
+
+    // ── Query: Node activity grid (for state timeline) ────────────────────────
+
+    /// <summary>
+    /// Returns a 2D array [dayIndex, hourOfDay] where 1.0 = node was heard, 0.0 = silent.
+    /// dayIndex 0 = oldest, dayIndex days-1 = most recent.
+    /// </summary>
+    public double[,] GetNodeActivityGrid(uint nodeId, int days)
+    {
+        int effectiveDays = days > 0 ? days : 14;
+        long since    = DateTimeOffset.UtcNow.ToUnixTimeSeconds() - (long)effectiveDays * 86400;
+        var  startDt  = DateTimeOffset.FromUnixTimeSeconds(since).UtcDateTime.Date;
+        var  result   = new double[effectiveDays, 24];
+
+        using var con = Open();
+        using var cmd = con.CreateCommand();
+        cmd.CommandText = "SELECT timestamp FROM packet_rx WHERE node_id=$n AND timestamp>=$since";
+        cmd.Parameters.AddWithValue("$n",     (long)nodeId);
+        cmd.Parameters.AddWithValue("$since", since);
+
+        using var rdr = cmd.ExecuteReader();
+        while (rdr.Read())
+        {
+            var ts     = DateTimeOffset.FromUnixTimeSeconds(rdr.GetInt64(0)).UtcDateTime;
+            int dayIdx = (int)(ts.Date - startDt).TotalDays;
+            int hour   = ts.Hour;
+            if (dayIdx >= 0 && dayIdx < effectiveDays)
+                result[dayIdx, hour] = 1.0;
+        }
         return result;
     }
 

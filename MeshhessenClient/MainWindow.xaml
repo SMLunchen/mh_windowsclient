@@ -781,9 +781,32 @@
                              TextChanged="NodeFilterTextBox_TextChanged"
                              Tag="🔍 Filter nach Name, ID, SNR, Batterie..."/>
 
-                    <ListView x:Name="NodesListView" Grid.Row="1">
+                    <ListView x:Name="NodesListView" Grid.Row="1"
+                              ContextMenuOpening="NodesListView_ContextMenuOpening">
                         <ListView.View>
                             <GridView x:Name="NodesGridView">
+                                <GridViewColumn Width="24">
+                                    <GridViewColumn.Header>
+                                        <GridViewColumnHeader Content="★" ToolTip="{DynamicResource StrFavoriteColTooltip}"/>
+                                    </GridViewColumn.Header>
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="★" FontSize="13" Foreground="#FFC107"
+                                                       HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsFavorite}" Value="True">
+                                                                <Setter Property="Visibility" Value="Visible"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
                                 <GridViewColumn Width="30">
                                     <GridViewColumn.Header>
                                         <GridViewColumnHeader Content="🎨"/>
@@ -945,6 +968,7 @@
                                 </MenuItem>
                                 <MenuItem Header="{DynamicResource StrEditNote}" Click="EditNodeNote_Click"/>
                                 <Separator/>
+                                <MenuItem x:Name="FavoriteNodeMenuItem" Header="{DynamicResource StrFavorite}" Click="NodeContextMenu_Favorite_Click"/>
                                 <MenuItem x:Name="PinNodeMenuItem" Header="{DynamicResource StrPin}" Click="NodeContextMenu_Pin_Click"/>
                                 <MenuItem x:Name="ShowPathNodeMenuItem" Header="{DynamicResource StrShowPath}" Click="NodeContextMenu_ShowPath_Click"/>
                                 <MenuItem x:Name="HidePathMenuItem" Header="{DynamicResource StrHidePath}" Click="NodeContextMenu_HidePath_Click" Visibility="Collapsed"/>
@@ -1345,6 +1369,17 @@
                                 </StackPanel>
                             </GroupBox>
 
+                            <!-- Remote Admin -->
+                            <GroupBox Header="{DynamicResource StrRemoteAdminGroup}" Margin="0,0,0,16">
+                                <StackPanel Margin="10">
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock Text="{DynamicResource StrRemoteAdminTimeoutLabel}" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="11"/>
+                                        <TextBox x:Name="RemoteAdminTimeoutTextBox" Width="50" Text="30" FontSize="11"/>
+                                        <TextBlock Text="s" VerticalAlignment="Center" Margin="4,0,0,0" FontSize="11" Foreground="Gray"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </GroupBox>
+
                             <!-- f) Verschlüsselte Nachrichten -->
                             <GroupBox Header="{DynamicResource StrMessagesGroup}" Margin="0,0,0,16">
                                 <StackPanel Margin="10">
@@ -1441,6 +1476,12 @@
                                                   FontSize="11" Margin="0,0,0,10"/>
                                         <Button x:Name="NodeConfigButton" Content="{DynamicResource StrNodeConfig}"
                                                IsEnabled="False" Click="NodeConfig_Click"/>
+                                        <Separator Margin="0,10,0,10"/>
+                                        <TextBlock Text="{DynamicResource StrRemoteAdminHint}"
+                                                  FontStyle="Italic" Foreground="Gray" TextWrapping="Wrap"
+                                                  FontSize="11" Margin="0,0,0,10"/>
+                                        <Button x:Name="RemoteAdminButton" Content="{DynamicResource StrRemoteAdmin}"
+                                               IsEnabled="False" Click="RemoteAdmin_Click"/>
                                     </StackPanel>
                                 </GroupBox>
 

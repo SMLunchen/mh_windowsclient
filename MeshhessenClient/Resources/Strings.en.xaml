@@ -19,6 +19,9 @@
     <sys:String x:Key="StrTabInfo">ℹ️ Info</sys:String>
 
     <!-- Node context menu -->
+    <sys:String x:Key="StrFavorite">★ Mark as favorite</sys:String>
+    <sys:String x:Key="StrUnfavorite">★ Remove favorite</sys:String>
+    <sys:String x:Key="StrFavoriteColTooltip">Favorites (★ = favorite, synced with device)</sys:String>
     <sys:String x:Key="StrPin">📌 Pin</sys:String>
     <sys:String x:Key="StrUnpin">📌 Unpin</sys:String>
     <sys:String x:Key="StrShowPath">🛤️ Show movement path</sys:String>
@@ -625,6 +628,9 @@
     <sys:String x:Key="StrSignalAntennaUnit">Days (long-term)</sys:String>
     <!-- Settings tab - time sync -->
     <sys:String x:Key="StrTimeSyncDriftZero">(0 = no drift check)</sys:String>
+    <!-- Remote Admin settings -->
+    <sys:String x:Key="StrRemoteAdminGroup">Remote Administration</sys:String>
+    <sys:String x:Key="StrRemoteAdminTimeoutLabel">Request timeout:</sys:String>
     <!-- Settings saved dialog -->
     <sys:String x:Key="StrSettingsSaved">Settings saved.</sys:String>
     <sys:String x:Key="StrSettingsSavedTitle">Info</sys:String>
@@ -635,6 +641,7 @@
     <sys:String x:Key="StrTel30d">30 Days</sys:String>
     <sys:String x:Key="StrTelAll">Total</sys:String>
     <sys:String x:Key="StrTelOpenPlot">📈 Open in Plot</sys:String>
+    <sys:String x:Key="StrTelOpenDashboard">📊 Open Dashboard</sys:String>
     <sys:String x:Key="StrTelSnrSection">SNR (Reception Quality)</sys:String>
     <sys:String x:Key="StrTelDayLabel">Day</sys:String>
     <sys:String x:Key="StrTelNightLabel">Night</sys:String>
@@ -918,5 +925,150 @@ Green ≤15% | Yellow 15–25% | Red &gt;25% | Gray = no airtime data</sys:Strin
     <sys:String x:Key="StrRelayHopsTooltip">Relay hops (number of intermediate nodes)</sys:String>
     <sys:String x:Key="StrErrConnectionRefused">Connection refused — is the Meshtastic service running on the device and is the port correct?</sys:String>
     <sys:String x:Key="StrMqttBubbleTooltip">Message received via MQTT (not directly via LoRa)</sys:String>
+
+    <!-- Remote Admin -->
+    <sys:String x:Key="StrRemoteAdminHint">Remote management of a favorite node via the Meshtastic admin protocol. The target node must be reachable and allow admin access. Only nodes marked as ★ Favorite are shown in the selection.</sys:String>
+    <sys:String x:Key="StrRemoteAdmin">🛠️ Remote Admin</sys:String>
+    <sys:String x:Key="StrRemoteAdminTitle">Remote Administration</sys:String>
+    <sys:String x:Key="StrRemoteAdminConnecting">Connecting...</sys:String>
+    <sys:String x:Key="StrRemoteAdminLoading">Loading configuration...</sys:String>
+    <sys:String x:Key="StrRemoteAdminConnected">Connected</sys:String>
+    <sys:String x:Key="StrRemoteAdminWaiting">Waiting for response</sys:String>
+    <sys:String x:Key="StrRemoteAdminTimeout">Timeout — no response</sys:String>
+    <sys:String x:Key="StrRemoteAdminTimeoutMsg">No response from node within the timeout. The node may be unreachable or has not granted admin access.</sys:String>
+    <sys:String x:Key="StrRemoteAdminSaving">Saving...</sys:String>
+    <sys:String x:Key="StrRemoteAdminSaved">Saved</sys:String>
+    <sys:String x:Key="StrRemoteAdminSavedMsg">Configuration successfully sent to the node.</sys:String>
+    <sys:String x:Key="StrRemoteAdminError">Error</sys:String>
+    <sys:String x:Key="StrRemoteAdminErrorMsg">Error while saving:</sys:String>
+    <sys:String x:Key="StrRemoteAdminRebooting">Reboot sent</sys:String>
+    <sys:String x:Key="StrRemoteAdminShutdown">Shutdown sent</sys:String>
+    <sys:String x:Key="StrRemoteAdminFirmware">Firmware</sys:String>
+    <sys:String x:Key="StrRemoteAdminHardware">Hardware</sys:String>
+    <sys:String x:Key="StrRemoteAdminHops">SNR</sys:String>
+    <sys:String x:Key="StrRemoteAdminTimeout2">Timeout</sys:String>
+    <sys:String x:Key="StrRemoteAdminTimeoutTip">Request timeout in seconds (5–300). Increase for distant nodes.</sys:String>
+    <sys:String x:Key="StrRemoteAdminChannelFailed">Fetch failed – click ⟳</sys:String>
+    <sys:String x:Key="StrRemoteAdminChannelReload">Reload this channel</sys:String>
+    <sys:String x:Key="StrRemoteAdminFavoriteTip">Mark as favorite / remove favorite</sys:String>
+    <sys:String x:Key="StrRemoteAdminRebootConfirm">Really reboot the node?</sys:String>
+    <sys:String x:Key="StrRemoteAdminShutdownConfirm">Really shut down the node?</sys:String>
+    <sys:String x:Key="StrRemoteAdminNodeDbResetConfirm">Really clear the node database? All known nodes will be forgotten!</sys:String>
+    <sys:String x:Key="StrRemoteAdminSelectNode">Select node for remote administration</sys:String>
+    <sys:String x:Key="StrRemoteAdminNoFavorites">No favorites set. First mark nodes as favorites (right-click → Mark as favorite).</sys:String>
+    <!-- Remote Admin tabs -->
+    <sys:String x:Key="StrRaTabOwner">Owner</sys:String>
+    <sys:String x:Key="StrRaTabDevice">Device</sys:String>
+    <sys:String x:Key="StrRaTabPosition">Position</sys:String>
+    <sys:String x:Key="StrRaTabLora">LoRa</sys:String>
+    <sys:String x:Key="StrRaTabBluetooth">Bluetooth</sys:String>
+    <sys:String x:Key="StrRaTabNetwork">Network</sys:String>
+    <sys:String x:Key="StrRaTabDisplay">Display</sys:String>
+    <sys:String x:Key="StrRaTabChannels">Channels</sys:String>
+    <sys:String x:Key="StrRaTabControl">Control</sys:String>
+    <!-- Owner tab -->
+    <sys:String x:Key="StrRaOwnerShortName">Short name (max. 4 characters)</sys:String>
+    <sys:String x:Key="StrRaOwnerLongName">Long name</sys:String>
+    <sys:String x:Key="StrRaOwnerLicensed">Licensed amateur radio operator</sys:String>
+    <!-- Device tab -->
+    <sys:String x:Key="StrRaDeviceRole">Role</sys:String>
+    <sys:String x:Key="StrRaDeviceNodeInfoInterval">NodeInfo broadcast interval (seconds, 0=never)</sys:String>
+    <sys:String x:Key="StrRaDeviceSerialEnabled">Serial console enabled</sys:String>
+    <sys:String x:Key="StrRaDeviceDebugLog">Debug logging enabled</sys:String>
+    <!-- Position tab -->
+    <sys:String x:Key="StrRaPosGpsMode">GPS mode</sys:String>
+    <sys:String x:Key="StrRaPosBroadcastInterval">Broadcast interval (s)</sys:String>
+    <sys:String x:Key="StrRaPosBroadcastSmart">Smart broadcast enabled</sys:String>
+    <sys:String x:Key="StrRaPosGpsAttemptTime">GPS attempt time (s)</sys:String>
+    <sys:String x:Key="StrRaPosFixed">Fixed position</sys:String>
+    <sys:String x:Key="StrRaPosFixedEnabled">Fixed position enabled</sys:String>
+    <sys:String x:Key="StrRaPosLat">Latitude</sys:String>
+    <sys:String x:Key="StrRaPosLon">Longitude</sys:String>
+    <sys:String x:Key="StrRaPosAlt">Altitude (m)</sys:String>
+    <!-- LoRa tab -->
+    <sys:String x:Key="StrRaLoraRegion">Region</sys:String>
+    <sys:String x:Key="StrRaLoraPreset">Modem preset</sys:String>
+    <sys:String x:Key="StrRaLoraHopLimit">Hop limit</sys:String>
+    <sys:String x:Key="StrRaLoraTxPower">TX power (dBm, 0=max.)</sys:String>
+    <sys:String x:Key="StrRaLoraTxEnabled">TX enabled</sys:String>
+    <!-- Bluetooth tab -->
+    <sys:String x:Key="StrRaBtEnabled">Bluetooth enabled</sys:String>
+    <sys:String x:Key="StrRaBtMode">Pairing mode</sys:String>
+    <sys:String x:Key="StrRaBtPin">Fixed PIN (6 digits)</sys:String>
+    <!-- Network tab -->
+    <sys:String x:Key="StrRaWifiEnabled">WiFi enabled</sys:String>
+    <sys:String x:Key="StrRaWifiSsid">WiFi SSID</sys:String>
+    <sys:String x:Key="StrRaWifiPsk">WiFi password</sys:String>
+    <sys:String x:Key="StrRaWifiApMode">Access point mode</sys:String>
+    <sys:String x:Key="StrRaEthEnabled">Ethernet enabled</sys:String>
+    <sys:String x:Key="StrRaNtpServer">NTP server</sys:String>
+    <!-- Display tab -->
+    <sys:String x:Key="StrRaDisplayTimeout">Display timeout (s, 0=never)</sys:String>
+    <sys:String x:Key="StrRaDisplayFlip">Flip screen</sys:String>
+    <sys:String x:Key="StrRaDisplayUnits">Units</sys:String>
+    <sys:String x:Key="StrRaDisplayOledType">OLED type</sys:String>
+    <!-- Control tab -->
+    <sys:String x:Key="StrRaControlDesc">Send control commands to the remote node. These actions take effect immediately!</sys:String>
+    <sys:String x:Key="StrRaReboot">🔄 Reboot</sys:String>
+    <sys:String x:Key="StrRaShutdown">⏹ Shutdown</sys:String>
+    <sys:String x:Key="StrRaNodeDbReset">⚠️ Clear node DB: Removes all known nodes from the device database.</sys:String>
+    <sys:String x:Key="StrRaNodeDbResetBtn">⚠️ Clear node DB</sys:String>
+    <!-- Bottom buttons -->
+    <sys:String x:Key="StrRaRefresh">🔄 Reload</sys:String>
+    <sys:String x:Key="StrRaSave">💾 Save</sys:String>
+    <!-- Telemetry Dashboard -->
+    <sys:String x:Key="StrDashboardTitle">Telemetry Dashboard</sys:String>
+    <sys:String x:Key="StrDashboardLabel">Dashboard:</sys:String>
+    <sys:String x:Key="StrDashboardNew">+ New</sys:String>
+    <sys:String x:Key="StrDashboardRename">Rename</sys:String>
+    <sys:String x:Key="StrDashboardDelete">Delete</sys:String>
+    <sys:String x:Key="StrDashboardAddWidget">+ Add Widget</sys:String>
+    <sys:String x:Key="StrDashboardRefresh">↺ Refresh</sys:String>
+    <sys:String x:Key="StrDashboardNewTitle">New Dashboard</sys:String>
+    <sys:String x:Key="StrDashboardRenameTitle">Rename Dashboard</sys:String>
+    <sys:String x:Key="StrDashboardNewPrompt">Name:</sys:String>
+    <sys:String x:Key="StrDashboardDefaultName">Dashboard</sys:String>
+    <sys:String x:Key="StrDashboardDeleteConfirm">Delete dashboard "{0}"?</sys:String>
+    <sys:String x:Key="StrDashboardNoDashboard">Please create a dashboard first.</sys:String>
+    <sys:String x:Key="StrDashboardEmpty">No dashboard selected. Create a new dashboard and add widgets.</sys:String>
+    <sys:String x:Key="StrDashboardWidgetCount">Widgets</sys:String>
+    <sys:String x:Key="StrDashboardRemoveWidget">Remove widget</sys:String>
+    <sys:String x:Key="StrDashboardEditWidget">Edit widget</sys:String>
+    <sys:String x:Key="StrDashboardLastUpdated">Last value</sys:String>
+    <sys:String x:Key="StrDashboardHourOfDay">Hour (0–23)</sys:String>
+    <sys:String x:Key="StrDashboardDayIndex">Day</sys:String>
+    <!-- Add Widget Dialog -->
+    <sys:String x:Key="StrAddWidgetTitle">Add Widget</sys:String>
+    <sys:String x:Key="StrAddWidgetType">Widget type:</sys:String>
+    <sys:String x:Key="StrAddWidgetMetric">Metric:</sys:String>
+    <sys:String x:Key="StrAddWidgetDays">Time range:</sys:String>
+    <sys:String x:Key="StrAddWidgetNodes">Nodes (multi-select):</sys:String>
+    <sys:String x:Key="StrAddWidgetCustomTitle">Title (empty = auto):</sys:String>
+    <sys:String x:Key="StrAddWidgetNoNode">Please select at least one node.</sys:String>
+    <sys:String x:Key="StrWidgetTypeLine">Time series (line chart)</sys:String>
+    <sys:String x:Key="StrWidgetTypeBar">Bar chart (current values)</sys:String>
+    <sys:String x:Key="StrWidgetTypeGauge">Gauge (single value)</sys:String>
+    <sys:String x:Key="StrWidgetTypeHeatmap">Heatmap (hour × day)</sys:String>
+    <sys:String x:Key="StrWidgetTypeArea">Area chart</sys:String>
+    <sys:String x:Key="StrWidgetTypeScatter">Scatter plot</sys:String>
+    <sys:String x:Key="StrWidgetTypeStat">Stat card (big number)</sys:String>
+    <sys:String x:Key="StrWidgetTypeClock">Clock (UTC + Local)</sys:String>
+    <sys:String x:Key="StrWidgetTypeHistogram">Histogram (Distribution)</sys:String>
+    <sys:String x:Key="StrWidgetTypeCandlestick">Candlestick (daily OHLC)</sys:String>
+    <sys:String x:Key="StrWidgetTypeStateline">State Timeline (Activity)</sys:String>
+    <sys:String x:Key="StrDashboardCount">Count</sys:String>
+    <!-- Auto-refresh -->
+    <sys:String x:Key="StrDashboardAutoRefresh">Auto-refresh:</sys:String>
+    <sys:String x:Key="StrDashboardRefreshOff">Off</sys:String>
+    <sys:String x:Key="StrDashboardLastRefreshed">Refreshed: {0}</sys:String>
+    <!-- Node search / single-node hint -->
+    <sys:String x:Key="StrAddWidgetNodeSearch">Search nodes…</sys:String>
+    <sys:String x:Key="StrAddWidgetSingleNodeHint">Single node only</sys:String>
+    <!-- Time range labels -->
+    <sys:String x:Key="StrDays1">1 day</sys:String>
+    <sys:String x:Key="StrDays7">7 days</sys:String>
+    <sys:String x:Key="StrDays14">14 days</sys:String>
+    <sys:String x:Key="StrDays30">30 days</sys:String>
+    <sys:String x:Key="StrDaysAll">All time</sys:String>
 
 </ResourceDictionary>

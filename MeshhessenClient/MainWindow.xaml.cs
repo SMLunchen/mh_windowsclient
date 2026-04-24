@@ -87,7 +87,8 @@ public partial class MainWindow : Window
         true,
         "de",
         false,
-        new Dictionary<uint, bool>(),
+        new Dictionary<uint, bool>(),  // PinnedNodes
+        new Dictionary<uint, bool>(),  // FavoriteNodes
         90,
         Services.PskMismatchAction.Overwrite,
         6,    // SignalWeatherWindowHours
@@ -99,7 +100,8 @@ public partial class MainWindow : Window
         false,      // EnableMessageDb
         90,         // MessageDbRetentionDays
         "Serial",   // LastConnectionType
-        string.Empty); // LastBtDevice
+        string.Empty,  // LastBtDevice
+        30);           // RemoteAdminTimeoutSeconds
     private NodeInfo? _mapContextMenuNode;
     private uint? _alertNodeId;  // Stores the node ID for "Show on Map" button
 
@@ -409,6 +411,9 @@ public partial class MainWindow : Window
             // Time Sync
             if (AutoTimeSyncCheckBox != null) AutoTimeSyncCheckBox.IsChecked = settings.AutoTimeSyncOnConnect;
             if (TimeSyncDriftBox != null) TimeSyncDriftBox.Text = settings.TimeSyncDriftThresholdSeconds.ToString();
+
+            // Remote Admin
+            if (RemoteAdminTimeoutTextBox != null) RemoteAdminTimeoutTextBox.Text = settings.RemoteAdminTimeoutSeconds.ToString();
 
             // Message DB
             EnableMessageDbCheckBox.IsChecked = settings.EnableMessageDb;
@@ -1587,6 +1592,7 @@ public partial class MainWindow : Window
                             UpdateStatusBar(string.Format(Loc("StrConnectedReady"), displayName));
                             SetConnectionStatus(ConnectionStatus.Ready);
                             NodeConfigButton.IsEnabled = true;
+                            RemoteAdminButton.IsEnabled = true;
                         });
                     }
                     catch (Exception initEx)
@@ -2040,6 +2046,7 @@ public partial class MainWindow : Window
                 Language: (LanguageComboBox.SelectedItem as System.Windows.Controls.ComboBoxItem)?.Tag as string ?? "de",
                 EnableLocationLogging: EnableLocationLoggingCheckBox.IsChecked == true,
                 PinnedNodes: _currentSettings.PinnedNodes,
+                FavoriteNodes: _currentSettings.FavoriteNodes,
                 TelemetryRetentionDays: int.TryParse((TelemetryRetentionComboBox.SelectedItem as System.Windows.Controls.ComboBoxItem)?.Tag as string, out var ret) ? ret : 90,
                 NodeKeyMismatchAction: PskWarnRadio.IsChecked == true ? Services.PskMismatchAction.Warn
                                      : PskAskRadio.IsChecked  == true ? Services.PskMismatchAction.Ask
@@ -2053,7 +2060,8 @@ public partial class MainWindow : Window
                 EnableMessageDb: EnableMessageDbCheckBox.IsChecked == true,
                 MessageDbRetentionDays: int.TryParse((MessageDbRetentionComboBox.SelectedItem as System.Windows.Controls.ComboBoxItem)?.Tag as string, out var mdr) ? mdr : 90,
                 LastConnectionType: _currentSettings.LastConnectionType,
-                LastBtDevice: _currentSettings.LastBtDevice
+                LastBtDevice: _currentSettings.LastBtDevice,
+                RemoteAdminTimeoutSeconds: int.TryParse(RemoteAdminTimeoutTextBox.Text, out var rats) ? Math.Clamp(rats, 5, 120) : 30
             );
             _currentSettings = settings;
             SettingsService.Save(settings);
@@ -2127,6 +2135,7 @@ public partial class MainWindow : Window
                     _channels.Clear();
                     _currentLoRaConfig = null;
                     NodeConfigButton.IsEnabled = false;
+                    RemoteAdminButton.IsEnabled = false;
                     UpdateMeshHessenButtonState();
                     PacketCountText.Text = string.Format(Loc("StrPacketCount"), 0);
 
@@ -2238,6 +2247,7 @@ public partial class MainWindow : Window
                             UpdateStatusBar(Loc("StrConnectedReadySimple"));
                             SetConnectionStatus(ConnectionStatus.Ready);
                             NodeConfigButton.IsEnabled = true;
+                            RemoteAdminButton.IsEnabled = true;
                         });
                     }
                     catch (Exception initEx)
@@ -2471,8 +2481,12 @@ public partial class MainWindow : Window
                     node.Note = note;
                 }
 
-                // Apply pinned state
-                node.IsPinned = _currentSettings.PinnedNodes.ContainsKey(node.NodeId);
+                // Apply pinned and favorite state (local settings take precedence; proto value also accepted)
+                node.IsPinned    = _currentSettings.PinnedNodes.ContainsKey(node.NodeId);
+                node.IsFavorite  = _currentSettings.FavoriteNodes.ContainsKey(node.NodeId) || node.IsFavorite;
+                // Sync device-reported favorites into local settings cache
+                if (node.IsFavorite)
+                    _currentSettings.FavoriteNodes[node.NodeId] = true;
 
                 // Log location if enabled
                 if (_currentSettings.EnableLocationLogging)
@@ -3335,8 +3349,8 @@ public partial class MainWindow : Window
             };
         }
 
-        // Pinned nodes always first (stable sort preserves column order within groups)
-        filtered = filtered.OrderBy(n => n.IsPinned ? 0 : 1);
+        // Favorites first, then pinned, then rest
+        filtered = filtered.OrderBy(n => n.IsFavorite ? 0 : n.IsPinned ? 1 : 2);
 
         // Update UI
         _nodes.Clear();
@@ -3892,7 +3906,61 @@ public partial class MainWindow : Window
         SettingsService.Save(_currentSettings);
     }
 
-    // ========== Node Config Window ==========
+    // ========== Node Config + Remote Admin ==========
+
+    private void RemoteAdmin_Click(object sender, RoutedEventArgs e)
+    {
+        // Show node selector from favorites list
+        var favorites = _allNodes.Where(n => n.IsFavorite).ToList();
+        if (favorites.Count == 0)
+        {
+            MessageBox.Show(Loc("StrRemoteAdminNoFavorites"), Loc("StrRemoteAdminTitle"),
+                MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        // Simple selection dialog using a standard ListBox in a window
+        var dialog = new Window
+        {
+            Title           = Loc("StrRemoteAdminSelectNode"),
+            Width           = 380,
+            Height          = 320,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            Owner           = this,
+            ResizeMode      = ResizeMode.NoResize
+        };
+        var stack = new StackPanel { Margin = new Thickness(16) };
+        stack.Children.Add(new TextBlock
+        {
+            Text       = Loc("StrRemoteAdminSelectNode"),
+            FontWeight = FontWeights.SemiBold,
+            Margin     = new Thickness(0, 0, 0, 10)
+        });
+        var listBox = new ListBox { Height = 180 };
+        foreach (var n in favorites)
+            listBox.Items.Add(new ListBoxItem { Content = $"{n.Name} ({n.Id})", Tag = n });
+        listBox.SelectedIndex = 0;
+        stack.Children.Add(listBox);
+        var btnRow = new StackPanel { Orientation = System.Windows.Controls.Orientation.Horizontal,
+            HorizontalAlignment = System.Windows.HorizontalAlignment.Right, Margin = new Thickness(0, 12, 0, 0) };
+        var okBtn = new System.Windows.Controls.Button { Content = "OK", Width = 80, Margin = new Thickness(0, 0, 8, 0),
+            IsDefault = true };
+        var cancelBtn = new System.Windows.Controls.Button { Content = Loc("StrCancel"), Width = 80, IsCancel = true };
+        btnRow.Children.Add(okBtn);
+        btnRow.Children.Add(cancelBtn);
+        stack.Children.Add(btnRow);
+        dialog.Content = stack;
+        bool confirmed = false;
+        okBtn.Click    += (_, _) => { confirmed = true; dialog.Close(); };
+        cancelBtn.Click += (_, _) => dialog.Close();
+        dialog.ShowDialog();
+
+        if (!confirmed || listBox.SelectedItem is not ListBoxItem { Tag: NodeInfo selected }) return;
+
+        var timeout = _currentSettings.RemoteAdminTimeoutSeconds * 1000;
+        var win = new RemoteAdminWindow(_protocolService, selected, timeout, selected.IsFavorite) { Owner = this };
+        win.Show();
+    }
 
     private void NodeConfig_Click(object sender, RoutedEventArgs e)
     {
@@ -3949,7 +4017,8 @@ public partial class MainWindow : Window
     {
         if (NodesListView.SelectedItem is NodeInfo node)
         {
-            PinNodeMenuItem.Header = node.IsPinned ? Loc("StrUnpin") : Loc("StrPin");
+            PinNodeMenuItem.Header      = node.IsPinned    ? Loc("StrUnpin")       : Loc("StrPin");
+            FavoriteNodeMenuItem.Header = node.IsFavorite  ? Loc("StrUnfavorite")  : Loc("StrFavorite");
             bool pathActive = _pathLayers.ContainsKey(node.NodeId);
             ShowPathNodeMenuItem.Visibility = pathActive ? Visibility.Collapsed : Visibility.Visible;
             HidePathMenuItem.Visibility = pathActive ? Visibility.Visible : Visibility.Collapsed;
@@ -3971,6 +4040,36 @@ public partial class MainWindow : Window
 
         ApplyNodeSortAndFilter();
         Services.Logger.WriteLine($"Node {node.Name} ({node.Id}) {(node.IsPinned ? "pinned" : "unpinned")}");
+    }
+
+    private void ToggleFavoriteInternal(NodeInfo node)
+    {
+        node.IsFavorite = !node.IsFavorite;
+
+        var existing = _allNodes.FirstOrDefault(n => n.NodeId == node.NodeId);
+        if (existing != null) existing.IsFavorite = node.IsFavorite;
+
+        if (node.IsFavorite)
+            _currentSettings.FavoriteNodes[node.NodeId] = true;
+        else
+            _currentSettings.FavoriteNodes.Remove(node.NodeId);
+        SettingsService.Save(_currentSettings);
+
+        if (_protocolService != null)
+        {
+            _ = node.IsFavorite
+                ? _protocolService.AddFavoriteNodeAsync(node.NodeId)
+                : _protocolService.RemoveFavoriteNodeAsync(node.NodeId);
+        }
+
+        ApplyNodeSortAndFilter();
+        Services.Logger.WriteLine($"Node {node.Name} ({node.Id}) {(node.IsFavorite ? "favorited" : "unfavorited")}");
+    }
+
+    private void NodeContextMenu_Favorite_Click(object sender, RoutedEventArgs e)
+    {
+        if (NodesListView.SelectedItem is NodeInfo node)
+            ToggleFavoriteInternal(node);
     }
 
     private void NodeContextMenu_Pin_Click(object sender, RoutedEventArgs e)

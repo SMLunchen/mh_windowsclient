@@ -27,6 +27,10 @@ public class MeshtasticProtocolService
     private bool _debugDevice = false;
     private readonly HashSet<int> _receivedChannelResponses = new(); // Tracks which channel indices we got via GetChannelResponse
     private byte[] _sessionPasskey = Array.Empty<byte>(); // Session key from admin responses (required for write operations)
+
+    // Remote admin state — per-node session keys and pending request completions
+    private readonly Dictionary<uint, byte[]> _remoteSessionKeys = new();
+    private readonly Dictionary<uint, TaskCompletionSource<AdminMessage>> _pendingRemoteRequests = new();
     private DateTime _lastValidPacketTime = DateTime.MinValue;
     private int _consecutiveTextChunks = 0;
     private bool _recoveryInProgress = false;
@@ -1239,6 +1243,7 @@ public class MeshtasticProtocolService
             }
 
             nodeInfo.PkiKeyKnown = _nodeKeyService?.GetPublicKey(protoNodeInfo.Num) != null;
+            nodeInfo.IsFavorite = protoNodeInfo.IsFavorite;
 
             // Update DeviceInfo if this is our own node
             if (protoNodeInfo.Num == _myNodeId && _myDeviceInfo != null && !string.IsNullOrEmpty(nodeInfo.HardwareModel))
@@ -2123,6 +2128,79 @@ public class MeshtasticProtocolService
         await SendAdminMessageAsync(adminMsg);
     }
 
+    public async Task AddFavoriteNodeAsync(uint nodeId)
+    {
+        await EnsureSessionKeyAsync();
+        var adminMsg = new AdminMessage { AddFavoriteNode = nodeId };
+        await SendAdminMessageAsync(adminMsg);
+        Logger.WriteLine($"AddFavoriteNode sent for node !{nodeId:x8}");
+    }
+
+    public async Task RemoveFavoriteNodeAsync(uint nodeId)
+    {
+        await EnsureSessionKeyAsync();
+        var adminMsg = new AdminMessage { RemoveFavoriteNode = nodeId };
+        await SendAdminMessageAsync(adminMsg);
+        Logger.WriteLine($"RemoveFavoriteNode sent for node !{nodeId:x8}");
+    }
+
+    // ===== Remote Admin =====
+
+    /// <summary>Sends an admin request to a remote node and waits for the response (or timeout).</summary>
+    public async Task<AdminMessage?> SendRemoteAdminRequestAsync(uint destNodeId, AdminMessage adminMsg, int timeoutMs = 30000)
+    {
+        var tcs = new TaskCompletionSource<AdminMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
+        lock (_dataLock)
+        {
+            _pendingRemoteRequests[destNodeId] = tcs;
+            if (_remoteSessionKeys.TryGetValue(destNodeId, out var key) && key.Length > 0)
+                adminMsg.SessionPasskey = ByteString.CopyFrom(key);
+        }
+        var meshPacket = new MeshPacket
+        {
+            From = _myNodeId,
+            To = destNodeId,
+            Decoded = new Data { Portnum = 6, Payload = adminMsg.ToByteString(), WantResponse = true },
+            Id = (uint)Random.Shared.Next()
+        };
+        await SendToRadioAsync(new ToRadio { Packet = meshPacket });
+        Logger.WriteLine($"[RemoteAdmin] Request {adminMsg.PayloadVariantCase} → !{destNodeId:x8} (timeout {timeoutMs}ms)");
+
+        var completed = await Task.WhenAny(tcs.Task, Task.Delay(timeoutMs));
+        lock (_dataLock) { _pendingRemoteRequests.Remove(destNodeId); }
+
+        if (completed != tcs.Task)
+        {
+            Logger.WriteLine($"[RemoteAdmin] Timeout waiting for response from !{destNodeId:x8}");
+            return null;
+        }
+        return tcs.Task.Result;
+    }
+
+    /// <summary>Sends an admin write to a remote node (fire-and-forget after obtaining session key).</summary>
+    public async Task SendRemoteAdminWriteAsync(uint destNodeId, AdminMessage adminMsg)
+    {
+        byte[]? key;
+        lock (_dataLock) { _remoteSessionKeys.TryGetValue(destNodeId, out key); }
+        if (key != null && key.Length > 0)
+            adminMsg.SessionPasskey = ByteString.CopyFrom(key);
+
+        var meshPacket = new MeshPacket
+        {
+            From = _myNodeId,
+            To = destNodeId,
+            Decoded = new Data { Portnum = 6, Payload = adminMsg.ToByteString(), WantResponse = false },
+            Id = (uint)Random.Shared.Next()
+        };
+        await SendToRadioAsync(new ToRadio { Packet = meshPacket });
+        Logger.WriteLine($"[RemoteAdmin] Write {adminMsg.PayloadVariantCase} → !{destNodeId:x8}");
+    }
+
+    public void ClearRemoteSessionKey(uint destNodeId)
+    {
+        lock (_dataLock) { _remoteSessionKeys.Remove(destNodeId); }
+    }
+
     public void Disconnect()
     {
         Logger.WriteLine("MeshtasticProtocolService: Disconnecting...");
@@ -2169,7 +2247,20 @@ public class MeshtasticProtocolService
             Logger.WriteLine($"Admin message RAW payload ({payloadBytes.Length} bytes): [{payloadHex}]");
 
             var adminMsg = AdminMessage.Parser.ParseFrom(data.Payload);
-            Logger.WriteLine($"Admin message: {adminMsg.PayloadVariantCase}");
+            Logger.WriteLine($"Admin message: {adminMsg.PayloadVariantCase} (from=!{packet.From:x8})");
+
+            // Remote admin response — route to waiting TCS and return
+            if (packet.From != _myNodeId && packet.From != 0)
+            {
+                lock (_dataLock)
+                {
+                    if (adminMsg.SessionPasskey != null && adminMsg.SessionPasskey.Length > 0)
+                        _remoteSessionKeys[packet.From] = adminMsg.SessionPasskey.ToByteArray();
+                    if (_pendingRemoteRequests.TryGetValue(packet.From, out var remoteTcs))
+                        remoteTcs.TrySetResult(adminMsg);
+                }
+                return;
+            }
 
             // Store session passkey from every admin response (required for write operations)
             if (adminMsg.SessionPasskey != null && adminMsg.SessionPasskey.Length > 0)

@@ -378,8 +378,12 @@
             </Grid.ColumnDefinitions>
             <TextBlock x:Name="FooterInfoText" Grid.Column="0"
                        VerticalAlignment="Center" FontSize="11" Opacity="0.5"/>
-            <Button Grid.Column="1" Content="{DynamicResource StrTelOpenPlot}"
-                    Padding="12,6" Click="OpenPlotWindow_Click"/>
+            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <Button Content="{DynamicResource StrTelOpenDashboard}"
+                        Padding="12,6" Margin="0,0,8,0" Click="OpenDashboard_Click"/>
+                <Button Content="{DynamicResource StrTelOpenPlot}"
+                        Padding="12,6" Click="OpenPlotWindow_Click"/>
+            </StackPanel>
         </Grid>
     </Grid>
 </Window>

@@ -19,6 +19,9 @@
     <sys:String x:Key="StrTabInfo">ℹ️ Info</sys:String>
 
     <!-- Node context menu -->
+    <sys:String x:Key="StrFavorite">★ Als Favorit markieren</sys:String>
+    <sys:String x:Key="StrUnfavorite">★ Favorit entfernen</sys:String>
+    <sys:String x:Key="StrFavoriteColTooltip">Favoriten (★ = Favorit, wird mit Gerät synchronisiert)</sys:String>
     <sys:String x:Key="StrPin">📌 Anheften</sys:String>
     <sys:String x:Key="StrUnpin">📌 Loslösen</sys:String>
     <sys:String x:Key="StrShowPath">🛤️ Bewegungspfad anzeigen</sys:String>
@@ -625,6 +628,9 @@
     <sys:String x:Key="StrSignalAntennaUnit">Tage (langfristig)</sys:String>
     <!-- Settings tab - time sync -->
     <sys:String x:Key="StrTimeSyncDriftZero">(0 = kein Drift-Check)</sys:String>
+    <!-- Remote Admin settings -->
+    <sys:String x:Key="StrRemoteAdminGroup">Fernverwaltung</sys:String>
+    <sys:String x:Key="StrRemoteAdminTimeoutLabel">Anfrage-Timeout:</sys:String>
     <!-- Settings saved dialog -->
     <sys:String x:Key="StrSettingsSaved">Einstellungen gespeichert.</sys:String>
     <sys:String x:Key="StrSettingsSavedTitle">Info</sys:String>
@@ -635,6 +641,7 @@
     <sys:String x:Key="StrTel30d">30 Tage</sys:String>
     <sys:String x:Key="StrTelAll">Gesamt</sys:String>
     <sys:String x:Key="StrTelOpenPlot">📈 Im Plot öffnen</sys:String>
+    <sys:String x:Key="StrTelOpenDashboard">📊 Dashboard öffnen</sys:String>
     <sys:String x:Key="StrTelSnrSection">SNR (Empfangsqualität)</sys:String>
     <sys:String x:Key="StrTelDayLabel">Tag</sys:String>
     <sys:String x:Key="StrTelNightLabel">Nacht</sys:String>
@@ -918,5 +925,150 @@ Grün ≤15% | Gelb 15–25% | Rot &gt;25% | Grau = keine Airtime-Daten</sys:Str
     <sys:String x:Key="StrRelayHopsTooltip">Relay-Hops (Anzahl Zwischenknoten)</sys:String>
     <sys:String x:Key="StrErrConnectionRefused">Verbindung abgelehnt — läuft der Meshtastic-Dienst auf dem Gerät und ist der Port korrekt?</sys:String>
     <sys:String x:Key="StrMqttBubbleTooltip">Nachricht via MQTT empfangen (nicht direkt per LoRa)</sys:String>
+
+    <!-- Remote Admin -->
+    <sys:String x:Key="StrRemoteAdminHint">Fernverwaltung eines Favoriten-Knotens über Meshtastic-Admin-Protokoll. Der Zielknoten muss erreichbar sein und Admin-Zugriff erlauben. Es werden nur Knoten angezeigt, die als ★ Favorit markiert sind.</sys:String>
+    <sys:String x:Key="StrRemoteAdmin">🛠️ Fernverwaltung</sys:String>
+    <sys:String x:Key="StrRemoteAdminTitle">Fernverwaltung</sys:String>
+    <sys:String x:Key="StrRemoteAdminConnecting">Verbinde...</sys:String>
+    <sys:String x:Key="StrRemoteAdminLoading">Lade Konfiguration...</sys:String>
+    <sys:String x:Key="StrRemoteAdminConnected">Verbunden</sys:String>
+    <sys:String x:Key="StrRemoteAdminWaiting">Warte auf Antwort</sys:String>
+    <sys:String x:Key="StrRemoteAdminTimeout">Timeout — keine Antwort</sys:String>
+    <sys:String x:Key="StrRemoteAdminTimeoutMsg">Keine Antwort vom Knoten innerhalb des Timeouts. Der Knoten ist möglicherweise nicht erreichbar oder hat keinen Admin-Zugriff gewährt.</sys:String>
+    <sys:String x:Key="StrRemoteAdminSaving">Speichere...</sys:String>
+    <sys:String x:Key="StrRemoteAdminSaved">Gespeichert</sys:String>
+    <sys:String x:Key="StrRemoteAdminSavedMsg">Konfiguration erfolgreich an den Knoten übermittelt.</sys:String>
+    <sys:String x:Key="StrRemoteAdminError">Fehler</sys:String>
+    <sys:String x:Key="StrRemoteAdminErrorMsg">Fehler beim Speichern:</sys:String>
+    <sys:String x:Key="StrRemoteAdminRebooting">Neustart gesendet</sys:String>
+    <sys:String x:Key="StrRemoteAdminShutdown">Herunterfahren gesendet</sys:String>
+    <sys:String x:Key="StrRemoteAdminFirmware">Firmware</sys:String>
+    <sys:String x:Key="StrRemoteAdminHardware">Hardware</sys:String>
+    <sys:String x:Key="StrRemoteAdminHops">SNR</sys:String>
+    <sys:String x:Key="StrRemoteAdminTimeout2">Timeout</sys:String>
+    <sys:String x:Key="StrRemoteAdminTimeoutTip">Anfrage-Timeout in Sekunden (5–300). Bei entfernten Nodes ggf. höher setzen.</sys:String>
+    <sys:String x:Key="StrRemoteAdminChannelFailed">Abruf fehlgeschlagen – ⟳ klicken</sys:String>
+    <sys:String x:Key="StrRemoteAdminChannelReload">Diesen Kanal erneut laden</sys:String>
+    <sys:String x:Key="StrRemoteAdminFavoriteTip">Als Favorit markieren / entfernen</sys:String>
+    <sys:String x:Key="StrRemoteAdminRebootConfirm">Knoten wirklich neu starten?</sys:String>
+    <sys:String x:Key="StrRemoteAdminShutdownConfirm">Knoten wirklich herunterfahren?</sys:String>
+    <sys:String x:Key="StrRemoteAdminNodeDbResetConfirm">Node-Datenbank des Knotens wirklich löschen? Alle bekannten Nodes werden vergessen!</sys:String>
+    <sys:String x:Key="StrRemoteAdminSelectNode">Knoten für Fernverwaltung auswählen</sys:String>
+    <sys:String x:Key="StrRemoteAdminNoFavorites">Keine Favoriten gesetzt. Markiere zuerst Knoten als Favoriten (Rechtsklick → Als Favorit markieren).</sys:String>
+    <!-- Remote Admin tabs -->
+    <sys:String x:Key="StrRaTabOwner">Besitzer</sys:String>
+    <sys:String x:Key="StrRaTabDevice">Gerät</sys:String>
+    <sys:String x:Key="StrRaTabPosition">Position</sys:String>
+    <sys:String x:Key="StrRaTabLora">LoRa</sys:String>
+    <sys:String x:Key="StrRaTabBluetooth">Bluetooth</sys:String>
+    <sys:String x:Key="StrRaTabNetwork">Netzwerk</sys:String>
+    <sys:String x:Key="StrRaTabDisplay">Anzeige</sys:String>
+    <sys:String x:Key="StrRaTabChannels">Kanäle</sys:String>
+    <sys:String x:Key="StrRaTabControl">Steuerung</sys:String>
+    <!-- Owner tab -->
+    <sys:String x:Key="StrRaOwnerShortName">Kurzname (max. 4 Zeichen)</sys:String>
+    <sys:String x:Key="StrRaOwnerLongName">Langname</sys:String>
+    <sys:String x:Key="StrRaOwnerLicensed">Lizenzierter Amateurfunker</sys:String>
+    <!-- Device tab -->
+    <sys:String x:Key="StrRaDeviceRole">Rolle</sys:String>
+    <sys:String x:Key="StrRaDeviceNodeInfoInterval">NodeInfo-Sendeintervall (Sekunden, 0=nie)</sys:String>
+    <sys:String x:Key="StrRaDeviceSerialEnabled">Serielle Konsole aktiviert</sys:String>
+    <sys:String x:Key="StrRaDeviceDebugLog">Debug-Logging aktiviert</sys:String>
+    <!-- Position tab -->
+    <sys:String x:Key="StrRaPosGpsMode">GPS-Modus</sys:String>
+    <sys:String x:Key="StrRaPosBroadcastInterval">Sendeintervall (s)</sys:String>
+    <sys:String x:Key="StrRaPosBroadcastSmart">Smart-Broadcast aktiviert</sys:String>
+    <sys:String x:Key="StrRaPosGpsAttemptTime">GPS-Versuchszeit (s)</sys:String>
+    <sys:String x:Key="StrRaPosFixed">Feste Position</sys:String>
+    <sys:String x:Key="StrRaPosFixedEnabled">Feste Position aktiviert</sys:String>
+    <sys:String x:Key="StrRaPosLat">Breitengrad</sys:String>
+    <sys:String x:Key="StrRaPosLon">Längengrad</sys:String>
+    <sys:String x:Key="StrRaPosAlt">Höhe (m)</sys:String>
+    <!-- LoRa tab -->
+    <sys:String x:Key="StrRaLoraRegion">Region</sys:String>
+    <sys:String x:Key="StrRaLoraPreset">Modem-Preset</sys:String>
+    <sys:String x:Key="StrRaLoraHopLimit">Hop-Limit</sys:String>
+    <sys:String x:Key="StrRaLoraTxPower">TX-Leistung (dBm, 0=max.)</sys:String>
+    <sys:String x:Key="StrRaLoraTxEnabled">TX aktiviert</sys:String>
+    <!-- Bluetooth tab -->
+    <sys:String x:Key="StrRaBtEnabled">Bluetooth aktiviert</sys:String>
+    <sys:String x:Key="StrRaBtMode">Pairing-Modus</sys:String>
+    <sys:String x:Key="StrRaBtPin">Fester PIN (6-stellig)</sys:String>
+    <!-- Network tab -->
+    <sys:String x:Key="StrRaWifiEnabled">WLAN aktiviert</sys:String>
+    <sys:String x:Key="StrRaWifiSsid">WLAN-SSID</sys:String>
+    <sys:String x:Key="StrRaWifiPsk">WLAN-Passwort</sys:String>
+    <sys:String x:Key="StrRaWifiApMode">Access-Point-Modus</sys:String>
+    <sys:String x:Key="StrRaEthEnabled">Ethernet aktiviert</sys:String>
+    <sys:String x:Key="StrRaNtpServer">NTP-Server</sys:String>
+    <!-- Display tab -->
+    <sys:String x:Key="StrRaDisplayTimeout">Display-Timeout (s, 0=nie)</sys:String>
+    <sys:String x:Key="StrRaDisplayFlip">Display gespiegelt</sys:String>
+    <sys:String x:Key="StrRaDisplayUnits">Einheiten</sys:String>
+    <sys:String x:Key="StrRaDisplayOledType">OLED-Typ</sys:String>
+    <!-- Control tab -->
+    <sys:String x:Key="StrRaControlDesc">Sende Steuerbefehle an den entfernten Knoten. Diese Aktionen sind sofort wirksam!</sys:String>
+    <sys:String x:Key="StrRaReboot">🔄 Neu starten</sys:String>
+    <sys:String x:Key="StrRaShutdown">⏹ Herunterfahren</sys:String>
+    <sys:String x:Key="StrRaNodeDbReset">⚠️ Node-DB löschen: Entfernt alle bekannten Knoten aus der Datenbank des Geräts.</sys:String>
+    <sys:String x:Key="StrRaNodeDbResetBtn">⚠️ Node-DB löschen</sys:String>
+    <!-- Bottom buttons -->
+    <sys:String x:Key="StrRaRefresh">🔄 Neu laden</sys:String>
+    <sys:String x:Key="StrRaSave">💾 Speichern</sys:String>
+    <!-- Telemetry Dashboard -->
+    <sys:String x:Key="StrDashboardTitle">Telemetrie-Dashboard</sys:String>
+    <sys:String x:Key="StrDashboardLabel">Dashboard:</sys:String>
+    <sys:String x:Key="StrDashboardNew">+ Neu</sys:String>
+    <sys:String x:Key="StrDashboardRename">Umbenennen</sys:String>
+    <sys:String x:Key="StrDashboardDelete">Löschen</sys:String>
+    <sys:String x:Key="StrDashboardAddWidget">+ Widget hinzufügen</sys:String>
+    <sys:String x:Key="StrDashboardRefresh">↺ Aktualisieren</sys:String>
+    <sys:String x:Key="StrDashboardNewTitle">Neues Dashboard</sys:String>
+    <sys:String x:Key="StrDashboardRenameTitle">Dashboard umbenennen</sys:String>
+    <sys:String x:Key="StrDashboardNewPrompt">Name:</sys:String>
+    <sys:String x:Key="StrDashboardDefaultName">Dashboard</sys:String>
+    <sys:String x:Key="StrDashboardDeleteConfirm">Dashboard "{0}" wirklich löschen?</sys:String>
+    <sys:String x:Key="StrDashboardNoDashboard">Bitte zuerst ein Dashboard erstellen.</sys:String>
+    <sys:String x:Key="StrDashboardEmpty">Kein Dashboard ausgewählt. Erstelle ein neues Dashboard und füge Widgets hinzu.</sys:String>
+    <sys:String x:Key="StrDashboardWidgetCount">Widgets</sys:String>
+    <sys:String x:Key="StrDashboardRemoveWidget">Widget entfernen</sys:String>
+    <sys:String x:Key="StrDashboardEditWidget">Widget bearbeiten</sys:String>
+    <sys:String x:Key="StrDashboardLastUpdated">Letzter Wert</sys:String>
+    <sys:String x:Key="StrDashboardHourOfDay">Stunde (0–23)</sys:String>
+    <sys:String x:Key="StrDashboardDayIndex">Tag</sys:String>
+    <!-- Add Widget Dialog -->
+    <sys:String x:Key="StrAddWidgetTitle">Widget hinzufügen</sys:String>
+    <sys:String x:Key="StrAddWidgetType">Widget-Typ:</sys:String>
+    <sys:String x:Key="StrAddWidgetMetric">Metrik:</sys:String>
+    <sys:String x:Key="StrAddWidgetDays">Zeitraum:</sys:String>
+    <sys:String x:Key="StrAddWidgetNodes">Knoten (Mehrfachauswahl möglich):</sys:String>
+    <sys:String x:Key="StrAddWidgetCustomTitle">Titel (leer = automatisch):</sys:String>
+    <sys:String x:Key="StrAddWidgetNoNode">Bitte mindestens einen Knoten auswählen.</sys:String>
+    <sys:String x:Key="StrWidgetTypeLine">Zeitverlauf (Linienchart)</sys:String>
+    <sys:String x:Key="StrWidgetTypeBar">Balkendiagramm (Aktuell)</sys:String>
+    <sys:String x:Key="StrWidgetTypeGauge">Anzeige (Gauge)</sys:String>
+    <sys:String x:Key="StrWidgetTypeHeatmap">Heatmap (Stunde × Tag)</sys:String>
+    <sys:String x:Key="StrWidgetTypeArea">Flächendiagramm (Area)</sys:String>
+    <sys:String x:Key="StrWidgetTypeScatter">Streudiagramm (Scatter)</sys:String>
+    <sys:String x:Key="StrWidgetTypeStat">Kennzahl (Stat-Karte)</sys:String>
+    <sys:String x:Key="StrWidgetTypeClock">Uhr (UTC + Lokal)</sys:String>
+    <sys:String x:Key="StrWidgetTypeHistogram">Histogramm (Verteilung)</sys:String>
+    <sys:String x:Key="StrWidgetTypeCandlestick">Candlestick (Tages-OHLC)</sys:String>
+    <sys:String x:Key="StrWidgetTypeStateline">Status-Timeline (Aktivität)</sys:String>
+    <sys:String x:Key="StrDashboardCount">Anzahl</sys:String>
+    <!-- Auto-refresh -->
+    <sys:String x:Key="StrDashboardAutoRefresh">Auto-Refresh:</sys:String>
+    <sys:String x:Key="StrDashboardRefreshOff">Aus</sys:String>
+    <sys:String x:Key="StrDashboardLastRefreshed">Aktualisiert: {0}</sys:String>
+    <!-- Node search / single-node hint -->
+    <sys:String x:Key="StrAddWidgetNodeSearch">Knoten suchen…</sys:String>
+    <sys:String x:Key="StrAddWidgetSingleNodeHint">Nur 1 Knoten</sys:String>
+    <!-- Time range labels -->
+    <sys:String x:Key="StrDays1">1 Tag</sys:String>
+    <sys:String x:Key="StrDays7">7 Tage</sys:String>
+    <sys:String x:Key="StrDays14">14 Tage</sys:String>
+    <sys:String x:Key="StrDays30">30 Tage</sys:String>
+    <sys:String x:Key="StrDaysAll">Gesamt</sys:String>
 
 </ResourceDictionary>
