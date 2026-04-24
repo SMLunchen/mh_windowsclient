@@ -1092,5 +1092,13 @@ Grün ≤15% | Gelb 15–25% | Rot &gt;25% | Grau = keine Airtime-Daten</sys:Str
     <sys:String x:Key="StrMeshHealthGood">Gut</sys:String>
     <sys:String x:Key="StrMeshHealthWeak">Schwach</sys:String>
     <sys:String x:Key="StrMeshHealthPoor">Schlecht</sys:String>
+    <sys:String x:Key="StrMeshHealthScore">Mesh Health</sys:String>
+    <sys:String x:Key="StrMeshHealthWeather">Wetter</sys:String>
+    <sys:String x:Key="StrMeshHealthAntenna">Antenne</sys:String>
+    <sys:String x:Key="StrMeshHealthNeighbor">Nachbar</sys:String>
+    <sys:String x:Key="StrMeshHealthPath">Pfade</sys:String>
+    <sys:String x:Key="StrMeshHealthNeighborCount">Nachbarn</sys:String>
+    <sys:String x:Key="StrMeshHealthHopCost">Pfadkosten</sys:String>
+    <sys:String x:Key="StrDashboardThresholdTip">Horizontale gestrichelte Linie im Chart — z.B. kritischer RSSI-Wert</sys:String>
 
 </ResourceDictionary>

@@ -1371,6 +1371,20 @@ GROUP BY node_id";
     /// Returns the most recent rx_snr per node within the given day window.
     /// Used to pre-populate SignalQualityColor on startup from DB history.
     /// </summary>
+    public List<uint> GetKnownNodeIds()
+    {
+        var result = new HashSet<uint>();
+        using var con = Open();
+        foreach (var table in new[] { "device_telemetry", "environment_telemetry", "packet_rx" })
+        {
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = $"SELECT DISTINCT node_id FROM {table}";
+            using var r = cmd.ExecuteReader();
+            while (r.Read()) result.Add((uint)r.GetInt64(0));
+        }
+        return result.ToList();
+    }
+
     public Dictionary<uint, float> GetLastSnrPerNode(int days)
     {
         long since = Since(days);

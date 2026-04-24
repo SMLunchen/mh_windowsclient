@@ -27,7 +27,10 @@ public class AddWidgetDialog : Window
     private readonly TextBox    _thresholdBox;
     private readonly CheckBox   _maCheckBox;
     private readonly Dictionary<uint, string> _nodeNames;
-    private readonly List<(uint id, string label)> _allNodes;
+    private readonly Dictionary<uint, string> _nodeShortNames;
+    private readonly List<(uint id, string label, string shortName)> _allNodes;
+    private readonly HashSet<uint> _selectedNodeIds = new();
+    private bool _suppressSelectionTracking;
 
     private static readonly (string key, string label)[] Metrics =
     {
@@ -61,12 +64,18 @@ public class AddWidgetDialog : Window
         ("clock",       "StrWidgetTypeClock",       false),
     };
 
-    public AddWidgetDialog(Dictionary<uint, string> nodeNames, DashboardWidget? existing = null)
+    public AddWidgetDialog(Dictionary<uint, string> nodeNames, Dictionary<uint, string>? nodeShortNames = null, DashboardWidget? existing = null)
     {
-        _nodeNames = nodeNames;
-        _allNodes  = nodeNames.OrderBy(kv => kv.Value)
-                              .Select(kv => (kv.Key, kv.Value))
-                              .ToList();
+        _nodeNames      = nodeNames;
+        _nodeShortNames = nodeShortNames ?? new Dictionary<uint, string>();
+        _allNodes = nodeNames.OrderBy(kv => kv.Value)
+                             .Select(kv =>
+                             {
+                                 string sn = _nodeShortNames.TryGetValue(kv.Key, out var s) && !string.IsNullOrWhiteSpace(s) ? s : string.Empty;
+                                 string label = sn.Length > 0 ? $"{sn} | {kv.Value}" : kv.Value;
+                                 return (kv.Key, label, sn);
+                             })
+                             .ToList();
 
         bool isDark = ThemeManager.Current.ActualApplicationTheme == ApplicationTheme.Dark;
         Color bgColor    = isDark ? Color.FromRgb(22, 27, 34)   : Color.FromRgb(250, 251, 253);
@@ -170,6 +179,8 @@ public class AddWidgetDialog : Window
             Height        = 130,
             Margin        = new Thickness(0, 0, 0, 12),
         };
+        ScrollViewer.SetCanContentScroll(_nodeListBox, false);
+        _nodeListBox.SelectionChanged += NodeList_SelectionChanged;
         PopulateNodeList(null);
         _nodeSection.Children.Add(_nodeListBox);
         outerStack.Children.Add(_nodeSection);
@@ -182,7 +193,11 @@ public class AddWidgetDialog : Window
         // ── Chart options (threshold + MA) — only for line/area ──
         _chartOptionsSection = new StackPanel { Margin = new Thickness(0, 0, 0, 6) };
         _chartOptionsSection.Children.Add(MakeLabel(Loc("StrDashboardThreshold") + " (leer = aus):", fgSubColor));
-        _thresholdBox = new TextBox { Margin = new Thickness(0, 0, 0, 8) };
+        _thresholdBox = new TextBox
+        {
+            Margin  = new Thickness(0, 0, 0, 8),
+            ToolTip = Loc("StrDashboardThresholdTip"),
+        };
         _chartOptionsSection.Children.Add(_thresholdBox);
         _maCheckBox = new CheckBox
         {
@@ -234,11 +249,16 @@ public class AddWidgetDialog : Window
         _thresholdBox.Text    = double.IsNaN(existing.Threshold) ? "" : existing.Threshold.ToString("G4");
         _maCheckBox.IsChecked = existing.ShowMovingAverage;
 
-        // Must match SelectionMode: Add() throws on Single; use SelectedItem instead
-        _nodeListBox.SelectedItems.Clear();
+        // Pre-seed _selectedNodeIds so filter changes preserve selection
+        _selectedNodeIds.Clear();
+        foreach (var id in existing.NodeIds) _selectedNodeIds.Add(id);
+
+        // Apply to listbox (UnselectAll works in both Single and Multiple mode)
+        _suppressSelectionTracking = true;
+        _nodeListBox.UnselectAll();
         foreach (ListBoxItem item in _nodeListBox.Items)
         {
-            if (item.Tag is not uint id || !existing.NodeIds.Contains(id)) continue;
+            if (item.Tag is not uint id || !_selectedNodeIds.Contains(id)) continue;
             if (_nodeListBox.SelectionMode == SelectionMode.Single)
             {
                 _nodeListBox.SelectedItem = item;
@@ -246,6 +266,7 @@ public class AddWidgetDialog : Window
             }
             _nodeListBox.SelectedItems.Add(item);
         }
+        _suppressSelectionTracking = false;
     }
 
     // ── Filtering ────────────────────────────────────────────────────────────
@@ -255,30 +276,58 @@ public class AddWidgetDialog : Window
         PopulateNodeList(_nodeSearchBox.Text);
     }
 
-    private static bool MatchesNode(string needle, (uint id, string label) n)
+    private static bool MatchesNode(string needle, (uint id, string label, string shortName) n)
     {
         if (n.label.Contains(needle, StringComparison.OrdinalIgnoreCase)) return true;
+        if (n.shortName.Contains(needle, StringComparison.OrdinalIgnoreCase)) return true;
         string hex = $"{n.id:x8}";
         if (hex.Contains(needle, StringComparison.OrdinalIgnoreCase)) return true;
         if ($"!{hex}".Contains(needle, StringComparison.OrdinalIgnoreCase)) return true;
         if (n.id.ToString().Contains(needle)) return true;
-        // Last-4 short id convention some people use
         if (hex.EndsWith(needle, StringComparison.OrdinalIgnoreCase)) return true;
         return false;
     }
 
+    private void NodeList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_suppressSelectionTracking) return;
+        foreach (ListBoxItem item in e.AddedItems.OfType<ListBoxItem>())
+            if (item.Tag is uint id) _selectedNodeIds.Add(id);
+        foreach (ListBoxItem item in e.RemovedItems.OfType<ListBoxItem>())
+            if (item.Tag is uint id) _selectedNodeIds.Remove(id);
+    }
+
     private void PopulateNodeList(string? filter)
     {
+        _suppressSelectionTracking = true;
         _nodeListBox.Items.Clear();
-        IEnumerable<(uint id, string label)> query = string.IsNullOrWhiteSpace(filter)
+
+        IEnumerable<(uint id, string label, string shortName)> query = string.IsNullOrWhiteSpace(filter)
             ? _allNodes
             : _allNodes.Where(n => MatchesNode(filter, n));
 
-        foreach (var (id, label) in query)
+        foreach (var (id, label, _) in query)
             _nodeListBox.Items.Add(new ListBoxItem { Tag = id, Content = label });
 
-        if (_nodeListBox.Items.Count > 0 && _nodeListBox.SelectedItems.Count == 0)
+        // Restore previously-selected nodes; only auto-select first if nothing was selected before
+        bool anyRestored = false;
+        foreach (ListBoxItem item in _nodeListBox.Items)
+        {
+            if (item.Tag is not uint id || !_selectedNodeIds.Contains(id)) continue;
+            if (_nodeListBox.SelectionMode == SelectionMode.Single)
+            {
+                _nodeListBox.SelectedItem = item;
+                anyRestored = true;
+                break;
+            }
+            _nodeListBox.SelectedItems.Add(item);
+            anyRestored = true;
+        }
+
+        if (!anyRestored && _nodeListBox.Items.Count > 0 && _selectedNodeIds.Count == 0)
             _nodeListBox.SelectedIndex = 0;
+
+        _suppressSelectionTracking = false;
     }
 
     // ── Widget type changed ───────────────────────────────────────────────────

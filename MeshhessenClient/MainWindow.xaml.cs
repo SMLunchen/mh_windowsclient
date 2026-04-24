@@ -5300,7 +5300,10 @@ public partial class MainWindow : Window
     {
         if (_db == null) return;
         var nodeNames = _allNodes.ToDictionary(n => n.NodeId, n => n.Name);
-        var dash = new TelemetryDashboardWindow(_db, nodeNames);
+        var nodeShortNames = _allNodes
+            .Where(n => !string.IsNullOrWhiteSpace(n.ShortName))
+            .ToDictionary(n => n.NodeId, n => n.ShortName);
+        var dash = new TelemetryDashboardWindow(_db, nodeNames, nodeShortNames);
         dash.Show();
         dash.Activate();
     }

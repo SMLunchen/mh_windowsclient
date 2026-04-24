@@ -1092,5 +1092,13 @@ Green ≤15% | Yellow 15–25% | Red &gt;25% | Gray = no airtime data</sys:Strin
     <sys:String x:Key="StrMeshHealthGood">Good</sys:String>
     <sys:String x:Key="StrMeshHealthWeak">Weak</sys:String>
     <sys:String x:Key="StrMeshHealthPoor">Poor</sys:String>
+    <sys:String x:Key="StrMeshHealthScore">Mesh Health</sys:String>
+    <sys:String x:Key="StrMeshHealthWeather">Weather</sys:String>
+    <sys:String x:Key="StrMeshHealthAntenna">Antenna</sys:String>
+    <sys:String x:Key="StrMeshHealthNeighbor">Neighbor</sys:String>
+    <sys:String x:Key="StrMeshHealthPath">Paths</sys:String>
+    <sys:String x:Key="StrMeshHealthNeighborCount">Neighbors</sys:String>
+    <sys:String x:Key="StrMeshHealthHopCost">Hop Cost</sys:String>
+    <sys:String x:Key="StrDashboardThresholdTip">Horizontal dashed line in the chart — e.g. critical RSSI value</sys:String>
 
 </ResourceDictionary>

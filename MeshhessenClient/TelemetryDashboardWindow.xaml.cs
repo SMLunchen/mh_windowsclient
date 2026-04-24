@@ -65,6 +65,7 @@ public partial class TelemetryDashboardWindow : Window
     // ── Fields ────────────────────────────────────────────────────────────────
     private readonly TelemetryDatabaseService _db;
     private readonly Dictionary<uint, string> _nodeNames;
+    private readonly Dictionary<uint, string> _nodeShortNames;
     private DashboardStore _store = new();
     private Dashboard? _current;
     private bool _suppressComboEvent;
@@ -76,11 +77,21 @@ public partial class TelemetryDashboardWindow : Window
 
     public TelemetryDashboardWindow(
         TelemetryDatabaseService db,
-        Dictionary<uint, string> nodeNames)
+        Dictionary<uint, string> nodeNames,
+        Dictionary<uint, string>? nodeShortNames = null)
     {
         InitializeComponent();
-        _db        = db;
-        _nodeNames = nodeNames;
+        _db             = db;
+        _nodeShortNames = nodeShortNames ?? new Dictionary<uint, string>();
+
+        // Merge live node names with any nodes known from the DB (for offline use)
+        var merged = new Dictionary<uint, string>(nodeNames);
+        foreach (var id in db.GetKnownNodeIds())
+            if (!merged.ContainsKey(id))
+                merged[id] = $"!{id:x8}";
+        _nodeNames = merged;
+
+        Closing += (_, _) => SaveStore();
 
         // Detect theme
         _isDark = ThemeManager.Current.ActualApplicationTheme == ApplicationTheme.Dark;
@@ -321,7 +332,7 @@ public partial class TelemetryDashboardWindow : Window
                 MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
-        var dlg = new AddWidgetDialog(_nodeNames) { Owner = this };
+        var dlg = new AddWidgetDialog(_nodeNames, _nodeShortNames) { Owner = this };
         if (dlg.ShowDialog() != true) return;
         var widget = dlg.Result!;
         var idx = _store.Dashboards.IndexOf(_current);
@@ -1160,7 +1171,8 @@ public partial class TelemetryDashboardWindow : Window
             {
                 Title           = NodeLabel(nodeId),
                 Color           = oxy,
-                Fill            = OxyColor.FromAColor(30, oxy),
+                Fill            = OxyColor.FromAColor(55, oxy),
+                ConstantY2      = min,
                 StrokeThickness = 1.5,
                 MarkerType      = MarkerType.None,
                 TrackerFormatString = "{0}\n{2:dd.MM HH:mm}\n{4:F2} " + unit,
@@ -1561,7 +1573,7 @@ public partial class TelemetryDashboardWindow : Window
         if (sender is not Button btn || btn.Tag is not DashboardWidget w) return;
         if (_current == null) return;
 
-        var dlg = new AddWidgetDialog(_nodeNames, existing: w) { Owner = this };
+        var dlg = new AddWidgetDialog(_nodeNames, _nodeShortNames, existing: w) { Owner = this };
         if (dlg.ShowDialog() != true) return;
 
         // Preserve ID and size from the original
@@ -1743,7 +1755,7 @@ public partial class TelemetryDashboardWindow : Window
             Tag     = w.Id,
             VerticalAlignment = System.Windows.VerticalAlignment.Center,
             Margin  = new Thickness(3, 0, 0, 0),
-            ToolTip = Loc("StrDashboardThreshold"),
+            ToolTip = Loc("StrDashboardThresholdTip"),
         };
         threshBox.LostFocus += (_, _) =>
         {
@@ -2027,118 +2039,175 @@ public partial class TelemetryDashboardWindow : Window
 
     private FrameworkElement BuildMeshHealthContent(DashboardWidget w)
     {
-        var nodeIds     = w.NodeIds.Count > 0 ? w.NodeIds : _nodeNames.Keys.ToList();
-        int lookbackDays = w.Days > 0 ? w.Days : 1;
+        var nodeIds  = w.NodeIds.Count > 0 ? w.NodeIds : _nodeNames.Keys.ToList();
+        int days     = w.Days > 0 ? w.Days : 7;
+        int shortH   = 6;
 
-        var wrap = new WrapPanel { Margin = new Thickness(6), Orientation = Orientation.Horizontal };
+        var stack = new StackPanel { Margin = new Thickness(6) };
 
+        // ── Global mesh health score ──────────────────────────────────────────
+        var global = _db.GetMeshHealthScore(days);
+        var globalTile = new Border
+        {
+            Background      = new SolidColorBrush(_isDark ? Color.FromRgb(21, 26, 35) : Color.FromRgb(245, 247, 250)),
+            BorderBrush     = new SolidColorBrush(_borderCol),
+            BorderThickness = new Thickness(1),
+            CornerRadius    = new CornerRadius(5),
+            Margin          = new Thickness(0, 0, 0, 6),
+            Padding         = new Thickness(10, 7, 10, 7),
+            ToolTip         = global.Summary,
+        };
+        var gRow = new StackPanel { Orientation = Orientation.Horizontal };
+        gRow.Children.Add(MeshLed(global.State, 12));
+        gRow.Children.Add(new TextBlock
+        {
+            Text       = $" {Loc("StrMeshHealthScore")}: {global.Score:0}%",
+            FontSize   = 12,
+            FontWeight = System.Windows.FontWeights.SemiBold,
+            Foreground = new SolidColorBrush(_fgMain),
+            VerticalAlignment = System.Windows.VerticalAlignment.Center,
+        });
+        var gDetails = new TextBlock
+        {
+            Text       = $"   Ø Pfad: {global.AvgPathCost:F2}  |  Routen: {global.RouteChangeRate:F1}/h  |  Empfang: {global.RxScore * 100:0}%  |  Kanal: {global.ChannelUtilization:F1}%",
+            FontSize   = 10,
+            Foreground = new SolidColorBrush(_fgSub),
+            VerticalAlignment = System.Windows.VerticalAlignment.Center,
+        };
+        gRow.Children.Add(gDetails);
+        globalTile.Child = gRow;
+        stack.Children.Add(globalTile);
+
+        // ── Per-node tiles ────────────────────────────────────────────────────
         foreach (var id in nodeIds)
         {
-            var pts = _db.GetTimeSeries(new[] { id }, "snr", lookbackDays);
-            double lastSnr = pts.Count > 0
-                ? pts.OrderByDescending(p => p.Timestamp).First().Value
-                : double.NaN;
-            bool stale = pts.Count == 0 ||
-                         (DateTime.UtcNow - pts.Max(p => p.Timestamp)).TotalHours > 24;
+            var analysis = _db.GetSignalAnalysis(id, shortH, days, _nodeNames);
+            string name  = NodeLabel(id);
 
-            Color ledColor;
-            string status;
-            if (stale || double.IsNaN(lastSnr))
-            {
-                ledColor = Color.FromRgb(240,  76,  76);
-                status   = Loc("StrMeshHealthOffline");
-            }
-            else if (lastSnr >= -5)
-            {
-                ledColor = Color.FromRgb( 63, 185, 126);
-                status   = Loc("StrMeshHealthGood");
-            }
-            else if (lastSnr >= -15)
-            {
-                ledColor = Color.FromRgb(255, 171,  76);
-                status   = Loc("StrMeshHealthWeak");
-            }
-            else
-            {
-                ledColor = Color.FromRgb(240,  76,  76);
-                status   = Loc("StrMeshHealthPoor");
-            }
+            var overallState = new[] { analysis.WeatherLed, analysis.AntennaLed, analysis.NeighborLed, analysis.PathLed }
+                .Where(l => l != LedState.NoData)
+                .DefaultIfEmpty(LedState.NoData)
+                .Max();
 
-            string name = NodeLabel(id);
-
+            Color accent = LedColor(overallState);
             var tile = new Border
             {
-                Background      = new SolidColorBrush(Color.FromArgb(12, ledColor.R, ledColor.G, ledColor.B)),
-                BorderBrush     = new SolidColorBrush(Color.FromArgb(40, ledColor.R, ledColor.G, ledColor.B)),
+                Background      = new SolidColorBrush(Color.FromArgb(10, accent.R, accent.G, accent.B)),
+                BorderBrush     = new SolidColorBrush(Color.FromArgb(35, accent.R, accent.G, accent.B)),
                 BorderThickness = new Thickness(1),
                 CornerRadius    = new CornerRadius(5),
-                Margin          = new Thickness(3),
+                Margin          = new Thickness(0, 0, 0, 4),
                 Padding         = new Thickness(8, 6, 8, 6),
-                MinWidth        = 110,
-                ToolTip         = $"{name}  SNR: {(double.IsNaN(lastSnr) ? "–" : $"{lastSnr:F1} dB")}  {status}",
             };
 
-            var row = new StackPanel
-            {
-                Orientation       = Orientation.Horizontal,
-                VerticalAlignment = System.Windows.VerticalAlignment.Center,
-            };
+            var tileStack = new StackPanel();
 
-            var led = new System.Windows.Shapes.Ellipse
+            // Name row
+            var nameRow = new DockPanel { Margin = new Thickness(0, 0, 0, 4) };
+            nameRow.Children.Add(MeshLed(overallState, 10));
+            nameRow.Children.Add(new TextBlock
             {
-                Width  = 10,
-                Height = 10,
-                Fill   = new SolidColorBrush(ledColor),
-                Effect = new DropShadowEffect
+                Text       = " " + name,
+                FontSize   = 11,
+                FontWeight = System.Windows.FontWeights.SemiBold,
+                Foreground = new SolidColorBrush(_fgMain),
+            });
+            tileStack.Children.Add(nameRow);
+
+            // LED bubbles row
+            var ledRow = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 4) };
+            ledRow.Children.Add(MeshLedCell(analysis.WeatherLed,  Loc("StrMeshHealthWeather")));
+            ledRow.Children.Add(MeshLedCell(analysis.AntennaLed,  Loc("StrMeshHealthAntenna")));
+            ledRow.Children.Add(MeshLedCell(analysis.NeighborLed, Loc("StrMeshHealthNeighbor")));
+            ledRow.Children.Add(MeshLedCell(analysis.PathLed,     Loc("StrMeshHealthPath")));
+            tileStack.Children.Add(ledRow);
+
+            // Factor row: trend + neighbor count + hop cost
+            var factors = new List<string>();
+            if (analysis.Trends.Count > 0)
+            {
+                string arrow = analysis.AvgLongSlope < -0.1f ? "▼" : analysis.AvgLongSlope > 0.1f ? "▲" : "→";
+                factors.Add($"SNR {arrow} {analysis.AvgLongSlope:+0.0;-0.0} dB/d");
+            }
+            if (analysis.TotalNeighbors > 0)
+                factors.Add($"{analysis.TotalNeighbors} {Loc("StrMeshHealthNeighborCount")}");
+            if (analysis.HopCost > 0)
+                factors.Add($"{Loc("StrMeshHealthHopCost")}: {analysis.HopCost:F2}");
+            if (!string.IsNullOrEmpty(analysis.ProblemNeighborName))
+                factors.Add($"⚠ {analysis.ProblemNeighborName}");
+
+            if (factors.Count > 0)
+                tileStack.Children.Add(new TextBlock
                 {
-                    Color       = ledColor,
-                    BlurRadius  = 6,
-                    ShadowDepth = 0,
-                    Opacity     = 0.7,
-                },
-                Margin            = new Thickness(0, 0, 7, 0),
-                VerticalAlignment = System.Windows.VerticalAlignment.Center,
-            };
-            row.Children.Add(led);
+                    Text       = string.Join("   ", factors),
+                    FontSize   = 9,
+                    Foreground = new SolidColorBrush(_fgMuted),
+                });
 
-            var info = new StackPanel { VerticalAlignment = System.Windows.VerticalAlignment.Center };
-            info.Children.Add(new TextBlock
-            {
-                Text         = name.Length > 14 ? name[..14] : name,
-                FontSize     = 11,
-                Foreground   = new SolidColorBrush(_fgMain),
-                TextTrimming = TextTrimming.CharacterEllipsis,
-            });
-            info.Children.Add(new TextBlock
-            {
-                Text       = double.IsNaN(lastSnr) ? "–" : $"{lastSnr:F1} dB",
-                FontSize   = 9,
-                Foreground = new SolidColorBrush(_fgMuted),
-            });
-            row.Children.Add(info);
-
-            tile.Child = row;
-            wrap.Children.Add(tile);
+            tile.Child = tileStack;
+            stack.Children.Add(tile);
         }
 
-        if (wrap.Children.Count == 0)
-            wrap.Children.Add(new TextBlock
+        if (nodeIds.Count == 0)
+            stack.Children.Add(new TextBlock
             {
                 Text       = Loc("StrDashboardNoData"),
                 Foreground = new SolidColorBrush(_fgMuted),
                 FontSize   = 11,
-                Margin     = new Thickness(4),
             });
 
         return new Border
         {
             Child = new ScrollViewer
             {
-                Content = wrap,
+                Content = stack,
                 VerticalScrollBarVisibility   = ScrollBarVisibility.Auto,
                 HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
             },
         };
+    }
+
+    private static Color LedColor(LedState state) => state switch
+    {
+        LedState.Good    => Color.FromRgb(76, 175, 80),
+        LedState.Warning => Color.FromRgb(255, 193, 7),
+        LedState.Alert   => Color.FromRgb(244, 67, 54),
+        _                => Color.FromRgb(189, 189, 189),
+    };
+
+    private static System.Windows.UIElement MeshLed(LedState state, int size)
+    {
+        var c = LedColor(state);
+        return new System.Windows.Shapes.Ellipse
+        {
+            Width  = size, Height = size,
+            Fill   = new SolidColorBrush(c),
+            Effect = new DropShadowEffect { Color = c, BlurRadius = 5, ShadowDepth = 0, Opacity = 0.65 },
+            Margin = new Thickness(0, 0, 5, 0),
+            VerticalAlignment = System.Windows.VerticalAlignment.Center,
+        };
+    }
+
+    private FrameworkElement MeshLedCell(LedState state, string label)
+    {
+        var cell = new StackPanel
+        {
+            Orientation = Orientation.Vertical,
+            HorizontalAlignment = System.Windows.HorizontalAlignment.Center,
+            Margin = new Thickness(0, 0, 10, 0),
+        };
+        var led = (System.Windows.Shapes.Ellipse)MeshLed(state, 10);
+        led.Margin = new Thickness(0);
+        led.HorizontalAlignment = System.Windows.HorizontalAlignment.Center;
+        cell.Children.Add(led);
+        cell.Children.Add(new TextBlock
+        {
+            Text       = label,
+            FontSize   = 8,
+            Foreground = new SolidColorBrush(_fgMuted),
+            HorizontalAlignment = System.Windows.HorizontalAlignment.Center,
+        });
+        return cell;
     }
 
     // ── CSV Export ────────────────────────────────────────────────────────────
