@@ -5524,8 +5524,9 @@ public partial class MainWindow : Window
         var now = DateTime.Now;
         if (now.Hour == 0 && now.Minute == 0 && !_midnightFiredToday)
         {
-            _midnightFiredToday = true;
-            Dispatcher.BeginInvoke(ShowMidnightMesh);
+            _midnightFiredToday = true;  // always lock out further checks this midnight
+            if (_allNodes.Count > 0 && Random.Shared.Next(3) == 0)  // ~1 in 3 nights
+                Dispatcher.BeginInvoke(ShowMidnightMesh);
         }
         else if (now.Hour != 0)
         {
@@ -5541,15 +5542,17 @@ public partial class MainWindow : Window
         var lines = new[]
         {
             "- - - - - - - - - - - - - - - - - - - -",
-            $"SENDESTELLE {myShortName.ToUpper()}",
-            "SENDELEISTUNG WIRD JETZT REDUZIERT",
-            "NACHT-BETRIEB AKTIV — 73 DE MH",
+            $"SENDESTELLE {myShortName.ToUpper()} — OSTEREI",
+            "AM-SENDELEISTUNG WIRD JETZT REDUZIERT",
+            "Ionosphäre aktiv: AM-Signale reichen nachts",
+            "hunderte km weit (Skywave-Propagation).",
+            "FCC-Nachtpflicht seit 1934 · LoRa: unaffected",
             "- - - - - - - - - - - - - - - - - - - -"
         };
         var msg = new MessageItem
         {
             Time        = "00:00",
-            From        = "⚡ SENDESTELLE",
+            From        = "⚡ SENDESTELLE OSTEREI",
             Message     = string.Join("\n", lines),
             ChannelName = "SYSTEM",
             IsOwnMessage = false

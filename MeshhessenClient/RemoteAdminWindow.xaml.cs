@@ -78,6 +78,15 @@ public partial class RemoteAdminWindow : Window
         });
     }
 
+    private void SetStatusStep(string name, int step, int total)
+    {
+        Dispatcher.Invoke(() =>
+        {
+            StatusLabel.Text = $"{name} ({step}/{total})";
+            StatusDot.Fill = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#2196F3"));
+        });
+    }
+
     // ===== Connect + Load =====
 
     private async Task ConnectAndLoadAsync()
@@ -121,6 +130,8 @@ public partial class RemoteAdminWindow : Window
             new AdminMessage { GetConfigRequest = 8 }, // 8 = SESSIONKEY_CONFIG
             _timeoutMs);
 
+        // Enable tabs immediately so sections become visible as each config loads
+        Dispatcher.Invoke(() => MainTabs.IsEnabled = true);
         SetStatus("StrRemoteAdminLoading", "#2196F3");
 
         // Step 3: Load all configs in sequence
@@ -129,7 +140,6 @@ public partial class RemoteAdminWindow : Window
         SetStatus("StrRemoteAdminConnected", "#4CAF50");
         Dispatcher.Invoke(() =>
         {
-            MainTabs.IsEnabled = true;
             SaveButton.IsEnabled = true;
             RefreshButton.IsEnabled = true;
         });
@@ -137,7 +147,10 @@ public partial class RemoteAdminWindow : Window
 
     private async Task LoadAllConfigsAsync()
     {
+        const int total = 16; // 8 configs + 8 channels
+
         // Owner
+        SetStatusStep("Besitzer", 1, total);
         var ownerResp = await _svc.SendRemoteAdminRequestAsync(
             _targetNode.NodeId, new AdminMessage { GetOwnerRequest = true }, _timeoutMs);
         if (ownerResp?.PayloadVariantCase == AdminMessage.PayloadVariantOneofCase.GetOwnerResponse)
@@ -149,6 +162,7 @@ public partial class RemoteAdminWindow : Window
         await Task.Delay(200);
 
         // Device config
+        SetStatusStep("Gerätekonfiguration", 2, total);
         var deviceResp = await _svc.SendRemoteAdminRequestAsync(
             _targetNode.NodeId,
             new AdminMessage { GetConfigRequest = 0 },
@@ -163,6 +177,7 @@ public partial class RemoteAdminWindow : Window
         await Task.Delay(200);
 
         // Position config
+        SetStatusStep("Positionskonfiguration", 3, total);
         var posResp = await _svc.SendRemoteAdminRequestAsync(
             _targetNode.NodeId,
             new AdminMessage { GetConfigRequest = 1 },
@@ -177,6 +192,7 @@ public partial class RemoteAdminWindow : Window
         await Task.Delay(200);
 
         // LoRa config
+        SetStatusStep("LoRa-Konfiguration", 4, total);
         var loraResp = await _svc.SendRemoteAdminRequestAsync(
             _targetNode.NodeId,
             new AdminMessage { GetConfigRequest = 5 },
@@ -191,6 +207,7 @@ public partial class RemoteAdminWindow : Window
         await Task.Delay(200);
 
         // Bluetooth config
+        SetStatusStep("Bluetooth-Konfiguration", 5, total);
         var btResp = await _svc.SendRemoteAdminRequestAsync(
             _targetNode.NodeId,
             new AdminMessage { GetConfigRequest = 6 },
@@ -205,6 +222,7 @@ public partial class RemoteAdminWindow : Window
         await Task.Delay(200);
 
         // Network config
+        SetStatusStep("Netzwerkkonfiguration", 6, total);
         var netResp = await _svc.SendRemoteAdminRequestAsync(
             _targetNode.NodeId,
             new AdminMessage { GetConfigRequest = 3 },
@@ -219,6 +237,7 @@ public partial class RemoteAdminWindow : Window
         await Task.Delay(200);
 
         // Display config
+        SetStatusStep("Displaykonfiguration", 7, total);
         var dispResp = await _svc.SendRemoteAdminRequestAsync(
             _targetNode.NodeId,
             new AdminMessage { GetConfigRequest = 4 },
@@ -233,6 +252,7 @@ public partial class RemoteAdminWindow : Window
         await Task.Delay(200);
 
         // Security config
+        SetStatusStep("Sicherheitskonfiguration", 8, total);
         var secResp = await _svc.SendRemoteAdminRequestAsync(
             _targetNode.NodeId,
             new AdminMessage { GetConfigRequest = (uint)AdminMessage.Types.ConfigType.SecurityConfig },
@@ -250,6 +270,7 @@ public partial class RemoteAdminWindow : Window
         Dispatcher.Invoke(() => ChannelsPanel.Children.Clear());
         for (int i = 0; i < 8; i++)
         {
+            SetStatusStep($"Kanal {i}", 8 + i + 1, total);
             await LoadSingleChannelAsync(i);
             await Task.Delay(180);
         }

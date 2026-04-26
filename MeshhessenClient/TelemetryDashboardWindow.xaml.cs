@@ -61,6 +61,7 @@ public partial class TelemetryDashboardWindow : Window
     private readonly Color _bgCard, _bgPage, _bgHeader, _borderCol;
     private readonly Color _fgMain, _fgSub, _fgMuted;
     private readonly OxyColor _oxyText, _oxyTick, _oxyGrid, _oxyLegendBg;
+    private readonly Color[] _uiPalette;  // theme-adjusted accent colors for text/UI (not charts)
 
     // ── Fields ────────────────────────────────────────────────────────────────
     private readonly TelemetryDatabaseService _db;
@@ -116,6 +117,19 @@ public partial class TelemetryDashboardWindow : Window
             _fgSub     = Color.FromRgb( 90,  99, 110);
             _fgMuted   = Color.FromRgb(160, 166, 174);
         }
+
+        // Lighter accent colors for dark mode so text is readable on dark backgrounds
+        _uiPalette = _isDark ? new[]
+        {
+            Color.FromRgb( 88, 166, 255),   // blue  (#58A6FF)
+            Color.FromRgb( 87, 201, 150),   // green
+            Color.FromRgb(255, 199, 103),   // amber
+            Color.FromRgb(248, 107, 107),   // red
+            Color.FromRgb(183, 148, 255),   // purple
+            Color.FromRgb( 51, 225, 235),   // cyan
+            Color.FromRgb(255, 157, 120),   // orange
+            Color.FromRgb(128, 196, 255),   // light blue
+        } : WpfPalette;
 
         _oxyText     = OxyColor.FromRgb(_fgSub.R, _fgSub.G, _fgSub.B);
         _oxyTick     = OxyColor.FromRgb(_borderCol.R, _borderCol.G, _borderCol.B);
@@ -579,27 +593,34 @@ public partial class TelemetryDashboardWindow : Window
         ctxMenu.Items.Add(exportItem);
         container.ContextMenu = ctxMenu;
 
-        // Drop target for reordering — with visual highlight feedback
-        container.AllowDrop = true;
-        container.DragEnter += (_, e) =>
+        // Drop target for reordering — on card so drag events fire over all card content
+        card.AllowDrop = true;
+        card.DragEnter += (_, e) =>
         {
             if (!e.Data.GetDataPresent("widget_id")) return;
             string srcId = (string)e.Data.GetData("widget_id")!;
-            if (srcId != w.Id) card.BorderBrush = new SolidColorBrush(Color.FromRgb(31, 111, 235));
+            if (srcId != w.Id) card.BorderBrush = new SolidColorBrush(_uiPalette[0]);
             e.Effects = DragDropEffects.Move;
+            e.Handled = true;
         };
-        container.DragLeave += (_, _) =>
-            card.BorderBrush = new SolidColorBrush(_borderCol);
-        container.DragOver += (_, e) =>
+        card.DragLeave += (_, e) =>
+        {
+            // Only reset when cursor truly leaves the card bounds (not just crossing child boundaries)
+            var pos = e.GetPosition(card);
+            if (pos.X < 0 || pos.Y < 0 || pos.X > card.ActualWidth || pos.Y > card.ActualHeight)
+                card.BorderBrush = new SolidColorBrush(_borderCol);
+        };
+        card.DragOver += (_, e) =>
         {
             if (e.Data.GetDataPresent("widget_id")) { e.Effects = DragDropEffects.Move; e.Handled = true; }
         };
-        container.Drop += (_, e) =>
+        card.Drop += (_, e) =>
         {
             card.BorderBrush = new SolidColorBrush(_borderCol);
             if (!e.Data.GetDataPresent("widget_id")) return;
             string srcId = (string)e.Data.GetData("widget_id")!;
             if (srcId != w.Id) ReorderWidgets(srcId, w.Id);
+            e.Handled = true;
         };
 
         // Resize grip — 30x30 hit area with visual in bottom-right
@@ -1025,7 +1046,7 @@ public partial class TelemetryDashboardWindow : Window
             ? current - previous : double.NaN;
 
         string nodeName   = nodeId != 0 && _nodeNames.TryGetValue(nodeId, out var nn) ? nn : "–";
-        Color accentColor = WpfPalette[0];
+        Color accentColor = _uiPalette[0];
 
         var grid = new Grid { Margin = new Thickness(12, 10, 12, 10) };
         grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
@@ -1709,7 +1730,7 @@ public partial class TelemetryDashboardWindow : Window
                 Padding    = new Thickness(5, 1, 5, 1),
                 FontSize   = 10,
                 Tag        = (w.Id, days),
-                Foreground = new SolidColorBrush(active ? WpfPalette[0] : _fgSub),
+                Foreground = new SolidColorBrush(active ? _uiPalette[0] : _fgSub),
                 FontWeight = active ? System.Windows.FontWeights.SemiBold
                                     : System.Windows.FontWeights.Normal,
             };
@@ -1737,7 +1758,7 @@ public partial class TelemetryDashboardWindow : Window
             FontSize   = 10,
             ToolTip    = Loc("StrDashboardMovingAvg"),
             Tag        = w.Id,
-            Foreground = new SolidColorBrush(w.ShowMovingAverage ? WpfPalette[0] : _fgSub),
+            Foreground = new SolidColorBrush(w.ShowMovingAverage ? _uiPalette[0] : _fgSub),
             FontWeight = w.ShowMovingAverage ? System.Windows.FontWeights.SemiBold
                                              : System.Windows.FontWeights.Normal,
         };
@@ -1908,8 +1929,8 @@ public partial class TelemetryDashboardWindow : Window
             for (int i = 0; i < rows.Count; i++)
             {
                 var (id, val) = rows[i];
-                Color rowColor = i == 0 ? WpfPalette[1]
-                               : i == 1 ? WpfPalette[2]
+                Color rowColor = i == 0 ? _uiPalette[1]
+                               : i == 1 ? _uiPalette[2]
                                : _fgMain;
                 grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
                 int row = i + 1;
@@ -1970,7 +1991,7 @@ public partial class TelemetryDashboardWindow : Window
             double max = values.Count > 0 ? values.Max() : double.NaN;
             double avg = values.Count > 0 ? values.Average() : double.NaN;
 
-            Color accent = WpfPalette[ci % WpfPalette.Length];
+            Color accent = _uiPalette[ci % _uiPalette.Length];
             string name  = NodeLabel(id);
 
             var tile = new Border
