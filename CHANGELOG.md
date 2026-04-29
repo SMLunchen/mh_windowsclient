@@ -242,6 +242,6 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 ---
 
 **Projekt**: Meshtastic Windows Client
-**Lizenz**: MIT
+**Lizenz**: GNU General Public License v3.0 (GPL-3.0)
 **Website**: Meshhessen.de
 **Entwickelt mit**: Claude AI
