@@ -11,6 +11,37 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ### ✨ Hinzugefügt
 
+#### 🔧 T-Deck Karten-Assistent (neuer Tools-Tab)
+- **Neuer Reiter „Tools"** im Hauptfenster mit zwei Funktionen:
+  - **T-Deck Karten-Assistent** – geführter 6-Schritt-Wizard zur Vorbereitung einer SD-Karte mit Offline-Karten
+  - **Tile-Export** – lokale Tiles als ZIP exportieren (je nach Kartentyp oder alle)
+- **Schritt 1 – Willkommen:** Erklärung des Workflows, Hinweis dass nur Deutschland abgedeckt ist
+- **Schritt 2 – SD-Karte wählen:** Listet nur Wechseldatenträger auf, zeigt Gesamtgröße, freier Speicher und Dateisystem
+- **Schritt 3 – Formatierung prüfen:**
+  - Prüft ob das Laufwerk exFAT oder FAT32 ist
+  - Empfiehlt exFAT mit 4096-Byte-Zuordnungseinheiten (erklärt warum: kleine Tiles ~100 Bytes, große AU = Platzverschwendung)
+  - Bietet Formatierung per PowerShell `Format-Volume` mit UAC-Elevation an
+  - Doppelte Bestätigungsdialoge vor dem unwiderruflichen Formatieren
+  - Auswahl: exFAT 4096 Bytes (Standard/empfohlen) oder FAT32 512 Bytes (Ältere Geräte)
+  - Formatierung kann übersprungen werden
+- **Schritt 4 – Bereich auswählen** (drei Modi):
+  - **Nach Bundesland:** alle 16 Bundesländer als Checkboxen mit Alles/Keine-Schnellauswahl; kombinierte BBox wird berechnet
+  - **Ganz Deutschland:** feste BBox N 55.10° S 47.27° W 5.87° E 15.04°
+  - **Freestyle:** Mapsui-Kartenfenster, Klicken-und-Ziehen zum Zeichnen eines Rechteck-Auswahlbereichs
+- **Schritt 5 – Zoom & Kartentyp:**
+  - Maximale Zoom-Stufe: 8 / 10 / 12 / 14 (empfohlen) / 16 / 17 (Maximum)
+  - Warnhinweise bei Zoom ≥ 14 und ≥ 16 (Laufzeit, Speicherplatz)
+  - Kartentyp: OSM Standard / OSM Dark / OpenTopoMap
+  - Live-Schätzung: Tile-Anzahl und Speicherplatzbedarf; Warnung wenn SD-Speicher knapp
+- **Schritt 6 – Download & Übertragung:**
+  - Zusammenfassung aller Einstellungen
+  - **Additiver Transfer:** SD-Tile vorhanden → überspringen; lokal vorhanden → kopieren; sonst → herunterladen vom Tile-Server und gleichzeitig lokal cachen
+  - Fortschrittsbalken mit Tile-Zähler und aktueller Zoom/X/Y-Angabe
+  - Abbrechen jederzeit möglich
+- **SD-Karten-Verzeichnisstruktur:** `{Laufwerk}:\maps\OSM\{z}\{x}\{y}.png` (bzw. `OpenTopo`, `OSMDark`)
+- **Tile-Export-Dialog:** Exportiert lokale Tiles (alle oder gefiltert nach Kartentyp) als ZIP
+- Vollständig mehrsprachig (Deutsch / Englisch) über bestehende i18n-Infrastruktur
+
 #### Remote-Verwaltung – Sicherheits-Tab
 - **Neuer „Sicherheit"-Reiter** in der Fernverwaltung (Remote Admin) für `Config.SecurityConfig`
   - **Öffentlicher Schlüssel** (Public Key) read-only als Hex-Darstellung (Consolas)

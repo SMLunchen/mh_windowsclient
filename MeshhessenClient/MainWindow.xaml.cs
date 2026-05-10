@@ -1185,6 +1185,18 @@ public partial class MainWindow : Window
         UpdateMapTileStatus();
     }
 
+    private void TDeckMapBtn_Click(object sender, RoutedEventArgs e)
+    {
+        var wizard = new TDeckWizardWindow { Owner = this };
+        wizard.ShowDialog();
+    }
+
+    private void TDeckExportBtn_Click(object sender, RoutedEventArgs e)
+    {
+        var exportWin = new TDeckExportWindow { Owner = this };
+        exportWin.ShowDialog();
+    }
+
     private void MapZoomIn_Click(object sender, RoutedEventArgs e)
     {
         if (_map != null)

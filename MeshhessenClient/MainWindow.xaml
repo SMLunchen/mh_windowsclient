@@ -1635,6 +1635,40 @@
                 </ScrollViewer>
             </TabItem>
 
+            <!-- Tools Tab -->
+            <TabItem Header="{DynamicResource StrTabTools}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="24">
+
+                        <!-- T-Deck Map Assistant -->
+                        <TextBlock Text="{DynamicResource StrToolsTDeckSection}"
+                                   FontSize="15" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                        <TextBlock Text="{DynamicResource StrToolsTDeckDesc}"
+                                   TextWrapping="Wrap" Foreground="#555" Margin="0,0,0,10"/>
+                        <TextBlock Text="{DynamicResource StrTDeckGermanyOnly}"
+                                   TextWrapping="Wrap" Foreground="#1E6AB8" Margin="0,0,0,10"
+                                   FontStyle="Italic"/>
+                        <Button x:Name="TDeckMapBtn"
+                                Content="{DynamicResource StrToolsTDeckBtn}"
+                                HorizontalAlignment="Left" Padding="16,8"
+                                Click="TDeckMapBtn_Click"/>
+
+                        <Separator Margin="0,20"/>
+
+                        <!-- Tile Export -->
+                        <TextBlock Text="{DynamicResource StrToolsExportSection}"
+                                   FontSize="15" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                        <TextBlock Text="{DynamicResource StrToolsExportDesc}"
+                                   TextWrapping="Wrap" Foreground="#555" Margin="0,0,0,10"/>
+                        <Button x:Name="TDeckExportBtn"
+                                Content="{DynamicResource StrToolsExportBtn}"
+                                HorizontalAlignment="Left" Padding="16,8"
+                                Click="TDeckExportBtn_Click"/>
+
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
             <!-- Debug Tab -->
             <TabItem Header="🐛 Debug">
                 <Grid Margin="10">

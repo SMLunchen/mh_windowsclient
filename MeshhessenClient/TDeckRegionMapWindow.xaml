@@ -1,0 +1,71 @@
+<Window x:Class="MeshhessenClient.TDeckRegionMapWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:mapsui="clr-namespace:Mapsui.UI.Wpf;assembly=Mapsui.UI.Wpf"
+        Title="{DynamicResource StrTDeckMapPickTitle}"
+        Width="900" Height="640"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="CanResizeWithGrip">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Hint bar -->
+        <Border Grid.Row="0" Background="#1E90FF" Padding="10,6">
+            <TextBlock Text="{DynamicResource StrTDeckMapPickHint}"
+                       Foreground="White" FontSize="12" TextWrapping="Wrap"/>
+        </Border>
+
+        <!-- Toolbar -->
+        <Border Grid.Row="1" Background="#F5F5F5" BorderBrush="#CCCCCC" BorderThickness="0,0,0,1" Padding="6,4">
+            <StackPanel Orientation="Horizontal">
+                <ToggleButton x:Name="DrawModeBtn"
+                              Content="{DynamicResource StrTDeckMapDrawModeOff}"
+                              Padding="10,5" Margin="0,0,8,0" MinWidth="130"
+                              Checked="DrawModeBtn_Changed"
+                              Unchecked="DrawModeBtn_Changed"/>
+                <Button x:Name="ClearLastBtn"
+                        Content="{DynamicResource StrTDeckMapClearLast}"
+                        Padding="8,5" Margin="0,0,4,0"
+                        Click="ClearLastBtn_Click"/>
+                <Button x:Name="ClearAllBtn"
+                        Content="{DynamicResource StrTDeckMapClearAll}"
+                        Padding="8,5"
+                        Click="ClearAllBtn_Click"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Map -->
+        <mapsui:MapControl x:Name="MapControl" Grid.Row="2"/>
+
+        <!-- Bottom bar -->
+        <Grid Grid.Row="3" Background="{DynamicResource SystemChromeMediumLowBrush}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBlock x:Name="CoordText" Grid.Column="0"
+                       VerticalAlignment="Center" Margin="10,8"
+                       Text="{DynamicResource StrTDeckMapPickNoSel}"
+                       FontSize="12"/>
+
+            <Button x:Name="AcceptBtn" Grid.Column="1"
+                    Content="{DynamicResource StrTDeckMapPickAccept}"
+                    Margin="4,6" Padding="10,5"
+                    IsEnabled="False"
+                    Click="AcceptBtn_Click"/>
+
+            <Button x:Name="CancelBtn" Grid.Column="2"
+                    Content="{DynamicResource StrTDeckCancel}"
+                    Margin="4,6,10,6" Padding="10,5"
+                    Click="CancelBtn_Click"/>
+        </Grid>
+    </Grid>
+</Window>

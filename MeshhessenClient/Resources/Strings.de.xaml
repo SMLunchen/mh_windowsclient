@@ -1101,4 +1101,140 @@ Grün ≤15% | Gelb 15–25% | Rot &gt;25% | Grau = keine Airtime-Daten</sys:Str
     <sys:String x:Key="StrMeshHealthHopCost">Pfadkosten</sys:String>
     <sys:String x:Key="StrDashboardThresholdTip">Horizontale gestrichelte Linie im Chart — z.B. kritischer RSSI-Wert</sys:String>
 
+    <!-- Tools tab -->
+    <sys:String x:Key="StrTabTools">🔧 Tools</sys:String>
+    <sys:String x:Key="StrToolsTDeckSection">T-Deck Karten-Assistent</sys:String>
+    <sys:String x:Key="StrToolsTDeckDesc">Bereite eine SD-Karte mit Offline-Karten für dein Meshtastic T-Deck vor. Der Assistent führt dich durch Formatierung, Bereichsauswahl und Download.</sys:String>
+    <sys:String x:Key="StrToolsTDeckBtn">🗺️ Karten für T-Deck vorbereiten...</sys:String>
+    <sys:String x:Key="StrToolsExportSection">Tile-Export</sys:String>
+    <sys:String x:Key="StrToolsExportDesc">Exportiere deine lokal heruntergeladenen Karten-Tiles als ZIP-Datei.</sys:String>
+    <sys:String x:Key="StrToolsExportBtn">📦 Tiles als ZIP exportieren...</sys:String>
+
+    <!-- TDeck Wizard: common -->
+    <sys:String x:Key="StrTDeckTitle">T-Deck Karten-Assistent</sys:String>
+    <sys:String x:Key="StrTDeckGermanyOnly">ℹ️ Offline-Karten sind nur für Deutschland verfügbar.</sys:String>
+    <sys:String x:Key="StrTDeckBack">◀ Zurück</sys:String>
+    <sys:String x:Key="StrTDeckNext">Weiter ▶</sys:String>
+    <sys:String x:Key="StrTDeckCancel">Abbrechen</sys:String>
+    <sys:String x:Key="StrTDeckClose">Schließen</sys:String>
+    <sys:String x:Key="StrTDeckStep">Schritt {0} von {1}</sys:String>
+
+    <!-- TDeck Step 1: Welcome -->
+    <sys:String x:Key="StrTDeckS1Title">Willkommen</sys:String>
+    <sys:String x:Key="StrTDeckS1Desc">Dieser Assistent hilft dir, Offline-Karten-Tiles auf eine SD-Karte für dein Meshtastic T-Deck zu übertragen.
+
+Was macht dieser Assistent?
+  • Prüft und formatiert die SD-Karte (FAT32 / exFAT)
+  • Lässt dich den Kartenbereich auswählen (Bundesland, ganz Deutschland oder eigener Bereich)
+  • Wählt Zoom-Stufe und Kartentyp (OSM, OpenTopo, OSM Dark)
+  • Kopiert bereits vorhandene Tiles direkt — und lädt fehlende nach
+
+ℹ️ Karten sind nur für Deutschland verfügbar (eigener Meshhessen-Tile-Server).
+
+Die Downloads sind additiv: Bereits vorhandene Tiles auf der SD-Karte werden nicht erneut übertragen.</sys:String>
+
+    <!-- TDeck Step 2: Drive selection -->
+    <sys:String x:Key="StrTDeckS2Title">SD-Karte auswählen</sys:String>
+    <sys:String x:Key="StrTDeckS2Hint">Wähle das Laufwerk deiner SD-Karte. Es werden nur Wechseldatenträger angezeigt.</sys:String>
+    <sys:String x:Key="StrTDeckDriveLabel">Verfügbare Wechsellaufwerke:</sys:String>
+    <sys:String x:Key="StrTDeckRefresh">Aktualisieren</sys:String>
+    <sys:String x:Key="StrTDeckNoDrives">Keine Wechsellaufwerke gefunden. SD-Karte einlegen und „Aktualisieren" klicken.</sys:String>
+    <sys:String x:Key="StrTDeckDriveInfo">Gesamt: {0} | Frei: {1} | Dateisystem: {2}</sys:String>
+    <sys:String x:Key="StrTDeckSelectDriveFirst">Bitte zuerst ein Laufwerk auswählen.</sys:String>
+
+    <!-- TDeck Step 3: Format check -->
+    <sys:String x:Key="StrTDeckS3Title">Formatierung prüfen</sys:String>
+    <sys:String x:Key="StrTDeckFormatOk">✅ Laufwerk ist korrekt formatiert ({0}). Keine Aktion erforderlich.</sys:String>
+    <sys:String x:Key="StrTDeckFormatWarn">⚠️ Laufwerk ist mit „{0}" formatiert.
+Empfohlen: FAT32 (bis 32 GB) oder exFAT (über 32 GB) mit kleinstmöglicher Zuordnungseinheit.
+Du kannst trotzdem fortfahren oder das Laufwerk formatieren.</sys:String>
+    <sys:String x:Key="StrTDeckFormatHint">Das T-Deck erkennt exFAT am zuverlässigsten. Wichtig: Wähle die kleinste verfügbare Zuordnungseinheit (z.B. 4096 Bytes). Viele Tiles (besonders Meer/leere Flächen) sind nur ~100 Bytes groß, belegen aber immer mindestens eine ganze Zuordnungseinheit — kleine Einheiten sparen hier erheblich Speicherplatz. Die Formatierung erfordert Administrator-Rechte.</sys:String>
+    <sys:String x:Key="StrTDeckFormatBtn">Laufwerk formatieren...</sys:String>
+    <sys:String x:Key="StrTDeckSkipFormat">Formatierung überspringen</sys:String>
+    <sys:String x:Key="StrTDeckFmtConfirmTitle">Formatierung bestätigen</sys:String>
+    <sys:String x:Key="StrTDeckFmtConfirm1">⚠️ WARNUNG: Alle Daten auf Laufwerk {0} werden unwiderruflich gelöscht!
+
+Wirklich formatieren?</sys:String>
+    <sys:String x:Key="StrTDeckFmtConfirm2">🔴 LETZTE WARNUNG: Das Formatieren löscht ALLE Daten auf {0} für immer!
+
+Endgültig fortfahren?</sys:String>
+    <sys:String x:Key="StrTDeckFmtExFAT">exFAT mit 4096 Bytes (empfohlen für T-Deck)</sys:String>
+    <sys:String x:Key="StrTDeckFmtFAT32">FAT32 mit 512 Bytes (ältere Geräte, max. 32 GB)</sys:String>
+    <sys:String x:Key="StrTDeckFmtChoiceTitle">Dateisystem wählen</sys:String>
+    <sys:String x:Key="StrTDeckFmtChoiceHint">Wähle das Dateisystem für die Formatierung. exFAT mit 4096 Bytes wird für das T-Deck empfohlen:</sys:String>
+    <sys:String x:Key="StrTDeckFormatting">Formatiere Laufwerk {0}... (UAC-Fenster beachten)</sys:String>
+    <sys:String x:Key="StrTDeckFormatDone">✅ Laufwerk erfolgreich formatiert ({0}).</sys:String>
+    <sys:String x:Key="StrTDeckFormatFailed">❌ Formatierung fehlgeschlagen oder abgebrochen.</sys:String>
+
+    <!-- TDeck Step 4: Region selection -->
+    <sys:String x:Key="StrTDeckS4Title">Bereich auswählen</sys:String>
+    <sys:String x:Key="StrTDeckRegionByState">Nach Bundesland(er) auswählen</sys:String>
+    <sys:String x:Key="StrTDeckRegionGermany">Ganz Deutschland</sys:String>
+    <sys:String x:Key="StrTDeckRegionFreeStyle">Eigenen Bereich zeichnen</sys:String>
+    <sys:String x:Key="StrTDeckStateSelectAll">Alle</sys:String>
+    <sys:String x:Key="StrTDeckStateSelectNone">Keine</sys:String>
+    <sys:String x:Key="StrTDeckOpenMap">🗺️ Bereich auf Karte zeichnen...</sys:String>
+    <sys:String x:Key="StrTDeckBboxPreview">Ausgewählter Bereich: N {0:F4}° | S {1:F4}° | W {2:F4}° | E {3:F4}°</sys:String>
+    <sys:String x:Key="StrTDeckNoRegion">Bitte mindestens ein Bundesland auswählen oder einen Bereich zeichnen.</sys:String>
+    <sys:String x:Key="StrTDeckFreestyleNotSet">Noch kein Bereich gezeichnet. Klicke „Bereich auf Karte zeichnen".</sys:String>
+
+    <!-- TDeck Step 5: Zoom & map type -->
+    <sys:String x:Key="StrTDeckS5Title">Zoom-Stufe und Kartentyp</sys:String>
+    <sys:String x:Key="StrTDeckZoomLabel">Maximale Zoom-Stufe (Stufe 1 wird immer eingeschlossen):</sys:String>
+    <sys:String x:Key="StrTDeckZoom8">8 — Überblick (Bundesländer)</sys:String>
+    <sys:String x:Key="StrTDeckZoom10">10 — Landkreise</sys:String>
+    <sys:String x:Key="StrTDeckZoom12">12 — Stadtebene</sys:String>
+    <sys:String x:Key="StrTDeckZoom14">14 — Straßen (empfohlen)</sys:String>
+    <sys:String x:Key="StrTDeckZoom16">16 — Detail (viele Tiles!)</sys:String>
+    <sys:String x:Key="StrTDeckZoom17">17 — Maximum (extrem viele Tiles!)</sys:String>
+    <sys:String x:Key="StrTDeckZoomWarn14">⚠️ Zoom 14 kann bereits viele zehntausend Tiles umfassen. Der Download kann Stunden dauern.</sys:String>
+    <sys:String x:Key="StrTDeckZoomWarn16">🔴 Zoom 16+ bedeutet potenziell Millionen von Tiles! Der Download kann Tage dauern und sehr viel Speicherplatz benötigen.</sys:String>
+    <sys:String x:Key="StrTDeckMapTypeLabel">Kartentyp:</sys:String>
+    <sys:String x:Key="StrTDeckMapOSM">OpenStreetMap (Standard)</sys:String>
+    <sys:String x:Key="StrTDeckMapDark">OSM Dark</sys:String>
+    <sys:String x:Key="StrTDeckMapTopo">OpenTopoMap</sys:String>
+    <sys:String x:Key="StrTDeckEstimate">Geschätzte Tiles: ca. {0:N0} (~{1})</sys:String>
+    <sys:String x:Key="StrTDeckSDFree">Freier Speicher auf SD: {0}</sys:String>
+    <sys:String x:Key="StrTDeckSDLow">⚠️ Möglicherweise nicht genug Speicherplatz auf der SD-Karte!</sys:String>
+    <sys:String x:Key="StrTDeckSelectMapType">Bitte einen Kartentyp auswählen.</sys:String>
+
+    <!-- TDeck Step 6: Download -->
+    <sys:String x:Key="StrTDeckS6Title">Download &amp; Übertragung</sys:String>
+    <sys:String x:Key="StrTDeckSummaryTitle">Zusammenfassung:</sys:String>
+    <sys:String x:Key="StrTDeckSumDrive">Laufwerk:</sys:String>
+    <sys:String x:Key="StrTDeckSumRegion">Bereich:</sys:String>
+    <sys:String x:Key="StrTDeckSumZoom">Max. Zoom:</sys:String>
+    <sys:String x:Key="StrTDeckSumType">Kartentyp:</sys:String>
+    <sys:String x:Key="StrTDeckSumTiles">Geschätzte Tiles:</sys:String>
+    <sys:String x:Key="StrTDeckCopyHint">✅ Bereits lokal vorhandene Tiles werden direkt kopiert — kein erneuter Download.</sys:String>
+    <sys:String x:Key="StrTDeckAdditiveHint">✅ Bereits auf der SD-Karte vorhandene Tiles werden übersprungen.</sys:String>
+    <sys:String x:Key="StrTDeckStartBtn">▶ Herunterladen &amp; Kopieren</sys:String>
+    <sys:String x:Key="StrTDeckProgressTile">Tile {0} / {1} ({2:P0})</sys:String>
+    <sys:String x:Key="StrTDeckProgressZoom">Zoom {0} — X:{1} Y:{2}</sys:String>
+    <sys:String x:Key="StrTDeckDone">✅ Übertragung abgeschlossen! {0:N0} Tiles auf SD-Karte.</sys:String>
+    <sys:String x:Key="StrTDeckCancelled">Abgebrochen.</sys:String>
+    <sys:String x:Key="StrTDeckError">Fehler: {0}</sys:String>
+
+    <!-- TDeck region map window -->
+    <sys:String x:Key="StrTDeckMapPickTitle">Bereich auf Karte zeichnen</sys:String>
+    <sys:String x:Key="StrTDeckMapPickHint">Navigiere zur Region, aktiviere „Zeichenmodus" und ziehe Rechtecke auf. Mehrere Rechtecke möglich – alle werden als Hüllbereich verwendet.</sys:String>
+    <sys:String x:Key="StrTDeckMapPickAccept">✅ Übernehmen</sys:String>
+    <sys:String x:Key="StrTDeckMapPickClear">Auswahl löschen</sys:String>
+    <sys:String x:Key="StrTDeckMapPickNoSel">Noch kein Bereich gezeichnet.</sys:String>
+    <sys:String x:Key="StrTDeckMapPickSel">{0} Bereich(e) – Hülle: N {1:F4}° S {2:F4}° W {3:F4}° E {4:F4}°</sys:String>
+    <sys:String x:Key="StrTDeckMapDrawModeOn">✏ Zeichenmodus</sys:String>
+    <sys:String x:Key="StrTDeckMapDrawModeOff">🖐 Navigation</sys:String>
+    <sys:String x:Key="StrTDeckMapClearLast">Letztes löschen</sys:String>
+    <sys:String x:Key="StrTDeckMapClearAll">Alle löschen</sys:String>
+
+    <!-- TDeck export window -->
+    <sys:String x:Key="StrTDeckExportTitle">Tiles als ZIP exportieren</sys:String>
+    <sys:String x:Key="StrTDeckExportHint">Exportiert alle lokal gespeicherten Karten-Tiles in eine ZIP-Datei. Diese kann später über „Maptiles aus ZIP laden" wieder importiert werden.</sys:String>
+    <sys:String x:Key="StrTDeckExportTypeLabel">Kartentyp:</sys:String>
+    <sys:String x:Key="StrTDeckExportAllTypes">Alle Typen</sys:String>
+    <sys:String x:Key="StrTDeckExportStartBtn">📦 Exportieren...</sys:String>
+    <sys:String x:Key="StrTDeckExportDone">✅ Export abgeschlossen: {0}</sys:String>
+    <sys:String x:Key="StrTDeckExportFailed">❌ Export fehlgeschlagen: {0}</sys:String>
+    <sys:String x:Key="StrTDeckExportNoTiles">Keine lokalen Tiles für diesen Kartentyp gefunden.</sys:String>
+
 </ResourceDictionary>

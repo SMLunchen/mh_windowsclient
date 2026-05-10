@@ -106,6 +106,21 @@ Der **Meshhessen Client** ist ein **kostenloser, nativer Windows-Client für Mes
 * **Deduplizierung** – nur neueste Traceroute pro Node-Paar anzeigen (optional)
 * **Karten-Legende** – zeigt alle aktiven Traces mit Farbe und ✕-Button zum Entfernen
 
+### 🔧 T-Deck Karten-Assistent (Tools-Tab)
+
+* **SD-Karte vorbereiten** – geführter 6-Schritt-Assistent zum Bespielen einer SD-Karte mit Offline-Karten für das Meshtastic T-Deck
+* **Schritt 1 – Willkommen:** Erklärt den Workflow; Hinweis: nur Deutschland verfügbar
+* **Schritt 2 – Laufwerk:** Zeigt alle Wechseldatenträger mit Größe, freiem Speicher und Dateisystem
+* **Schritt 3 – Formatierung:**
+  * Empfiehlt **exFAT mit 4096-Byte-Zuordnungseinheiten** (T-Deck-optimal; kleine Tiles ≈100 Bytes → kleine AU spart erheblich Speicher)
+  * Formatierung per UAC-elevated PowerShell direkt aus dem Client; zwei Bestätigungsdialoge
+* **Schritt 4 – Bereich:** Nach Bundesland (Checkboxen), ganz Deutschland, oder **Freestyle** (eigenes Rechteck auf interaktiver Mapsui-Karte zeichnen)
+* **Schritt 5 – Zoom & Kartentyp:** Zoom 8–17, Warnhinweise bei hohen Stufen; OSM / OSM Dark / OpenTopoMap
+* **Schritt 6 – Transfer:** Additiv – SD-Tile vorhanden → skip; lokal vorhanden → kopieren; sonst → vom Tile-Server laden + lokal cachen
+* **SD-Verzeichnisstruktur:** `{Laufwerk}:\maps\OSM\{z}\{x}\{y}.png` (T-Deck-kompatibel, Langklick auf Faltkartenicon schaltet zwischen Kartendiensten um)
+* **ZIP-Export** – lokale Tiles als ZIP exportieren (nach Kartentyp filterbar)
+* Vollständig mehrsprachig (Deutsch/Englisch)
+
 ### 🔧 Node-Verwaltung
 
 * **Knoten-Übersicht** – alle Nodes im Mesh mit SNR, Batterie, Entfernung, Hop-Anzahl
