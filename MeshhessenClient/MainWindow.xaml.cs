@@ -3280,7 +3280,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        MainTabs.SelectedIndex = 4;
+        MainTabs.SelectedIndex = 3;
         var nodePos = SphericalMercator.FromLonLat(node.Longitude.Value, node.Latitude.Value);
         if (_map != null)
         {
@@ -3497,7 +3497,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        MainTabs.SelectedIndex = 4;
+        MainTabs.SelectedIndex = 3;
         var nodePos = SphericalMercator.FromLonLat(node.Longitude.Value, node.Latitude.Value);
         if (_map != null)
         {
@@ -4231,7 +4231,7 @@ public partial class MainWindow : Window
             _map?.Layers.Add(pathLayer);
 
             // Zoom to fit
-            MainTabs.SelectedIndex = 4;
+            MainTabs.SelectedIndex = 3;
             var minX = coords.Min(c => c.X); var maxX = coords.Max(c => c.X);
             var minY = coords.Min(c => c.Y); var maxY = coords.Max(c => c.Y);
             var paddedSize = Math.Max(Math.Max(maxX - minX, maxY - minY) * 1.3, 1000.0);
@@ -4365,7 +4365,7 @@ public partial class MainWindow : Window
             }
 
             // Switch to Map tab
-            MainTabs.SelectedIndex = 4; // Map is tab index 4 (0=Messages, 1=Nodes, 2=Channels, 3=Settings, 4=Map)
+            MainTabs.SelectedIndex = 3; // Map is tab index 3 (0=Messages, 1=Nodes, 2=Channels, 3=Map, 4=Settings, ...)
 
             // Center map on node position with closer zoom
             var nodePos = SphericalMercator.FromLonLat(node.Longitude.Value, node.Latitude.Value);
@@ -4649,7 +4649,7 @@ public partial class MainWindow : Window
 
         if (zoomToFit)
         {
-            MainTabs.SelectedIndex = 4;
+            MainTabs.SelectedIndex = 3;
             var allPts = orderedIds
                 .Where(id => positions.ContainsKey(id))
                 .Select(id => { var p = SphericalMercator.FromLonLat(positions[id].Lon, positions[id].Lat); return new MPoint(p.x, p.y); })
@@ -4808,7 +4808,7 @@ public partial class MainWindow : Window
             MapStatusText.Text = "Alle DB-Traceroutes bereits auf der Karte.";
         else
         {
-            MainTabs.SelectedIndex = 4;
+            MainTabs.SelectedIndex = 3;
             MapStatusText.Text = $"{drawn} Traceroute(s) aus DB geladen ({days}d).";
         }
     }
