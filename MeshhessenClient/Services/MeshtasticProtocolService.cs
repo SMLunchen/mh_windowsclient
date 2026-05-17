@@ -69,6 +69,33 @@ public class MeshtasticProtocolService
     public event EventHandler<uint>? WaypointDeleted;
     /// <summary>Raised when the radio sends an MqttClientProxyMessage (device→broker direction).</summary>
     public event EventHandler<MqttClientProxyMessage>? MqttProxyMessageReceived;
+    /// <summary>Fired with each complete raw framed packet from the physical node (0x94 0xC3 + len + payload).</summary>
+    public event EventHandler<byte[]>? RawFrameReceived;
+
+    /// <summary>Injects a FromRadio payload originating from a VN client into the local processing pipeline.</summary>
+    public void ProcessExternalPacket(byte[] fromRadioPayload)
+    {
+        try
+        {
+            var fr = FromRadio.Parser.ParseFrom(fromRadioPayload);
+            if (fr.PayloadVariantCase != FromRadio.PayloadVariantOneofCase.Packet) return;
+
+            var packet = fr.Packet;
+            // Skip outgoing traceroute requests — the response will arrive via the normal physical path
+            if (packet.Decoded != null && packet.Decoded.WantResponse && packet.Decoded.Portnum == 70)
+                return;
+
+            // If the sender didn't fill in 'from', attribute the packet to our own node
+            if (packet.From == 0 && _myNodeId != 0)
+                packet.From = _myNodeId;
+
+            ProcessPacket(fr.ToByteArray());
+        }
+        catch (Exception ex)
+        {
+            Logger.WriteLine($"[VN inject] ProcessExternalPacket error: {ex.Message}");
+        }
+    }
     public int TimeDriftThresholdSeconds { get; set; } = 300; // 5 minutes
 
     private DateTime _lastDriftCheck = DateTime.MinValue;
@@ -433,11 +460,17 @@ public class MeshtasticProtocolService
             else
             {
                 // Serial/TCP use framing - buffer and process
+                List<byte[]>? rawFrames = null;
                 lock (_receiveBuffer)
                 {
                     _receiveBuffer.AddRange(data);
-                    ProcessBuffer();
+                    ProcessBuffer(ref rawFrames);
                 }
+                // Fire RawFrameReceived outside the lock so VN cache/broadcast work
+                // doesn't compete with the receive buffer on high-volume init streams
+                if (rawFrames != null)
+                    foreach (var rf in rawFrames)
+                        RawFrameReceived?.Invoke(this, rf);
             }
         }
         catch (Exception ex)
@@ -459,7 +492,7 @@ public class MeshtasticProtocolService
         }
     }
 
-    private void ProcessBuffer()
+    private void ProcessBuffer(ref List<byte[]>? rawFrames)
     {
         try
         {
@@ -554,6 +587,19 @@ public class MeshtasticProtocolService
                 // Gültiges Protobuf-Paket empfangen - Text-Modus-Zähler zurücksetzen
                 _consecutiveTextChunks = 0;
                 _lastValidPacketTime = DateTime.Now;
+
+                // Collect raw frame for Virtual Node proxy (fired outside lock)
+                if (RawFrameReceived != null)
+                {
+                    var rawFrame = new byte[4 + packetLength];
+                    rawFrame[0] = PACKET_START_BYTE_1;
+                    rawFrame[1] = PACKET_START_BYTE_2;
+                    rawFrame[2] = (byte)(packetLength >> 8);
+                    rawFrame[3] = (byte)(packetLength & 0xFF);
+                    Array.Copy(packet, 0, rawFrame, 4, packetLength);
+                    rawFrames ??= new List<byte[]>();
+                    rawFrames.Add(rawFrame);
+                }
 
                 try
                 {

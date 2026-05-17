@@ -1110,6 +1110,19 @@ Grün ≤15% | Gelb 15–25% | Rot &gt;25% | Grau = keine Airtime-Daten</sys:Str
     <sys:String x:Key="StrToolsExportDesc">Exportiere deine lokal heruntergeladenen Karten-Tiles als ZIP-Datei.</sys:String>
     <sys:String x:Key="StrToolsExportBtn">📦 Tiles als ZIP exportieren...</sys:String>
 
+    <!-- Virtual Node -->
+    <sys:String x:Key="StrVirtualNodeSection">Virtual Node</sys:String>
+    <sys:String x:Key="StrVirtualNodeDesc">Startet einen TCP-Server, mit dem sich Meshtastic-Apps (Android/iOS) verbinden können – als wäre es ein echtes Gerät. Erfordert eine bestehende Verbindung zu einem physischen Node.</sys:String>
+    <sys:String x:Key="StrVirtualNodeEnable">Virtual Node aktivieren</sys:String>
+    <sys:String x:Key="StrVirtualNodePort">Port:</sys:String>
+    <sys:String x:Key="StrVirtualNodeBlockAdmin">Admin-Befehle von Clients blockieren</sys:String>
+    <sys:String x:Key="StrVirtualNodeStatus">Status:</sys:String>
+    <sys:String x:Key="StrVirtualNodeRunning">Läuft ✓</sys:String>
+    <sys:String x:Key="StrVirtualNodeStopped">Gestoppt</sys:String>
+    <sys:String x:Key="StrVirtualNodeClients">Verbundene Clients:</sys:String>
+    <sys:String x:Key="StrVirtualNodeNoClients">(keine)</sys:String>
+    <sys:String x:Key="StrVirtualNodeNotConnected">Kein physischer Node verbunden.</sys:String>
+
     <!-- TDeck Wizard: common -->
     <sys:String x:Key="StrTDeckTitle">T-Deck Karten-Assistent</sys:String>
     <sys:String x:Key="StrTDeckGermanyOnly">ℹ️ Offline-Karten sind nur für Deutschland verfügbar.</sys:String>

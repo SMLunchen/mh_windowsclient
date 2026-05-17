@@ -1063,7 +1063,7 @@ ORDER BY bucket";
     /// Returns the total number of traceroute rows (including direct-link sentinels) for a node.
     /// Used to distinguish "no data" from "data but no SNR".
     /// </summary>
-    private int CountTracerouteRows(uint myNodeId, int days)
+    public int CountTracerouteRows(uint myNodeId, int days)
     {
         long since = Since(days);
         using var con = Open();

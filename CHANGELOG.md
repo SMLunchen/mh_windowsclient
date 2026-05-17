@@ -11,6 +11,19 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ### ✨ Hinzugefügt
 
+#### 🖧 Virtual Node (Tools-Tab)
+- **Virtual Node TCP-Proxy-Server** – wandelt den Meshhessen Client in einen Meshtastic-kompatiblen TCP-Server um
+  - Meshtastic-Apps (Android, iOS, andere Clients) können sich mit dem Client verbinden, als wäre er ein echtes Gerät
+  - Konfigurierbar in **Tools → Virtual Node**: Port (Standard: 4404), aktivieren/deaktivieren, Admin-Befehle blockieren (optional)
+  - Startet automatisch beim Verbinden mit dem physischen Node (wenn aktiviert); stoppt bei Disconnect
+  - **Config-Replay**: Verbindende Apps erhalten sofort MyNodeInfo, alle Kanäle, Gerätekonfig und bekannte Nodes
+  - **Bidirektionale Nachrichtenweiterleitung**: In der App geschriebene Nachrichten erscheinen in den verbundenen Apps und umgekehrt (über den physischen Node)
+  - **Multi-Client-Support**: Beliebig viele Clients gleichzeitig verbindbar
+  - Message-Queue mit 10 ms Delay zwischen Paketen schützt den physischen Node vor Überflutung
+  - Status-Anzeige im Tools-Tab: läuft/gestoppt, Client-Anzahl, verbundene IPs
+  - Einstellungen werden sofort in INI gespeichert
+  - Neue INI-Keys: `VirtualNodeEnabled`, `VirtualNodePort`, `VirtualNodeBlockAdmin`
+
 #### 🔧 T-Deck Karten-Assistent (neuer Tools-Tab)
 - **Neuer Reiter „Tools"** im Hauptfenster mit zwei Funktionen:
   - **T-Deck Karten-Assistent** – geführter 6-Schritt-Wizard zur Vorbereitung einer SD-Karte mit Offline-Karten

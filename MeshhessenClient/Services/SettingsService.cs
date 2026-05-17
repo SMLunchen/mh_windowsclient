@@ -41,7 +41,10 @@ public record AppSettings(
     int MessageDbRetentionDays,              // 0=unlimited, 30/90/365
     string LastConnectionType,              // "Serial", "Bluetooth", "Tcp"
     string LastBtDevice,                   // Last used Bluetooth device name
-    int RemoteAdminTimeoutSeconds);        // Timeout for remote admin requests in seconds (default 30)
+    int RemoteAdminTimeoutSeconds,         // Timeout for remote admin requests in seconds (default 30)
+    bool VirtualNodeEnabled,               // Enable Virtual Node TCP proxy server
+    int VirtualNodePort,                   // TCP port for Virtual Node (default 4404)
+    bool VirtualNodeBlockAdmin);           // Block admin commands from Virtual Node clients
 
 public static class SettingsService
 {
@@ -85,7 +88,10 @@ public static class SettingsService
             90,                             // MessageDbRetentionDays default 90
             "Serial",                       // LastConnectionType default Serial
             string.Empty,                   // LastBtDevice default empty
-            30);                            // RemoteAdminTimeoutSeconds default 30s
+            30,                             // RemoteAdminTimeoutSeconds default 30s
+            false,                          // VirtualNodeEnabled default off
+            4404,                           // VirtualNodePort default 4404
+            false);                         // VirtualNodeBlockAdmin default off
 
         try
         {
@@ -220,7 +226,10 @@ public static class SettingsService
                 MessageDbRetentionDays: values.TryGetValue("MessageDbRetentionDays", out var mdr) && int.TryParse(mdr, out var mdrInt) ? mdrInt : defaults.MessageDbRetentionDays,
                 LastConnectionType: values.TryGetValue("LastConnectionType", out var lct) && !string.IsNullOrEmpty(lct) ? lct : defaults.LastConnectionType,
                 LastBtDevice: values.TryGetValue("LastBtDevice", out var lbd) ? lbd : defaults.LastBtDevice,
-                RemoteAdminTimeoutSeconds: values.TryGetValue("RemoteAdminTimeoutSeconds", out var rats) && int.TryParse(rats, out var ratsInt) ? ratsInt : defaults.RemoteAdminTimeoutSeconds
+                RemoteAdminTimeoutSeconds: values.TryGetValue("RemoteAdminTimeoutSeconds", out var rats) && int.TryParse(rats, out var ratsInt) ? ratsInt : defaults.RemoteAdminTimeoutSeconds,
+                VirtualNodeEnabled: values.TryGetValue("VirtualNodeEnabled", out var vne) && bool.TryParse(vne, out var vneBool) && vneBool,
+                VirtualNodePort: values.TryGetValue("VirtualNodePort", out var vnp) && int.TryParse(vnp, out var vnpInt) ? vnpInt : defaults.VirtualNodePort,
+                VirtualNodeBlockAdmin: values.TryGetValue("VirtualNodeBlockAdmin", out var vnba) && bool.TryParse(vnba, out var vnbaBool) && vnbaBool
             );
         }
         catch (Exception ex)
@@ -269,7 +278,10 @@ public static class SettingsService
                 $"MessageDbRetentionDays={settings.MessageDbRetentionDays}",
                 $"LastConnectionType={settings.LastConnectionType}",
                 $"LastBtDevice={settings.LastBtDevice}",
-                $"RemoteAdminTimeoutSeconds={settings.RemoteAdminTimeoutSeconds}"
+                $"RemoteAdminTimeoutSeconds={settings.RemoteAdminTimeoutSeconds}",
+                $"VirtualNodeEnabled={settings.VirtualNodeEnabled}",
+                $"VirtualNodePort={settings.VirtualNodePort}",
+                $"VirtualNodeBlockAdmin={settings.VirtualNodeBlockAdmin}"
             };
 
             // Save node colors

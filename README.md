@@ -8,7 +8,7 @@ Der **Meshhessen Client** ist ein **kostenloser, nativer Windows-Client für Mes
 ![License](https://img.shields.io/github/license/SMLunchen/mh_windowsclient)
 ![Stars](https://img.shields.io/github/stars/SMLunchen/mh_windowsclient)
 
-> **English summary:** Free Windows app for Meshtastic devices – offline map (OSM/OpenTopo), telemetry, traceroute, PKI decryption, full device configuration, USB/Serial/TCP/BLE support, remote admin, favorites & telemetry dashboard. No installation, no cloud. By the Meshhessen community (Hesse, Germany). [→ English version below](#meshhessen-client--windows-client-for-meshtastic-devices-wpf--net-8)
+> **English summary:** Free Windows app for Meshtastic devices – offline map (OSM/OpenTopo), telemetry, traceroute, PKI decryption, full device configuration, USB/Serial/TCP/BLE support, remote admin, favorites, telemetry dashboard & **Virtual Node TCP proxy**. No installation, no cloud. By the Meshhessen community (Hesse, Germany). [→ English version below](#meshhessen-client--windows-client-for-meshtastic-devices-wpf--net-8)
 
 
 ## 🚀 Schnellstart
@@ -105,6 +105,15 @@ Der **Meshhessen Client** ist ein **kostenloser, nativer Windows-Client für Mes
 * **Zeitreihenfilter** – Traceroutes nach Zeitraum filtern (3d / 7d / 14d / 30d / 90d / Alle)
 * **Deduplizierung** – nur neueste Traceroute pro Node-Paar anzeigen (optional)
 * **Karten-Legende** – zeigt alle aktiven Traces mit Farbe und ✕-Button zum Entfernen
+
+### 🖧 Virtual Node (Tools-Tab)
+
+* **TCP-Proxy-Server** – verbinde Meshtastic-Apps (Android/iOS) direkt mit dem Meshhessen Client, als wäre er ein echtes Meshtastic-Gerät
+* **Konfigurierbar im Tools-Tab:** Port (Standard: 4404), ein-/ausschalten, Admin-Befehle blockieren
+* **Automatischer Start** sobald eine Verbindung mit dem physischen Node besteht (wenn aktiviert)
+* **Config-Replay:** verbindende Apps erhalten sofort alle Kanäle, Node-Liste und Gerätekonfig
+* **Bidirektionale Sichtbarkeit:** Nachrichten aus der App erscheinen in verbundenen Apps – und umgekehrt
+* **Multi-Client:** mehrere Apps gleichzeitig verbindbar; Status und verbundene IPs werden im Tools-Tab angezeigt
 
 ### 🔧 T-Deck Karten-Assistent (Tools-Tab)
 
@@ -462,6 +471,15 @@ Meshhessen Client · Windows-Client für Meshtastic-Geräte · Meshtastic Window
 * **Time range filter** – filter traceroutes by period (3d / 7d / 14d / 30d / 90d / All)
 * **Deduplication** – show only the latest traceroute per node pair (optional)
 * **Map legend** – shows all active traces with color and individual ✕ remove button
+
+### 🖧 Virtual Node (Tools Tab)
+
+* **TCP proxy server** – connect Meshtastic apps (Android/iOS) to the Meshhessen Client as if it were a real Meshtastic device
+* **Configurable in the Tools tab:** port (default: 4404), enable/disable, optionally block admin commands
+* **Auto-start** as soon as a connection to the physical node is established (when enabled)
+* **Config replay:** connecting apps receive all channels, node list and device config immediately
+* **Bidirectional visibility:** messages sent in the app appear in connected apps – and vice versa
+* **Multi-client:** multiple apps can connect simultaneously; status and connected IPs are shown in the Tools tab
 
 ### 🔧 Node Management
 

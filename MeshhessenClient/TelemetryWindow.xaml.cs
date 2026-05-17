@@ -194,9 +194,10 @@ public partial class TelemetryWindow : Window
             // ── Routing: Pfad-Analyse ──
             var (hopCost, hopSamples) = _db.GetHopCost(_node.NodeId, _days > 0 ? _days : _longDays);
             float routeChangeRate     = _db.GetRouteChangeRate(_node.NodeId, _days > 0 ? _days : _longDays);
+            int tracerouteRows        = _db.CountTracerouteRows(_node.NodeId, _days > 0 ? _days : _longDays);
             HopCostText.Text          = hopSamples > 0 ? $"{hopCost:0.00}" : "–";
             RouteChangeRateText.Text  = hopSamples > 0 ? $"{routeChangeRate:0.00}/h" : "–";
-            TracerouteCountText.Text  = hopSamples > 0 ? hopSamples.ToString() : "–";
+            TracerouteCountText.Text  = tracerouteRows > 0 ? tracerouteRows.ToString() : "–";
 
             // ── Neighbors ──
             var trends = _db.GetNeighborSnrTrends(_node.NodeId, _shortHours, _longDays, _nodeNames)

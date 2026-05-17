@@ -101,7 +101,10 @@ public partial class MainWindow : Window
         90,         // MessageDbRetentionDays
         "Serial",   // LastConnectionType
         string.Empty,  // LastBtDevice
-        30);           // RemoteAdminTimeoutSeconds
+        30,            // RemoteAdminTimeoutSeconds
+        false,         // VirtualNodeEnabled
+        4404,          // VirtualNodePort
+        false);        // VirtualNodeBlockAdmin
     private NodeInfo? _mapContextMenuNode;
     private uint? _alertNodeId;  // Stores the node ID for "Show on Map" button
 
@@ -157,6 +160,9 @@ public partial class MainWindow : Window
 
     // MQTT Proxy
     private MqttProxyService? _mqttProxyService;
+
+    // Virtual Node
+    private Services.VirtualNodeService? _virtualNodeService;
 
     // Reconnect state
     private ConnectionParameters? _lastConnectionParams;
@@ -414,6 +420,12 @@ public partial class MainWindow : Window
 
             // Remote Admin
             if (RemoteAdminTimeoutTextBox != null) RemoteAdminTimeoutTextBox.Text = settings.RemoteAdminTimeoutSeconds.ToString();
+
+            // Virtual Node
+            if (VirtualNodeEnableCheckBox != null) VirtualNodeEnableCheckBox.IsChecked = settings.VirtualNodeEnabled;
+            if (VirtualNodePortBox != null) VirtualNodePortBox.Text = settings.VirtualNodePort.ToString();
+            if (VirtualNodeBlockAdminCheckBox != null) VirtualNodeBlockAdminCheckBox.IsChecked = settings.VirtualNodeBlockAdmin;
+            RefreshVirtualNodeStatus();
 
             // Message DB
             EnableMessageDbCheckBox.IsChecked = settings.EnableMessageDb;
@@ -1553,6 +1565,7 @@ public partial class MainWindow : Window
                 if (_nodeKeyService != null) _protocolService.SetNodeKeyService(_nodeKeyService);
                 _protocolService.SetPskMismatchAction(_currentSettings.NodeKeyMismatchAction);
                 _dmWindow?.UpdateProtocolService(_protocolService);
+                PrepareVirtualNode();
 
                 // Recreate proxy with new protocol service
                 _mqttProxyService?.Dispose();
@@ -1608,6 +1621,7 @@ public partial class MainWindow : Window
                             SetConnectionStatus(ConnectionStatus.Ready);
                             NodeConfigButton.IsEnabled = true;
                             RemoteAdminButton.IsEnabled = true;
+                            StartVirtualNodeIfEnabled();
                         });
                     }
                     catch (Exception initEx)
@@ -2076,10 +2090,14 @@ public partial class MainWindow : Window
                 MessageDbRetentionDays: int.TryParse((MessageDbRetentionComboBox.SelectedItem as System.Windows.Controls.ComboBoxItem)?.Tag as string, out var mdr) ? mdr : 90,
                 LastConnectionType: _currentSettings.LastConnectionType,
                 LastBtDevice: _currentSettings.LastBtDevice,
-                RemoteAdminTimeoutSeconds: int.TryParse(RemoteAdminTimeoutTextBox.Text, out var rats) ? Math.Clamp(rats, 5, 120) : 30
+                RemoteAdminTimeoutSeconds: int.TryParse(RemoteAdminTimeoutTextBox.Text, out var rats) ? Math.Clamp(rats, 5, 120) : 30,
+                VirtualNodeEnabled: VirtualNodeEnableCheckBox?.IsChecked == true,
+                VirtualNodePort: int.TryParse(VirtualNodePortBox?.Text, out var vnp) ? Math.Clamp(vnp, 1, 65535) : 4404,
+                VirtualNodeBlockAdmin: VirtualNodeBlockAdminCheckBox?.IsChecked == true
             );
             _currentSettings = settings;
             SettingsService.Save(settings);
+            ApplyVirtualNodeSettings();
 
             // Enable/disable message DB manager
             if (settings.EnableMessageDb && _messageDbManager == null)
@@ -2128,6 +2146,9 @@ public partial class MainWindow : Window
                     // Stop MQTT proxy on disconnect
                     if (_mqttProxyService != null)
                         _ = _mqttProxyService.StopAsync();
+
+                    // Stop Virtual Node on disconnect
+                    StopVirtualNode();
 
                     // Stop analysis timer on disconnect
                     _analysisTimer?.Dispose();
@@ -2224,6 +2245,7 @@ public partial class MainWindow : Window
                 if (_db != null) _protocolService.SetDatabase(_db);
                 if (_nodeKeyService != null) _protocolService.SetNodeKeyService(_nodeKeyService);
                 _protocolService.SetPskMismatchAction(_currentSettings.NodeKeyMismatchAction);
+                PrepareVirtualNode();
 
                 // Recreate proxy with new protocol service
                 _mqttProxyService?.Dispose();
@@ -2263,6 +2285,7 @@ public partial class MainWindow : Window
                             SetConnectionStatus(ConnectionStatus.Ready);
                             NodeConfigButton.IsEnabled = true;
                             RemoteAdminButton.IsEnabled = true;
+                            StartVirtualNodeIfEnabled();
                         });
                     }
                     catch (Exception initEx)
@@ -2679,6 +2702,139 @@ public partial class MainWindow : Window
         Services.Logger.WriteLine($"OnMqttConfigReceived: proxy={mqttConfig.ProxyToClientEnabled}, broker={mqttConfig.Address}");
         _ = _mqttProxyService.StartAsync(mqttConfig, _myNodeId);
     }
+
+    // ── Virtual Node ──────────────────────────────────────────────────────────
+
+    // Phase 1: called right after new MeshtasticProtocolService is created so that
+    // RawFrameReceived is wired before InitializeAsync runs — this way the VN cache
+    // fills naturally during init and needs no separate populate step.
+    private void PrepareVirtualNode()
+    {
+        if (!_currentSettings.VirtualNodeEnabled) return;
+
+        // Tear down any previous instance
+        if (_virtualNodeService != null)
+        {
+            _virtualNodeService.Stop();
+            _virtualNodeService.Dispose();
+            _virtualNodeService = null;
+        }
+        // Unsubscribe in case it was left wired to the old protocol service
+        // (safe no-op if already unsubscribed)
+        try { _protocolService.RawFrameReceived -= OnVnRawFrame; } catch { }
+
+        _virtualNodeService = new Services.VirtualNodeService(_connectionService!)
+        {
+            Port = _currentSettings.VirtualNodePort,
+            BlockAdminCommands = _currentSettings.VirtualNodeBlockAdmin
+        };
+        _virtualNodeService.ClientCountChanged += (_, _) => Dispatcher.BeginInvoke(RefreshVirtualNodeStatus);
+        _virtualNodeService.LogMessage += (_, msg) => Services.Logger.WriteLine($"[VN] {msg}");
+        _virtualNodeService.ClientPacketReceived += OnVnClientPacket;
+        _protocolService.RawFrameReceived += OnVnRawFrame;
+    }
+
+    // Phase 2: called after Ready — starts the TCP listener
+    private void StartVirtualNodeIfEnabled()
+    {
+        if (!_currentSettings.VirtualNodeEnabled) return;
+        if (_connectionService?.IsConnected != true) return;
+        if (_virtualNodeService?.IsRunning == true) return;
+
+        // If PrepareVirtualNode was never called (e.g. VN was enabled after connect)
+        // create the service now — cache will be partially filled but that is acceptable
+        if (_virtualNodeService == null)
+            PrepareVirtualNode();
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await _virtualNodeService!.StartAsync();
+                Dispatcher.BeginInvoke(RefreshVirtualNodeStatus);
+            }
+            catch (Exception ex)
+            {
+                Services.Logger.WriteLine($"Virtual Node start failed: {ex.Message}");
+                Dispatcher.BeginInvoke(RefreshVirtualNodeStatus);
+            }
+        });
+    }
+
+    private void StopVirtualNode()
+    {
+        if (_protocolService != null)
+            _protocolService.RawFrameReceived -= OnVnRawFrame;
+        if (_virtualNodeService != null)
+            _virtualNodeService.ClientPacketReceived -= OnVnClientPacket;
+        _virtualNodeService?.Stop();
+        _virtualNodeService?.Dispose();
+        _virtualNodeService = null;
+        Dispatcher.BeginInvoke(RefreshVirtualNodeStatus);
+    }
+
+    private void OnVnRawFrame(object? sender, byte[] frame)
+        => _virtualNodeService?.OnRawFrameFromPhysical(frame);
+
+    private void OnVnClientPacket(object? sender, byte[] fromRadioBytes)
+        => _protocolService?.ProcessExternalPacket(fromRadioBytes);
+
+    private void ApplyVirtualNodeSettings()
+    {
+        if (_virtualNodeService != null)
+            _virtualNodeService.BlockAdminCommands = _currentSettings.VirtualNodeBlockAdmin;
+
+        if (_currentSettings.VirtualNodeEnabled && _connectionService?.IsConnected == true)
+        {
+            // Restart if port changed or not running yet
+            bool portChanged = _virtualNodeService?.Port != _currentSettings.VirtualNodePort;
+            if (!(_virtualNodeService?.IsRunning == true) || portChanged)
+            {
+                StopVirtualNode();
+                StartVirtualNodeIfEnabled();
+            }
+        }
+        else if (!_currentSettings.VirtualNodeEnabled)
+        {
+            StopVirtualNode();
+        }
+        RefreshVirtualNodeStatus();
+    }
+
+    private void VirtualNodeSettings_Changed(object sender, RoutedEventArgs e)
+    {
+        // Immediate apply without full settings save (save happens via SaveSettings_Click)
+        var enabled = VirtualNodeEnableCheckBox?.IsChecked == true;
+        var blockAdmin = VirtualNodeBlockAdminCheckBox?.IsChecked == true;
+        int port = int.TryParse(VirtualNodePortBox?.Text, out var p) ? Math.Clamp(p, 1, 65535) : 4404;
+
+        _currentSettings = _currentSettings with
+        {
+            VirtualNodeEnabled = enabled,
+            VirtualNodePort = port,
+            VirtualNodeBlockAdmin = blockAdmin
+        };
+        SettingsService.Save(_currentSettings);
+        ApplyVirtualNodeSettings();
+    }
+
+    private void RefreshVirtualNodeStatus()
+    {
+        if (VirtualNodeStatusText == null) return;
+        var running = _virtualNodeService?.IsRunning == true;
+        VirtualNodeStatusText.Text = running ? Loc("StrVirtualNodeRunning") : Loc("StrVirtualNodeStopped");
+        VirtualNodeStatusText.Foreground = running
+            ? new SolidColorBrush(System.Windows.Media.Color.FromRgb(0x2E, 0x7D, 0x32))
+            : new SolidColorBrush(System.Windows.Media.Color.FromRgb(0x75, 0x75, 0x75));
+
+        var clients = _virtualNodeService?.GetConnectedClients() ?? [];
+        VirtualNodeClientCountText.Text = clients.Count.ToString();
+        VirtualNodeClientListText.Text = clients.Count > 0
+            ? string.Join("\n", clients.Select(c => $"{c.Id}  {c.Ip}"))
+            : Loc("StrVirtualNodeNoClients");
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
 
     private void OnPacketCountChanged(object? sender, int count)
     {

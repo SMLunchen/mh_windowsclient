@@ -1665,6 +1665,57 @@
                                 HorizontalAlignment="Left" Padding="16,8"
                                 Click="TDeckExportBtn_Click"/>
 
+                        <Separator Margin="0,20"/>
+
+                        <!-- Virtual Node -->
+                        <TextBlock Text="{DynamicResource StrVirtualNodeSection}"
+                                   FontSize="15" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                        <TextBlock Text="{DynamicResource StrVirtualNodeDesc}"
+                                   TextWrapping="Wrap" Foreground="#555" Margin="0,0,0,10"/>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                            <CheckBox x:Name="VirtualNodeEnableCheckBox"
+                                      Content="{DynamicResource StrVirtualNodeEnable}"
+                                      VerticalAlignment="Center"
+                                      Checked="VirtualNodeSettings_Changed"
+                                      Unchecked="VirtualNodeSettings_Changed"/>
+                        </StackPanel>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8" VerticalAlignment="Center">
+                            <TextBlock Text="{DynamicResource StrVirtualNodePort}"
+                                       VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <TextBox x:Name="VirtualNodePortBox"
+                                     Width="80" Text="4404"
+                                     VerticalAlignment="Center"
+                                     LostFocus="VirtualNodeSettings_Changed"/>
+                        </StackPanel>
+
+                        <CheckBox x:Name="VirtualNodeBlockAdminCheckBox"
+                                  Content="{DynamicResource StrVirtualNodeBlockAdmin}"
+                                  Margin="0,0,0,12"
+                                  Checked="VirtualNodeSettings_Changed"
+                                  Unchecked="VirtualNodeSettings_Changed"/>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                            <TextBlock Text="{DynamicResource StrVirtualNodeStatus}"
+                                       VerticalAlignment="Center" Margin="0,0,6,0"/>
+                            <TextBlock x:Name="VirtualNodeStatusText"
+                                       VerticalAlignment="Center" FontWeight="SemiBold"/>
+                        </StackPanel>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                            <TextBlock Text="{DynamicResource StrVirtualNodeClients}"
+                                       VerticalAlignment="Center" Margin="0,0,6,0"/>
+                            <TextBlock x:Name="VirtualNodeClientCountText"
+                                       VerticalAlignment="Center"/>
+                        </StackPanel>
+
+                        <TextBlock x:Name="VirtualNodeClientListText"
+                                   Margin="0,4,0,0"
+                                   FontFamily="Consolas" FontSize="11"
+                                   Foreground="#555"
+                                   TextWrapping="Wrap"/>
+
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
