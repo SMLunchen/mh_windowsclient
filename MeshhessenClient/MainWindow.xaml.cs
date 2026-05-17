@@ -575,6 +575,7 @@ public partial class MainWindow : Window
         feature.Styles.Add(new LabelStyle
         {
             Text = label,
+            Font = new Mapsui.Styles.Font { FontFamily = "Segoe UI Emoji" },
             ForeColor = Mapsui.Styles.Color.Blue,
             BackColor = new Mapsui.Styles.Brush(Mapsui.Styles.Color.White),
             HorizontalAlignment = LabelStyle.HorizontalAlignmentEnum.Center,
@@ -638,6 +639,7 @@ public partial class MainWindow : Window
         feature.Styles.Add(new LabelStyle
         {
             Text = labelText,
+            Font = new Mapsui.Styles.Font { FontFamily = "Segoe UI Emoji" },
             ForeColor = Mapsui.Styles.Color.Black,
             BackColor = new Mapsui.Styles.Brush(new Mapsui.Styles.Color(255, 255, 255, 180)),
             HorizontalAlignment = LabelStyle.HorizontalAlignmentEnum.Center,
@@ -4791,7 +4793,7 @@ public partial class MainWindow : Window
                 HorizontalAlignment = LabelStyle.HorizontalAlignmentEnum.Left,
                 VerticalAlignment = LabelStyle.VerticalAlignmentEnum.Center,
                 Offset = new Offset(8, 0),
-                Font = new Font { Size = 9 },
+                Font = new Mapsui.Styles.Font { FontFamily = "Segoe UI Emoji", Size = 9 },
             });
             features.Add(pin);
         }
@@ -5132,7 +5134,7 @@ public partial class MainWindow : Window
             BackColor = new Mapsui.Styles.Brush(new Mapsui.Styles.Color(100, 100, 100, 200)),
             HorizontalAlignment = LabelStyle.HorizontalAlignmentEnum.Center,
             VerticalAlignment = LabelStyle.VerticalAlignmentEnum.Center,
-            Font = new Font { Size = 9 },
+            Font = new Mapsui.Styles.Font { FontFamily = "Segoe UI Emoji", Size = 9 },
         });
         return f;
     }
