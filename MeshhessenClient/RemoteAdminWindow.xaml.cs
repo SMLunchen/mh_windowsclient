@@ -389,7 +389,7 @@ public partial class RemoteAdminWindow : Window
         {
             var chResp = await _svc.SendRemoteAdminRequestAsync(
                 _targetNode.NodeId,
-                new AdminMessage { GetChannelRequest = (uint)index },
+                new AdminMessage { GetChannelRequest = (uint)(index + 1) }, // Protocol is 1-based: 1 = ch0, 2 = ch1 …
                 _timeoutMs);
 
             if (chResp?.PayloadVariantCase == AdminMessage.PayloadVariantOneofCase.GetChannelResponse)
