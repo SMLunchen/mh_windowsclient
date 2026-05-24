@@ -1,0 +1,186 @@
+<Window x:Class="MeshhessenClient.TelemetryDashboardWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="http://schemas.modernwpf.com/2019"
+        ui:WindowHelper.UseModernWindowStyle="True"
+        Title="{DynamicResource StrDashboardTitle}"
+        Width="1280" Height="820"
+        MinWidth="860" MinHeight="520"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="CanResize">
+
+    <Window.Resources>
+        <Style x:Key="ToolbarBtn" TargetType="Button">
+            <Setter Property="Background"       Value="Transparent"/>
+            <Setter Property="BorderThickness"  Value="1"/>
+            <Setter Property="Padding"          Value="10,5"/>
+            <Setter Property="FontSize"         Value="12"/>
+            <Setter Property="Cursor"           Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="4"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="BorderBrush" Value="#58A6FF"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="#1F6FEB"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="AccentBtn" TargetType="Button" BasedOn="{StaticResource ToolbarBtn}">
+            <Setter Property="Background"  Value="#1F6FEB"/>
+            <Setter Property="BorderBrush" Value="#388BFD"/>
+            <Setter Property="Foreground"  Value="#FFFFFF"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#388BFD"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="CardIconBtn" TargetType="Button">
+            <Setter Property="Background"       Value="Transparent"/>
+            <Setter Property="BorderThickness"  Value="0"/>
+            <Setter Property="Width"            Value="22"/>
+            <Setter Property="Height"           Value="22"/>
+            <Setter Property="Padding"          Value="0"/>
+            <Setter Property="FontSize"         Value="13"/>
+            <Setter Property="Cursor"           Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                CornerRadius="4"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#1F6FEB"/>
+                                <Setter Property="Foreground" Value="#FFFFFF"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="CardCloseBtn" TargetType="Button" BasedOn="{StaticResource CardIconBtn}">
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#DA3633"/>
+                    <Setter Property="Foreground" Value="#FFFFFF"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Resources>
+
+    <DockPanel x:Name="RootPanel">
+
+        <!-- ── Toolbar ─────────────────────────────────────────────────────── -->
+        <Border x:Name="ToolbarBorder" DockPanel.Dock="Top"
+                BorderThickness="0,0,0,1"
+                Padding="12,7">
+            <DockPanel>
+                <StackPanel Orientation="Horizontal" DockPanel.Dock="Left" VerticalAlignment="Center">
+                    <Border Background="#1F6FEB" CornerRadius="4" Padding="8,3" Margin="0,0,12,0">
+                        <TextBlock Text="▦ MESH" Foreground="White"
+                                   FontWeight="Bold" FontSize="11" VerticalAlignment="Center"/>
+                    </Border>
+
+                    <TextBlock x:Name="DashboardLabelText"
+                               Text="{DynamicResource StrDashboardLabel}"
+                               VerticalAlignment="Center"
+                               FontSize="12" Margin="0,0,6,0"/>
+                    <ComboBox x:Name="DashboardCombo" Width="180"
+                              SelectionChanged="DashboardCombo_SelectionChanged"
+                              Margin="0,0,6,0"/>
+                    <Button Content="{DynamicResource StrDashboardNew}"
+                            Style="{StaticResource ToolbarBtn}" Margin="0,0,4,0"
+                            Click="NewDashboard_Click"/>
+                    <Button Content="{DynamicResource StrDashboardRename}"
+                            Style="{StaticResource ToolbarBtn}" Margin="0,0,4,0"
+                            Click="RenameDashboard_Click"/>
+                    <Button Content="{DynamicResource StrDashboardDelete}"
+                            Style="{StaticResource ToolbarBtn}"
+                            Click="DeleteDashboard_Click"/>
+
+                    <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}"
+                               Margin="10,0" Opacity="0.3"/>
+
+                    <Button Content="{DynamicResource StrDashboardAddWidget}"
+                            Style="{StaticResource AccentBtn}" Margin="0,0,6,0"
+                            Click="AddWidget_Click"/>
+                    <Button Content="{DynamicResource StrDashboardRefresh}"
+                            Style="{StaticResource ToolbarBtn}"
+                            Click="Refresh_Click"/>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" DockPanel.Dock="Right"
+                            HorizontalAlignment="Right" VerticalAlignment="Center">
+                    <TextBlock x:Name="AutoRefreshLabel"
+                               Text="{DynamicResource StrDashboardAutoRefresh}"
+                               VerticalAlignment="Center"
+                               FontSize="12" Margin="0,0,6,0"/>
+                    <ComboBox x:Name="AutoRefreshCombo" Width="100"
+                              SelectionChanged="AutoRefreshCombo_SelectionChanged"/>
+                    <Ellipse x:Name="RefreshDot" Width="8" Height="8"
+                             Fill="#238636" Margin="8,0,0,0"
+                             VerticalAlignment="Center" Opacity="0"/>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <!-- ── Status bar ──────────────────────────────────────────────────── -->
+        <Border x:Name="StatusBorder" DockPanel.Dock="Bottom"
+                BorderThickness="0,1,0,0"
+                Padding="12,4">
+            <DockPanel>
+                <TextBlock x:Name="StatusText"
+                           FontSize="11" VerticalAlignment="Center"/>
+                <TextBlock x:Name="LastRefreshText"
+                           FontSize="11" VerticalAlignment="Center"
+                           HorizontalAlignment="Right" DockPanel.Dock="Right"/>
+            </DockPanel>
+        </Border>
+
+        <!-- ── Widget canvas ───────────────────────────────────────────────── -->
+        <ScrollViewer x:Name="CanvasScroller"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled"
+                      Padding="4,4,4,4">
+            <Grid>
+                <Border x:Name="EmptyState" Visibility="Collapsed"
+                        HorizontalAlignment="Center" VerticalAlignment="Center"
+                        Margin="0,60,0,0">
+                    <StackPanel HorizontalAlignment="Center">
+                        <TextBlock x:Name="EmptyStateIcon"
+                                   Text="▦" FontSize="64"
+                                   HorizontalAlignment="Center"/>
+                        <TextBlock x:Name="EmptyStateText"
+                                   Text="{DynamicResource StrDashboardEmpty}"
+                                   FontSize="14"
+                                   HorizontalAlignment="Center" Margin="0,12,0,0"
+                                   TextWrapping="Wrap" MaxWidth="400"
+                                   TextAlignment="Center"/>
+                    </StackPanel>
+                </Border>
+                <WrapPanel x:Name="WidgetPanel" Margin="4" Orientation="Horizontal"/>
+            </Grid>
+        </ScrollViewer>
+
+    </DockPanel>
+</Window>

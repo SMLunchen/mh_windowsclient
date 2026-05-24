@@ -11,6 +11,79 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ### ✨ Hinzugefügt
 
+#### 🔧 Remote Admin – Lazy Loading & Tab-Reload
+- **Lade-Modus-Dialog** beim Öffnen des Remote-Admin-Fensters: Benutzer wählt ob alle Einstellungen sofort geladen werden sollen (~30–60 s) oder seitenweise
+  - **Seitenweise-Modus:** Jeder Reiter wird erst beim ersten Anklicken geladen (kein unnötiger Funkverkehr)
+  - Bereits geladene Reiter werden nicht erneut abgerufen
+- **Neuer Button „↻ Tab neu laden"** in der Buttonleiste – lädt nur den aktuell sichtbaren Reiter komplett neu (ohne den Rest anzufassen)
+
+#### 🔧 Lokaler Admin – Sequentielles Laden
+- **Echtes sequentielles Config-Loading** in der Node-Konfiguration (lokaler Admin):
+  - Bisher: alle 17 Konfigurations-Requests feuern und auf Events warten (fire-and-forget)
+  - Jetzt: senden → auf Antwort-Event warten → nächste senden; 8 s Timeout pro Konfiguration
+  - Verhindert Queue-Overflow auf langsamen Boards (z.B. Heltec) – vorher Abbruch bei 4–5/17
+  - Falls eine Konfiguration nicht antwortet (z.B. nicht unterstütztes Modul), wird nach 8 s automatisch weitergemacht; fehlende Configs werden am Ende angezeigt
+
+#### 🖧 Virtual Node (Tools-Tab)
+- **Virtual Node TCP-Proxy-Server** – wandelt den Meshhessen Client in einen Meshtastic-kompatiblen TCP-Server um
+  - Meshtastic-Apps (Android, iOS, andere Clients) können sich mit dem Client verbinden, als wäre er ein echtes Gerät
+  - Konfigurierbar in **Tools → Virtual Node**: Port (Standard: 4404), aktivieren/deaktivieren, Admin-Befehle blockieren (optional)
+  - Startet automatisch beim Verbinden mit dem physischen Node (wenn aktiviert); stoppt bei Disconnect
+  - **Config-Replay**: Verbindende Apps erhalten sofort MyNodeInfo, alle Kanäle, Gerätekonfig und bekannte Nodes
+  - **Bidirektionale Nachrichtenweiterleitung**: In der App geschriebene Nachrichten erscheinen in den verbundenen Apps und umgekehrt (über den physischen Node)
+  - **Multi-Client-Support**: Beliebig viele Clients gleichzeitig verbindbar
+  - Message-Queue mit 10 ms Delay zwischen Paketen schützt den physischen Node vor Überflutung
+  - Status-Anzeige im Tools-Tab: läuft/gestoppt, Client-Anzahl, verbundene IPs
+  - Einstellungen werden sofort in INI gespeichert
+  - Neue INI-Keys: `VirtualNodeEnabled`, `VirtualNodePort`, `VirtualNodeBlockAdmin`
+
+#### 🔧 T-Deck Karten-Assistent (neuer Tools-Tab)
+- **Neuer Reiter „Tools"** im Hauptfenster mit zwei Funktionen:
+  - **T-Deck Karten-Assistent** – geführter 6-Schritt-Wizard zur Vorbereitung einer SD-Karte mit Offline-Karten
+  - **Tile-Export** – lokale Tiles als ZIP exportieren (je nach Kartentyp oder alle)
+- **Schritt 1 – Willkommen:** Erklärung des Workflows, Hinweis dass nur Deutschland abgedeckt ist
+- **Schritt 2 – SD-Karte wählen:** Listet nur Wechseldatenträger auf, zeigt Gesamtgröße, freier Speicher und Dateisystem
+- **Schritt 3 – Formatierung prüfen:**
+  - Prüft ob das Laufwerk exFAT oder FAT32 ist
+  - Empfiehlt exFAT mit 4096-Byte-Zuordnungseinheiten (erklärt warum: kleine Tiles ~100 Bytes, große AU = Platzverschwendung)
+  - Bietet Formatierung per PowerShell `Format-Volume` mit UAC-Elevation an
+  - Doppelte Bestätigungsdialoge vor dem unwiderruflichen Formatieren
+  - Auswahl: exFAT 4096 Bytes (Standard/empfohlen) oder FAT32 512 Bytes (Ältere Geräte)
+  - Formatierung kann übersprungen werden
+- **Schritt 4 – Bereich auswählen** (drei Modi):
+  - **Nach Bundesland:** alle 16 Bundesländer als Checkboxen mit Alles/Keine-Schnellauswahl; kombinierte BBox wird berechnet
+  - **Ganz Deutschland:** feste BBox N 55.10° S 47.27° W 5.87° E 15.04°
+  - **Freestyle:** Mapsui-Kartenfenster, Klicken-und-Ziehen zum Zeichnen eines Rechteck-Auswahlbereichs
+- **Schritt 5 – Zoom & Kartentyp:**
+  - Maximale Zoom-Stufe: 8 / 10 / 12 / 14 (empfohlen) / 16 / 17 (Maximum)
+  - Warnhinweise bei Zoom ≥ 14 und ≥ 16 (Laufzeit, Speicherplatz)
+  - Kartentyp: OSM Standard / OSM Dark / OpenTopoMap
+  - Live-Schätzung: Tile-Anzahl und Speicherplatzbedarf; Warnung wenn SD-Speicher knapp
+- **Schritt 6 – Download & Übertragung:**
+  - Zusammenfassung aller Einstellungen
+  - **Additiver Transfer:** SD-Tile vorhanden → überspringen; lokal vorhanden → kopieren; sonst → herunterladen vom Tile-Server und gleichzeitig lokal cachen
+  - Fortschrittsbalken mit Tile-Zähler und aktueller Zoom/X/Y-Angabe
+  - Abbrechen jederzeit möglich
+- **SD-Karten-Verzeichnisstruktur:** `{Laufwerk}:\maps\OSM\{z}\{x}\{y}.png` (bzw. `OpenTopo`, `OSMDark`)
+- **Tile-Export-Dialog:** Exportiert lokale Tiles (alle oder gefiltert nach Kartentyp) als ZIP
+- Vollständig mehrsprachig (Deutsch / Englisch) über bestehende i18n-Infrastruktur
+
+#### Remote-Verwaltung – Sicherheits-Tab
+- **Neuer „Sicherheit"-Reiter** in der Fernverwaltung (Remote Admin) für `Config.SecurityConfig`
+  - **Öffentlicher Schlüssel** (Public Key) read-only als Hex-Darstellung (Consolas)
+  - **Admin-Schlüssel 1–3** (Base64) editierbar — autorisierte Admin-Geräte
+  - **Flags:** Legacy Admin Channel, Managed Mode, Serial Console, Debug Log API
+  - Wird automatisch beim Öffnen mit geladen (GetConfigRequest = SecurityConfig)
+  - Wird mit „Speichern" an das Remote-Gerät übertragen
+- **Favoriten auf Remote-Knoten verwalten** – neuer Abschnitt im Steuerung-Reiter:
+  - ComboBox mit allen bekannten Knoten
+  - „Als Favorit setzen" / „Favorit entfernen" – sendet `add_favorite_node` / `remove_favorite_node` an den Remote-Node
+  - Bestätigung per MessageBox nach erfolgtem Senden
+
+#### Telemetrie-Dashboard
+- **Dashboard-Button in der Hauptleiste** (📊 Toolbar) – Dashboard direkt ohne Umweg über das Telemetrie-Kontextmenü öffnen
+- **Dashboard ist jetzt ein unabhängiges Fenster** – schließt sich nicht mehr mit dem Telemetrie-Fenster; kann auf einem zweiten Monitor platziert werden
+
 #### Persistente Nachrichten-Datenbank
 - **SQLite-Nachrichtenspeicher** für Kanal- und DM-Nachrichten (optional, in Einstellungen aktivierbar)
   - Je Kanal eine eigene DB-Datei (`messages/channel_{index}_{name}.db`), DMs in `messages/dm.db`
@@ -57,6 +130,29 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ### 🐛 Behoben
 
+#### 🔧 Remote Admin – Channel-Ladefehler
+- **`GetChannelRequest` ist 1-basiert** (1 = Kanal 0, 2 = Kanal 1 …): War 0-basiert → Kanal 0 lud nie (Timeout), alle anderen Kanäle um eins verschoben
+- **Channel-Reihenfolge:** Stale-Response-Validierung via `ch.Index` entfernt – Firmware setzt das Feld oft nicht (Protobuf-Default 0), was alle Kanäle außer 0 als "falsche Antwort" klassifizierte und dreifach neu anforderte
+
+#### 🔧 Remote Admin – Favoriten (Proto-Feldnummern falsch)
+- `add_favorite_node = 36` war veraltet; aktuelle Firmware erwartet `set_favorite_node = 39`
+  - Feld 36 ist in aktueller Firmware `set_canned_message_module_messages` → Favorites-Anfragen landeten still beim falschen Handler
+- `remove_favorite_node` korrigiert von Feld 37 auf Feld 40
+- `admin.proto` im Projekt auf aktuelle Feldnummern aktualisiert; alle C#-Referenzen auf `SetFavoriteNode` umgestellt
+- **FavoriteButton Fire-and-forget behoben:** Fehler beim Setzen/Entfernen wurden still ignoriert; jetzt proper `async void` mit Fehlermeldung und UI-Revert bei Fehler
+
+#### 🔧 Admin – Key-Anzeige
+- **Public Key und Private Key** wurden als Hex angezeigt; Meshtastic-App und Firmware nutzen Base64 → beide Admin-Fenster (lokal & remote) zeigen Keys jetzt in Base64
+
+#### 🗺️ Karte – Emoji-Node-Namen
+- **Emoji-Kurzname (z.B. 🔥, 📶)** wurden auf der Karte als □ angezeigt, weil SkiaSharp/Mapsui kein Emoji-Fallback hat
+- Alle vier `LabelStyle`-Stellen in MainWindow auf `Font { FontFamily = "Segoe UI Emoji" }` gesetzt
+
+#### 🖧 Virtual Node – Traceroute-Telemetrie
+- **Traceroute-Requests des VNode-Clients** wurden fälschlicherweise in die eigene Telemetrie eingespeist: Android-App löst Traceroute aus → Request-Paket (`WantResponse=true`, Portnum=70) wurde als Traceroute-Ergebnis mit `DestinationNodeId = myNodeId` gespeichert
+- Fix: `ProcessExternalPacket` filtert ausgehende Traceroute-Requests heraus; die Antwort kommt ohnehin über den physischen Funkweg
+
+#### ⚙️ Sonstige Bugfixes
 - **Zombie-Prozess beim Beenden**: App beendet sich jetzt sauber mit `Application.Current.Shutdown()`
   - Synchroner Disconnect statt asynchron
   - Keine hängenden Prozesse mehr nach Fenster-Schließen

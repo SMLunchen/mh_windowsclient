@@ -107,6 +107,15 @@ message MqttClientProxyMessage {
   bool retained = 4;
 }
 
+message QueueStatus {
+  int32 res = 1;
+  uint32 free = 2;
+  uint32 maxlen = 3;
+  uint32 mesh_packet_id = 4;
+}
+
+message Heartbeat {}
+
 message FromRadio {
   uint32 id = 1;
   oneof payload_variant {
@@ -118,6 +127,8 @@ message FromRadio {
     bool rebooted = 8;
     ModuleConfig module_config = 9;
     Channel channel = 10;
+    QueueStatus queue_status = 12;
+    DeviceMetadata metadata = 13;
     MqttClientProxyMessage mqtt_client_proxy_message = 14;
   }
 }
@@ -129,6 +140,7 @@ message ToRadio {
     bool disconnect = 4;
     bytes xmodem_packet = 5;
     MqttClientProxyMessage mqtt_client_proxy_message = 6;
+    Heartbeat heartbeat = 7;
   }
 }
 

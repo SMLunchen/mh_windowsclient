@@ -28,6 +28,7 @@ public record AppSettings(
     string Language,                         // UI language: "de" or "en"
     bool EnableLocationLogging,              // Log GPS positions to locationlogs/
     Dictionary<uint, bool> PinnedNodes,      // NodeId -> pinned
+    Dictionary<uint, bool> FavoriteNodes,    // NodeId -> favorite (synced with device)
     int TelemetryRetentionDays,              // 0=unlimited, 30/90/365
     PskMismatchAction NodeKeyMismatchAction, // Warn / Overwrite / Ask
     int SignalWeatherWindowHours,            // Short analysis window for weather detection (default 6h)
@@ -39,7 +40,11 @@ public record AppSettings(
     bool EnableMessageDb,                    // Persist messages in SQLite DB
     int MessageDbRetentionDays,              // 0=unlimited, 30/90/365
     string LastConnectionType,              // "Serial", "Bluetooth", "Tcp"
-    string LastBtDevice);                   // Last used Bluetooth device name
+    string LastBtDevice,                   // Last used Bluetooth device name
+    int RemoteAdminTimeoutSeconds,         // Timeout for remote admin requests in seconds (default 30)
+    bool VirtualNodeEnabled,               // Enable Virtual Node TCP proxy server
+    int VirtualNodePort,                   // TCP port for Virtual Node (default 4404)
+    bool VirtualNodeBlockAdmin);           // Block admin commands from Virtual Node clients
 
 public static class SettingsService
 {
@@ -70,6 +75,7 @@ public static class SettingsService
             "de",   // Language default German
             false,  // EnableLocationLogging default off
             new Dictionary<uint, bool>(),   // PinnedNodes
+            new Dictionary<uint, bool>(),   // FavoriteNodes
             90,                             // TelemetryRetentionDays default 90
             PskMismatchAction.Overwrite,    // NodeKeyMismatchAction default Overwrite
             6,                              // SignalWeatherWindowHours default 6h
@@ -81,7 +87,11 @@ public static class SettingsService
             true,                           // EnableMessageDb default on
             90,                             // MessageDbRetentionDays default 90
             "Serial",                       // LastConnectionType default Serial
-            string.Empty);                  // LastBtDevice default empty
+            string.Empty,                   // LastBtDevice default empty
+            30,                             // RemoteAdminTimeoutSeconds default 30s
+            false,                          // VirtualNodeEnabled default off
+            4404,                           // VirtualNodePort default 4404
+            false);                         // VirtualNodeBlockAdmin default off
 
         try
         {
@@ -144,6 +154,20 @@ public static class SettingsService
                 }
             }
 
+            // Load favorite nodes
+            var favoriteNodes = new Dictionary<uint, bool>();
+            foreach (var key in values.Keys)
+            {
+                if (key.StartsWith("FavoriteNode_", StringComparison.OrdinalIgnoreCase))
+                {
+                    var nodeIdHex = key.Substring(13);
+                    if (uint.TryParse(nodeIdHex, NumberStyles.HexNumber, null, out uint nodeId))
+                    {
+                        favoriteNodes[nodeId] = true;
+                    }
+                }
+            }
+
             // Migration: Convert old TileServerUrl to new format
             string osmUrl = defaults.OSMTileUrl;
             string osmTopoUrl = defaults.OSMTopoTileUrl;
@@ -189,6 +213,7 @@ public static class SettingsService
                 Language: values.TryGetValue("Language", out var lang) && !string.IsNullOrEmpty(lang) ? lang : defaults.Language,
                 EnableLocationLogging: values.TryGetValue("EnableLocationLogging", out var ell) && bool.TryParse(ell, out var ellBool) && ellBool,
                 PinnedNodes: pinnedNodes,
+                FavoriteNodes: favoriteNodes,
                 TelemetryRetentionDays: values.TryGetValue("TelemetryRetentionDays", out var trd) && int.TryParse(trd, out var trdInt) ? trdInt : defaults.TelemetryRetentionDays,
                 NodeKeyMismatchAction: values.TryGetValue("NodeKeyMismatchAction", out var pkm) && Enum.TryParse(pkm, out PskMismatchAction pkmVal) ? pkmVal : defaults.NodeKeyMismatchAction,
                 SignalWeatherWindowHours: values.TryGetValue("SignalWeatherWindowHours", out var swh) && int.TryParse(swh, out var swhInt) ? swhInt : defaults.SignalWeatherWindowHours,
@@ -200,7 +225,11 @@ public static class SettingsService
                 EnableMessageDb: values.TryGetValue("EnableMessageDb", out var emdb) && bool.TryParse(emdb, out var emdbBool) ? emdbBool : defaults.EnableMessageDb,
                 MessageDbRetentionDays: values.TryGetValue("MessageDbRetentionDays", out var mdr) && int.TryParse(mdr, out var mdrInt) ? mdrInt : defaults.MessageDbRetentionDays,
                 LastConnectionType: values.TryGetValue("LastConnectionType", out var lct) && !string.IsNullOrEmpty(lct) ? lct : defaults.LastConnectionType,
-                LastBtDevice: values.TryGetValue("LastBtDevice", out var lbd) ? lbd : defaults.LastBtDevice
+                LastBtDevice: values.TryGetValue("LastBtDevice", out var lbd) ? lbd : defaults.LastBtDevice,
+                RemoteAdminTimeoutSeconds: values.TryGetValue("RemoteAdminTimeoutSeconds", out var rats) && int.TryParse(rats, out var ratsInt) ? ratsInt : defaults.RemoteAdminTimeoutSeconds,
+                VirtualNodeEnabled: values.TryGetValue("VirtualNodeEnabled", out var vne) && bool.TryParse(vne, out var vneBool) && vneBool,
+                VirtualNodePort: values.TryGetValue("VirtualNodePort", out var vnp) && int.TryParse(vnp, out var vnpInt) ? vnpInt : defaults.VirtualNodePort,
+                VirtualNodeBlockAdmin: values.TryGetValue("VirtualNodeBlockAdmin", out var vnba) && bool.TryParse(vnba, out var vnbaBool) && vnbaBool
             );
         }
         catch (Exception ex)
@@ -248,7 +277,11 @@ public static class SettingsService
                 $"EnableMessageDb={settings.EnableMessageDb}",
                 $"MessageDbRetentionDays={settings.MessageDbRetentionDays}",
                 $"LastConnectionType={settings.LastConnectionType}",
-                $"LastBtDevice={settings.LastBtDevice}"
+                $"LastBtDevice={settings.LastBtDevice}",
+                $"RemoteAdminTimeoutSeconds={settings.RemoteAdminTimeoutSeconds}",
+                $"VirtualNodeEnabled={settings.VirtualNodeEnabled}",
+                $"VirtualNodePort={settings.VirtualNodePort}",
+                $"VirtualNodeBlockAdmin={settings.VirtualNodeBlockAdmin}"
             };
 
             // Save node colors
@@ -267,6 +300,12 @@ public static class SettingsService
             foreach (var kvp in settings.PinnedNodes.Where(p => p.Value))
             {
                 lines.Add($"PinnedNode_{kvp.Key:X8}=true");
+            }
+
+            // Save favorite nodes
+            foreach (var kvp in settings.FavoriteNodes.Where(p => p.Value))
+            {
+                lines.Add($"FavoriteNode_{kvp.Key:X8}=true");
             }
 
             File.WriteAllLines(IniFilePath, lines);

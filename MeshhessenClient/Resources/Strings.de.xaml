@@ -19,6 +19,9 @@
     <sys:String x:Key="StrTabInfo">ℹ️ Info</sys:String>
 
     <!-- Node context menu -->
+    <sys:String x:Key="StrFavorite">★ Als Favorit markieren</sys:String>
+    <sys:String x:Key="StrUnfavorite">★ Favorit entfernen</sys:String>
+    <sys:String x:Key="StrFavoriteColTooltip">Favoriten (★ = Favorit, wird mit Gerät synchronisiert)</sys:String>
     <sys:String x:Key="StrPin">📌 Anheften</sys:String>
     <sys:String x:Key="StrUnpin">📌 Loslösen</sys:String>
     <sys:String x:Key="StrShowPath">🛤️ Bewegungspfad anzeigen</sys:String>
@@ -64,6 +67,7 @@
     <sys:String x:Key="StrDevice">Gerät:</sys:String>
     <sys:String x:Key="StrScanDevices">Geräte suchen</sys:String>
     <sys:String x:Key="StrOpenDms">Direktnachrichten öffnen</sys:String>
+    <sys:String x:Key="StrOpenDashboard">Telemetrie-Dashboard öffnen</sys:String>
 
     <!-- Alert -->
     <sys:String x:Key="StrAlertReceived">Notruf empfangen!</sys:String>
@@ -625,6 +629,9 @@
     <sys:String x:Key="StrSignalAntennaUnit">Tage (langfristig)</sys:String>
     <!-- Settings tab - time sync -->
     <sys:String x:Key="StrTimeSyncDriftZero">(0 = kein Drift-Check)</sys:String>
+    <!-- Remote Admin settings -->
+    <sys:String x:Key="StrRemoteAdminGroup">Fernverwaltung</sys:String>
+    <sys:String x:Key="StrRemoteAdminTimeoutLabel">Anfrage-Timeout:</sys:String>
     <!-- Settings saved dialog -->
     <sys:String x:Key="StrSettingsSaved">Einstellungen gespeichert.</sys:String>
     <sys:String x:Key="StrSettingsSavedTitle">Info</sys:String>
@@ -635,6 +642,7 @@
     <sys:String x:Key="StrTel30d">30 Tage</sys:String>
     <sys:String x:Key="StrTelAll">Gesamt</sys:String>
     <sys:String x:Key="StrTelOpenPlot">📈 Im Plot öffnen</sys:String>
+    <sys:String x:Key="StrTelOpenDashboard">📊 Dashboard öffnen</sys:String>
     <sys:String x:Key="StrTelSnrSection">SNR (Empfangsqualität)</sys:String>
     <sys:String x:Key="StrTelDayLabel">Tag</sys:String>
     <sys:String x:Key="StrTelNightLabel">Nacht</sys:String>
@@ -918,5 +926,330 @@ Grün ≤15% | Gelb 15–25% | Rot &gt;25% | Grau = keine Airtime-Daten</sys:Str
     <sys:String x:Key="StrRelayHopsTooltip">Relay-Hops (Anzahl Zwischenknoten)</sys:String>
     <sys:String x:Key="StrErrConnectionRefused">Verbindung abgelehnt — läuft der Meshtastic-Dienst auf dem Gerät und ist der Port korrekt?</sys:String>
     <sys:String x:Key="StrMqttBubbleTooltip">Nachricht via MQTT empfangen (nicht direkt per LoRa)</sys:String>
+
+    <!-- Remote Admin -->
+    <sys:String x:Key="StrRemoteAdminHint">Fernverwaltung eines Favoriten-Knotens über Meshtastic-Admin-Protokoll. Der Zielknoten muss erreichbar sein und Admin-Zugriff erlauben. Es werden nur Knoten angezeigt, die als ★ Favorit markiert sind.</sys:String>
+    <sys:String x:Key="StrRemoteAdmin">🛠️ Fernverwaltung</sys:String>
+    <sys:String x:Key="StrRemoteAdminTitle">Fernverwaltung</sys:String>
+    <sys:String x:Key="StrRemoteAdminConnecting">Verbinde...</sys:String>
+    <sys:String x:Key="StrRemoteAdminLoading">Lade Konfiguration...</sys:String>
+    <sys:String x:Key="StrRemoteAdminConnected">Verbunden</sys:String>
+    <sys:String x:Key="StrRemoteAdminWaiting">Warte auf Antwort</sys:String>
+    <sys:String x:Key="StrRemoteAdminTimeout">Timeout — keine Antwort</sys:String>
+    <sys:String x:Key="StrRemoteAdminTimeoutMsg">Keine Antwort vom Knoten innerhalb des Timeouts. Der Knoten ist möglicherweise nicht erreichbar oder hat keinen Admin-Zugriff gewährt.</sys:String>
+    <sys:String x:Key="StrRemoteAdminSaving">Speichere...</sys:String>
+    <sys:String x:Key="StrRemoteAdminSaved">Gespeichert</sys:String>
+    <sys:String x:Key="StrRemoteAdminSavedMsg">Konfiguration erfolgreich an den Knoten übermittelt.</sys:String>
+    <sys:String x:Key="StrRemoteAdminError">Fehler</sys:String>
+    <sys:String x:Key="StrRemoteAdminErrorMsg">Fehler beim Speichern:</sys:String>
+    <sys:String x:Key="StrRemoteAdminRebooting">Neustart gesendet</sys:String>
+    <sys:String x:Key="StrRemoteAdminShutdown">Herunterfahren gesendet</sys:String>
+    <sys:String x:Key="StrRemoteAdminFirmware">Firmware</sys:String>
+    <sys:String x:Key="StrRemoteAdminHardware">Hardware</sys:String>
+    <sys:String x:Key="StrRemoteAdminHops">SNR</sys:String>
+    <sys:String x:Key="StrRemoteAdminTimeout2">Timeout</sys:String>
+    <sys:String x:Key="StrRemoteAdminTimeoutTip">Anfrage-Timeout in Sekunden (5–300). Bei entfernten Nodes ggf. höher setzen.</sys:String>
+    <sys:String x:Key="StrRemoteAdminChannelFailed">Abruf fehlgeschlagen – ⟳ klicken</sys:String>
+    <sys:String x:Key="StrRemoteAdminChannelReload">Diesen Kanal erneut laden</sys:String>
+    <sys:String x:Key="StrRemoteAdminFavoriteTip">Als Favorit markieren / entfernen</sys:String>
+    <sys:String x:Key="StrRemoteAdminRebootConfirm">Knoten wirklich neu starten?</sys:String>
+    <sys:String x:Key="StrRemoteAdminShutdownConfirm">Knoten wirklich herunterfahren?</sys:String>
+    <sys:String x:Key="StrRemoteAdminNodeDbResetConfirm">Node-Datenbank des Knotens wirklich löschen? Alle bekannten Nodes werden vergessen!</sys:String>
+    <sys:String x:Key="StrRemoteAdminSelectNode">Knoten für Fernverwaltung auswählen</sys:String>
+    <sys:String x:Key="StrRemoteAdminNoFavorites">Keine Favoriten gesetzt. Markiere zuerst Knoten als Favoriten (Rechtsklick → Als Favorit markieren).</sys:String>
+    <!-- Remote Admin tabs -->
+    <sys:String x:Key="StrRaTabOwner">Besitzer</sys:String>
+    <sys:String x:Key="StrRaTabDevice">Gerät</sys:String>
+    <sys:String x:Key="StrRaTabPosition">Position</sys:String>
+    <sys:String x:Key="StrRaTabLora">LoRa</sys:String>
+    <sys:String x:Key="StrRaTabBluetooth">Bluetooth</sys:String>
+    <sys:String x:Key="StrRaTabNetwork">Netzwerk</sys:String>
+    <sys:String x:Key="StrRaTabDisplay">Anzeige</sys:String>
+    <sys:String x:Key="StrRaTabChannels">Kanäle</sys:String>
+    <sys:String x:Key="StrRaTabSecurity">Sicherheit</sys:String>
+    <sys:String x:Key="StrRaTabControl">Steuerung</sys:String>
+    <!-- Owner tab -->
+    <sys:String x:Key="StrRaOwnerShortName">Kurzname (max. 4 Zeichen)</sys:String>
+    <sys:String x:Key="StrRaOwnerLongName">Langname</sys:String>
+    <sys:String x:Key="StrRaOwnerLicensed">Lizenzierter Amateurfunker</sys:String>
+    <!-- Device tab -->
+    <sys:String x:Key="StrRaDeviceRole">Rolle</sys:String>
+    <sys:String x:Key="StrRaDeviceNodeInfoInterval">NodeInfo-Sendeintervall (Sekunden, 0=nie)</sys:String>
+    <sys:String x:Key="StrRaDeviceSerialEnabled">Serielle Konsole aktiviert</sys:String>
+    <sys:String x:Key="StrRaDeviceDebugLog">Debug-Logging aktiviert</sys:String>
+    <!-- Position tab -->
+    <sys:String x:Key="StrRaPosGpsMode">GPS-Modus</sys:String>
+    <sys:String x:Key="StrRaPosBroadcastInterval">Sendeintervall (s)</sys:String>
+    <sys:String x:Key="StrRaPosBroadcastSmart">Smart-Broadcast aktiviert</sys:String>
+    <sys:String x:Key="StrRaPosGpsAttemptTime">GPS-Versuchszeit (s)</sys:String>
+    <sys:String x:Key="StrRaPosFixed">Feste Position</sys:String>
+    <sys:String x:Key="StrRaPosFixedEnabled">Feste Position aktiviert</sys:String>
+    <sys:String x:Key="StrRaPosLat">Breitengrad</sys:String>
+    <sys:String x:Key="StrRaPosLon">Längengrad</sys:String>
+    <sys:String x:Key="StrRaPosAlt">Höhe (m)</sys:String>
+    <!-- LoRa tab -->
+    <sys:String x:Key="StrRaLoraRegion">Region</sys:String>
+    <sys:String x:Key="StrRaLoraPreset">Modem-Preset</sys:String>
+    <sys:String x:Key="StrRaLoraHopLimit">Hop-Limit</sys:String>
+    <sys:String x:Key="StrRaLoraTxPower">TX-Leistung (dBm, 0=max.)</sys:String>
+    <sys:String x:Key="StrRaLoraTxEnabled">TX aktiviert</sys:String>
+    <!-- Bluetooth tab -->
+    <sys:String x:Key="StrRaBtEnabled">Bluetooth aktiviert</sys:String>
+    <sys:String x:Key="StrRaBtMode">Pairing-Modus</sys:String>
+    <sys:String x:Key="StrRaBtPin">Fester PIN (6-stellig)</sys:String>
+    <!-- Network tab -->
+    <sys:String x:Key="StrRaWifiEnabled">WLAN aktiviert</sys:String>
+    <sys:String x:Key="StrRaWifiSsid">WLAN-SSID</sys:String>
+    <sys:String x:Key="StrRaWifiPsk">WLAN-Passwort</sys:String>
+    <sys:String x:Key="StrRaWifiApMode">Access-Point-Modus</sys:String>
+    <sys:String x:Key="StrRaEthEnabled">Ethernet aktiviert</sys:String>
+    <sys:String x:Key="StrRaNtpServer">NTP-Server</sys:String>
+    <!-- Display tab -->
+    <sys:String x:Key="StrRaDisplayTimeout">Display-Timeout (s, 0=nie)</sys:String>
+    <sys:String x:Key="StrRaDisplayFlip">Display gespiegelt</sys:String>
+    <sys:String x:Key="StrRaDisplayUnits">Einheiten</sys:String>
+    <sys:String x:Key="StrRaDisplayOledType">OLED-Typ</sys:String>
+    <!-- Control tab -->
+    <sys:String x:Key="StrRaControlDesc">Sende Steuerbefehle an den entfernten Knoten. Diese Aktionen sind sofort wirksam!</sys:String>
+    <sys:String x:Key="StrRaReboot">🔄 Neu starten</sys:String>
+    <sys:String x:Key="StrRaShutdown">⏹ Herunterfahren</sys:String>
+    <sys:String x:Key="StrRaNodeDbReset">⚠️ Node-DB löschen: Entfernt alle bekannten Knoten aus der Datenbank des Geräts.</sys:String>
+    <sys:String x:Key="StrRaNodeDbResetBtn">⚠️ Node-DB löschen</sys:String>
+    <sys:String x:Key="StrRaFavoritesSection">Favoriten auf Remote-Knoten verwalten</sys:String>
+    <sys:String x:Key="StrRaFavoritesDesc">Markiere oder entferne einen Knoten als Favoriten auf dem entfernten Gerät. Der Knoten wird dann in der Kontaktliste des Remote-Knotens priorisiert angezeigt.</sys:String>
+    <sys:String x:Key="StrRaFavoritesAdd">⭐ Als Favorit setzen</sys:String>
+    <sys:String x:Key="StrRaFavoritesRemove">✕ Favorit entfernen</sys:String>
+    <sys:String x:Key="StrRaFavoritesAdded">Knoten „{0}" wurde auf dem Remote-Gerät als Favorit gesetzt.</sys:String>
+    <sys:String x:Key="StrRaFavoritesRemoved">Knoten „{0}" wurde auf dem Remote-Gerät aus den Favoriten entfernt.</sys:String>
+    <!-- Bottom buttons -->
+    <sys:String x:Key="StrRaRefresh">🔄 Alles neu laden</sys:String>
+    <sys:String x:Key="StrRaReloadTab">↻ Tab neu laden</sys:String>
+    <sys:String x:Key="StrRaSave">💾 Speichern</sys:String>
+    <sys:String x:Key="StrRaLoadAllQuestion">Alle Einstellungen jetzt laden?&#x0a;&#x0a;Ja  = sofort alles laden (ca. 30–60 Sek.)&#x0a;Nein = seitenweise laden (Tab anklicken)</sys:String>
+    <!-- Telemetry Dashboard -->
+    <sys:String x:Key="StrDashboardTitle">Telemetrie-Dashboard</sys:String>
+    <sys:String x:Key="StrDashboardLabel">Dashboard:</sys:String>
+    <sys:String x:Key="StrDashboardNew">+ Neu</sys:String>
+    <sys:String x:Key="StrDashboardRename">Umbenennen</sys:String>
+    <sys:String x:Key="StrDashboardDelete">Löschen</sys:String>
+    <sys:String x:Key="StrDashboardAddWidget">+ Widget hinzufügen</sys:String>
+    <sys:String x:Key="StrDashboardRefresh">↺ Aktualisieren</sys:String>
+    <sys:String x:Key="StrDashboardNewTitle">Neues Dashboard</sys:String>
+    <sys:String x:Key="StrDashboardRenameTitle">Dashboard umbenennen</sys:String>
+    <sys:String x:Key="StrDashboardNewPrompt">Name:</sys:String>
+    <sys:String x:Key="StrDashboardDefaultName">Dashboard</sys:String>
+    <sys:String x:Key="StrDashboardDeleteConfirm">Dashboard "{0}" wirklich löschen?</sys:String>
+    <sys:String x:Key="StrDashboardNoDashboard">Bitte zuerst ein Dashboard erstellen.</sys:String>
+    <sys:String x:Key="StrDashboardEmpty">Kein Dashboard ausgewählt. Erstelle ein neues Dashboard und füge Widgets hinzu.</sys:String>
+    <sys:String x:Key="StrDashboardWidgetCount">Widgets</sys:String>
+    <sys:String x:Key="StrDashboardRemoveWidget">Widget entfernen</sys:String>
+    <sys:String x:Key="StrDashboardEditWidget">Widget bearbeiten</sys:String>
+    <sys:String x:Key="StrDashboardLastUpdated">Letzter Wert</sys:String>
+    <sys:String x:Key="StrDashboardHourOfDay">Stunde (0–23)</sys:String>
+    <sys:String x:Key="StrDashboardDayIndex">Tag</sys:String>
+    <!-- Add Widget Dialog -->
+    <sys:String x:Key="StrAddWidgetTitle">Widget hinzufügen</sys:String>
+    <sys:String x:Key="StrAddWidgetType">Widget-Typ:</sys:String>
+    <sys:String x:Key="StrAddWidgetMetric">Metrik:</sys:String>
+    <sys:String x:Key="StrAddWidgetDays">Zeitraum:</sys:String>
+    <sys:String x:Key="StrAddWidgetNodes">Knoten (Mehrfachauswahl möglich):</sys:String>
+    <sys:String x:Key="StrAddWidgetCustomTitle">Titel (leer = automatisch):</sys:String>
+    <sys:String x:Key="StrAddWidgetNoNode">Bitte mindestens einen Knoten auswählen.</sys:String>
+    <sys:String x:Key="StrWidgetTypeLine">Zeitverlauf (Linienchart)</sys:String>
+    <sys:String x:Key="StrWidgetTypeBar">Balkendiagramm (Aktuell)</sys:String>
+    <sys:String x:Key="StrWidgetTypeGauge">Anzeige (Gauge)</sys:String>
+    <sys:String x:Key="StrWidgetTypeHeatmap">Heatmap (Stunde × Tag)</sys:String>
+    <sys:String x:Key="StrWidgetTypeArea">Flächendiagramm (Area)</sys:String>
+    <sys:String x:Key="StrWidgetTypeScatter">Streudiagramm (Scatter)</sys:String>
+    <sys:String x:Key="StrWidgetTypeStat">Kennzahl (Stat-Karte)</sys:String>
+    <sys:String x:Key="StrWidgetTypeClock">Uhr (UTC + Lokal)</sys:String>
+    <sys:String x:Key="StrWidgetTypeHistogram">Histogramm (Verteilung)</sys:String>
+    <sys:String x:Key="StrWidgetTypeCandlestick">Candlestick (Tages-OHLC)</sys:String>
+    <sys:String x:Key="StrWidgetTypeStateline">Status-Timeline (Aktivität)</sys:String>
+    <sys:String x:Key="StrDashboardCount">Anzahl</sys:String>
+    <!-- Auto-refresh -->
+    <sys:String x:Key="StrDashboardAutoRefresh">Auto-Refresh:</sys:String>
+    <sys:String x:Key="StrDashboardRefreshOff">Aus</sys:String>
+    <sys:String x:Key="StrDashboardLastRefreshed">Aktualisiert: {0}</sys:String>
+    <!-- Node search / single-node hint -->
+    <sys:String x:Key="StrAddWidgetNodeSearch">Knoten suchen…</sys:String>
+    <sys:String x:Key="StrAddWidgetSingleNodeHint">Nur 1 Knoten</sys:String>
+    <!-- Time range labels -->
+    <sys:String x:Key="StrDays1">1 Tag</sys:String>
+    <sys:String x:Key="StrDays7">7 Tage</sys:String>
+    <sys:String x:Key="StrDays14">14 Tage</sys:String>
+    <sys:String x:Key="StrDays30">30 Tage</sys:String>
+    <sys:String x:Key="StrDaysAll">Gesamt</sys:String>
+
+    <sys:String x:Key="StrWidgetTypeRanking">Ranking (Tabelle)</sys:String>
+    <sys:String x:Key="StrWidgetTypeMultiStat">Multi-Stat (Kacheln)</sys:String>
+    <sys:String x:Key="StrWidgetTypeMeshHealth">Mesh-Health (Ampel)</sys:String>
+    <sys:String x:Key="StrDashboardExportCsv">CSV exportieren</sys:String>
+    <sys:String x:Key="StrDashboardExportDone">Exportiert nach: {0}</sys:String>
+    <sys:String x:Key="StrDashboardThreshold">Schwellwert</sys:String>
+    <sys:String x:Key="StrDashboardMovingAvg">Gleitender Ø</sys:String>
+    <sys:String x:Key="StrDashboardNoData">Keine Daten</sys:String>
+    <sys:String x:Key="StrRankingNode">Knoten</sys:String>
+    <sys:String x:Key="StrMeshHealthOffline">Offline</sys:String>
+    <sys:String x:Key="StrMeshHealthGood">Gut</sys:String>
+    <sys:String x:Key="StrMeshHealthWeak">Schwach</sys:String>
+    <sys:String x:Key="StrMeshHealthPoor">Schlecht</sys:String>
+    <sys:String x:Key="StrMeshHealthScore">Mesh Health</sys:String>
+    <sys:String x:Key="StrMeshHealthWeather">Wetter</sys:String>
+    <sys:String x:Key="StrMeshHealthAntenna">Antenne</sys:String>
+    <sys:String x:Key="StrMeshHealthNeighbor">Nachbar</sys:String>
+    <sys:String x:Key="StrMeshHealthPath">Pfade</sys:String>
+    <sys:String x:Key="StrMeshHealthNeighborCount">Nachbarn</sys:String>
+    <sys:String x:Key="StrMeshHealthHopCost">Pfadkosten</sys:String>
+    <sys:String x:Key="StrDashboardThresholdTip">Horizontale gestrichelte Linie im Chart — z.B. kritischer RSSI-Wert</sys:String>
+
+    <!-- Tools tab -->
+    <sys:String x:Key="StrTabTools">🔧 Tools</sys:String>
+    <sys:String x:Key="StrToolsTDeckSection">T-Deck Karten-Assistent</sys:String>
+    <sys:String x:Key="StrToolsTDeckDesc">Bereite eine SD-Karte mit Offline-Karten für dein Meshtastic T-Deck vor. Der Assistent führt dich durch Formatierung, Bereichsauswahl und Download.</sys:String>
+    <sys:String x:Key="StrToolsTDeckBtn">🗺️ Karten für T-Deck vorbereiten...</sys:String>
+    <sys:String x:Key="StrToolsExportSection">Tile-Export</sys:String>
+    <sys:String x:Key="StrToolsExportDesc">Exportiere deine lokal heruntergeladenen Karten-Tiles als ZIP-Datei.</sys:String>
+    <sys:String x:Key="StrToolsExportBtn">📦 Tiles als ZIP exportieren...</sys:String>
+
+    <!-- Virtual Node -->
+    <sys:String x:Key="StrVirtualNodeSection">Virtual Node</sys:String>
+    <sys:String x:Key="StrVirtualNodeDesc">Startet einen TCP-Server, mit dem sich Meshtastic-Apps (Android/iOS) verbinden können – als wäre es ein echtes Gerät. Erfordert eine bestehende Verbindung zu einem physischen Node.</sys:String>
+    <sys:String x:Key="StrVirtualNodeEnable">Virtual Node aktivieren</sys:String>
+    <sys:String x:Key="StrVirtualNodePort">Port:</sys:String>
+    <sys:String x:Key="StrVirtualNodeBlockAdmin">Admin-Befehle von Clients blockieren</sys:String>
+    <sys:String x:Key="StrVirtualNodeStatus">Status:</sys:String>
+    <sys:String x:Key="StrVirtualNodeRunning">Läuft ✓</sys:String>
+    <sys:String x:Key="StrVirtualNodeStopped">Gestoppt</sys:String>
+    <sys:String x:Key="StrVirtualNodeClients">Verbundene Clients:</sys:String>
+    <sys:String x:Key="StrVirtualNodeNoClients">(keine)</sys:String>
+    <sys:String x:Key="StrVirtualNodeNotConnected">Kein physischer Node verbunden.</sys:String>
+
+    <!-- TDeck Wizard: common -->
+    <sys:String x:Key="StrTDeckTitle">T-Deck Karten-Assistent</sys:String>
+    <sys:String x:Key="StrTDeckGermanyOnly">ℹ️ Offline-Karten sind nur für Deutschland verfügbar.</sys:String>
+    <sys:String x:Key="StrTDeckBack">◀ Zurück</sys:String>
+    <sys:String x:Key="StrTDeckNext">Weiter ▶</sys:String>
+    <sys:String x:Key="StrTDeckCancel">Abbrechen</sys:String>
+    <sys:String x:Key="StrTDeckClose">Schließen</sys:String>
+    <sys:String x:Key="StrTDeckStep">Schritt {0} von {1}</sys:String>
+
+    <!-- TDeck Step 1: Welcome -->
+    <sys:String x:Key="StrTDeckS1Title">Willkommen</sys:String>
+    <sys:String x:Key="StrTDeckS1Desc">Dieser Assistent hilft dir, Offline-Karten-Tiles auf eine SD-Karte für dein Meshtastic T-Deck zu übertragen.
+
+Was macht dieser Assistent?
+  • Prüft und formatiert die SD-Karte (FAT32 / exFAT)
+  • Lässt dich den Kartenbereich auswählen (Bundesland, ganz Deutschland oder eigener Bereich)
+  • Wählt Zoom-Stufe und Kartentyp (OSM, OpenTopo, OSM Dark)
+  • Kopiert bereits vorhandene Tiles direkt — und lädt fehlende nach
+
+ℹ️ Karten sind nur für Deutschland verfügbar (eigener Meshhessen-Tile-Server).
+
+Die Downloads sind additiv: Bereits vorhandene Tiles auf der SD-Karte werden nicht erneut übertragen.</sys:String>
+
+    <!-- TDeck Step 2: Drive selection -->
+    <sys:String x:Key="StrTDeckS2Title">SD-Karte auswählen</sys:String>
+    <sys:String x:Key="StrTDeckS2Hint">Wähle das Laufwerk deiner SD-Karte. Es werden nur Wechseldatenträger angezeigt.</sys:String>
+    <sys:String x:Key="StrTDeckDriveLabel">Verfügbare Wechsellaufwerke:</sys:String>
+    <sys:String x:Key="StrTDeckRefresh">Aktualisieren</sys:String>
+    <sys:String x:Key="StrTDeckNoDrives">Keine Wechsellaufwerke gefunden. SD-Karte einlegen und „Aktualisieren" klicken.</sys:String>
+    <sys:String x:Key="StrTDeckDriveInfo">Gesamt: {0} | Frei: {1} | Dateisystem: {2}</sys:String>
+    <sys:String x:Key="StrTDeckSelectDriveFirst">Bitte zuerst ein Laufwerk auswählen.</sys:String>
+
+    <!-- TDeck Step 3: Format check -->
+    <sys:String x:Key="StrTDeckS3Title">Formatierung prüfen</sys:String>
+    <sys:String x:Key="StrTDeckFormatOk">✅ Laufwerk ist korrekt formatiert ({0}). Keine Aktion erforderlich.</sys:String>
+    <sys:String x:Key="StrTDeckFormatWarn">⚠️ Laufwerk ist mit „{0}" formatiert.
+Empfohlen: FAT32 (bis 32 GB) oder exFAT (über 32 GB) mit kleinstmöglicher Zuordnungseinheit.
+Du kannst trotzdem fortfahren oder das Laufwerk formatieren.</sys:String>
+    <sys:String x:Key="StrTDeckFormatHint">Das T-Deck erkennt exFAT am zuverlässigsten. Wichtig: Wähle die kleinste verfügbare Zuordnungseinheit (z.B. 4096 Bytes). Viele Tiles (besonders Meer/leere Flächen) sind nur ~100 Bytes groß, belegen aber immer mindestens eine ganze Zuordnungseinheit — kleine Einheiten sparen hier erheblich Speicherplatz. Die Formatierung erfordert Administrator-Rechte.</sys:String>
+    <sys:String x:Key="StrTDeckFormatBtn">Laufwerk formatieren...</sys:String>
+    <sys:String x:Key="StrTDeckSkipFormat">Formatierung überspringen</sys:String>
+    <sys:String x:Key="StrTDeckFmtConfirmTitle">Formatierung bestätigen</sys:String>
+    <sys:String x:Key="StrTDeckFmtConfirm1">⚠️ WARNUNG: Alle Daten auf Laufwerk {0} werden unwiderruflich gelöscht!
+
+Wirklich formatieren?</sys:String>
+    <sys:String x:Key="StrTDeckFmtConfirm2">🔴 LETZTE WARNUNG: Das Formatieren löscht ALLE Daten auf {0} für immer!
+
+Endgültig fortfahren?</sys:String>
+    <sys:String x:Key="StrTDeckFmtExFAT">exFAT mit 4096 Bytes (empfohlen für T-Deck)</sys:String>
+    <sys:String x:Key="StrTDeckFmtFAT32">FAT32 mit 512 Bytes (ältere Geräte, max. 32 GB)</sys:String>
+    <sys:String x:Key="StrTDeckFmtChoiceTitle">Dateisystem wählen</sys:String>
+    <sys:String x:Key="StrTDeckFmtChoiceHint">Wähle das Dateisystem für die Formatierung. exFAT mit 4096 Bytes wird für das T-Deck empfohlen:</sys:String>
+    <sys:String x:Key="StrTDeckFormatting">Formatiere Laufwerk {0}... (UAC-Fenster beachten)</sys:String>
+    <sys:String x:Key="StrTDeckFormatDone">✅ Laufwerk erfolgreich formatiert ({0}).</sys:String>
+    <sys:String x:Key="StrTDeckFormatFailed">❌ Formatierung fehlgeschlagen oder abgebrochen.</sys:String>
+
+    <!-- TDeck Step 4: Region selection -->
+    <sys:String x:Key="StrTDeckS4Title">Bereich auswählen</sys:String>
+    <sys:String x:Key="StrTDeckRegionByState">Nach Bundesland(er) auswählen</sys:String>
+    <sys:String x:Key="StrTDeckRegionGermany">Ganz Deutschland</sys:String>
+    <sys:String x:Key="StrTDeckRegionFreeStyle">Eigenen Bereich zeichnen</sys:String>
+    <sys:String x:Key="StrTDeckStateSelectAll">Alle</sys:String>
+    <sys:String x:Key="StrTDeckStateSelectNone">Keine</sys:String>
+    <sys:String x:Key="StrTDeckOpenMap">🗺️ Bereich auf Karte zeichnen...</sys:String>
+    <sys:String x:Key="StrTDeckBboxPreview">Ausgewählter Bereich: N {0:F4}° | S {1:F4}° | W {2:F4}° | E {3:F4}°</sys:String>
+    <sys:String x:Key="StrTDeckNoRegion">Bitte mindestens ein Bundesland auswählen oder einen Bereich zeichnen.</sys:String>
+    <sys:String x:Key="StrTDeckFreestyleNotSet">Noch kein Bereich gezeichnet. Klicke „Bereich auf Karte zeichnen".</sys:String>
+
+    <!-- TDeck Step 5: Zoom & map type -->
+    <sys:String x:Key="StrTDeckS5Title">Zoom-Stufe und Kartentyp</sys:String>
+    <sys:String x:Key="StrTDeckZoomLabel">Maximale Zoom-Stufe (Stufe 1 wird immer eingeschlossen):</sys:String>
+    <sys:String x:Key="StrTDeckZoom8">8 — Überblick (Bundesländer)</sys:String>
+    <sys:String x:Key="StrTDeckZoom10">10 — Landkreise</sys:String>
+    <sys:String x:Key="StrTDeckZoom12">12 — Stadtebene</sys:String>
+    <sys:String x:Key="StrTDeckZoom14">14 — Straßen (empfohlen)</sys:String>
+    <sys:String x:Key="StrTDeckZoom16">16 — Detail (viele Tiles!)</sys:String>
+    <sys:String x:Key="StrTDeckZoom17">17 — Maximum (extrem viele Tiles!)</sys:String>
+    <sys:String x:Key="StrTDeckZoomWarn14">⚠️ Zoom 14 kann bereits viele zehntausend Tiles umfassen. Der Download kann Stunden dauern.</sys:String>
+    <sys:String x:Key="StrTDeckZoomWarn16">🔴 Zoom 16+ bedeutet potenziell Millionen von Tiles! Der Download kann Tage dauern und sehr viel Speicherplatz benötigen.</sys:String>
+    <sys:String x:Key="StrTDeckMapTypeLabel">Kartentyp:</sys:String>
+    <sys:String x:Key="StrTDeckMapOSM">OpenStreetMap (Standard)</sys:String>
+    <sys:String x:Key="StrTDeckMapDark">OSM Dark</sys:String>
+    <sys:String x:Key="StrTDeckMapTopo">OpenTopoMap</sys:String>
+    <sys:String x:Key="StrTDeckEstimate">Geschätzte Tiles: ca. {0:N0} (~{1})</sys:String>
+    <sys:String x:Key="StrTDeckSDFree">Freier Speicher auf SD: {0}</sys:String>
+    <sys:String x:Key="StrTDeckSDLow">⚠️ Möglicherweise nicht genug Speicherplatz auf der SD-Karte!</sys:String>
+    <sys:String x:Key="StrTDeckSelectMapType">Bitte einen Kartentyp auswählen.</sys:String>
+
+    <!-- TDeck Step 6: Download -->
+    <sys:String x:Key="StrTDeckS6Title">Download &amp; Übertragung</sys:String>
+    <sys:String x:Key="StrTDeckSummaryTitle">Zusammenfassung:</sys:String>
+    <sys:String x:Key="StrTDeckSumDrive">Laufwerk:</sys:String>
+    <sys:String x:Key="StrTDeckSumRegion">Bereich:</sys:String>
+    <sys:String x:Key="StrTDeckSumZoom">Max. Zoom:</sys:String>
+    <sys:String x:Key="StrTDeckSumType">Kartentyp:</sys:String>
+    <sys:String x:Key="StrTDeckSumTiles">Geschätzte Tiles:</sys:String>
+    <sys:String x:Key="StrTDeckCopyHint">✅ Bereits lokal vorhandene Tiles werden direkt kopiert — kein erneuter Download.</sys:String>
+    <sys:String x:Key="StrTDeckAdditiveHint">✅ Bereits auf der SD-Karte vorhandene Tiles werden übersprungen.</sys:String>
+    <sys:String x:Key="StrTDeckStartBtn">▶ Herunterladen &amp; Kopieren</sys:String>
+    <sys:String x:Key="StrTDeckProgressTile">Tile {0} / {1} ({2:P0})</sys:String>
+    <sys:String x:Key="StrTDeckProgressZoom">Zoom {0} — X:{1} Y:{2}</sys:String>
+    <sys:String x:Key="StrTDeckDone">✅ Übertragung abgeschlossen! {0:N0} Tiles auf SD-Karte.</sys:String>
+    <sys:String x:Key="StrTDeckCancelled">Abgebrochen.</sys:String>
+    <sys:String x:Key="StrTDeckError">Fehler: {0}</sys:String>
+
+    <!-- TDeck region map window -->
+    <sys:String x:Key="StrTDeckMapPickTitle">Bereich auf Karte zeichnen</sys:String>
+    <sys:String x:Key="StrTDeckMapPickHint">Navigiere zur Region, aktiviere „Zeichenmodus" und ziehe Rechtecke auf. Mehrere Rechtecke möglich – alle werden als Hüllbereich verwendet.</sys:String>
+    <sys:String x:Key="StrTDeckMapPickAccept">✅ Übernehmen</sys:String>
+    <sys:String x:Key="StrTDeckMapPickClear">Auswahl löschen</sys:String>
+    <sys:String x:Key="StrTDeckMapPickNoSel">Noch kein Bereich gezeichnet.</sys:String>
+    <sys:String x:Key="StrTDeckMapPickSel">{0} Bereich(e) – Hülle: N {1:F4}° S {2:F4}° W {3:F4}° E {4:F4}°</sys:String>
+    <sys:String x:Key="StrTDeckMapDrawModeOn">✏ Zeichenmodus</sys:String>
+    <sys:String x:Key="StrTDeckMapDrawModeOff">🖐 Navigation</sys:String>
+    <sys:String x:Key="StrTDeckMapClearLast">Letztes löschen</sys:String>
+    <sys:String x:Key="StrTDeckMapClearAll">Alle löschen</sys:String>
+
+    <!-- TDeck export window -->
+    <sys:String x:Key="StrTDeckExportTitle">Tiles als ZIP exportieren</sys:String>
+    <sys:String x:Key="StrTDeckExportHint">Exportiert alle lokal gespeicherten Karten-Tiles in eine ZIP-Datei. Diese kann später über „Maptiles aus ZIP laden" wieder importiert werden.</sys:String>
+    <sys:String x:Key="StrTDeckExportTypeLabel">Kartentyp:</sys:String>
+    <sys:String x:Key="StrTDeckExportAllTypes">Alle Typen</sys:String>
+    <sys:String x:Key="StrTDeckExportStartBtn">📦 Exportieren...</sys:String>
+    <sys:String x:Key="StrTDeckExportDone">✅ Export abgeschlossen: {0}</sys:String>
+    <sys:String x:Key="StrTDeckExportFailed">❌ Export fehlgeschlagen: {0}</sys:String>
+    <sys:String x:Key="StrTDeckExportNoTiles">Keine lokalen Tiles für diesen Kartentyp gefunden.</sys:String>
 
 </ResourceDictionary>
