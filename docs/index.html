@@ -41,7 +41,7 @@
     "url": "https://smlunchen.github.io/mh_windowsclient/",
     "downloadUrl": "https://github.com/SMLunchen/mh_windowsclient/releases/latest",
     "author": { "@type": "Organization", "name": "Meshhessen Community", "url": "https://www.meshhessen.de" },
-    "softwareVersion": "1.5.9",
+    "softwareVersion": "1.5.11",
     "screenshot": "https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map.png",
     "keywords": "Meshtastic, Windows, LoRa, Mesh, Telemetrie, Traceroute, Offline-Karte, PKI"
   }
@@ -312,8 +312,8 @@
 <main>
 
   <div class="whats-new">
-    <span class="vbadge">NEU</span>
-    <span class="summary">🔧 T-Deck Karten-Assistent – SD-Karte mit Offline-Karten vorbereiten: Formatierung (exFAT, 4096 Bytes), Bereichsauswahl (Bundesland / DE / Freestyle), Zoom bis 17, additiver Download.</span>
+    <span class="vbadge">v1.5.11</span>
+    <span class="summary">🚀 Großes Release: Virtual Node TCP-Proxy, T-Deck Karten-Assistent, Remote Admin Lazy Loading + Sicherheits-Reiter, sequentielles Config-Laden (Heltec-Fix), Kanal-Filter-Sync und weitere Bugfixes.</span>
     <a href="changelog.html">Changelog ansehen →</a>
   </div>
 
@@ -353,6 +353,17 @@
         <li>Additiv: vorhandene Tiles kopieren, fehlende laden</li>
         <li>SD-Struktur: <code>maps/OSM/{z}/{x}/{y}.png</code></li>
         <li>ZIP-Export lokaler Tiles</li>
+      </ul>
+    </div>
+    <div class="card" style="--card-accent:#3fb950">
+      <span class="badge-new">NEU</span>
+      <h3>🖧 Virtual Node (Tools-Tab)</h3>
+      <ul>
+        <li><strong>TCP-Proxy-Server</strong> – Client wird zu Meshtastic-Gerät</li>
+        <li>Android/iOS-Apps verbinden sich direkt (Port 4404)</li>
+        <li>Config-Replay, bidirektionale Nachrichten, Multi-Client</li>
+        <li>Startet automatisch beim Verbinden mit dem physischen Node</li>
+        <li>Admin-Befehle optional blockieren</li>
       </ul>
     </div>
     <div class="card" style="--card-accent:#bc8cff">
@@ -400,15 +411,13 @@
       <span class="badge-new">NEU</span>
       <h3>🔧 Node-Verwaltung &amp; Konfiguration</h3>
       <ul>
-        <li>Node-Farben individuell wählbar (Karte + Liste)</li>
-        <li>Freitext-Notizen pro Node</li>
-        <li>Nodes anpinnen (oben fixieren, unabhängig von Sortierung)</li>
-        <li>Schnellfilter für die Node-Liste</li>
-        <li><strong>Vollständige Node-Konfiguration</strong> (Device, LoRa, Position, Power, Network, Display, BT, Security, MQTT, Telemetrie, Kanäle)</li>
-        <li><strong>Feste Position</strong> – Lat/Lon/Höhe eingeben oder direkt vom Kartenmittelpunkt übernehmen</li>
-        <li><strong>Kanal-Konfiguration</strong> – MQTT-Uplink/Downlink &amp; Positions-Präzision pro Kanal</li>
-        <li>Bluetooth-PIN direkt ändern</li>
-        <li>Meshhessen-Schnellkonfiguration (One-Click Short Slow + EU868)</li>
+        <li>Node-Farben, Notizen, Anpinnen, Schnellfilter</li>
+        <li><strong>Favoriten</strong> – Stern-Symbol, sync mit Gerät via <code>set_favorite_node</code></li>
+        <li><strong>Vollständige Node-Konfiguration</strong> (Device, LoRa, Position, Network, Display, BT, Security, MQTT, Telemetrie, Kanäle)</li>
+        <li><strong>Fernverwaltung</strong> für Favoriten-Nodes: alle Konfig-Reiter inkl. Sicherheits-Reiter (Public Key + Admin-Keys, Base64)</li>
+        <li><strong>Lazy Loading</strong> im Remote Admin – seitenweise oder alles auf einmal; „↻ Tab neu laden"</li>
+        <li><strong>Sequentielles Laden</strong> (lokal) – kein Queue-Overflow mehr auf Heltec/langsamen Boards</li>
+        <li>Bluetooth-PIN direkt ändern; Meshhessen-Schnellkonfiguration</li>
       </ul>
     </div>
   </div>
@@ -709,8 +718,8 @@
 <main>
 
   <div class="whats-new">
-    <span class="vbadge">v1.5.9</span>
-    <span class="summary">Fixed position via map, channel uplink/downlink, channel management fix and more.</span>
+    <span class="vbadge">v1.5.11</span>
+    <span class="summary">🚀 Big release: Virtual Node TCP proxy, T-Deck map wizard, Remote Admin lazy loading + security tab, sequential config loading (Heltec fix), channel filter sync and more bug fixes.</span>
     <a href="changelog.html">View changelog →</a>
   </div>
 
@@ -737,6 +746,29 @@
         <li><strong>Online OSM</strong> (worldwide, policy-compliant)</li>
         <li>Node pins, GPS tracks, waypoints</li>
         <li>HTTP/3, ETag cache, tile.meshhessenclient.de</li>
+      </ul>
+    </div>
+    <div class="card" style="--card-accent:#e3b341">
+      <span class="badge-new">NEW</span>
+      <h3>🔧 T-Deck Map Assistant (Tools tab)</h3>
+      <ul>
+        <li><strong>Guided 6-step wizard</strong> for SD card prep with offline maps</li>
+        <li>Format: <strong>exFAT 4096 bytes</strong> (recommended, UAC-elevated)</li>
+        <li>Region: by federal state, all of Germany, or freestyle draw</li>
+        <li>Zoom up to 17, map type OSM/Dark/Topo</li>
+        <li>Additive transfer: copy existing, download missing, cache locally</li>
+        <li>SD structure: <code>maps/OSM/{z}/{x}/{y}.png</code>; ZIP export</li>
+      </ul>
+    </div>
+    <div class="card" style="--card-accent:#3fb950">
+      <span class="badge-new">NEW</span>
+      <h3>🖧 Virtual Node (Tools tab)</h3>
+      <ul>
+        <li><strong>TCP proxy server</strong> – turns the client into a Meshtastic device</li>
+        <li>Android/iOS apps connect directly (port 4404)</li>
+        <li>Config-replay, bidirectional messages, multi-client</li>
+        <li>Auto-starts when connected to physical node</li>
+        <li>Optionally block admin commands from connected apps</li>
       </ul>
     </div>
     <div class="card" style="--card-accent:#bc8cff">
@@ -784,15 +816,13 @@
       <span class="badge-new">NEW</span>
       <h3>🔧 Node Management &amp; Config</h3>
       <ul>
-        <li>Individual node colors (map + list)</li>
-        <li>Free-text notes per node</li>
-        <li>Pin nodes to top (independent of sort order)</li>
-        <li>Quick filter for the node list</li>
-        <li><strong>Full node configuration</strong> (device, LoRa, position, power, network, display, BT, security, MQTT, telemetry, channels)</li>
-        <li><strong>Fixed position</strong> – enter lat/lon/altitude or pick from current map center</li>
-        <li><strong>Channel config</strong> – MQTT uplink/downlink &amp; position precision per channel</li>
-        <li>Change Bluetooth PIN directly</li>
-        <li>Meshhessen quick-config (one-click Short Slow + EU868)</li>
+        <li>Node colors, notes, pin to top, quick filter</li>
+        <li><strong>Favorites</strong> – star icon, synced with device via <code>set_favorite_node</code></li>
+        <li><strong>Full node configuration</strong> (device, LoRa, position, network, display, BT, security, MQTT, telemetry, channels)</li>
+        <li><strong>Remote Admin</strong> for favorite nodes: all config tabs incl. security tab (Public Key + Admin Keys, Base64)</li>
+        <li><strong>Lazy loading</strong> in Remote Admin – page-by-page or all at once; "↻ Reload Tab" button</li>
+        <li><strong>Sequential loading</strong> (local) – no more queue overflow on Heltec/slow boards</li>
+        <li>Change Bluetooth PIN; Meshhessen quick-config</li>
       </ul>
     </div>
   </div>

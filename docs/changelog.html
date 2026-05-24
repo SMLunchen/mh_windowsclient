@@ -172,17 +172,30 @@
 <div class="section active" id="de">
 <main>
 
-  <!-- ── upcoming ── -->
-  <div class="version-entry upcoming">
+  <!-- ── v1.5.11 ── -->
+  <div class="version-entry current">
     <div class="version-header">
-      <span class="version-tag tag-upcoming">Upcoming</span>
-      <span class="version-date">2026-05-10</span>
-      T-Deck Karten-Assistent &amp; Tools-Tab
+      <span class="version-tag tag-latest">v1.5.11</span>
+      <span class="version-date">2026-05-24</span>
+      Virtual Node, T-Deck Assistent, Fernverwaltung &amp; Bugfixes
     </div>
-    <p class="version-desc">Neuer Tools-Reiter mit geführtem 6-Schritt-Assistenten zum Bespielen einer SD-Karte mit Offline-Karten für das Meshtastic T-Deck. Formatierung (exFAT/FAT32 mit UAC), Bereichsauswahl, Download und ZIP-Export.</p>
+    <p class="version-desc">Großes Release: Virtual Node TCP-Proxy-Server, T-Deck Karten-Assistent, vollständige Fernverwaltung mit Sicherheits-Reiter und Lazy Loading, sequentielles Config-Laden (Heltec-Fix), Favoriten-Sync, Kanal-Filter-Sync und zahlreiche Bugfixes.</p>
 
     <div class="cl-section added">
       <h3>✨ Hinzugefügt</h3>
+
+      <div class="cl-group">
+        <div class="cl-group-title">🖧 Virtual Node (Tools-Tab)</div>
+        <ul class="cl-list">
+          <li><strong>TCP-Proxy-Server</strong> – wandelt den Client in ein Meshtastic-kompatibles TCP-Gerät um; Android/iOS-Apps verbinden sich direkt (Standard-Port 4404)</li>
+          <li><strong>Config-Replay:</strong> verbindende Apps erhalten sofort MyNodeInfo, alle Kanäle und bekannte Nodes</li>
+          <li><strong>Bidirektionale Weiterleitung:</strong> Nachrichten aus der App erscheinen im Client und umgekehrt</li>
+          <li><strong>Multi-Client:</strong> beliebig viele Apps gleichzeitig verbindbar; Status + verbundene IPs im Tools-Tab</li>
+          <li>Startet automatisch beim Verbinden mit dem physischen Node (wenn aktiviert); Admin-Befehle optional blockieren</li>
+          <li>Message-Queue mit 10 ms Delay schützt den physischen Node vor Überflutung</li>
+          <li>Neue INI-Keys: <code>VirtualNodeEnabled</code>, <code>VirtualNodePort</code>, <code>VirtualNodeBlockAdmin</code></li>
+        </ul>
+      </div>
 
       <div class="cl-group">
         <div class="cl-group-title">🔧 T-Deck Karten-Assistent (neuer Tools-Tab)</div>
@@ -193,58 +206,96 @@
           <li><strong>Schritt 4 – Bereich:</strong> Nach Bundesland (16 Checkboxen), ganz Deutschland, oder Freestyle (Rechteck auf Mapsui-Karte zeichnen)</li>
           <li><strong>Schritt 5 – Zoom &amp; Kartentyp:</strong> Stufen 8/10/12/14/16/17 mit Laufzeitwarnungen; OSM / OSM Dark / OpenTopoMap</li>
           <li><strong>Schritt 6 – Transfer (additiv):</strong> SD-Tile vorhanden → skip; lokal vorhanden → kopieren; sonst → vom Tile-Server laden + lokal cachen; Fortschrittsbalken</li>
-          <li><strong>SD-Struktur:</strong> <code>{Laufwerk}:\maps\OSM\{z}\{x}\{y}.png</code> (OpenTopo, OSMDark analog) – T-Deck-kompatibel</li>
-          <li><strong>ZIP-Export:</strong> Lokale Tiles (alle oder gefiltert nach Kartentyp) als ZIP exportieren</li>
-          <li>Vollständig mehrsprachig (Deutsch/Englisch)</li>
+          <li><strong>SD-Struktur:</strong> <code>{Laufwerk}:\maps\OSM\{z}\{x}\{y}.png</code> – T-Deck-kompatibel; ZIP-Export lokaler Tiles</li>
         </ul>
       </div>
-    </div>
-  </div>
 
-  <!-- ── v1.5.10 ── -->
-  <div class="version-entry current">
-    <div class="version-header">
-      <span class="version-tag tag-latest">v1.5.10</span>
-      <span class="version-date">2026-04-23</span>
-      Favoriten, Fernverwaltung &amp; Telemetrie-Dashboard
-    </div>
-    <p class="version-desc">Nodes als Favoriten markieren (sync mit Gerät), vollständige Remote-Admin-Oberfläche für entfernte Knoten, konfigurierbarer Timeout, neues Dashboard für Telemetriedaten mit vier Widget-Typen.</p>
+      <div class="cl-group">
+        <div class="cl-group-title">💬 Kanal-Filter-Sync</div>
+        <ul class="cl-list">
+          <li>Wählt man im „Kanal filtern"-Dropdown einen Kanal, springt der Sende-Kanal automatisch auf denselben Kanal mit; „Alle Kanäle" lässt den Sende-Kanal unverändert</li>
+        </ul>
+      </div>
 
-    <div class="cl-section added">
-      <h3>✨ Hinzugefügt</h3>
+      <div class="cl-group">
+        <div class="cl-group-title">🔧 Remote Admin – Lazy Loading &amp; Tab-Reload</div>
+        <ul class="cl-list">
+          <li><strong>Lade-Modus-Dialog</strong> beim Öffnen: sofort alle Einstellungen laden (~30–60 s) oder seitenweise</li>
+          <li><strong>Seitenweise-Modus:</strong> Reiter wird erst beim Anklicken geladen; bereits geladene Reiter werden nicht nochmal abgerufen</li>
+          <li><strong>„↻ Tab neu laden"-Button</strong> in der Buttonleiste – lädt nur den aktuell sichtbaren Reiter neu</li>
+        </ul>
+      </div>
+
+      <div class="cl-group">
+        <div class="cl-group-title">🔧 Lokaler Admin – Sequentielles Laden</div>
+        <ul class="cl-list">
+          <li><strong>Echtes sequentielles Config-Loading:</strong> senden → auf Antwort warten → nächste senden; 8 s Timeout pro Konfiguration</li>
+          <li>Verhindert Queue-Overflow auf langsamen Boards (z.B. Heltec) – vorher Abbruch bei 4–5/17</li>
+          <li>Fehlende Configs werden am Ende angezeigt statt den Prozess abzubrechen</li>
+        </ul>
+      </div>
 
       <div class="cl-group">
         <div class="cl-group-title">Favoriten</div>
         <ul class="cl-list">
           <li><strong>Stern-Symbol</strong> in der Node-Liste; per Rechtsklick als Favorit markieren/entfernen</li>
-          <li>Sync mit dem Gerät via <code>add_favorite_node</code> / <code>remove_favorite_node</code> Admin-Nachrichten</li>
-          <li>Favoriten werden in der Liste oben angezeigt (vor gepinnten Nodes)</li>
-          <li>Persistenz in <code>meshhessen-client.ini</code></li>
+          <li>Sync mit dem Gerät via <code>set_favorite_node</code> / <code>remove_favorite_node</code> Admin-Nachrichten</li>
+          <li>Favoriten werden in der Liste oben angezeigt; Persistenz in <code>meshhessen-client.ini</code></li>
         </ul>
       </div>
 
       <div class="cl-group">
         <div class="cl-group-title">Fernverwaltung (Remote Admin)</div>
         <ul class="cl-list">
-          <li>Schaltfläche „Fernverwaltung" im Node-Konfigurations-Bereich (nur sichtbar bei verbundenem Gerät)</li>
-          <li>Node-Auswahl aus der Favoritenliste; Session-Schlüssel-Handshake vor dem Laden</li>
-          <li>Vollständiges Admin-Fenster: Reiter Besitzer, Gerät, Position, LoRa, Bluetooth, Netzwerk, Anzeige, Kanäle, Steuerung</li>
-          <li>Feste GPS-Koordinaten via separatem <code>set_position</code>-Befehl</li>
+          <li>Vollständiges Admin-Fenster: Reiter Besitzer, Gerät, Position, LoRa, Bluetooth, Netzwerk, Anzeige, Kanäle, <strong>Sicherheit</strong>, Steuerung</li>
+          <li><strong>Sicherheits-Reiter:</strong> Public Key (read-only, Base64), Admin-Schlüssel 1–3 (Base64), Flags (Legacy Admin Channel, Managed Mode, Serial Console, Debug Log)</li>
+          <li><strong>Favoriten remote verwalten:</strong> ComboBox + „Als Favorit setzen" / „Favorit entfernen" – sendet <code>set_favorite_node</code> / <code>remove_favorite_node</code> an den Remote-Node</li>
+          <li>Session-Schlüssel-Handshake, konfigurierbarer Timeout, feste GPS-Koordinaten via <code>set_position</code></li>
           <li>Ferngesteuerter Neustart, Herunterfahren, Node-DB-Reset</li>
-          <li>Favoriten-Status direkt im Remote-Admin-Fenster umschalten</li>
-          <li>Konfigurierbarer Anfrage-Timeout (Standard 30 s, einstellbar in Einstellungen)</li>
         </ul>
       </div>
 
       <div class="cl-group">
         <div class="cl-group-title">Telemetrie-Dashboard</div>
         <ul class="cl-list">
-          <li>Neuer „Dashboard öffnen"-Button im Telemetrie-Fenster</li>
-          <li>Benannte Dashboards erstellen, umbenennen und löschen; Persistenz in <code>dashboards.json</code></li>
-          <li>Vier Widget-Typen: <strong>Zeitverlauf</strong> (OxyPlot-Linienchart, Mehrfach-Node), <strong>Balkendiagramm</strong> (aktueller Vergleich), <strong>Gauge</strong> (Einzelwert + Fortschrittsbalken), <strong>Heatmap</strong> (Stunde × Tag)</li>
-          <li>Neue Metriken: Temperatur, Luftfeuchtigkeit, Luftdruck aus Umgebungs-Telemetrie</li>
-          <li>Voreingestellte Achsen-Bereiche: SNR −20…+20 dB, RSSI −130…−20 dBm, Batterie 0…100 %, Temperatur −20…60 °C</li>
-          <li>Dunkles OxyPlot-Theme passend zum App-Design</li>
+          <li><strong>📊-Button direkt in der Toolbar</strong> – Dashboard ohne Umweg über das Telemetrie-Fenster öffnen</li>
+          <li><strong>Unabhängiges Fenster</strong> – schließt sich nicht mehr mit dem Telemetrie-Fenster; auf zweitem Monitor platzierbar</li>
+          <li>Benannte Dashboards, vier Widget-Typen (Linie, Balken, Gauge, Heatmap), dunkles OxyPlot-Theme</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="cl-section fixed">
+      <h3>🐛 Behoben</h3>
+
+      <div class="cl-group">
+        <div class="cl-group-title">Remote Admin – Channel-Ladefehler</div>
+        <ul class="cl-list">
+          <li><strong><code>GetChannelRequest</code> ist 1-basiert</strong> (1 = Kanal 0 usw.): War 0-basiert → Kanal 0 lud nie (Timeout), alle anderen um eins verschoben</li>
+          <li><strong>Stale-Response-Check entfernt:</strong> <code>ch.Index</code> ist bei Firmware oft 0 (Protobuf-Default) → alle Kanäle außer 0 wurden als „falsche Antwort" dreifach neu angefordert</li>
+        </ul>
+      </div>
+
+      <div class="cl-group">
+        <div class="cl-group-title">Remote Admin – Favoriten (veraltete Proto-Feldnummern)</div>
+        <ul class="cl-list">
+          <li><code>add_favorite_node = 36</code> war veraltet; Firmware-Feld 36 = <code>set_canned_message_module_messages</code> → Requests landeten still beim falschen Handler</li>
+          <li><code>admin.proto</code> auf aktuelle Feldnummern aktualisiert: <code>set_favorite_node = 39</code>, <code>remove_favorite_node = 40</code></li>
+        </ul>
+      </div>
+
+      <div class="cl-group">
+        <div class="cl-group-title">Admin – Key-Anzeige (Hex → Base64)</div>
+        <ul class="cl-list">
+          <li>Public Key und Private Key wurden als Hex angezeigt; Meshtastic-App nutzt Base64 → beide Admin-Fenster (lokal &amp; remote) zeigen Keys jetzt in Base64</li>
+        </ul>
+      </div>
+
+      <div class="cl-group">
+        <div class="cl-group-title">Sonstige Bugfixes</div>
+        <ul class="cl-list">
+          <li><strong>Emoji-Node-Namen auf Karte (□-Fix):</strong> Node-Namen mit Emojis (🔥, 📶 …) wurden als □ angezeigt; <code>LabelStyle</code>-Font auf „Segoe UI Emoji" gesetzt</li>
+          <li><strong>Virtual Node – Traceroute-Telemetrie:</strong> Traceroute-Requests des VNode-Clients wurden fälschlicherweise als eigene Telemetrie eingespeist; Fix: ausgehende Requests (<code>WantResponse=true</code>, Portnum 70) werden herausgefiltert</li>
         </ul>
       </div>
     </div>
@@ -679,79 +730,130 @@
 <div class="section" id="en">
 <main>
 
-  <!-- ── upcoming ── -->
-  <div class="version-entry upcoming">
+  <!-- ── v1.5.11 ── -->
+  <div class="version-entry current">
     <div class="version-header">
-      <span class="version-tag tag-upcoming">Upcoming</span>
-      <span class="version-date">2026-05-10</span>
-      T-Deck Map Assistant &amp; Tools Tab
+      <span class="version-tag tag-latest">v1.5.11</span>
+      <span class="version-date">2026-05-24</span>
+      Virtual Node, T-Deck Wizard, Remote Admin &amp; Bug Fixes
     </div>
-    <p class="version-desc">New Tools tab with a guided 6-step wizard for preparing an SD card with offline maps for the Meshtastic T-Deck. Formatting (exFAT/FAT32 with UAC), region selection, download, and ZIP export.</p>
+    <p class="version-desc">Major release: Virtual Node TCP proxy server, T-Deck map wizard, full remote admin with security tab and lazy loading, sequential config loading (Heltec fix), favorites sync, channel filter sync and numerous bug fixes.</p>
 
     <div class="cl-section added">
       <h3>✨ Added</h3>
+
+      <div class="cl-group">
+        <div class="cl-group-title">🖧 Virtual Node (Tools tab)</div>
+        <ul class="cl-list">
+          <li><strong>TCP proxy server</strong> – turns the client into a Meshtastic-compatible TCP device; Android/iOS apps connect directly (default port 4404)</li>
+          <li><strong>Config-replay:</strong> connecting apps receive MyNodeInfo, all channels and known nodes immediately</li>
+          <li><strong>Bidirectional relay:</strong> messages from the app appear in the client and vice versa</li>
+          <li><strong>Multi-client:</strong> any number of apps simultaneously; status + connected IPs shown in Tools tab</li>
+          <li>Auto-starts when connected to the physical node (if enabled); optionally block admin commands</li>
+          <li>Message queue with 10 ms delay protects the physical node from flooding</li>
+          <li>New INI keys: <code>VirtualNodeEnabled</code>, <code>VirtualNodePort</code>, <code>VirtualNodeBlockAdmin</code></li>
+        </ul>
+      </div>
 
       <div class="cl-group">
         <div class="cl-group-title">🔧 T-Deck Map Assistant (new Tools tab)</div>
         <ul class="cl-list">
           <li><strong>Step 1 – Welcome:</strong> Workflow explanation; note: Germany only</li>
           <li><strong>Step 2 – SD card:</strong> Lists removable drives with size, free space and filesystem</li>
-          <li><strong>Step 3 – Formatting:</strong> Recommends exFAT with 4096-byte allocation units (tiles ≈ 100 bytes → small AU saves significant space); UAC-elevated <code>Format-Volume</code>; two confirmation dialogs</li>
+          <li><strong>Step 3 – Formatting:</strong> Recommends exFAT with 4096-byte allocation units; UAC-elevated <code>Format-Volume</code>; two confirmation dialogs</li>
           <li><strong>Step 4 – Region:</strong> By federal state (16 checkboxes), all of Germany, or Freestyle (draw rectangle on Mapsui map)</li>
           <li><strong>Step 5 – Zoom &amp; map type:</strong> Levels 8/10/12/14/16/17 with runtime warnings; OSM / OSM Dark / OpenTopoMap</li>
-          <li><strong>Step 6 – Transfer (additive):</strong> SD tile present → skip; local tile present → copy; otherwise → download from tile server + cache locally; progress bar</li>
-          <li><strong>SD structure:</strong> <code>{Drive}:\maps\OSM\{z}\{x}\{y}.png</code> (OpenTopo, OSMDark analogously) – T-Deck compatible</li>
-          <li><strong>ZIP export:</strong> Export local tiles (all or filtered by map type) as ZIP</li>
-          <li>Fully multilingual (German/English)</li>
+          <li><strong>Step 6 – Transfer (additive):</strong> SD tile present → skip; local tile present → copy; otherwise → download + cache locally; progress bar</li>
+          <li><strong>SD structure:</strong> <code>{Drive}:\maps\OSM\{z}\{x}\{y}.png</code> – T-Deck compatible; ZIP export of local tiles</li>
         </ul>
       </div>
-    </div>
-  </div>
 
-  <!-- ── v1.5.10 ── -->
-  <div class="version-entry current">
-    <div class="version-header">
-      <span class="version-tag tag-latest">v1.5.10</span>
-      <span class="version-date">2026-04-23</span>
-      Favorites, Remote Admin &amp; Telemetry Dashboard
-    </div>
-    <p class="version-desc">Mark nodes as favorites (synced with device), full remote admin UI for remote nodes, configurable timeout, new telemetry dashboard with four widget types.</p>
+      <div class="cl-group">
+        <div class="cl-group-title">💬 Channel Filter Sync</div>
+        <ul class="cl-list">
+          <li>Selecting a channel in the "Filter channel" dropdown automatically switches the send channel to the same channel; "All channels" leaves the send channel unchanged</li>
+        </ul>
+      </div>
 
-    <div class="cl-section added">
-      <h3>✨ Added</h3>
+      <div class="cl-group">
+        <div class="cl-group-title">🔧 Remote Admin – Lazy Loading &amp; Tab Reload</div>
+        <ul class="cl-list">
+          <li><strong>Load mode dialog</strong> on open: load all settings immediately (~30–60 s) or page-by-page</li>
+          <li><strong>Page-by-page mode:</strong> tab is only loaded when clicked; already-loaded tabs are not re-fetched</li>
+          <li><strong>"↻ Reload Tab" button</strong> in the button bar – reloads only the currently visible tab</li>
+        </ul>
+      </div>
+
+      <div class="cl-group">
+        <div class="cl-group-title">🔧 Local Admin – Sequential Loading</div>
+        <ul class="cl-list">
+          <li><strong>True sequential config loading:</strong> send → wait for response → send next; 8 s timeout per config</li>
+          <li>Prevents queue overflow on slow boards (e.g. Heltec) – previously aborted at 4–5/17</li>
+          <li>Missing configs are reported at the end instead of aborting the process</li>
+        </ul>
+      </div>
 
       <div class="cl-group">
         <div class="cl-group-title">Favorites</div>
         <ul class="cl-list">
           <li><strong>Star icon</strong> in the node list; right-click to mark/unmark as favorite</li>
-          <li>Synced with device via <code>add_favorite_node</code> / <code>remove_favorite_node</code> admin messages</li>
-          <li>Favorites shown at the top of the node list (above pinned nodes)</li>
-          <li>Persisted in <code>meshhessen-client.ini</code></li>
+          <li>Synced with device via <code>set_favorite_node</code> / <code>remove_favorite_node</code> admin messages</li>
+          <li>Favorites shown at the top of the node list; persisted in <code>meshhessen-client.ini</code></li>
         </ul>
       </div>
 
       <div class="cl-group">
         <div class="cl-group-title">Remote Administration</div>
         <ul class="cl-list">
-          <li>"Remote Admin" button in the node configuration section (enabled when connected)</li>
-          <li>Node selector from favorites list; session-key handshake before loading</li>
-          <li>Full admin window: tabs for Owner, Device, Position, LoRa, Bluetooth, Network, Display, Channels, Control</li>
-          <li>Fixed GPS coordinates sent via separate <code>set_position</code> command</li>
+          <li>Full admin window: tabs for Owner, Device, Position, LoRa, Bluetooth, Network, Display, Channels, <strong>Security</strong>, Control</li>
+          <li><strong>Security tab:</strong> public key (read-only, Base64), admin keys 1–3 (Base64), flags (Legacy Admin Channel, Managed Mode, Serial Console, Debug Log)</li>
+          <li><strong>Remote favorites management:</strong> ComboBox + "Set as Favorite" / "Remove Favorite" – sends <code>set_favorite_node</code> / <code>remove_favorite_node</code> to the remote node</li>
+          <li>Session-key handshake, configurable timeout, fixed GPS coordinates via <code>set_position</code></li>
           <li>Remote reboot, shutdown, node DB reset</li>
-          <li>Toggle favorite status directly from the remote admin window</li>
-          <li>Configurable request timeout (default 30 s, adjustable in settings)</li>
         </ul>
       </div>
 
       <div class="cl-group">
         <div class="cl-group-title">Telemetry Dashboard</div>
         <ul class="cl-list">
-          <li>New "Open Dashboard" button in the Telemetry window</li>
-          <li>Create, rename and delete named dashboards; persisted in <code>dashboards.json</code></li>
-          <li>Four widget types: <strong>Line chart</strong> (OxyPlot, multi-node), <strong>Bar chart</strong> (current comparison), <strong>Gauge</strong> (single value + progress bar), <strong>Heatmap</strong> (hour × day)</li>
-          <li>New metrics: temperature, humidity, pressure from environment telemetry</li>
-          <li>Pre-configured axis ranges: SNR −20…+20 dB, RSSI −130…−20 dBm, Battery 0…100 %, Temperature −20…60 °C</li>
-          <li>Dark OxyPlot theme matching the app design</li>
+          <li><strong>📊 button directly in the toolbar</strong> – open the dashboard without going through the telemetry window</li>
+          <li><strong>Independent window</strong> – no longer closes with the telemetry window; can be placed on a second monitor</li>
+          <li>Named dashboards, four widget types (line, bar, gauge, heatmap), dark OxyPlot theme</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="cl-section fixed">
+      <h3>🐛 Fixed</h3>
+
+      <div class="cl-group">
+        <div class="cl-group-title">Remote Admin – Channel Loading</div>
+        <ul class="cl-list">
+          <li><strong><code>GetChannelRequest</code> is 1-based</strong> (1 = channel 0 etc.): Was 0-based → channel 0 never loaded (timeout), all others shifted by one</li>
+          <li><strong>Stale-response check removed:</strong> <code>ch.Index</code> is often 0 from firmware (Protobuf default) → all channels except 0 were classified as "wrong response" and retried three times</li>
+        </ul>
+      </div>
+
+      <div class="cl-group">
+        <div class="cl-group-title">Remote Admin – Favorites (outdated proto field numbers)</div>
+        <ul class="cl-list">
+          <li><code>add_favorite_node = 36</code> was outdated; firmware field 36 = <code>set_canned_message_module_messages</code> → requests were silently misrouted</li>
+          <li><code>admin.proto</code> updated to current field numbers: <code>set_favorite_node = 39</code>, <code>remove_favorite_node = 40</code></li>
+        </ul>
+      </div>
+
+      <div class="cl-group">
+        <div class="cl-group-title">Admin – Key Display (hex → Base64)</div>
+        <ul class="cl-list">
+          <li>Public key and private key were displayed as hex; Meshtastic app uses Base64 → both admin windows (local &amp; remote) now show keys in Base64</li>
+        </ul>
+      </div>
+
+      <div class="cl-group">
+        <div class="cl-group-title">Other</div>
+        <ul class="cl-list">
+          <li><strong>Emoji node names on map (□ fix):</strong> node names containing emojis (🔥, 📶 …) rendered as □; <code>LabelStyle</code> font set to "Segoe UI Emoji"</li>
+          <li><strong>Virtual Node – traceroute telemetry:</strong> traceroute requests from VNode clients were incorrectly injected into local telemetry; outgoing requests (<code>WantResponse=true</code>, portnum 70) are now filtered out</li>
         </ul>
       </div>
     </div>
