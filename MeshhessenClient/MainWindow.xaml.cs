@@ -3330,6 +3330,15 @@ public partial class MainWindow : Window
                 }
             }
 
+            // Sync send-channel dropdown to the selected filter channel
+            // (skip "Alle Kanäle" sentinel with Index 999)
+            if (_messageChannelFilter != null && _messageChannelFilter.Index != 999)
+            {
+                var match = _channels.FirstOrDefault(c => c.Index == _messageChannelFilter.Index);
+                if (match != null && !Equals(ActiveChannelComboBox.SelectedItem, match))
+                    ActiveChannelComboBox.SelectedItem = match;
+            }
+
             Services.Logger.WriteLine($"Message filter changed to: {_messageChannelFilter?.Name ?? "Alle"} ({_messages.Count}/{_allMessages.Count} messages)");
         }
         catch (Exception ex)

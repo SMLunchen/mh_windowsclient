@@ -4,7 +4,7 @@ Der **Meshhessen Client** ist ein **kostenloser, nativer Windows-Client für Mes
 
 ![Windows](https://img.shields.io/badge/Windows-10%2F11-blue)
 ![.NET](https://img.shields.io/badge/.NET-8.0-purple)
-![Status](https://img.shields.io/badge/Status-v1.5.10-yellow)
+![Status](https://img.shields.io/badge/Status-v1.5.11-yellow)
 ![License](https://img.shields.io/github/license/SMLunchen/mh_windowsclient)
 ![Stars](https://img.shields.io/github/stars/SMLunchen/mh_windowsclient)
 
@@ -138,12 +138,13 @@ Der **Meshhessen Client** ist ein **kostenloser, nativer Windows-Client für Mes
 * **Node-Farben** – Nodes individuell einfärben (Karte + Listen)
 * **Node-Notizen** – Freitext-Notizen pro Node
 * **Nodes anpinnen** – Nodes in der Liste oben fixieren (unabhängig von Sortierung)
-* **Favoriten** – Nodes als Favoriten markieren (★-Symbol, Rechtsklick-Menü); wird mit dem Gerät synchronisiert (`add_favorite_node` / `remove_favorite_node`); Favoriten erscheinen oben in der Liste
+* **Favoriten** – Nodes als Favoriten markieren (★-Symbol, Rechtsklick-Menü); wird mit dem Gerät synchronisiert (`set_favorite_node` / `remove_favorite_node`); Favoriten erscheinen oben in der Liste
 * **Fernverwaltung** – vollständige Remote-Admin-Oberfläche für Favoriten-Nodes:
   * Alle Konfigurations-Reiter: Besitzer, Gerät, Position, LoRa, Bluetooth, Netzwerk, Anzeige, Kanäle, **Sicherheit**, Steuerung
-  * **Sicherheits-Reiter:** Public Key (read-only), Admin-Schlüssel 1–3 (Base64), Flags (Admin Channel, Managed Mode, Serial, Debug Log)
+  * **Sicherheits-Reiter:** Public Key (read-only, Base64), Admin-Schlüssel 1–3 (Base64), Flags (Admin Channel, Managed Mode, Serial, Debug Log)
   * **Favoriten remote verwalten:** Knoten auf dem Remote-Gerät als Favorit setzen oder entfernen
   * Session-Schlüssel-Handshake, konfigurierbarer Timeout, per-Channel Retry + Neu-laden
+  * **Lazy Loading:** Beim Öffnen wählen ob alles sofort oder seitenweise geladen wird; „↻ Tab neu laden"-Button für gezielten Reload einzelner Reiter
 * **Node-Konfiguration** – vollständige Gerätekonfiguration direkt aus dem Client, alle Module auf einer Seite:
   * **Gerät & LoRa:** Region, Modem-Preset, TX-Power, Hop-Limit, Geräterolle, Rebroadcast-Modus
   * **Position:** GPS-Modus, Smart-Broadcast, feste Position mit Koordinaten-Eingabe; „Von Karte wählen" öffnet ein eigenes Kartenfenster (honoriert Offline-/Online-Einstellungen); „Eigener Kartenpin" übernimmt die per Rechtsklick gesetzte Position
@@ -241,6 +242,7 @@ Routing-Statistik (Hop-Anzahl, Pfad-Stabilität, Pfadwechsel-Rate):
 * ~~Keine persistente Message-History~~ → jetzt optional via Nachrichten-Datenbank (aktivierbar in Einstellungen)
 * Getestet mit Firmware 2.x
 * T-Deck: Channels werden nicht immer in der Config-Sequenz mitgesendet (Retry-Workaround aktiv) – Das T-Deck ist fast schon mit sich selbst überfordert, daher dauert dort alles etwas länger…
+* ~~Heltec-Boards brechen lokale Konfiguration nach 4–5/17 Configs ab~~ → behoben durch sequentielles Laden (senden → warten → nächste)
 
 
 ## 🗺️ Karte einrichten
@@ -375,7 +377,7 @@ Meshhessen Client · Windows-Client für Meshtastic-Geräte · Meshtastic Window
 
  ![Windows](https://img.shields.io/badge/Windows-10%2F11-blue)
  ![.NET](https://img.shields.io/badge/.NET-8.0-purple)
- ![Status](https://img.shields.io/badge/Status-v1.5.10-yellow)
+ ![Status](https://img.shields.io/badge/Status-v1.5.11-yellow)
  ![License](https://img.shields.io/github/license/SMLunchen/mh_windowsclient)
  ![Stars](https://img.shields.io/github/stars/SMLunchen/mh_windowsclient)
 
@@ -489,8 +491,8 @@ Meshhessen Client · Windows-Client für Meshtastic-Geräte · Meshtastic Window
 * **Node colors** – color-code nodes individually (map + lists)
 * **Node notes** – free-text annotations per node
 * **Pin nodes** – pin nodes to the top of the list (independent of sorting)
-* **Favorites** – mark nodes as favorites (★ icon, right-click menu); synced with the device (`add_favorite_node` / `remove_favorite_node`); favorites shown at the top of the list
-* **Remote Administration** – full remote admin UI for favorite nodes: all configuration tabs (Owner, Device, Position, LoRa, Bluetooth, Network, Display, Channels, Control), session-key handshake, configurable timeout
+* **Favorites** – mark nodes as favorites (★ icon, right-click menu); synced with the device (`set_favorite_node` / `remove_favorite_node`); favorites shown at the top of the list
+* **Remote Administration** – full remote admin UI for favorite nodes: all configuration tabs (Owner, Device, Position, LoRa, Bluetooth, Network, Display, Channels, Security, Control), session-key handshake, configurable timeout, lazy loading (load-on-demand per tab) and "↻ Reload Tab" button
 * **Node configuration** – full device configuration directly from the client, all modules in one window:
   * **Device & LoRa:** region, modem preset, TX power, hop limit, device role, rebroadcast mode
   * **Position:** GPS mode, smart broadcast, fixed position with coordinate input; "Pick from Map" opens a dedicated map picker window (respects offline/online settings); "Own Map Pin" copies the position set via right-click
@@ -531,6 +533,7 @@ The Meshhessen Client is a community project of the Meshtastic community in Hess
 * ~~No persistent message history~~ → now available as optional message database (enable in settings)
 * Tested with firmware 2.x
 * T-Deck: channels are not always included in the config sequence (retry workaround active) – The T-Deck is barely keeping up with itself, so everything takes a bit longer there…
+* ~~Heltec boards abort local configuration after 4–5/17 configs~~ → fixed by sequential loading (send → wait for response → send next)
 
 
 ## 🗺️ Setting Up the Offline Map

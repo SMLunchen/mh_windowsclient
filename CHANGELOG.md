@@ -11,6 +11,19 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ### ✨ Hinzugefügt
 
+#### 🔧 Remote Admin – Lazy Loading & Tab-Reload
+- **Lade-Modus-Dialog** beim Öffnen des Remote-Admin-Fensters: Benutzer wählt ob alle Einstellungen sofort geladen werden sollen (~30–60 s) oder seitenweise
+  - **Seitenweise-Modus:** Jeder Reiter wird erst beim ersten Anklicken geladen (kein unnötiger Funkverkehr)
+  - Bereits geladene Reiter werden nicht erneut abgerufen
+- **Neuer Button „↻ Tab neu laden"** in der Buttonleiste – lädt nur den aktuell sichtbaren Reiter komplett neu (ohne den Rest anzufassen)
+
+#### 🔧 Lokaler Admin – Sequentielles Laden
+- **Echtes sequentielles Config-Loading** in der Node-Konfiguration (lokaler Admin):
+  - Bisher: alle 17 Konfigurations-Requests feuern und auf Events warten (fire-and-forget)
+  - Jetzt: senden → auf Antwort-Event warten → nächste senden; 8 s Timeout pro Konfiguration
+  - Verhindert Queue-Overflow auf langsamen Boards (z.B. Heltec) – vorher Abbruch bei 4–5/17
+  - Falls eine Konfiguration nicht antwortet (z.B. nicht unterstütztes Modul), wird nach 8 s automatisch weitergemacht; fehlende Configs werden am Ende angezeigt
+
 #### 🖧 Virtual Node (Tools-Tab)
 - **Virtual Node TCP-Proxy-Server** – wandelt den Meshhessen Client in einen Meshtastic-kompatiblen TCP-Server um
   - Meshtastic-Apps (Android, iOS, andere Clients) können sich mit dem Client verbinden, als wäre er ein echtes Gerät
@@ -117,6 +130,29 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ### 🐛 Behoben
 
+#### 🔧 Remote Admin – Channel-Ladefehler
+- **`GetChannelRequest` ist 1-basiert** (1 = Kanal 0, 2 = Kanal 1 …): War 0-basiert → Kanal 0 lud nie (Timeout), alle anderen Kanäle um eins verschoben
+- **Channel-Reihenfolge:** Stale-Response-Validierung via `ch.Index` entfernt – Firmware setzt das Feld oft nicht (Protobuf-Default 0), was alle Kanäle außer 0 als "falsche Antwort" klassifizierte und dreifach neu anforderte
+
+#### 🔧 Remote Admin – Favoriten (Proto-Feldnummern falsch)
+- `add_favorite_node = 36` war veraltet; aktuelle Firmware erwartet `set_favorite_node = 39`
+  - Feld 36 ist in aktueller Firmware `set_canned_message_module_messages` → Favorites-Anfragen landeten still beim falschen Handler
+- `remove_favorite_node` korrigiert von Feld 37 auf Feld 40
+- `admin.proto` im Projekt auf aktuelle Feldnummern aktualisiert; alle C#-Referenzen auf `SetFavoriteNode` umgestellt
+- **FavoriteButton Fire-and-forget behoben:** Fehler beim Setzen/Entfernen wurden still ignoriert; jetzt proper `async void` mit Fehlermeldung und UI-Revert bei Fehler
+
+#### 🔧 Admin – Key-Anzeige
+- **Public Key und Private Key** wurden als Hex angezeigt; Meshtastic-App und Firmware nutzen Base64 → beide Admin-Fenster (lokal & remote) zeigen Keys jetzt in Base64
+
+#### 🗺️ Karte – Emoji-Node-Namen
+- **Emoji-Kurzname (z.B. 🔥, 📶)** wurden auf der Karte als □ angezeigt, weil SkiaSharp/Mapsui kein Emoji-Fallback hat
+- Alle vier `LabelStyle`-Stellen in MainWindow auf `Font { FontFamily = "Segoe UI Emoji" }` gesetzt
+
+#### 🖧 Virtual Node – Traceroute-Telemetrie
+- **Traceroute-Requests des VNode-Clients** wurden fälschlicherweise in die eigene Telemetrie eingespeist: Android-App löst Traceroute aus → Request-Paket (`WantResponse=true`, Portnum=70) wurde als Traceroute-Ergebnis mit `DestinationNodeId = myNodeId` gespeichert
+- Fix: `ProcessExternalPacket` filtert ausgehende Traceroute-Requests heraus; die Antwort kommt ohnehin über den physischen Funkweg
+
+#### ⚙️ Sonstige Bugfixes
 - **Zombie-Prozess beim Beenden**: App beendet sich jetzt sauber mit `Application.Current.Shutdown()`
   - Synchroner Disconnect statt asynchron
   - Keine hängenden Prozesse mehr nach Fenster-Schließen
