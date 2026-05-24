@@ -381,8 +381,11 @@ public partial class RemoteAdminWindow : Window
 
     private async Task LoadSingleChannelAsync(int index)
     {
-        // Try up to 3 times — remote channel responses can be lossy or arrive out of order
-        for (int attempt = 0; attempt < 3; attempt++)
+        // Try twice — remote channel responses can be lossy.
+        // NOTE: ch.Index in the response is often 0 (firmware default) even for non-zero
+        // channels, so we do NOT validate it against the requested index — we simply trust
+        // that the response belongs to the channel we just asked for.
+        for (int attempt = 0; attempt < 2; attempt++)
         {
             var chResp = await _svc.SendRemoteAdminRequestAsync(
                 _targetNode.NodeId,
@@ -392,24 +395,12 @@ public partial class RemoteAdminWindow : Window
             if (chResp?.PayloadVariantCase == AdminMessage.PayloadVariantOneofCase.GetChannelResponse)
             {
                 var ch = chResp.GetChannelResponse;
-                int actualIndex = ch.Index; // Use the index from the response, not the requested one
-
-                // If a stale response for a different channel arrived, store it in the correct slot
-                // and retry for the originally requested index
-                if (actualIndex != index && actualIndex >= 0 && actualIndex < 8)
-                {
-                    _loadedChannels[actualIndex] = ch;
-                    Dispatcher.Invoke(() => AddOrUpdateChannelRow(actualIndex, ch));
-                    await Task.Delay(300);
-                    continue; // Retry for the requested index
-                }
-
                 _loadedChannels[index] = ch;
                 Dispatcher.Invoke(() => AddOrUpdateChannelRow(index, ch));
                 return;
             }
 
-            if (attempt < 2) await Task.Delay(400);
+            if (attempt == 0) await Task.Delay(400);
         }
         // Still failed — insert placeholder row so user can retry
         Dispatcher.Invoke(() => AddOrUpdateChannelRow(index, null));
