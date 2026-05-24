@@ -27,6 +27,10 @@ public class MeshtasticProtocolService
     private bool _debugDevice = false;
     private readonly HashSet<int> _receivedChannelResponses = new(); // Tracks which channel indices we got via GetChannelResponse
     private byte[] _sessionPasskey = Array.Empty<byte>(); // Session key from admin responses (required for write operations)
+
+    // Remote admin state — per-node session keys and pending request completions
+    private readonly Dictionary<uint, byte[]> _remoteSessionKeys = new();
+    private readonly Dictionary<uint, TaskCompletionSource<AdminMessage>> _pendingRemoteRequests = new();
     private DateTime _lastValidPacketTime = DateTime.MinValue;
     private int _consecutiveTextChunks = 0;
     private bool _recoveryInProgress = false;
@@ -65,6 +69,33 @@ public class MeshtasticProtocolService
     public event EventHandler<uint>? WaypointDeleted;
     /// <summary>Raised when the radio sends an MqttClientProxyMessage (device→broker direction).</summary>
     public event EventHandler<MqttClientProxyMessage>? MqttProxyMessageReceived;
+    /// <summary>Fired with each complete raw framed packet from the physical node (0x94 0xC3 + len + payload).</summary>
+    public event EventHandler<byte[]>? RawFrameReceived;
+
+    /// <summary>Injects a FromRadio payload originating from a VN client into the local processing pipeline.</summary>
+    public void ProcessExternalPacket(byte[] fromRadioPayload)
+    {
+        try
+        {
+            var fr = FromRadio.Parser.ParseFrom(fromRadioPayload);
+            if (fr.PayloadVariantCase != FromRadio.PayloadVariantOneofCase.Packet) return;
+
+            var packet = fr.Packet;
+            // Skip outgoing traceroute requests — the response will arrive via the normal physical path
+            if (packet.Decoded != null && packet.Decoded.WantResponse && packet.Decoded.Portnum == 70)
+                return;
+
+            // If the sender didn't fill in 'from', attribute the packet to our own node
+            if (packet.From == 0 && _myNodeId != 0)
+                packet.From = _myNodeId;
+
+            ProcessPacket(fr.ToByteArray());
+        }
+        catch (Exception ex)
+        {
+            Logger.WriteLine($"[VN inject] ProcessExternalPacket error: {ex.Message}");
+        }
+    }
     public int TimeDriftThresholdSeconds { get; set; } = 300; // 5 minutes
 
     private DateTime _lastDriftCheck = DateTime.MinValue;
@@ -429,11 +460,17 @@ public class MeshtasticProtocolService
             else
             {
                 // Serial/TCP use framing - buffer and process
+                List<byte[]>? rawFrames = null;
                 lock (_receiveBuffer)
                 {
                     _receiveBuffer.AddRange(data);
-                    ProcessBuffer();
+                    ProcessBuffer(ref rawFrames);
                 }
+                // Fire RawFrameReceived outside the lock so VN cache/broadcast work
+                // doesn't compete with the receive buffer on high-volume init streams
+                if (rawFrames != null)
+                    foreach (var rf in rawFrames)
+                        RawFrameReceived?.Invoke(this, rf);
             }
         }
         catch (Exception ex)
@@ -455,7 +492,7 @@ public class MeshtasticProtocolService
         }
     }
 
-    private void ProcessBuffer()
+    private void ProcessBuffer(ref List<byte[]>? rawFrames)
     {
         try
         {
@@ -550,6 +587,19 @@ public class MeshtasticProtocolService
                 // Gültiges Protobuf-Paket empfangen - Text-Modus-Zähler zurücksetzen
                 _consecutiveTextChunks = 0;
                 _lastValidPacketTime = DateTime.Now;
+
+                // Collect raw frame for Virtual Node proxy (fired outside lock)
+                if (RawFrameReceived != null)
+                {
+                    var rawFrame = new byte[4 + packetLength];
+                    rawFrame[0] = PACKET_START_BYTE_1;
+                    rawFrame[1] = PACKET_START_BYTE_2;
+                    rawFrame[2] = (byte)(packetLength >> 8);
+                    rawFrame[3] = (byte)(packetLength & 0xFF);
+                    Array.Copy(packet, 0, rawFrame, 4, packetLength);
+                    rawFrames ??= new List<byte[]>();
+                    rawFrames.Add(rawFrame);
+                }
 
                 try
                 {
@@ -1239,6 +1289,7 @@ public class MeshtasticProtocolService
             }
 
             nodeInfo.PkiKeyKnown = _nodeKeyService?.GetPublicKey(protoNodeInfo.Num) != null;
+            nodeInfo.IsFavorite = protoNodeInfo.IsFavorite;
 
             // Update DeviceInfo if this is our own node
             if (protoNodeInfo.Num == _myNodeId && _myDeviceInfo != null && !string.IsNullOrEmpty(nodeInfo.HardwareModel))
@@ -2123,6 +2174,79 @@ public class MeshtasticProtocolService
         await SendAdminMessageAsync(adminMsg);
     }
 
+    public async Task AddFavoriteNodeAsync(uint nodeId)
+    {
+        await EnsureSessionKeyAsync();
+        var adminMsg = new AdminMessage { SetFavoriteNode = nodeId }; // field 39
+        await SendAdminMessageAsync(adminMsg);
+        Logger.WriteLine($"SetFavoriteNode sent for node !{nodeId:x8}");
+    }
+
+    public async Task RemoveFavoriteNodeAsync(uint nodeId)
+    {
+        await EnsureSessionKeyAsync();
+        var adminMsg = new AdminMessage { RemoveFavoriteNode = nodeId }; // field 40
+        await SendAdminMessageAsync(adminMsg);
+        Logger.WriteLine($"RemoveFavoriteNode sent for node !{nodeId:x8}");
+    }
+
+    // ===== Remote Admin =====
+
+    /// <summary>Sends an admin request to a remote node and waits for the response (or timeout).</summary>
+    public async Task<AdminMessage?> SendRemoteAdminRequestAsync(uint destNodeId, AdminMessage adminMsg, int timeoutMs = 30000)
+    {
+        var tcs = new TaskCompletionSource<AdminMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
+        lock (_dataLock)
+        {
+            _pendingRemoteRequests[destNodeId] = tcs;
+            if (_remoteSessionKeys.TryGetValue(destNodeId, out var key) && key.Length > 0)
+                adminMsg.SessionPasskey = ByteString.CopyFrom(key);
+        }
+        var meshPacket = new MeshPacket
+        {
+            From = _myNodeId,
+            To = destNodeId,
+            Decoded = new Data { Portnum = 6, Payload = adminMsg.ToByteString(), WantResponse = true },
+            Id = (uint)Random.Shared.Next()
+        };
+        await SendToRadioAsync(new ToRadio { Packet = meshPacket });
+        Logger.WriteLine($"[RemoteAdmin] Request {adminMsg.PayloadVariantCase} → !{destNodeId:x8} (timeout {timeoutMs}ms)");
+
+        var completed = await Task.WhenAny(tcs.Task, Task.Delay(timeoutMs));
+        lock (_dataLock) { _pendingRemoteRequests.Remove(destNodeId); }
+
+        if (completed != tcs.Task)
+        {
+            Logger.WriteLine($"[RemoteAdmin] Timeout waiting for response from !{destNodeId:x8}");
+            return null;
+        }
+        return tcs.Task.Result;
+    }
+
+    /// <summary>Sends an admin write to a remote node (fire-and-forget after obtaining session key).</summary>
+    public async Task SendRemoteAdminWriteAsync(uint destNodeId, AdminMessage adminMsg)
+    {
+        byte[]? key;
+        lock (_dataLock) { _remoteSessionKeys.TryGetValue(destNodeId, out key); }
+        if (key != null && key.Length > 0)
+            adminMsg.SessionPasskey = ByteString.CopyFrom(key);
+
+        var meshPacket = new MeshPacket
+        {
+            From = _myNodeId,
+            To = destNodeId,
+            Decoded = new Data { Portnum = 6, Payload = adminMsg.ToByteString(), WantResponse = false },
+            Id = (uint)Random.Shared.Next()
+        };
+        await SendToRadioAsync(new ToRadio { Packet = meshPacket });
+        Logger.WriteLine($"[RemoteAdmin] Write {adminMsg.PayloadVariantCase} → !{destNodeId:x8}");
+    }
+
+    public void ClearRemoteSessionKey(uint destNodeId)
+    {
+        lock (_dataLock) { _remoteSessionKeys.Remove(destNodeId); }
+    }
+
     public void Disconnect()
     {
         Logger.WriteLine("MeshtasticProtocolService: Disconnecting...");
@@ -2169,7 +2293,20 @@ public class MeshtasticProtocolService
             Logger.WriteLine($"Admin message RAW payload ({payloadBytes.Length} bytes): [{payloadHex}]");
 
             var adminMsg = AdminMessage.Parser.ParseFrom(data.Payload);
-            Logger.WriteLine($"Admin message: {adminMsg.PayloadVariantCase}");
+            Logger.WriteLine($"Admin message: {adminMsg.PayloadVariantCase} (from=!{packet.From:x8})");
+
+            // Remote admin response — route to waiting TCS and return
+            if (packet.From != _myNodeId && packet.From != 0)
+            {
+                lock (_dataLock)
+                {
+                    if (adminMsg.SessionPasskey != null && adminMsg.SessionPasskey.Length > 0)
+                        _remoteSessionKeys[packet.From] = adminMsg.SessionPasskey.ToByteArray();
+                    if (_pendingRemoteRequests.TryGetValue(packet.From, out var remoteTcs))
+                        remoteTcs.TrySetResult(adminMsg);
+                }
+                return;
+            }
 
             // Store session passkey from every admin response (required for write operations)
             if (adminMsg.SessionPasskey != null && adminMsg.SessionPasskey.Length > 0)

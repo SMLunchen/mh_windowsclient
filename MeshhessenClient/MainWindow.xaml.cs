@@ -48,7 +48,7 @@ public partial class MainWindow : Window
     private ObservableCollection<ChannelInfo> _channels = new();
     private ObservableCollection<Models.BluetoothDeviceInfo> _bluetoothDevices = new();
     private int _activeChannelIndex = 0;
-    private bool _showEncryptedMessages = true;
+    private bool _showEncryptedMessages = false;
     private ChannelInfo? _messageChannelFilter = null;
     private DirectMessagesWindow? _dmWindow = null;
     private uint _myNodeId = 0;
@@ -68,7 +68,7 @@ public partial class MainWindow : Window
     private AppSettings _currentSettings = new(
         false,
         string.Empty,
-        true,
+        false,
         50.9,
         9.5,
         string.Empty,
@@ -87,7 +87,8 @@ public partial class MainWindow : Window
         true,
         "de",
         false,
-        new Dictionary<uint, bool>(),
+        new Dictionary<uint, bool>(),  // PinnedNodes
+        new Dictionary<uint, bool>(),  // FavoriteNodes
         90,
         Services.PskMismatchAction.Overwrite,
         6,    // SignalWeatherWindowHours
@@ -99,7 +100,11 @@ public partial class MainWindow : Window
         false,      // EnableMessageDb
         90,         // MessageDbRetentionDays
         "Serial",   // LastConnectionType
-        string.Empty); // LastBtDevice
+        string.Empty,  // LastBtDevice
+        30,            // RemoteAdminTimeoutSeconds
+        false,         // VirtualNodeEnabled
+        4404,          // VirtualNodePort
+        false);        // VirtualNodeBlockAdmin
     private NodeInfo? _mapContextMenuNode;
     private uint? _alertNodeId;  // Stores the node ID for "Show on Map" button
 
@@ -155,6 +160,9 @@ public partial class MainWindow : Window
 
     // MQTT Proxy
     private MqttProxyService? _mqttProxyService;
+
+    // Virtual Node
+    private Services.VirtualNodeService? _virtualNodeService;
 
     // Reconnect state
     private ConnectionParameters? _lastConnectionParams;
@@ -410,6 +418,15 @@ public partial class MainWindow : Window
             if (AutoTimeSyncCheckBox != null) AutoTimeSyncCheckBox.IsChecked = settings.AutoTimeSyncOnConnect;
             if (TimeSyncDriftBox != null) TimeSyncDriftBox.Text = settings.TimeSyncDriftThresholdSeconds.ToString();
 
+            // Remote Admin
+            if (RemoteAdminTimeoutTextBox != null) RemoteAdminTimeoutTextBox.Text = settings.RemoteAdminTimeoutSeconds.ToString();
+
+            // Virtual Node
+            if (VirtualNodeEnableCheckBox != null) VirtualNodeEnableCheckBox.IsChecked = settings.VirtualNodeEnabled;
+            if (VirtualNodePortBox != null) VirtualNodePortBox.Text = settings.VirtualNodePort.ToString();
+            if (VirtualNodeBlockAdminCheckBox != null) VirtualNodeBlockAdminCheckBox.IsChecked = settings.VirtualNodeBlockAdmin;
+            RefreshVirtualNodeStatus();
+
             // Message DB
             EnableMessageDbCheckBox.IsChecked = settings.EnableMessageDb;
             foreach (System.Windows.Controls.ComboBoxItem item in MessageDbRetentionComboBox.Items)
@@ -448,6 +465,7 @@ public partial class MainWindow : Window
         catch (Exception ex)
         {
             Services.Logger.WriteLine($"ERROR loading settings: {ex.Message}");
+            _showEncryptedMessages = false;
         }
     }
 
@@ -557,6 +575,7 @@ public partial class MainWindow : Window
         feature.Styles.Add(new LabelStyle
         {
             Text = label,
+            Font = new Mapsui.Styles.Font { FontFamily = "Segoe UI Emoji" },
             ForeColor = Mapsui.Styles.Color.Blue,
             BackColor = new Mapsui.Styles.Brush(Mapsui.Styles.Color.White),
             HorizontalAlignment = LabelStyle.HorizontalAlignmentEnum.Center,
@@ -620,6 +639,7 @@ public partial class MainWindow : Window
         feature.Styles.Add(new LabelStyle
         {
             Text = labelText,
+            Font = new Mapsui.Styles.Font { FontFamily = "Segoe UI Emoji" },
             ForeColor = Mapsui.Styles.Color.Black,
             BackColor = new Mapsui.Styles.Brush(new Mapsui.Styles.Color(255, 255, 255, 180)),
             HorizontalAlignment = LabelStyle.HorizontalAlignmentEnum.Center,
@@ -997,6 +1017,7 @@ public partial class MainWindow : Window
                 _currentSettings.MyLatitude, _currentSettings.MyLongitude)
             { Owner = this };
             win.Show();
+            win.Activate();
         }
 
         MapStatusText.Text = sb.ToString();
@@ -1029,6 +1050,7 @@ public partial class MainWindow : Window
             _dmWindow.SetMessageDbManager(_messageDbManager);
             _dmWindow.Show();
         }
+        _dmWindow.Activate();
         _dmWindow.OpenChatWithNode(node.NodeId, node.Name, node.ColorHex);
     }
 
@@ -1175,6 +1197,18 @@ public partial class MainWindow : Window
 
         // Map-Status aktualisieren
         UpdateMapTileStatus();
+    }
+
+    private void TDeckMapBtn_Click(object sender, RoutedEventArgs e)
+    {
+        var wizard = new TDeckWizardWindow { Owner = this };
+        wizard.ShowDialog();
+    }
+
+    private void TDeckExportBtn_Click(object sender, RoutedEventArgs e)
+    {
+        var exportWin = new TDeckExportWindow { Owner = this };
+        exportWin.ShowDialog();
     }
 
     private void MapZoomIn_Click(object sender, RoutedEventArgs e)
@@ -1533,6 +1567,7 @@ public partial class MainWindow : Window
                 if (_nodeKeyService != null) _protocolService.SetNodeKeyService(_nodeKeyService);
                 _protocolService.SetPskMismatchAction(_currentSettings.NodeKeyMismatchAction);
                 _dmWindow?.UpdateProtocolService(_protocolService);
+                PrepareVirtualNode();
 
                 // Recreate proxy with new protocol service
                 _mqttProxyService?.Dispose();
@@ -1587,6 +1622,8 @@ public partial class MainWindow : Window
                             UpdateStatusBar(string.Format(Loc("StrConnectedReady"), displayName));
                             SetConnectionStatus(ConnectionStatus.Ready);
                             NodeConfigButton.IsEnabled = true;
+                            RemoteAdminButton.IsEnabled = true;
+                            StartVirtualNodeIfEnabled();
                         });
                     }
                     catch (Exception initEx)
@@ -2040,6 +2077,7 @@ public partial class MainWindow : Window
                 Language: (LanguageComboBox.SelectedItem as System.Windows.Controls.ComboBoxItem)?.Tag as string ?? "de",
                 EnableLocationLogging: EnableLocationLoggingCheckBox.IsChecked == true,
                 PinnedNodes: _currentSettings.PinnedNodes,
+                FavoriteNodes: _currentSettings.FavoriteNodes,
                 TelemetryRetentionDays: int.TryParse((TelemetryRetentionComboBox.SelectedItem as System.Windows.Controls.ComboBoxItem)?.Tag as string, out var ret) ? ret : 90,
                 NodeKeyMismatchAction: PskWarnRadio.IsChecked == true ? Services.PskMismatchAction.Warn
                                      : PskAskRadio.IsChecked  == true ? Services.PskMismatchAction.Ask
@@ -2053,10 +2091,15 @@ public partial class MainWindow : Window
                 EnableMessageDb: EnableMessageDbCheckBox.IsChecked == true,
                 MessageDbRetentionDays: int.TryParse((MessageDbRetentionComboBox.SelectedItem as System.Windows.Controls.ComboBoxItem)?.Tag as string, out var mdr) ? mdr : 90,
                 LastConnectionType: _currentSettings.LastConnectionType,
-                LastBtDevice: _currentSettings.LastBtDevice
+                LastBtDevice: _currentSettings.LastBtDevice,
+                RemoteAdminTimeoutSeconds: int.TryParse(RemoteAdminTimeoutTextBox.Text, out var rats) ? Math.Clamp(rats, 5, 120) : 30,
+                VirtualNodeEnabled: VirtualNodeEnableCheckBox?.IsChecked == true,
+                VirtualNodePort: int.TryParse(VirtualNodePortBox?.Text, out var vnp) ? Math.Clamp(vnp, 1, 65535) : 4404,
+                VirtualNodeBlockAdmin: VirtualNodeBlockAdminCheckBox?.IsChecked == true
             );
             _currentSettings = settings;
             SettingsService.Save(settings);
+            ApplyVirtualNodeSettings();
 
             // Enable/disable message DB manager
             if (settings.EnableMessageDb && _messageDbManager == null)
@@ -2106,6 +2149,9 @@ public partial class MainWindow : Window
                     if (_mqttProxyService != null)
                         _ = _mqttProxyService.StopAsync();
 
+                    // Stop Virtual Node on disconnect
+                    StopVirtualNode();
+
                     // Stop analysis timer on disconnect
                     _analysisTimer?.Dispose();
                     _analysisTimer = null;
@@ -2127,6 +2173,7 @@ public partial class MainWindow : Window
                     _channels.Clear();
                     _currentLoRaConfig = null;
                     NodeConfigButton.IsEnabled = false;
+                    RemoteAdminButton.IsEnabled = false;
                     UpdateMeshHessenButtonState();
                     PacketCountText.Text = string.Format(Loc("StrPacketCount"), 0);
 
@@ -2200,6 +2247,7 @@ public partial class MainWindow : Window
                 if (_db != null) _protocolService.SetDatabase(_db);
                 if (_nodeKeyService != null) _protocolService.SetNodeKeyService(_nodeKeyService);
                 _protocolService.SetPskMismatchAction(_currentSettings.NodeKeyMismatchAction);
+                PrepareVirtualNode();
 
                 // Recreate proxy with new protocol service
                 _mqttProxyService?.Dispose();
@@ -2238,6 +2286,8 @@ public partial class MainWindow : Window
                             UpdateStatusBar(Loc("StrConnectedReadySimple"));
                             SetConnectionStatus(ConnectionStatus.Ready);
                             NodeConfigButton.IsEnabled = true;
+                            RemoteAdminButton.IsEnabled = true;
+                            StartVirtualNodeIfEnabled();
                         });
                     }
                     catch (Exception initEx)
@@ -2471,8 +2521,12 @@ public partial class MainWindow : Window
                     node.Note = note;
                 }
 
-                // Apply pinned state
-                node.IsPinned = _currentSettings.PinnedNodes.ContainsKey(node.NodeId);
+                // Apply pinned and favorite state (local settings take precedence; proto value also accepted)
+                node.IsPinned    = _currentSettings.PinnedNodes.ContainsKey(node.NodeId);
+                node.IsFavorite  = _currentSettings.FavoriteNodes.ContainsKey(node.NodeId) || node.IsFavorite;
+                // Sync device-reported favorites into local settings cache
+                if (node.IsFavorite)
+                    _currentSettings.FavoriteNodes[node.NodeId] = true;
 
                 // Log location if enabled
                 if (_currentSettings.EnableLocationLogging)
@@ -2650,6 +2704,139 @@ public partial class MainWindow : Window
         Services.Logger.WriteLine($"OnMqttConfigReceived: proxy={mqttConfig.ProxyToClientEnabled}, broker={mqttConfig.Address}");
         _ = _mqttProxyService.StartAsync(mqttConfig, _myNodeId);
     }
+
+    // ── Virtual Node ──────────────────────────────────────────────────────────
+
+    // Phase 1: called right after new MeshtasticProtocolService is created so that
+    // RawFrameReceived is wired before InitializeAsync runs — this way the VN cache
+    // fills naturally during init and needs no separate populate step.
+    private void PrepareVirtualNode()
+    {
+        if (!_currentSettings.VirtualNodeEnabled) return;
+
+        // Tear down any previous instance
+        if (_virtualNodeService != null)
+        {
+            _virtualNodeService.Stop();
+            _virtualNodeService.Dispose();
+            _virtualNodeService = null;
+        }
+        // Unsubscribe in case it was left wired to the old protocol service
+        // (safe no-op if already unsubscribed)
+        try { _protocolService.RawFrameReceived -= OnVnRawFrame; } catch { }
+
+        _virtualNodeService = new Services.VirtualNodeService(_connectionService!)
+        {
+            Port = _currentSettings.VirtualNodePort,
+            BlockAdminCommands = _currentSettings.VirtualNodeBlockAdmin
+        };
+        _virtualNodeService.ClientCountChanged += (_, _) => Dispatcher.BeginInvoke(RefreshVirtualNodeStatus);
+        _virtualNodeService.LogMessage += (_, msg) => Services.Logger.WriteLine($"[VN] {msg}");
+        _virtualNodeService.ClientPacketReceived += OnVnClientPacket;
+        _protocolService.RawFrameReceived += OnVnRawFrame;
+    }
+
+    // Phase 2: called after Ready — starts the TCP listener
+    private void StartVirtualNodeIfEnabled()
+    {
+        if (!_currentSettings.VirtualNodeEnabled) return;
+        if (_connectionService?.IsConnected != true) return;
+        if (_virtualNodeService?.IsRunning == true) return;
+
+        // If PrepareVirtualNode was never called (e.g. VN was enabled after connect)
+        // create the service now — cache will be partially filled but that is acceptable
+        if (_virtualNodeService == null)
+            PrepareVirtualNode();
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await _virtualNodeService!.StartAsync();
+                Dispatcher.BeginInvoke(RefreshVirtualNodeStatus);
+            }
+            catch (Exception ex)
+            {
+                Services.Logger.WriteLine($"Virtual Node start failed: {ex.Message}");
+                Dispatcher.BeginInvoke(RefreshVirtualNodeStatus);
+            }
+        });
+    }
+
+    private void StopVirtualNode()
+    {
+        if (_protocolService != null)
+            _protocolService.RawFrameReceived -= OnVnRawFrame;
+        if (_virtualNodeService != null)
+            _virtualNodeService.ClientPacketReceived -= OnVnClientPacket;
+        _virtualNodeService?.Stop();
+        _virtualNodeService?.Dispose();
+        _virtualNodeService = null;
+        Dispatcher.BeginInvoke(RefreshVirtualNodeStatus);
+    }
+
+    private void OnVnRawFrame(object? sender, byte[] frame)
+        => _virtualNodeService?.OnRawFrameFromPhysical(frame);
+
+    private void OnVnClientPacket(object? sender, byte[] fromRadioBytes)
+        => _protocolService?.ProcessExternalPacket(fromRadioBytes);
+
+    private void ApplyVirtualNodeSettings()
+    {
+        if (_virtualNodeService != null)
+            _virtualNodeService.BlockAdminCommands = _currentSettings.VirtualNodeBlockAdmin;
+
+        if (_currentSettings.VirtualNodeEnabled && _connectionService?.IsConnected == true)
+        {
+            // Restart if port changed or not running yet
+            bool portChanged = _virtualNodeService?.Port != _currentSettings.VirtualNodePort;
+            if (!(_virtualNodeService?.IsRunning == true) || portChanged)
+            {
+                StopVirtualNode();
+                StartVirtualNodeIfEnabled();
+            }
+        }
+        else if (!_currentSettings.VirtualNodeEnabled)
+        {
+            StopVirtualNode();
+        }
+        RefreshVirtualNodeStatus();
+    }
+
+    private void VirtualNodeSettings_Changed(object sender, RoutedEventArgs e)
+    {
+        // Immediate apply without full settings save (save happens via SaveSettings_Click)
+        var enabled = VirtualNodeEnableCheckBox?.IsChecked == true;
+        var blockAdmin = VirtualNodeBlockAdminCheckBox?.IsChecked == true;
+        int port = int.TryParse(VirtualNodePortBox?.Text, out var p) ? Math.Clamp(p, 1, 65535) : 4404;
+
+        _currentSettings = _currentSettings with
+        {
+            VirtualNodeEnabled = enabled,
+            VirtualNodePort = port,
+            VirtualNodeBlockAdmin = blockAdmin
+        };
+        SettingsService.Save(_currentSettings);
+        ApplyVirtualNodeSettings();
+    }
+
+    private void RefreshVirtualNodeStatus()
+    {
+        if (VirtualNodeStatusText == null) return;
+        var running = _virtualNodeService?.IsRunning == true;
+        VirtualNodeStatusText.Text = running ? Loc("StrVirtualNodeRunning") : Loc("StrVirtualNodeStopped");
+        VirtualNodeStatusText.Foreground = running
+            ? new SolidColorBrush(System.Windows.Media.Color.FromRgb(0x2E, 0x7D, 0x32))
+            : new SolidColorBrush(System.Windows.Media.Color.FromRgb(0x75, 0x75, 0x75));
+
+        var clients = _virtualNodeService?.GetConnectedClients() ?? [];
+        VirtualNodeClientCountText.Text = clients.Count.ToString();
+        VirtualNodeClientListText.Text = clients.Count > 0
+            ? string.Join("\n", clients.Select(c => $"{c.Id}  {c.Ip}"))
+            : Loc("StrVirtualNodeNoClients");
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
 
     private void OnPacketCountChanged(object? sender, int count)
     {
@@ -3100,6 +3287,7 @@ public partial class MainWindow : Window
             else
             {
                 _dmWindow.Show();
+                _dmWindow.Activate();
             }
 
             // Reset Button-Hervorhebung
@@ -3140,6 +3328,15 @@ public partial class MainWindow : Window
                         }
                     }
                 }
+            }
+
+            // Sync send-channel dropdown to the selected filter channel
+            // (skip "Alle Kanäle" sentinel with Index 999)
+            if (_messageChannelFilter != null && _messageChannelFilter.Index != 999)
+            {
+                var match = _channels.FirstOrDefault(c => c.Index == _messageChannelFilter.Index);
+                if (match != null && !Equals(ActiveChannelComboBox.SelectedItem, match))
+                    ActiveChannelComboBox.SelectedItem = match;
             }
 
             Services.Logger.WriteLine($"Message filter changed to: {_messageChannelFilter?.Name ?? "Alle"} ({_messages.Count}/{_allMessages.Count} messages)");
@@ -3250,7 +3447,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        MainTabs.SelectedIndex = 4;
+        MainTabs.SelectedIndex = 3;
         var nodePos = SphericalMercator.FromLonLat(node.Longitude.Value, node.Latitude.Value);
         if (_map != null)
         {
@@ -3335,8 +3532,8 @@ public partial class MainWindow : Window
             };
         }
 
-        // Pinned nodes always first (stable sort preserves column order within groups)
-        filtered = filtered.OrderBy(n => n.IsPinned ? 0 : 1);
+        // Favorites first, then pinned, then rest
+        filtered = filtered.OrderBy(n => n.IsFavorite ? 0 : n.IsPinned ? 1 : 2);
 
         // Update UI
         _nodes.Clear();
@@ -3467,7 +3664,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        MainTabs.SelectedIndex = 4;
+        MainTabs.SelectedIndex = 3;
         var nodePos = SphericalMercator.FromLonLat(node.Longitude.Value, node.Latitude.Value);
         if (_map != null)
         {
@@ -3892,7 +4089,62 @@ public partial class MainWindow : Window
         SettingsService.Save(_currentSettings);
     }
 
-    // ========== Node Config Window ==========
+    // ========== Node Config + Remote Admin ==========
+
+    private void RemoteAdmin_Click(object sender, RoutedEventArgs e)
+    {
+        // Show node selector from favorites list
+        var favorites = _allNodes.Where(n => n.IsFavorite).ToList();
+        if (favorites.Count == 0)
+        {
+            MessageBox.Show(Loc("StrRemoteAdminNoFavorites"), Loc("StrRemoteAdminTitle"),
+                MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        // Simple selection dialog using a standard ListBox in a window
+        var dialog = new Window
+        {
+            Title           = Loc("StrRemoteAdminSelectNode"),
+            Width           = 380,
+            Height          = 320,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            Owner           = this,
+            ResizeMode      = ResizeMode.NoResize
+        };
+        var stack = new StackPanel { Margin = new Thickness(16) };
+        stack.Children.Add(new TextBlock
+        {
+            Text       = Loc("StrRemoteAdminSelectNode"),
+            FontWeight = FontWeights.SemiBold,
+            Margin     = new Thickness(0, 0, 0, 10)
+        });
+        var listBox = new ListBox { Height = 180 };
+        foreach (var n in favorites)
+            listBox.Items.Add(new ListBoxItem { Content = $"{n.Name} ({n.Id})", Tag = n });
+        listBox.SelectedIndex = 0;
+        stack.Children.Add(listBox);
+        var btnRow = new StackPanel { Orientation = System.Windows.Controls.Orientation.Horizontal,
+            HorizontalAlignment = System.Windows.HorizontalAlignment.Right, Margin = new Thickness(0, 12, 0, 0) };
+        var okBtn = new System.Windows.Controls.Button { Content = "OK", Width = 80, Margin = new Thickness(0, 0, 8, 0),
+            IsDefault = true };
+        var cancelBtn = new System.Windows.Controls.Button { Content = Loc("StrCancel"), Width = 80, IsCancel = true };
+        btnRow.Children.Add(okBtn);
+        btnRow.Children.Add(cancelBtn);
+        stack.Children.Add(btnRow);
+        dialog.Content = stack;
+        bool confirmed = false;
+        okBtn.Click    += (_, _) => { confirmed = true; dialog.Close(); };
+        cancelBtn.Click += (_, _) => dialog.Close();
+        dialog.ShowDialog();
+
+        if (!confirmed || listBox.SelectedItem is not ListBoxItem { Tag: NodeInfo selected }) return;
+
+        var timeout = _currentSettings.RemoteAdminTimeoutSeconds * 1000;
+        var win = new RemoteAdminWindow(_protocolService, selected, timeout, selected.IsFavorite) { Owner = this };
+        win.Show();
+        win.Activate();
+    }
 
     private void NodeConfig_Click(object sender, RoutedEventArgs e)
     {
@@ -3900,6 +4152,7 @@ public partial class MainWindow : Window
         {
             var win = new NodeConfigWindow(_protocolService, GetMapCenter, GetMyPosition, BuildTileLayer) { Owner = this };
             win.Show();
+            win.Activate();
         }
         catch (Exception ex)
         {
@@ -3949,7 +4202,8 @@ public partial class MainWindow : Window
     {
         if (NodesListView.SelectedItem is NodeInfo node)
         {
-            PinNodeMenuItem.Header = node.IsPinned ? Loc("StrUnpin") : Loc("StrPin");
+            PinNodeMenuItem.Header      = node.IsPinned    ? Loc("StrUnpin")       : Loc("StrPin");
+            FavoriteNodeMenuItem.Header = node.IsFavorite  ? Loc("StrUnfavorite")  : Loc("StrFavorite");
             bool pathActive = _pathLayers.ContainsKey(node.NodeId);
             ShowPathNodeMenuItem.Visibility = pathActive ? Visibility.Collapsed : Visibility.Visible;
             HidePathMenuItem.Visibility = pathActive ? Visibility.Visible : Visibility.Collapsed;
@@ -3971,6 +4225,36 @@ public partial class MainWindow : Window
 
         ApplyNodeSortAndFilter();
         Services.Logger.WriteLine($"Node {node.Name} ({node.Id}) {(node.IsPinned ? "pinned" : "unpinned")}");
+    }
+
+    private void ToggleFavoriteInternal(NodeInfo node)
+    {
+        node.IsFavorite = !node.IsFavorite;
+
+        var existing = _allNodes.FirstOrDefault(n => n.NodeId == node.NodeId);
+        if (existing != null) existing.IsFavorite = node.IsFavorite;
+
+        if (node.IsFavorite)
+            _currentSettings.FavoriteNodes[node.NodeId] = true;
+        else
+            _currentSettings.FavoriteNodes.Remove(node.NodeId);
+        SettingsService.Save(_currentSettings);
+
+        if (_protocolService != null)
+        {
+            _ = node.IsFavorite
+                ? _protocolService.AddFavoriteNodeAsync(node.NodeId)
+                : _protocolService.RemoveFavoriteNodeAsync(node.NodeId);
+        }
+
+        ApplyNodeSortAndFilter();
+        Services.Logger.WriteLine($"Node {node.Name} ({node.Id}) {(node.IsFavorite ? "favorited" : "unfavorited")}");
+    }
+
+    private void NodeContextMenu_Favorite_Click(object sender, RoutedEventArgs e)
+    {
+        if (NodesListView.SelectedItem is NodeInfo node)
+            ToggleFavoriteInternal(node);
     }
 
     private void NodeContextMenu_Pin_Click(object sender, RoutedEventArgs e)
@@ -4114,7 +4398,7 @@ public partial class MainWindow : Window
             _map?.Layers.Add(pathLayer);
 
             // Zoom to fit
-            MainTabs.SelectedIndex = 4;
+            MainTabs.SelectedIndex = 3;
             var minX = coords.Min(c => c.X); var maxX = coords.Max(c => c.X);
             var minY = coords.Min(c => c.Y); var maxY = coords.Max(c => c.Y);
             var paddedSize = Math.Max(Math.Max(maxX - minX, maxY - minY) * 1.3, 1000.0);
@@ -4248,7 +4532,7 @@ public partial class MainWindow : Window
             }
 
             // Switch to Map tab
-            MainTabs.SelectedIndex = 4; // Map is tab index 4 (0=Messages, 1=Nodes, 2=Channels, 3=Settings, 4=Map)
+            MainTabs.SelectedIndex = 3; // Map is tab index 3 (0=Messages, 1=Nodes, 2=Channels, 3=Map, 4=Settings, ...)
 
             // Center map on node position with closer zoom
             var nodePos = SphericalMercator.FromLonLat(node.Longitude.Value, node.Latitude.Value);
@@ -4518,7 +4802,7 @@ public partial class MainWindow : Window
                 HorizontalAlignment = LabelStyle.HorizontalAlignmentEnum.Left,
                 VerticalAlignment = LabelStyle.VerticalAlignmentEnum.Center,
                 Offset = new Offset(8, 0),
-                Font = new Font { Size = 9 },
+                Font = new Mapsui.Styles.Font { FontFamily = "Segoe UI Emoji", Size = 9 },
             });
             features.Add(pin);
         }
@@ -4532,7 +4816,7 @@ public partial class MainWindow : Window
 
         if (zoomToFit)
         {
-            MainTabs.SelectedIndex = 4;
+            MainTabs.SelectedIndex = 3;
             var allPts = orderedIds
                 .Where(id => positions.ContainsKey(id))
                 .Select(id => { var p = SphericalMercator.FromLonLat(positions[id].Lon, positions[id].Lat); return new MPoint(p.x, p.y); })
@@ -4691,7 +4975,7 @@ public partial class MainWindow : Window
             MapStatusText.Text = "Alle DB-Traceroutes bereits auf der Karte.";
         else
         {
-            MainTabs.SelectedIndex = 4;
+            MainTabs.SelectedIndex = 3;
             MapStatusText.Text = $"{drawn} Traceroute(s) aus DB geladen ({days}d).";
         }
     }
@@ -4859,7 +5143,7 @@ public partial class MainWindow : Window
             BackColor = new Mapsui.Styles.Brush(new Mapsui.Styles.Color(100, 100, 100, 200)),
             HorizontalAlignment = LabelStyle.HorizontalAlignmentEnum.Center,
             VerticalAlignment = LabelStyle.VerticalAlignmentEnum.Center,
-            Font = new Font { Size = 9 },
+            Font = new Mapsui.Styles.Font { FontFamily = "Segoe UI Emoji", Size = 9 },
         });
         return f;
     }
@@ -5182,12 +5466,25 @@ public partial class MainWindow : Window
             Owner = this
         };
         win.Show();
+        win.Activate();
     }
 
     private void NodeContextMenu_Telemetry_Click(object sender, RoutedEventArgs e)
     {
         if (NodesListView.SelectedItem is not NodeInfo node) return;
         OpenTelemetryForNode(node);
+    }
+
+    private void OpenDashboardMain_Click(object sender, RoutedEventArgs e)
+    {
+        if (_db == null) return;
+        var nodeNames = _allNodes.ToDictionary(n => n.NodeId, n => n.Name);
+        var nodeShortNames = _allNodes
+            .Where(n => !string.IsNullOrWhiteSpace(n.ShortName))
+            .ToDictionary(n => n.NodeId, n => n.ShortName);
+        var dash = new TelemetryDashboardWindow(_db, nodeNames, nodeShortNames);
+        dash.Show();
+        dash.Activate();
     }
 
     // Context menu handlers for traceroute
@@ -5215,6 +5512,7 @@ public partial class MainWindow : Window
             Owner = this
         };
         win.Show();
+        win.Activate();
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -5405,8 +5703,9 @@ public partial class MainWindow : Window
         var now = DateTime.Now;
         if (now.Hour == 0 && now.Minute == 0 && !_midnightFiredToday)
         {
-            _midnightFiredToday = true;
-            Dispatcher.BeginInvoke(ShowMidnightMesh);
+            _midnightFiredToday = true;  // always lock out further checks this midnight
+            if (_allNodes.Count > 0 && Random.Shared.Next(3) == 0)  // ~1 in 3 nights
+                Dispatcher.BeginInvoke(ShowMidnightMesh);
         }
         else if (now.Hour != 0)
         {
@@ -5422,15 +5721,17 @@ public partial class MainWindow : Window
         var lines = new[]
         {
             "- - - - - - - - - - - - - - - - - - - -",
-            $"SENDESTELLE {myShortName.ToUpper()}",
-            "SENDELEISTUNG WIRD JETZT REDUZIERT",
-            "NACHT-BETRIEB AKTIV — 73 DE MH",
+            $"SENDESTELLE {myShortName.ToUpper()} — OSTEREI",
+            "AM-SENDELEISTUNG WIRD JETZT REDUZIERT",
+            "Ionosphäre aktiv: AM-Signale reichen nachts",
+            "hunderte km weit (Skywave-Propagation).",
+            "FCC-Nachtpflicht seit 1934 · LoRa: unaffected",
             "- - - - - - - - - - - - - - - - - - - -"
         };
         var msg = new MessageItem
         {
             Time        = "00:00",
-            From        = "⚡ SENDESTELLE",
+            From        = "⚡ SENDESTELLE OSTEREI",
             Message     = string.Join("\n", lines),
             ChannelName = "SYSTEM",
             IsOwnMessage = false

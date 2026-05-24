@@ -1,0 +1,371 @@
+<Window x:Class="MeshhessenClient.TDeckWizardWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="{DynamicResource StrTDeckTitle}"
+        Width="680" Height="560"
+        MinWidth="560" MinHeight="460"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="CanResizeWithGrip">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>  <!-- header -->
+            <RowDefinition Height="*"/>     <!-- page content -->
+            <RowDefinition Height="Auto"/>  <!-- footer nav -->
+        </Grid.RowDefinitions>
+
+        <!-- ── HEADER ── -->
+        <Border Grid.Row="0" Background="#1E3A5F" Padding="16,10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock x:Name="StepTitleText" Grid.Column="0"
+                           Foreground="White" FontSize="16" FontWeight="SemiBold"
+                           VerticalAlignment="Center"/>
+                <TextBlock x:Name="StepIndicatorText" Grid.Column="1"
+                           Foreground="#A0C4E8" FontSize="12"
+                           VerticalAlignment="Center"/>
+            </Grid>
+        </Border>
+
+        <!-- ── PAGE AREA ── -->
+        <Grid Grid.Row="1">
+
+            <!-- PAGE 1: Welcome -->
+            <ScrollViewer x:Name="Page1" VerticalScrollBarVisibility="Auto" Padding="20">
+                <StackPanel>
+                    <Border Background="#1E90FF" CornerRadius="4" Padding="10,6" Margin="0,0,0,14">
+                        <TextBlock Text="{DynamicResource StrTDeckGermanyOnly}"
+                                   Foreground="White" FontWeight="SemiBold"/>
+                    </Border>
+                    <TextBlock Text="{DynamicResource StrTDeckS1Desc}"
+                               TextWrapping="Wrap" LineHeight="20" FontSize="13"/>
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- PAGE 2: Drive selection -->
+            <Grid x:Name="Page2" Visibility="Collapsed" Margin="20">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" Text="{DynamicResource StrTDeckS2Hint}"
+                           TextWrapping="Wrap" Margin="0,0,0,10" Foreground="#666"/>
+
+                <Grid Grid.Row="1" Margin="0,0,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Text="{DynamicResource StrTDeckDriveLabel}"
+                               VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <ComboBox x:Name="DriveComboBox" Grid.Column="1"
+                              SelectionChanged="DriveComboBox_SelectionChanged"/>
+                    <Button Grid.Column="2" Content="{DynamicResource StrTDeckRefresh}"
+                            Margin="8,0,0,0" Padding="10,5"
+                            Click="RefreshDrives_Click"/>
+                </Grid>
+
+                <Border Grid.Row="2" BorderBrush="#DDD" BorderThickness="1" CornerRadius="4"
+                        Padding="12" Margin="0,0,0,8">
+                    <TextBlock x:Name="DriveInfoText" TextWrapping="Wrap"
+                               Text="{DynamicResource StrTDeckNoDrives}"
+                               Foreground="#555" FontSize="12"/>
+                </Border>
+
+                <TextBlock Grid.Row="3" x:Name="DriveWarningText"
+                           Foreground="OrangeRed" TextWrapping="Wrap" FontSize="12"/>
+            </Grid>
+
+            <!-- PAGE 3: Format check -->
+            <Grid x:Name="Page3" Visibility="Collapsed" Margin="20">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <Border Grid.Row="0" CornerRadius="6" Padding="12" Margin="0,0,0,10"
+                        x:Name="FormatStatusBorder">
+                    <TextBlock x:Name="FormatStatusText" TextWrapping="Wrap" FontSize="13"/>
+                </Border>
+
+                <TextBlock Grid.Row="1"
+                           Text="{DynamicResource StrTDeckFormatHint}"
+                           TextWrapping="Wrap" Foreground="#555" FontSize="11"
+                           Margin="0,0,0,12"/>
+
+                <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,10">
+                    <Button x:Name="FormatBtn"
+                            Content="{DynamicResource StrTDeckFormatBtn}"
+                            Padding="14,7" Margin="0,0,10,0"
+                            Click="FormatBtn_Click"/>
+                    <Button x:Name="SkipFormatBtn"
+                            Content="{DynamicResource StrTDeckSkipFormat}"
+                            Padding="14,7"
+                            Click="SkipFormatBtn_Click"/>
+                </StackPanel>
+
+                <Border Grid.Row="3" x:Name="FormatProgressBorder" Visibility="Collapsed"
+                        Background="#F0F4F8" CornerRadius="4" Padding="10">
+                    <StackPanel>
+                        <TextBlock x:Name="FormatProgressText" TextWrapping="Wrap" Margin="0,0,0,6"/>
+                        <ProgressBar x:Name="FormatProgress" Height="6" IsIndeterminate="True"/>
+                    </StackPanel>
+                </Border>
+
+                <TextBlock Grid.Row="4" x:Name="FormatResultText"
+                           TextWrapping="Wrap" FontWeight="SemiBold" Margin="0,8,0,0"/>
+            </Grid>
+
+            <!-- PAGE 4: Region selection -->
+            <Grid x:Name="Page4" Visibility="Collapsed" Margin="20">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- Radio buttons -->
+                <StackPanel Grid.Row="0" Margin="0,0,0,10">
+                    <RadioButton x:Name="RegionByStateRb" GroupName="Region"
+                                 Content="{DynamicResource StrTDeckRegionByState}"
+                                 IsChecked="True" Margin="0,0,0,4"
+                                 Checked="Region_Checked"/>
+                    <RadioButton x:Name="RegionGermanyRb" GroupName="Region"
+                                 Content="{DynamicResource StrTDeckRegionGermany}"
+                                 Margin="0,0,0,4"
+                                 Checked="Region_Checked"/>
+                    <RadioButton x:Name="RegionFreestyleRb" GroupName="Region"
+                                 Content="{DynamicResource StrTDeckRegionFreeStyle}"
+                                 Checked="Region_Checked"/>
+                </StackPanel>
+
+                <!-- State selection panel -->
+                <Grid x:Name="StatesPanel" Grid.Row="1">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,6">
+                        <Button Content="{DynamicResource StrTDeckStateSelectAll}"
+                                Padding="10,4" Margin="0,0,6,0" Click="SelectAllStates_Click"/>
+                        <Button Content="{DynamicResource StrTDeckStateSelectNone}"
+                                Padding="10,4" Click="SelectNoneStates_Click"/>
+                    </StackPanel>
+                    <Border Grid.Row="1" BorderBrush="#CCC" BorderThickness="1" CornerRadius="4">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <WrapPanel x:Name="StatesWrapPanel" Margin="8"/>
+                        </ScrollViewer>
+                    </Border>
+                </Grid>
+
+                <!-- Freestyle panel -->
+                <Grid x:Name="FreestylePanel" Grid.Row="1" Visibility="Collapsed">
+                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                        <Button Content="{DynamicResource StrTDeckOpenMap}"
+                                FontSize="14" Padding="20,10"
+                                Click="OpenMapDraw_Click"/>
+                        <TextBlock x:Name="FreestyleStatusText"
+                                   Text="{DynamicResource StrTDeckFreestyleNotSet}"
+                                   Margin="0,12,0,0" TextAlignment="Center"
+                                   Foreground="#666" FontSize="12" TextWrapping="Wrap"/>
+                    </StackPanel>
+                </Grid>
+
+                <!-- Germany panel (just info) -->
+                <Grid x:Name="GermanyPanel" Grid.Row="1" Visibility="Collapsed">
+                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                        <TextBlock Text="🇩🇪" FontSize="48" TextAlignment="Center"/>
+                        <TextBlock Text="N 55.10° | S 47.27° | W 5.87° | E 15.04°"
+                                   Margin="0,8,0,0" TextAlignment="Center"
+                                   Foreground="#444" FontSize="12"/>
+                    </StackPanel>
+                </Grid>
+
+                <!-- Bbox preview -->
+                <TextBlock x:Name="BboxPreviewText" Grid.Row="2"
+                           Foreground="#1E3A5F" FontWeight="SemiBold"
+                           Margin="0,8,0,0" TextWrapping="Wrap" FontSize="12"/>
+            </Grid>
+
+            <!-- PAGE 5: Zoom + map type -->
+            <ScrollViewer x:Name="Page5" Visibility="Collapsed"
+                          VerticalScrollBarVisibility="Auto" Padding="20">
+                <StackPanel>
+                    <!-- Zoom -->
+                    <TextBlock Text="{DynamicResource StrTDeckZoomLabel}"
+                               FontWeight="SemiBold" Margin="0,0,0,6"/>
+                    <StackPanel Margin="8,0,0,0">
+                        <RadioButton x:Name="Zoom8Rb"  GroupName="Zoom" Tag="8"
+                                     Content="{DynamicResource StrTDeckZoom8}"
+                                     Margin="0,3" Checked="Zoom_Checked"/>
+                        <RadioButton x:Name="Zoom10Rb" GroupName="Zoom" Tag="10"
+                                     Content="{DynamicResource StrTDeckZoom10}"
+                                     Margin="0,3" Checked="Zoom_Checked"/>
+                        <RadioButton x:Name="Zoom12Rb" GroupName="Zoom" Tag="12"
+                                     Content="{DynamicResource StrTDeckZoom12}"
+                                     Margin="0,3" Checked="Zoom_Checked"/>
+                        <RadioButton x:Name="Zoom14Rb" GroupName="Zoom" Tag="14"
+                                     IsChecked="True"
+                                     Content="{DynamicResource StrTDeckZoom14}"
+                                     Margin="0,3" Checked="Zoom_Checked"/>
+                        <RadioButton x:Name="Zoom16Rb" GroupName="Zoom" Tag="16"
+                                     Content="{DynamicResource StrTDeckZoom16}"
+                                     Margin="0,3" Checked="Zoom_Checked"/>
+                        <RadioButton x:Name="Zoom17Rb" GroupName="Zoom" Tag="17"
+                                     Content="{DynamicResource StrTDeckZoom17}"
+                                     Margin="0,3" Checked="Zoom_Checked"/>
+                    </StackPanel>
+
+                    <TextBlock x:Name="ZoomWarningText" Margin="0,8,0,0"
+                               TextWrapping="Wrap" FontSize="12" Visibility="Collapsed"/>
+
+                    <Separator Margin="0,14"/>
+
+                    <!-- Map type -->
+                    <TextBlock Text="{DynamicResource StrTDeckMapTypeLabel}"
+                               FontWeight="SemiBold" Margin="0,0,0,6"/>
+                    <StackPanel Margin="8,0,0,0">
+                        <RadioButton x:Name="MapOsmRb" GroupName="MapType" Tag="OSM"
+                                     Content="{DynamicResource StrTDeckMapOSM}"
+                                     IsChecked="True" Margin="0,3"
+                                     Checked="MapType_Checked"/>
+                        <RadioButton x:Name="MapDarkRb" GroupName="MapType" Tag="Dark"
+                                     Content="{DynamicResource StrTDeckMapDark}"
+                                     Margin="0,3" Checked="MapType_Checked"/>
+                        <RadioButton x:Name="MapTopoRb" GroupName="MapType" Tag="Topo"
+                                     Content="{DynamicResource StrTDeckMapTopo}"
+                                     Margin="0,3" Checked="MapType_Checked"/>
+                    </StackPanel>
+
+                    <Separator Margin="0,14"/>
+
+                    <!-- Estimate -->
+                    <TextBlock x:Name="EstimateText" FontSize="13" TextWrapping="Wrap"/>
+                    <TextBlock x:Name="SDFreeText" FontSize="12" Foreground="#555"
+                               Margin="0,4" TextWrapping="Wrap"/>
+                    <TextBlock x:Name="SDLowText" FontSize="12" Foreground="OrangeRed"
+                               Margin="0,4" TextWrapping="Wrap" Visibility="Collapsed"/>
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- PAGE 6: Download -->
+            <Grid x:Name="Page6" Visibility="Collapsed" Margin="20">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- Summary -->
+                <Border Grid.Row="0" Background="#F0F4F8" CornerRadius="6"
+                        Padding="14" Margin="0,0,0,12">
+                    <StackPanel>
+                        <TextBlock Text="{DynamicResource StrTDeckSummaryTitle}"
+                                   FontWeight="Bold" Margin="0,0,0,6"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="120"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition/>
+                                <RowDefinition/>
+                                <RowDefinition/>
+                                <RowDefinition/>
+                                <RowDefinition/>
+                            </Grid.RowDefinitions>
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="{DynamicResource StrTDeckSumDrive}" Foreground="#555"/>
+                            <TextBlock Grid.Row="0" Grid.Column="1" x:Name="SumDriveText" FontWeight="SemiBold"/>
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="{DynamicResource StrTDeckSumRegion}" Foreground="#555"/>
+                            <TextBlock Grid.Row="1" Grid.Column="1" x:Name="SumRegionText" FontWeight="SemiBold"/>
+                            <TextBlock Grid.Row="2" Grid.Column="0" Text="{DynamicResource StrTDeckSumZoom}" Foreground="#555"/>
+                            <TextBlock Grid.Row="2" Grid.Column="1" x:Name="SumZoomText" FontWeight="SemiBold"/>
+                            <TextBlock Grid.Row="3" Grid.Column="0" Text="{DynamicResource StrTDeckSumType}" Foreground="#555"/>
+                            <TextBlock Grid.Row="3" Grid.Column="1" x:Name="SumTypeText" FontWeight="SemiBold"/>
+                            <TextBlock Grid.Row="4" Grid.Column="0" Text="{DynamicResource StrTDeckSumTiles}" Foreground="#555"/>
+                            <TextBlock Grid.Row="4" Grid.Column="1" x:Name="SumTilesText" FontWeight="SemiBold"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <StackPanel Grid.Row="1" Margin="0,0,0,8">
+                    <TextBlock Text="{DynamicResource StrTDeckCopyHint}"
+                               Foreground="#2E7D32" FontSize="11" Margin="0,0,0,2"/>
+                    <TextBlock Text="{DynamicResource StrTDeckAdditiveHint}"
+                               Foreground="#2E7D32" FontSize="11"/>
+                </StackPanel>
+
+                <!-- Progress area -->
+                <Grid Grid.Row="2" Margin="0,0,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <Button x:Name="StartBtn" Grid.Column="0"
+                            Content="{DynamicResource StrTDeckStartBtn}"
+                            FontSize="13" Padding="14,8"
+                            Click="StartDownload_Click"/>
+                    <Button x:Name="CancelDownloadBtn" Grid.Column="1"
+                            Content="{DynamicResource StrTDeckCancel}"
+                            Visibility="Collapsed" Padding="14,8" Margin="8,0,0,0"
+                            Click="CancelDownload_Click"/>
+                </Grid>
+
+                <StackPanel Grid.Row="3" Margin="0,4,0,0">
+                    <ProgressBar x:Name="DownloadProgress" Height="10" Margin="0,0,0,6"/>
+                    <TextBlock x:Name="ProgressTileText" FontSize="11" Foreground="#555" Margin="0,0,0,2"/>
+                    <TextBlock x:Name="ProgressZoomText" FontSize="11" Foreground="#777"/>
+                </StackPanel>
+
+                <TextBlock Grid.Row="4" x:Name="DownloadResultText"
+                           FontWeight="SemiBold" FontSize="13" TextWrapping="Wrap"
+                           Margin="0,10,0,0"/>
+            </Grid>
+
+        </Grid>
+
+        <!-- ── FOOTER NAV ── -->
+        <Border Grid.Row="2" BorderBrush="#DDD" BorderThickness="0,1,0,0"
+                Background="{DynamicResource SystemChromeMediumLowBrush}" Padding="16,10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <Button x:Name="BackBtn" Grid.Column="0"
+                        Content="{DynamicResource StrTDeckBack}"
+                        Padding="14,7" IsEnabled="False"
+                        Click="BackBtn_Click"/>
+
+                <TextBlock x:Name="FooterStepText" Grid.Column="1"
+                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                           Foreground="#888" FontSize="12"/>
+
+                <Button x:Name="CancelBtn" Grid.Column="2"
+                        Content="{DynamicResource StrTDeckCancel}"
+                        Padding="14,7" Margin="0,0,8,0"
+                        Click="CancelBtn_Click"/>
+
+                <Button x:Name="NextBtn" Grid.Column="3"
+                        Content="{DynamicResource StrTDeckNext}"
+                        Padding="14,7"
+                        Click="NextBtn_Click"/>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

@@ -133,6 +133,29 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ### 🐛 Behoben
 
+#### 🔧 Remote Admin – Channel-Ladefehler
+- **`GetChannelRequest` ist 1-basiert** (1 = Kanal 0, 2 = Kanal 1 …): War 0-basiert → Kanal 0 lud nie (Timeout), alle anderen Kanäle um eins verschoben
+- **Channel-Reihenfolge:** Stale-Response-Validierung via `ch.Index` entfernt – Firmware setzt das Feld oft nicht (Protobuf-Default 0), was alle Kanäle außer 0 als "falsche Antwort" klassifizierte und dreifach neu anforderte
+
+#### 🔧 Remote Admin – Favoriten (Proto-Feldnummern falsch)
+- `add_favorite_node = 36` war veraltet; aktuelle Firmware erwartet `set_favorite_node = 39`
+  - Feld 36 ist in aktueller Firmware `set_canned_message_module_messages` → Favorites-Anfragen landeten still beim falschen Handler
+- `remove_favorite_node` korrigiert von Feld 37 auf Feld 40
+- `admin.proto` im Projekt auf aktuelle Feldnummern aktualisiert; alle C#-Referenzen auf `SetFavoriteNode` umgestellt
+- **FavoriteButton Fire-and-forget behoben:** Fehler beim Setzen/Entfernen wurden still ignoriert; jetzt proper `async void` mit Fehlermeldung und UI-Revert bei Fehler
+
+#### 🔧 Admin – Key-Anzeige
+- **Public Key und Private Key** wurden als Hex angezeigt; Meshtastic-App und Firmware nutzen Base64 → beide Admin-Fenster (lokal & remote) zeigen Keys jetzt in Base64
+
+#### 🗺️ Karte – Emoji-Node-Namen
+- **Emoji-Kurzname (z.B. 🔥, 📶)** wurden auf der Karte als □ angezeigt, weil SkiaSharp/Mapsui kein Emoji-Fallback hat
+- Alle vier `LabelStyle`-Stellen in MainWindow auf `Font { FontFamily = "Segoe UI Emoji" }` gesetzt
+
+#### 🖧 Virtual Node – Traceroute-Telemetrie
+- **Traceroute-Requests des VNode-Clients** wurden fälschlicherweise in die eigene Telemetrie eingespeist: Android-App löst Traceroute aus → Request-Paket (`WantResponse=true`, Portnum=70) wurde als Traceroute-Ergebnis mit `DestinationNodeId = myNodeId` gespeichert
+- Fix: `ProcessExternalPacket` filtert ausgehende Traceroute-Requests heraus; die Antwort kommt ohnehin über den physischen Funkweg
+
+#### ⚙️ Sonstige Bugfixes
 - **Zombie-Prozess beim Beenden**: App beendet sich jetzt sauber mit `Application.Current.Shutdown()`
   - Synchroner Disconnect statt asynchron
   - Keine hängenden Prozesse mehr nach Fenster-Schließen
@@ -318,6 +341,6 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 ---
 
 **Projekt**: Meshtastic Windows Client
-**Lizenz**: MIT
+**Lizenz**: GNU General Public License v3.0 (GPL-3.0)
 **Website**: Meshhessen.de
 **Entwickelt mit**: Claude AI

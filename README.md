@@ -4,11 +4,11 @@ Der **Meshhessen Client** ist ein **kostenloser, nativer Windows-Client für Mes
 
 ![Windows](https://img.shields.io/badge/Windows-10%2F11-blue)
 ![.NET](https://img.shields.io/badge/.NET-8.0-purple)
-![Status](https://img.shields.io/badge/Status-v1.5.9-yellow)
+![Status](https://img.shields.io/badge/Status-v1.5.11-yellow)
 ![License](https://img.shields.io/github/license/SMLunchen/mh_windowsclient)
 ![Stars](https://img.shields.io/github/stars/SMLunchen/mh_windowsclient)
 
-> **English summary:** Free Windows app for Meshtastic devices – offline map (OSM/OpenTopo), telemetry, traceroute, PKI decryption, full device configuration, USB/Serial/TCP/BLE support. No installation, no cloud. By the Meshhessen community (Hesse, Germany). [→ English version below](#meshhessen-client--windows-client-for-meshtastic-devices-wpf--net-8)
+> **English summary:** Free Windows app for Meshtastic devices – offline map (OSM/OpenTopo), telemetry, traceroute, PKI decryption, full device configuration, USB/Serial/TCP/BLE support, remote admin, favorites, telemetry dashboard & **Virtual Node TCP proxy**. No installation, no cloud. By the Meshhessen community (Hesse, Germany). [→ English version below](#meshhessen-client--windows-client-for-meshtastic-devices-wpf--net-8)
 
 
 ## 🚀 Schnellstart
@@ -57,6 +57,13 @@ Der **Meshhessen Client** ist ein **kostenloser, nativer Windows-Client für Mes
 ### 📊 Telemetrie & Statistik
 
 * **Persistente Telemetrie-Datenbank** – empfangene Paket- und Gerätedaten werden lokal in einer SQLite-Datenbank gespeichert
+* **Telemetrie-Dashboard** – frei konfigurierbares Widget-Dashboard mit benannten Dashboards (📊-Button in der Toolbar):
+  * **11 Widget-Typen:** Linie, Fläche, Balken, Scatter, Gauge, Stat-Wert, Heatmap, Histogramm, Candlestick, State-Timeline, Uhrzeit
+  * Multi-Node-Support, alle Metriken: SNR, RSSI, Batterie, Spannung, Kanal-/TX-Auslastung, Temperatur, Luftfeuchtigkeit, Luftdruck, Pakete/h
+  * Widgets per Drag-and-Drop anordnen, frei skalierbar (Resize-Griff), editierbar, Auto-Refresh
+  * Dark & Light Mode, Theme-adaptiv (OxyPlot + WPF)
+  * Persistenz in `dashboards.json`
+  * **Unabhängiges Fenster** – kann auf einem zweiten Monitor platziert werden
 * **Node-Statistik-Fenster** – detaillierte Auswertung pro Node:
   * Tag/Nacht-Auswertung der Empfangsqualität
   * Zeitreihen-Graphen für SNR, RSSI, Paketrate und Gerätedaten (Batterie, Spannung)
@@ -99,6 +106,30 @@ Der **Meshhessen Client** ist ein **kostenloser, nativer Windows-Client für Mes
 * **Deduplizierung** – nur neueste Traceroute pro Node-Paar anzeigen (optional)
 * **Karten-Legende** – zeigt alle aktiven Traces mit Farbe und ✕-Button zum Entfernen
 
+### 🖧 Virtual Node (Tools-Tab)
+
+* **TCP-Proxy-Server** – verbinde Meshtastic-Apps (Android/iOS) direkt mit dem Meshhessen Client, als wäre er ein echtes Meshtastic-Gerät
+* **Konfigurierbar im Tools-Tab:** Port (Standard: 4404), ein-/ausschalten, Admin-Befehle blockieren
+* **Automatischer Start** sobald eine Verbindung mit dem physischen Node besteht (wenn aktiviert)
+* **Config-Replay:** verbindende Apps erhalten sofort alle Kanäle, Node-Liste und Gerätekonfig
+* **Bidirektionale Sichtbarkeit:** Nachrichten aus der App erscheinen in verbundenen Apps – und umgekehrt
+* **Multi-Client:** mehrere Apps gleichzeitig verbindbar; Status und verbundene IPs werden im Tools-Tab angezeigt
+
+### 🔧 T-Deck Karten-Assistent (Tools-Tab)
+
+* **SD-Karte vorbereiten** – geführter 6-Schritt-Assistent zum Bespielen einer SD-Karte mit Offline-Karten für das Meshtastic T-Deck
+* **Schritt 1 – Willkommen:** Erklärt den Workflow; Hinweis: nur Deutschland verfügbar
+* **Schritt 2 – Laufwerk:** Zeigt alle Wechseldatenträger mit Größe, freiem Speicher und Dateisystem
+* **Schritt 3 – Formatierung:**
+  * Empfiehlt **exFAT mit 4096-Byte-Zuordnungseinheiten** (T-Deck-optimal; kleine Tiles ≈100 Bytes → kleine AU spart erheblich Speicher)
+  * Formatierung per UAC-elevated PowerShell direkt aus dem Client; zwei Bestätigungsdialoge
+* **Schritt 4 – Bereich:** Nach Bundesland (Checkboxen), ganz Deutschland, oder **Freestyle** (eigenes Rechteck auf interaktiver Mapsui-Karte zeichnen)
+* **Schritt 5 – Zoom & Kartentyp:** Zoom 8–17, Warnhinweise bei hohen Stufen; OSM / OSM Dark / OpenTopoMap
+* **Schritt 6 – Transfer:** Additiv – SD-Tile vorhanden → skip; lokal vorhanden → kopieren; sonst → vom Tile-Server laden + lokal cachen
+* **SD-Verzeichnisstruktur:** `{Laufwerk}:\maps\OSM\{z}\{x}\{y}.png` (T-Deck-kompatibel, Langklick auf Faltkartenicon schaltet zwischen Kartendiensten um)
+* **ZIP-Export** – lokale Tiles als ZIP exportieren (nach Kartentyp filterbar)
+* Vollständig mehrsprachig (Deutsch/Englisch)
+
 ### 🔧 Node-Verwaltung
 
 * **Knoten-Übersicht** – alle Nodes im Mesh mit SNR, Batterie, Entfernung, Hop-Anzahl
@@ -107,6 +138,13 @@ Der **Meshhessen Client** ist ein **kostenloser, nativer Windows-Client für Mes
 * **Node-Farben** – Nodes individuell einfärben (Karte + Listen)
 * **Node-Notizen** – Freitext-Notizen pro Node
 * **Nodes anpinnen** – Nodes in der Liste oben fixieren (unabhängig von Sortierung)
+* **Favoriten** – Nodes als Favoriten markieren (★-Symbol, Rechtsklick-Menü); wird mit dem Gerät synchronisiert (`set_favorite_node` / `remove_favorite_node`); Favoriten erscheinen oben in der Liste
+* **Fernverwaltung** – vollständige Remote-Admin-Oberfläche für Favoriten-Nodes:
+  * Alle Konfigurations-Reiter: Besitzer, Gerät, Position, LoRa, Bluetooth, Netzwerk, Anzeige, Kanäle, **Sicherheit**, Steuerung
+  * **Sicherheits-Reiter:** Public Key (read-only, Base64), Admin-Schlüssel 1–3 (Base64), Flags (Admin Channel, Managed Mode, Serial, Debug Log)
+  * **Favoriten remote verwalten:** Knoten auf dem Remote-Gerät als Favorit setzen oder entfernen
+  * Session-Schlüssel-Handshake, konfigurierbarer Timeout, per-Channel Retry + Neu-laden
+  * **Lazy Loading:** Beim Öffnen wählen ob alles sofort oder seitenweise geladen wird; „↻ Tab neu laden"-Button für gezielten Reload einzelner Reiter
 * **Node-Konfiguration** – vollständige Gerätekonfiguration direkt aus dem Client, alle Module auf einer Seite:
   * **Gerät & LoRa:** Region, Modem-Preset, TX-Power, Hop-Limit, Geräterolle, Rebroadcast-Modus
   * **Position:** GPS-Modus, Smart-Broadcast, feste Position mit Koordinaten-Eingabe; „Von Karte wählen" öffnet ein eigenes Kartenfenster (honoriert Offline-/Online-Einstellungen); „Eigener Kartenpin" übernimmt die per Rechtsklick gesetzte Position
@@ -204,6 +242,7 @@ Routing-Statistik (Hop-Anzahl, Pfad-Stabilität, Pfadwechsel-Rate):
 * ~~Keine persistente Message-History~~ → jetzt optional via Nachrichten-Datenbank (aktivierbar in Einstellungen)
 * Getestet mit Firmware 2.x
 * T-Deck: Channels werden nicht immer in der Config-Sequenz mitgesendet (Retry-Workaround aktiv) – Das T-Deck ist fast schon mit sich selbst überfordert, daher dauert dort alles etwas länger…
+* ~~Heltec-Boards brechen lokale Konfiguration nach 4–5/17 Configs ab~~ → behoben durch sequentielles Laden (senden → warten → nächste)
 
 
 ## 🗺️ Karte einrichten
@@ -338,7 +377,7 @@ Meshhessen Client · Windows-Client für Meshtastic-Geräte · Meshtastic Window
 
  ![Windows](https://img.shields.io/badge/Windows-10%2F11-blue)
  ![.NET](https://img.shields.io/badge/.NET-8.0-purple)
- ![Status](https://img.shields.io/badge/Status-v1.5.9-yellow)
+ ![Status](https://img.shields.io/badge/Status-v1.5.11-yellow)
  ![License](https://img.shields.io/github/license/SMLunchen/mh_windowsclient)
  ![Stars](https://img.shields.io/github/stars/SMLunchen/mh_windowsclient)
 
@@ -389,6 +428,10 @@ Meshhessen Client · Windows-Client für Meshtastic-Geräte · Meshtastic Window
 ### 📊 Telemetry & Statistics
 
 * **Persistent telemetry database** – received packet and device data is stored locally in a SQLite database
+* **Telemetry Dashboard** – freely configurable widget dashboard with named dashboards:
+  * Four widget types: line chart (time series), bar chart (current comparison), gauge (single value), heatmap (hour × day)
+  * Multi-node support, all metrics: SNR, RSSI, battery, voltage, channel/TX utilization, temperature, humidity, pressure
+  * Persisted in `dashboards.json`, dark OxyPlot theme
 * **Node statistics window** – detailed analysis per node:
   * Day/night breakdown of reception quality
   * Time-series graphs for SNR, RSSI, packet rate and device data (battery, voltage)
@@ -431,6 +474,15 @@ Meshhessen Client · Windows-Client für Meshtastic-Geräte · Meshtastic Window
 * **Deduplication** – show only the latest traceroute per node pair (optional)
 * **Map legend** – shows all active traces with color and individual ✕ remove button
 
+### 🖧 Virtual Node (Tools Tab)
+
+* **TCP proxy server** – connect Meshtastic apps (Android/iOS) to the Meshhessen Client as if it were a real Meshtastic device
+* **Configurable in the Tools tab:** port (default: 4404), enable/disable, optionally block admin commands
+* **Auto-start** as soon as a connection to the physical node is established (when enabled)
+* **Config replay:** connecting apps receive all channels, node list and device config immediately
+* **Bidirectional visibility:** messages sent in the app appear in connected apps – and vice versa
+* **Multi-client:** multiple apps can connect simultaneously; status and connected IPs are shown in the Tools tab
+
 ### 🔧 Node Management
 
 * **Node overview** – all nodes in the mesh with SNR, battery, distance, hop count
@@ -439,6 +491,8 @@ Meshhessen Client · Windows-Client für Meshtastic-Geräte · Meshtastic Window
 * **Node colors** – color-code nodes individually (map + lists)
 * **Node notes** – free-text annotations per node
 * **Pin nodes** – pin nodes to the top of the list (independent of sorting)
+* **Favorites** – mark nodes as favorites (★ icon, right-click menu); synced with the device (`set_favorite_node` / `remove_favorite_node`); favorites shown at the top of the list
+* **Remote Administration** – full remote admin UI for favorite nodes: all configuration tabs (Owner, Device, Position, LoRa, Bluetooth, Network, Display, Channels, Security, Control), session-key handshake, configurable timeout, lazy loading (load-on-demand per tab) and "↻ Reload Tab" button
 * **Node configuration** – full device configuration directly from the client, all modules in one window:
   * **Device & LoRa:** region, modem preset, TX power, hop limit, device role, rebroadcast mode
   * **Position:** GPS mode, smart broadcast, fixed position with coordinate input; "Pick from Map" opens a dedicated map picker window (respects offline/online settings); "Own Map Pin" copies the position set via right-click
@@ -479,6 +533,7 @@ The Meshhessen Client is a community project of the Meshtastic community in Hess
 * ~~No persistent message history~~ → now available as optional message database (enable in settings)
 * Tested with firmware 2.x
 * T-Deck: channels are not always included in the config sequence (retry workaround active) – The T-Deck is barely keeping up with itself, so everything takes a bit longer there…
+* ~~Heltec boards abort local configuration after 4–5/17 configs~~ → fixed by sequential loading (send → wait for response → send next)
 
 
 ## 🗺️ Setting Up the Offline Map

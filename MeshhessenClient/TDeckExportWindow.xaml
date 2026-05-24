@@ -1,0 +1,40 @@
+<Window x:Class="MeshhessenClient.TDeckExportWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="{DynamicResource StrTDeckExportTitle}"
+        Width="480" SizeToContent="Height"
+        ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner">
+    <StackPanel Margin="20">
+        <TextBlock Text="{DynamicResource StrTDeckExportHint}"
+                   TextWrapping="Wrap" Margin="0,0,0,14" Foreground="#444"/>
+
+        <Grid Margin="0,0,0,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Text="{DynamicResource StrTDeckExportTypeLabel}"
+                       VerticalAlignment="Center" Margin="0,0,8,0"/>
+            <ComboBox x:Name="TypeComboBox" Grid.Column="1">
+                <ComboBoxItem Tag="" IsSelected="True"
+                              Content="{DynamicResource StrTDeckExportAllTypes}"/>
+                <ComboBoxItem Tag="OSM"  Content="{DynamicResource StrTDeckMapOSM}"/>
+                <ComboBoxItem Tag="Dark" Content="{DynamicResource StrTDeckMapDark}"/>
+                <ComboBoxItem Tag="Topo" Content="{DynamicResource StrTDeckMapTopo}"/>
+            </ComboBox>
+        </Grid>
+
+        <ProgressBar x:Name="ExportProgress" Height="8" Margin="0,0,0,6" Visibility="Collapsed"/>
+        <TextBlock x:Name="StatusText" TextWrapping="Wrap" FontSize="12" Margin="0,0,0,10"/>
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button x:Name="ExportBtn"
+                    Content="{DynamicResource StrTDeckExportStartBtn}"
+                    Padding="14,7" Margin="0,0,8,0"
+                    Click="ExportBtn_Click"/>
+            <Button Content="{DynamicResource StrTDeckClose}"
+                    Padding="14,7" IsCancel="True"/>
+        </StackPanel>
+    </StackPanel>
+</Window>
