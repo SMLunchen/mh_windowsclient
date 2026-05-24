@@ -227,8 +227,9 @@ public partial class NodeConfigWindow : Window
         }
     }
 
+    // 500 ms between requests — slower boards (e.g. Heltec) overflow the firmware queue at 200 ms
     private static System.Threading.Tasks.Task Delay() =>
-        System.Threading.Tasks.Task.Delay(200);
+        System.Threading.Tasks.Task.Delay(500);
 
     private string Loc(string key, params string[] args)
     {
@@ -549,14 +550,14 @@ public partial class NodeConfigWindow : Window
         _loadedSecurity = config;
         Dispatcher.BeginInvoke(() =>
         {
-            // Public key: hex display (read-only)
+            // Public key: base64 display (read-only) — same format as Meshtastic app
             SecPublicKeyTextBox.Text = config.PublicKey != null && config.PublicKey.Length > 0
-                ? BitConverter.ToString(config.PublicKey.ToByteArray()).Replace("-", "").ToLowerInvariant()
+                ? Convert.ToBase64String(config.PublicKey.ToByteArray())
                 : string.Empty;
 
-            // Private key: stored in box but masked; toggle reveals it
+            // Private key: stored in box but masked; toggle reveals it (base64 format)
             SecPrivKeyBox.Text = config.PrivateKey != null && config.PrivateKey.Length > 0
-                ? BitConverter.ToString(config.PrivateKey.ToByteArray()).Replace("-", "").ToLowerInvariant()
+                ? Convert.ToBase64String(config.PrivateKey.ToByteArray())
                 : string.Empty;
             // Ensure masked view is visible
             SecPrivKeyToggle.IsChecked = false;

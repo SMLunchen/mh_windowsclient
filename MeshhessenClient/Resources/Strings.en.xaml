@@ -1022,8 +1022,10 @@ Green ≤15% | Yellow 15–25% | Red &gt;25% | Gray = no airtime data</sys:Strin
     <sys:String x:Key="StrRaFavoritesAdded">Node "{0}" was added as a favorite on the remote device.</sys:String>
     <sys:String x:Key="StrRaFavoritesRemoved">Node "{0}" was removed from favorites on the remote device.</sys:String>
     <!-- Bottom buttons -->
-    <sys:String x:Key="StrRaRefresh">🔄 Reload</sys:String>
+    <sys:String x:Key="StrRaRefresh">🔄 Reload All</sys:String>
+    <sys:String x:Key="StrRaReloadTab">↻ Reload Tab</sys:String>
     <sys:String x:Key="StrRaSave">💾 Save</sys:String>
+    <sys:String x:Key="StrRaLoadAllQuestion">Load all settings now?&#x0a;&#x0a;Yes  = load everything immediately (approx. 30–60 sec.)&#x0a;No  = load page by page (click a tab)</sys:String>
     <!-- Telemetry Dashboard -->
     <sys:String x:Key="StrDashboardTitle">Telemetry Dashboard</sys:String>
     <sys:String x:Key="StrDashboardLabel">Dashboard:</sys:String>

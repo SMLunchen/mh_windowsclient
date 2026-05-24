@@ -90,7 +90,8 @@
         </Border>
 
         <!-- Main content — disabled until connected -->
-        <TabControl x:Name="MainTabs" Grid.Row="2" IsEnabled="False">
+        <TabControl x:Name="MainTabs" Grid.Row="2" IsEnabled="False"
+                    SelectionChanged="MainTabs_SelectionChanged">
 
             <!-- Owner -->
             <TabItem Header="{DynamicResource StrRaTabOwner}">
@@ -443,6 +444,8 @@
         <Grid Grid.Row="3" Margin="0,12,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="8"/>
+                <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="8"/>
@@ -451,10 +454,14 @@
             <Button x:Name="RefreshButton" Grid.Column="0"
                     Content="{DynamicResource StrRaRefresh}"
                     Click="RefreshButton_Click" IsEnabled="False"/>
-            <Button x:Name="SaveButton" Grid.Column="2"
+            <Button x:Name="ReloadTabButton" Grid.Column="2"
+                    Content="{DynamicResource StrRaReloadTab}"
+                    Click="ReloadTabButton_Click" IsEnabled="False"
+                    ToolTip="{DynamicResource StrRaReloadTab}"/>
+            <Button x:Name="SaveButton" Grid.Column="4"
                     Content="{DynamicResource StrRaSave}"
                     Click="SaveButton_Click" IsEnabled="False"/>
-            <Button x:Name="CloseButton" Grid.Column="4"
+            <Button x:Name="CloseButton" Grid.Column="6"
                     Content="{DynamicResource StrClose}"
                     IsCancel="True" Click="CloseButton_Click"/>
         </Grid>

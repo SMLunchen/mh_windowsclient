@@ -1022,8 +1022,10 @@ Grün ≤15% | Gelb 15–25% | Rot &gt;25% | Grau = keine Airtime-Daten</sys:Str
     <sys:String x:Key="StrRaFavoritesAdded">Knoten „{0}" wurde auf dem Remote-Gerät als Favorit gesetzt.</sys:String>
     <sys:String x:Key="StrRaFavoritesRemoved">Knoten „{0}" wurde auf dem Remote-Gerät aus den Favoriten entfernt.</sys:String>
     <!-- Bottom buttons -->
-    <sys:String x:Key="StrRaRefresh">🔄 Neu laden</sys:String>
+    <sys:String x:Key="StrRaRefresh">🔄 Alles neu laden</sys:String>
+    <sys:String x:Key="StrRaReloadTab">↻ Tab neu laden</sys:String>
     <sys:String x:Key="StrRaSave">💾 Speichern</sys:String>
+    <sys:String x:Key="StrRaLoadAllQuestion">Alle Einstellungen jetzt laden?&#x0a;&#x0a;Ja  = sofort alles laden (ca. 30–60 Sek.)&#x0a;Nein = seitenweise laden (Tab anklicken)</sys:String>
     <!-- Telemetry Dashboard -->
     <sys:String x:Key="StrDashboardTitle">Telemetrie-Dashboard</sys:String>
     <sys:String x:Key="StrDashboardLabel">Dashboard:</sys:String>

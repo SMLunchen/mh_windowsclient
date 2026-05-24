@@ -15,6 +15,8 @@ public partial class RemoteAdminWindow : Window
     private int _timeoutMs;
     private bool _isFavorite;
     private bool _uiReady;
+    private bool _lazyMode;
+    private readonly HashSet<string> _loadedSections = new();
 
     // Loaded config state
     private User? _loadedOwner;
@@ -92,6 +94,7 @@ public partial class RemoteAdminWindow : Window
     private async Task ConnectAndLoadAsync()
     {
         SetStatus("StrRemoteAdminConnecting");
+        _loadedSections.Clear();
 
         // Step 1: Request device metadata (checks connectivity and admin permission)
         var metaResp = await _svc.SendRemoteAdminRequestAsync(
@@ -130,147 +133,247 @@ public partial class RemoteAdminWindow : Window
             new AdminMessage { GetConfigRequest = 8 }, // 8 = SESSIONKEY_CONFIG
             _timeoutMs);
 
-        // Enable tabs immediately so sections become visible as each config loads
+        // Enable tabs so user can navigate
         Dispatcher.Invoke(() => MainTabs.IsEnabled = true);
-        SetStatus("StrRemoteAdminLoading", "#2196F3");
 
-        // Step 3: Load all configs in sequence
-        await LoadAllConfigsAsync();
+        // Step 3: Ask user — load everything now, or page by page?
+        var loadAll = Dispatcher.Invoke(() =>
+            MessageBox.Show(
+                Loc("StrRaLoadAllQuestion"),
+                Loc("StrRemoteAdminTitle"),
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question) == MessageBoxResult.Yes);
+
+        if (loadAll)
+        {
+            _lazyMode = false;
+            SetStatus("StrRemoteAdminLoading", "#2196F3");
+            await LoadAllConfigsAsync();
+        }
+        else
+        {
+            _lazyMode = true;
+            // Load only the currently visible tab
+            await LoadCurrentTabAsync();
+        }
 
         SetStatus("StrRemoteAdminConnected", "#4CAF50");
         Dispatcher.Invoke(() =>
         {
             SaveButton.IsEnabled = true;
             RefreshButton.IsEnabled = true;
+            ReloadTabButton.IsEnabled = true;
         });
     }
 
+    // ===== Lazy tab loading =====
+
+    private async Task LoadCurrentTabAsync()
+    {
+        var tabIndex = Dispatcher.Invoke(() => MainTabs.SelectedIndex);
+        await LoadTabByIndexAsync(tabIndex, force: false);
+    }
+
+    private async Task LoadTabByIndexAsync(int tabIndex, bool force = false)
+    {
+        var section = GetTabSection(tabIndex);
+        if (section == null) return; // Control tab — nothing to load
+        if (!force && _loadedSections.Contains(section)) return; // Already loaded
+
+        SetStatus("StrRemoteAdminLoading", "#2196F3");
+
+        switch (section)
+        {
+            case "owner":     await LoadOwnerSectionAsync(); break;
+            case "device":    await LoadDeviceSectionAsync(); break;
+            case "position":  await LoadPositionSectionAsync(); break;
+            case "lora":      await LoadLoraSectionAsync(); break;
+            case "bluetooth": await LoadBluetoothSectionAsync(); break;
+            case "network":   await LoadNetworkSectionAsync(); break;
+            case "display":   await LoadDisplaySectionAsync(); break;
+            case "channels":
+                Dispatcher.Invoke(() => ChannelsPanel.Children.Clear());
+                await LoadChannelsSectionAsync();
+                break;
+            case "security":  await LoadSecuritySectionAsync(); break;
+        }
+
+        _loadedSections.Add(section);
+        SetStatus("StrRemoteAdminConnected", "#4CAF50");
+    }
+
+    private static string? GetTabSection(int tabIndex) => tabIndex switch
+    {
+        0 => "owner",
+        1 => "device",
+        2 => "position",
+        3 => "lora",
+        4 => "bluetooth",
+        5 => "network",
+        6 => "display",
+        7 => "channels",
+        8 => "security",
+        _ => null // Control tab (9)
+    };
+
+    private async void MainTabs_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (!_lazyMode || !MainTabs.IsEnabled) return;
+        await LoadTabByIndexAsync(MainTabs.SelectedIndex, force: false);
+    }
+
+    // ===== Full load (all sections sequentially) =====
+
     private async Task LoadAllConfigsAsync()
     {
-        const int total = 16; // 8 configs + 8 channels
+        const int total = 17; // 9 config sections + 8 channels
 
-        // Owner
-        SetStatusStep("Besitzer", 1, total);
-        var ownerResp = await _svc.SendRemoteAdminRequestAsync(
-            _targetNode.NodeId, new AdminMessage { GetOwnerRequest = true }, _timeoutMs);
-        if (ownerResp?.PayloadVariantCase == AdminMessage.PayloadVariantOneofCase.GetOwnerResponse)
-        {
-            _loadedOwner = ownerResp.GetOwnerResponse;
-            Dispatcher.Invoke(() => ApplyOwner(_loadedOwner));
-        }
-
+        SetStatusStep(Loc("StrRaTabOwner"), 1, total);
+        await LoadOwnerSectionAsync(); _loadedSections.Add("owner");
         await Task.Delay(200);
 
-        // Device config
-        SetStatusStep("Gerätekonfiguration", 2, total);
-        var deviceResp = await _svc.SendRemoteAdminRequestAsync(
-            _targetNode.NodeId,
-            new AdminMessage { GetConfigRequest = 0 },
-            _timeoutMs);
-        if (deviceResp?.PayloadVariantCase == AdminMessage.PayloadVariantOneofCase.GetConfigResponse &&
-            deviceResp.GetConfigResponse.PayloadVariantCase == Config.PayloadVariantOneofCase.Device)
-        {
-            _loadedDevice = deviceResp.GetConfigResponse.Device;
-            Dispatcher.Invoke(() => ApplyDeviceConfig(_loadedDevice));
-        }
-
+        SetStatusStep(Loc("StrRaTabDevice"), 2, total);
+        await LoadDeviceSectionAsync(); _loadedSections.Add("device");
         await Task.Delay(200);
 
-        // Position config
-        SetStatusStep("Positionskonfiguration", 3, total);
-        var posResp = await _svc.SendRemoteAdminRequestAsync(
-            _targetNode.NodeId,
-            new AdminMessage { GetConfigRequest = 1 },
-            _timeoutMs);
-        if (posResp?.PayloadVariantCase == AdminMessage.PayloadVariantOneofCase.GetConfigResponse &&
-            posResp.GetConfigResponse.PayloadVariantCase == Config.PayloadVariantOneofCase.Position)
-        {
-            _loadedPosition = posResp.GetConfigResponse.Position;
-            Dispatcher.Invoke(() => ApplyPositionConfig(_loadedPosition));
-        }
-
+        SetStatusStep(Loc("StrRaTabPosition"), 3, total);
+        await LoadPositionSectionAsync(); _loadedSections.Add("position");
         await Task.Delay(200);
 
-        // LoRa config
-        SetStatusStep("LoRa-Konfiguration", 4, total);
-        var loraResp = await _svc.SendRemoteAdminRequestAsync(
-            _targetNode.NodeId,
-            new AdminMessage { GetConfigRequest = 5 },
-            _timeoutMs);
-        if (loraResp?.PayloadVariantCase == AdminMessage.PayloadVariantOneofCase.GetConfigResponse &&
-            loraResp.GetConfigResponse.PayloadVariantCase == Config.PayloadVariantOneofCase.Lora)
-        {
-            _loadedLora = loraResp.GetConfigResponse.Lora;
-            Dispatcher.Invoke(() => ApplyLoraConfig(_loadedLora));
-        }
-
+        SetStatusStep(Loc("StrRaTabLora"), 4, total);
+        await LoadLoraSectionAsync(); _loadedSections.Add("lora");
         await Task.Delay(200);
 
-        // Bluetooth config
-        SetStatusStep("Bluetooth-Konfiguration", 5, total);
-        var btResp = await _svc.SendRemoteAdminRequestAsync(
-            _targetNode.NodeId,
-            new AdminMessage { GetConfigRequest = 6 },
-            _timeoutMs);
-        if (btResp?.PayloadVariantCase == AdminMessage.PayloadVariantOneofCase.GetConfigResponse &&
-            btResp.GetConfigResponse.PayloadVariantCase == Config.PayloadVariantOneofCase.Bluetooth)
-        {
-            _loadedBt = btResp.GetConfigResponse.Bluetooth;
-            Dispatcher.Invoke(() => ApplyBluetoothConfig(_loadedBt));
-        }
-
+        SetStatusStep(Loc("StrRaTabBluetooth"), 5, total);
+        await LoadBluetoothSectionAsync(); _loadedSections.Add("bluetooth");
         await Task.Delay(200);
 
-        // Network config
-        SetStatusStep("Netzwerkkonfiguration", 6, total);
-        var netResp = await _svc.SendRemoteAdminRequestAsync(
-            _targetNode.NodeId,
-            new AdminMessage { GetConfigRequest = 3 },
-            _timeoutMs);
-        if (netResp?.PayloadVariantCase == AdminMessage.PayloadVariantOneofCase.GetConfigResponse &&
-            netResp.GetConfigResponse.PayloadVariantCase == Config.PayloadVariantOneofCase.Network)
-        {
-            _loadedNetwork = netResp.GetConfigResponse.Network;
-            Dispatcher.Invoke(() => ApplyNetworkConfig(_loadedNetwork));
-        }
-
+        SetStatusStep(Loc("StrRaTabNetwork"), 6, total);
+        await LoadNetworkSectionAsync(); _loadedSections.Add("network");
         await Task.Delay(200);
 
-        // Display config
-        SetStatusStep("Displaykonfiguration", 7, total);
-        var dispResp = await _svc.SendRemoteAdminRequestAsync(
-            _targetNode.NodeId,
-            new AdminMessage { GetConfigRequest = 4 },
-            _timeoutMs);
-        if (dispResp?.PayloadVariantCase == AdminMessage.PayloadVariantOneofCase.GetConfigResponse &&
-            dispResp.GetConfigResponse.PayloadVariantCase == Config.PayloadVariantOneofCase.Display)
-        {
-            _loadedDisplay = dispResp.GetConfigResponse.Display;
-            Dispatcher.Invoke(() => ApplyDisplayConfig(_loadedDisplay));
-        }
-
+        SetStatusStep(Loc("StrRaTabDisplay"), 7, total);
+        await LoadDisplaySectionAsync(); _loadedSections.Add("display");
         await Task.Delay(200);
 
-        // Security config
-        SetStatusStep("Sicherheitskonfiguration", 8, total);
-        var secResp = await _svc.SendRemoteAdminRequestAsync(
-            _targetNode.NodeId,
-            new AdminMessage { GetConfigRequest = (uint)AdminMessage.Types.ConfigType.SecurityConfig },
-            _timeoutMs);
-        if (secResp?.PayloadVariantCase == AdminMessage.PayloadVariantOneofCase.GetConfigResponse &&
-            secResp.GetConfigResponse.PayloadVariantCase == Config.PayloadVariantOneofCase.Security)
-        {
-            _loadedSecurity = secResp.GetConfigResponse.Security;
-            Dispatcher.Invoke(() => ApplySecurityConfig(_loadedSecurity));
-        }
-
+        SetStatusStep(Loc("StrRaTabSecurity"), 8, total);
+        await LoadSecuritySectionAsync(); _loadedSections.Add("security");
         await Task.Delay(200);
 
-        // Channels 0-7 — with one automatic retry per failed channel, plus per-row reload button
+        // Channels 0–7
         Dispatcher.Invoke(() => ChannelsPanel.Children.Clear());
         for (int i = 0; i < 8; i++)
         {
-            SetStatusStep($"Kanal {i}", 8 + i + 1, total);
+            SetStatusStep($"{Loc("StrRaTabChannels")} {i}", 9 + i, total);
+            await LoadSingleChannelAsync(i);
+            await Task.Delay(180);
+        }
+        _loadedSections.Add("channels");
+    }
+
+    // ===== Individual section loaders =====
+
+    private async Task LoadOwnerSectionAsync()
+    {
+        var resp = await _svc.SendRemoteAdminRequestAsync(
+            _targetNode.NodeId, new AdminMessage { GetOwnerRequest = true }, _timeoutMs);
+        if (resp?.PayloadVariantCase == AdminMessage.PayloadVariantOneofCase.GetOwnerResponse)
+        {
+            _loadedOwner = resp.GetOwnerResponse;
+            Dispatcher.Invoke(() => ApplyOwner(_loadedOwner));
+        }
+    }
+
+    private async Task LoadDeviceSectionAsync()
+    {
+        var resp = await _svc.SendRemoteAdminRequestAsync(
+            _targetNode.NodeId, new AdminMessage { GetConfigRequest = 0 }, _timeoutMs);
+        if (resp?.PayloadVariantCase == AdminMessage.PayloadVariantOneofCase.GetConfigResponse &&
+            resp.GetConfigResponse.PayloadVariantCase == Config.PayloadVariantOneofCase.Device)
+        {
+            _loadedDevice = resp.GetConfigResponse.Device;
+            Dispatcher.Invoke(() => ApplyDeviceConfig(_loadedDevice));
+        }
+    }
+
+    private async Task LoadPositionSectionAsync()
+    {
+        var resp = await _svc.SendRemoteAdminRequestAsync(
+            _targetNode.NodeId, new AdminMessage { GetConfigRequest = 1 }, _timeoutMs);
+        if (resp?.PayloadVariantCase == AdminMessage.PayloadVariantOneofCase.GetConfigResponse &&
+            resp.GetConfigResponse.PayloadVariantCase == Config.PayloadVariantOneofCase.Position)
+        {
+            _loadedPosition = resp.GetConfigResponse.Position;
+            Dispatcher.Invoke(() => ApplyPositionConfig(_loadedPosition));
+        }
+    }
+
+    private async Task LoadLoraSectionAsync()
+    {
+        var resp = await _svc.SendRemoteAdminRequestAsync(
+            _targetNode.NodeId, new AdminMessage { GetConfigRequest = 5 }, _timeoutMs);
+        if (resp?.PayloadVariantCase == AdminMessage.PayloadVariantOneofCase.GetConfigResponse &&
+            resp.GetConfigResponse.PayloadVariantCase == Config.PayloadVariantOneofCase.Lora)
+        {
+            _loadedLora = resp.GetConfigResponse.Lora;
+            Dispatcher.Invoke(() => ApplyLoraConfig(_loadedLora));
+        }
+    }
+
+    private async Task LoadBluetoothSectionAsync()
+    {
+        var resp = await _svc.SendRemoteAdminRequestAsync(
+            _targetNode.NodeId, new AdminMessage { GetConfigRequest = 6 }, _timeoutMs);
+        if (resp?.PayloadVariantCase == AdminMessage.PayloadVariantOneofCase.GetConfigResponse &&
+            resp.GetConfigResponse.PayloadVariantCase == Config.PayloadVariantOneofCase.Bluetooth)
+        {
+            _loadedBt = resp.GetConfigResponse.Bluetooth;
+            Dispatcher.Invoke(() => ApplyBluetoothConfig(_loadedBt));
+        }
+    }
+
+    private async Task LoadNetworkSectionAsync()
+    {
+        var resp = await _svc.SendRemoteAdminRequestAsync(
+            _targetNode.NodeId, new AdminMessage { GetConfigRequest = 3 }, _timeoutMs);
+        if (resp?.PayloadVariantCase == AdminMessage.PayloadVariantOneofCase.GetConfigResponse &&
+            resp.GetConfigResponse.PayloadVariantCase == Config.PayloadVariantOneofCase.Network)
+        {
+            _loadedNetwork = resp.GetConfigResponse.Network;
+            Dispatcher.Invoke(() => ApplyNetworkConfig(_loadedNetwork));
+        }
+    }
+
+    private async Task LoadDisplaySectionAsync()
+    {
+        var resp = await _svc.SendRemoteAdminRequestAsync(
+            _targetNode.NodeId, new AdminMessage { GetConfigRequest = 4 }, _timeoutMs);
+        if (resp?.PayloadVariantCase == AdminMessage.PayloadVariantOneofCase.GetConfigResponse &&
+            resp.GetConfigResponse.PayloadVariantCase == Config.PayloadVariantOneofCase.Display)
+        {
+            _loadedDisplay = resp.GetConfigResponse.Display;
+            Dispatcher.Invoke(() => ApplyDisplayConfig(_loadedDisplay));
+        }
+    }
+
+    private async Task LoadSecuritySectionAsync()
+    {
+        var resp = await _svc.SendRemoteAdminRequestAsync(
+            _targetNode.NodeId,
+            new AdminMessage { GetConfigRequest = (uint)AdminMessage.Types.ConfigType.SecurityConfig },
+            _timeoutMs);
+        if (resp?.PayloadVariantCase == AdminMessage.PayloadVariantOneofCase.GetConfigResponse &&
+            resp.GetConfigResponse.PayloadVariantCase == Config.PayloadVariantOneofCase.Security)
+        {
+            _loadedSecurity = resp.GetConfigResponse.Security;
+            Dispatcher.Invoke(() => ApplySecurityConfig(_loadedSecurity));
+        }
+    }
+
+    private async Task LoadChannelsSectionAsync()
+    {
+        for (int i = 0; i < 8; i++)
+        {
             await LoadSingleChannelAsync(i);
             await Task.Delay(180);
         }
@@ -278,21 +381,35 @@ public partial class RemoteAdminWindow : Window
 
     private async Task LoadSingleChannelAsync(int index)
     {
-        // Try twice — remote channel gets can be lossy
-        for (int attempt = 0; attempt < 2; attempt++)
+        // Try up to 3 times — remote channel responses can be lossy or arrive out of order
+        for (int attempt = 0; attempt < 3; attempt++)
         {
             var chResp = await _svc.SendRemoteAdminRequestAsync(
                 _targetNode.NodeId,
                 new AdminMessage { GetChannelRequest = (uint)index },
                 _timeoutMs);
+
             if (chResp?.PayloadVariantCase == AdminMessage.PayloadVariantOneofCase.GetChannelResponse)
             {
-                _loadedChannels[index] = chResp.GetChannelResponse;
                 var ch = chResp.GetChannelResponse;
+                int actualIndex = ch.Index; // Use the index from the response, not the requested one
+
+                // If a stale response for a different channel arrived, store it in the correct slot
+                // and retry for the originally requested index
+                if (actualIndex != index && actualIndex >= 0 && actualIndex < 8)
+                {
+                    _loadedChannels[actualIndex] = ch;
+                    Dispatcher.Invoke(() => AddOrUpdateChannelRow(actualIndex, ch));
+                    await Task.Delay(300);
+                    continue; // Retry for the requested index
+                }
+
+                _loadedChannels[index] = ch;
                 Dispatcher.Invoke(() => AddOrUpdateChannelRow(index, ch));
                 return;
             }
-            if (attempt == 0) await Task.Delay(400);
+
+            if (attempt < 2) await Task.Delay(400);
         }
         // Still failed — insert placeholder row so user can retry
         Dispatcher.Invoke(() => AddOrUpdateChannelRow(index, null));
@@ -357,8 +474,9 @@ public partial class RemoteAdminWindow : Window
 
     private void ApplySecurityConfig(SecurityConfig s)
     {
+        // FIX: display keys as base64 (same format as Meshtastic app), not hex
         SecPublicKey.Text = s.PublicKey != null && s.PublicKey.Length > 0
-            ? BitConverter.ToString(s.PublicKey.ToByteArray()).Replace("-", "").ToLowerInvariant()
+            ? Convert.ToBase64String(s.PublicKey.ToByteArray())
             : string.Empty;
 
         var keys = s.AdminKey.ToList();
@@ -459,7 +577,18 @@ public partial class RemoteAdminWindow : Window
         grid.Children.Add(reloadBtn);
 
         border.Child = grid;
-        ChannelsPanel.Children.Add(border);
+
+        // Insert at correct position (by index order)
+        int insertPos = ChannelsPanel.Children.Count;
+        for (int i = 0; i < ChannelsPanel.Children.Count; i++)
+        {
+            if (ChannelsPanel.Children[i] is Border b && b.Tag is int t && t > index)
+            {
+                insertPos = i;
+                break;
+            }
+        }
+        ChannelsPanel.Children.Insert(insertPos, border);
     }
 
     private async Task ReloadSingleChannelAsync(int index)
@@ -636,10 +765,22 @@ public partial class RemoteAdminWindow : Window
     private async void RefreshButton_Click(object sender, RoutedEventArgs e)
     {
         RefreshButton.IsEnabled = false;
+        ReloadTabButton.IsEnabled = false;
         SaveButton.IsEnabled = false;
         MainTabs.IsEnabled = false;
         _svc.ClearRemoteSessionKey(_targetNode.NodeId);
         await ConnectAndLoadAsync();
+    }
+
+    private async void ReloadTabButton_Click(object sender, RoutedEventArgs e)
+    {
+        ReloadTabButton.IsEnabled = false;
+        var tabIndex = MainTabs.SelectedIndex;
+        // Remove from loaded set to force reload
+        var section = GetTabSection(tabIndex);
+        if (section != null) _loadedSections.Remove(section);
+        await LoadTabByIndexAsync(tabIndex, force: true);
+        ReloadTabButton.IsEnabled = true;
     }
 
     // ===== Control tab =====
@@ -672,15 +813,27 @@ public partial class RemoteAdminWindow : Window
 
     // ===== Favorite button =====
 
-    private void FavoriteButton_Click(object sender, RoutedEventArgs e)
+    private async void FavoriteButton_Click(object sender, RoutedEventArgs e)
     {
         _isFavorite = !_isFavorite;
         UpdateFavoriteButton();
-
-        if (_isFavorite)
-            _ = _svc.AddFavoriteNodeAsync(_targetNode.NodeId);
-        else
-            _ = _svc.RemoveFavoriteNodeAsync(_targetNode.NodeId);
+        try
+        {
+            if (_isFavorite)
+                await _svc.AddFavoriteNodeAsync(_targetNode.NodeId);
+            else
+                await _svc.RemoveFavoriteNodeAsync(_targetNode.NodeId);
+        }
+        catch (Exception ex)
+        {
+            // Revert UI state on failure
+            _isFavorite = !_isFavorite;
+            UpdateFavoriteButton();
+            MessageBox.Show(
+                $"{Loc("StrRemoteAdminErrorMsg")}\n{ex.Message}",
+                Loc("StrRemoteAdminTitle"),
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
     }
 
     private async void AddFavoriteNode_Click(object sender, RoutedEventArgs e)
