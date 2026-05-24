@@ -831,7 +831,7 @@ public partial class RemoteAdminWindow : Window
     {
         if (FavoriteNodeCombo.SelectedItem is not ComboBoxItem item || item.Tag is not uint nodeId) return;
         await _svc.SendRemoteAdminWriteAsync(_targetNode.NodeId,
-            new AdminMessage { AddFavoriteNode = nodeId });
+            new AdminMessage { SetFavoriteNode = nodeId }); // field 39
         MessageBox.Show(
             string.Format(Loc("StrRaFavoritesAdded"), item.Content),
             Loc("StrRemoteAdminTitle"),

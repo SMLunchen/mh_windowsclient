@@ -2177,15 +2177,15 @@ public class MeshtasticProtocolService
     public async Task AddFavoriteNodeAsync(uint nodeId)
     {
         await EnsureSessionKeyAsync();
-        var adminMsg = new AdminMessage { AddFavoriteNode = nodeId };
+        var adminMsg = new AdminMessage { SetFavoriteNode = nodeId }; // field 39
         await SendAdminMessageAsync(adminMsg);
-        Logger.WriteLine($"AddFavoriteNode sent for node !{nodeId:x8}");
+        Logger.WriteLine($"SetFavoriteNode sent for node !{nodeId:x8}");
     }
 
     public async Task RemoveFavoriteNodeAsync(uint nodeId)
     {
         await EnsureSessionKeyAsync();
-        var adminMsg = new AdminMessage { RemoveFavoriteNode = nodeId };
+        var adminMsg = new AdminMessage { RemoveFavoriteNode = nodeId }; // field 40
         await SendAdminMessageAsync(adminMsg);
         Logger.WriteLine($"RemoveFavoriteNode sent for node !{nodeId:x8}");
     }

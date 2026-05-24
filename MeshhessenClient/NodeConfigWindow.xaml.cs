@@ -152,9 +152,8 @@ public partial class NodeConfigWindow : Window
             _loadingDone = false;
             _expectedConfigs.Clear();
             _receivedConfigs.Clear();
+            _loadingTimeoutTimer?.Dispose();
 
-            // Register all configs we expect to receive
-            // Channels are NOT included — disabled channels never fire, so they'd block completion
             _expectedConfigs.UnionWith(new[]
             {
                 "owner", "device", "lora", "position", "power", "network",
@@ -166,59 +165,100 @@ public partial class NodeConfigWindow : Window
             UpdateStatus(Loc("StrNcLoadingProgress", "0", _expectedConfigs.Count.ToString()));
             SaveButton.IsEnabled = false;
 
-            // Start 30-second timeout
-            _loadingTimeoutTimer?.Dispose();
-            _loadingTimeoutTimer = new System.Threading.Timer(_ =>
-            {
-                Dispatcher.BeginInvoke(() =>
-                {
-                    if (_loadingDone) return;
-                    _loadingDone = true;
-                    var missing = _expectedConfigs.Except(_receivedConfigs).ToList();
-                    UpdateStatus(Loc("StrNcLoadingTimeout", string.Join(", ", missing)));
-                    SaveButton.IsEnabled = true;
-                });
-            }, null, 30000, System.Threading.Timeout.Infinite);
+            // Sequential loading: send one request, wait for the response event,
+            // then send the next. This prevents firmware queue overflow on slow boards
+            // (e.g. Heltec). Per-request timeout: 8 s.
+            const int T = 8000;
 
-            await _protocolService.RequestOwnerAsync();
-            await Delay();
-            await _protocolService.RequestDeviceConfigAsync();
-            await Delay();
-            await _protocolService.RequestLoRaConfigAsync();
-            await Delay();
-            await _protocolService.RequestPositionConfigAsync();
-            await Delay();
-            await _protocolService.RequestPowerConfigAsync();
-            await Delay();
-            await _protocolService.RequestNetworkConfigAsync();
-            await Delay();
-            await _protocolService.RequestDisplayConfigAsync();
-            await Delay();
-            await _protocolService.RequestBluetoothConfigAsync();
-            await Delay();
-            await _protocolService.RequestMqttConfigAsync();
-            await Delay();
-            await _protocolService.RequestTelemetryConfigAsync();
-            await Delay();
-            await _protocolService.RequestNeighborInfoConfigAsync();
-            await Delay();
-            await _protocolService.RequestStoreForwardConfigAsync();
-            await Delay();
-            await _protocolService.RequestExternalNotificationConfigAsync();
-            await Delay();
-            await _protocolService.RequestCannedMessageConfigAsync();
-            await Delay();
-            await _protocolService.RequestRangeTestConfigAsync();
-            await Delay();
-            await _protocolService.RequestSerialConfigAsync();
-            await Delay();
-            await _protocolService.RequestSecurityConfigAsync();
-            await Delay();
-            // Request channels 0-7
+            await Seq<User>(_protocolService.RequestOwnerAsync,
+                h => _protocolService.OwnerReceived += h,
+                h => _protocolService.OwnerReceived -= h, T);
+
+            await Seq<DeviceConfig>(_protocolService.RequestDeviceConfigAsync,
+                h => _protocolService.DeviceConfigReceived += h,
+                h => _protocolService.DeviceConfigReceived -= h, T);
+
+            await Seq<LoRaConfig>(_protocolService.RequestLoRaConfigAsync,
+                h => _protocolService.LoRaConfigReceived += h,
+                h => _protocolService.LoRaConfigReceived -= h, T);
+
+            await Seq<PositionConfig>(_protocolService.RequestPositionConfigAsync,
+                h => _protocolService.PositionConfigReceived += h,
+                h => _protocolService.PositionConfigReceived -= h, T);
+
+            await Seq<PowerConfig>(_protocolService.RequestPowerConfigAsync,
+                h => _protocolService.PowerConfigReceived += h,
+                h => _protocolService.PowerConfigReceived -= h, T);
+
+            await Seq<NetworkConfig>(_protocolService.RequestNetworkConfigAsync,
+                h => _protocolService.NetworkConfigReceived += h,
+                h => _protocolService.NetworkConfigReceived -= h, T);
+
+            await Seq<DisplayConfig>(_protocolService.RequestDisplayConfigAsync,
+                h => _protocolService.DisplayConfigReceived += h,
+                h => _protocolService.DisplayConfigReceived -= h, T);
+
+            await Seq<BluetoothConfig>(_protocolService.RequestBluetoothConfigAsync,
+                h => _protocolService.BluetoothConfigReceived += h,
+                h => _protocolService.BluetoothConfigReceived -= h, T);
+
+            await Seq<MQTTConfig>(_protocolService.RequestMqttConfigAsync,
+                h => _protocolService.MqttConfigReceived += h,
+                h => _protocolService.MqttConfigReceived -= h, T);
+
+            await Seq<TelemetryConfig>(_protocolService.RequestTelemetryConfigAsync,
+                h => _protocolService.TelemetryConfigReceived += h,
+                h => _protocolService.TelemetryConfigReceived -= h, T);
+
+            await Seq<NeighborInfoConfig>(_protocolService.RequestNeighborInfoConfigAsync,
+                h => _protocolService.NeighborInfoConfigReceived += h,
+                h => _protocolService.NeighborInfoConfigReceived -= h, T);
+
+            await Seq<StoreForwardConfig>(_protocolService.RequestStoreForwardConfigAsync,
+                h => _protocolService.StoreForwardConfigReceived += h,
+                h => _protocolService.StoreForwardConfigReceived -= h, T);
+
+            await Seq<ExternalNotificationConfig>(_protocolService.RequestExternalNotificationConfigAsync,
+                h => _protocolService.ExternalNotificationConfigReceived += h,
+                h => _protocolService.ExternalNotificationConfigReceived -= h, T);
+
+            await Seq<CannedMessageConfig>(_protocolService.RequestCannedMessageConfigAsync,
+                h => _protocolService.CannedMessageConfigReceived += h,
+                h => _protocolService.CannedMessageConfigReceived -= h, T);
+
+            await Seq<RangeTestConfig>(_protocolService.RequestRangeTestConfigAsync,
+                h => _protocolService.RangeTestConfigReceived += h,
+                h => _protocolService.RangeTestConfigReceived -= h, T);
+
+            await Seq<SerialConfig>(_protocolService.RequestSerialConfigAsync,
+                h => _protocolService.SerialConfigReceived += h,
+                h => _protocolService.SerialConfigReceived -= h, T);
+
+            await Seq<SecurityConfig>(_protocolService.RequestSecurityConfigAsync,
+                h => _protocolService.SecurityConfigReceived += h,
+                h => _protocolService.SecurityConfigReceived -= h, T);
+
+            // Channels — disabled channels never respond, so timeout is expected
             for (int i = 0; i < 8; i++)
             {
-                await _protocolService.RequestChannelConfigAsync(i);
-                await Delay();
+                int idx = i;
+                await Seq<ChannelInfo>(() => _protocolService.RequestChannelConfigAsync(idx),
+                    h => _protocolService.ChannelInfoReceived += h,
+                    h => _protocolService.ChannelInfoReceived -= h, T);
+            }
+
+            // Done — if MarkReceived() already completed everything, _loadingDone is true.
+            // Otherwise show which configs are still missing and enable Save anyway.
+            if (!_loadingDone)
+            {
+                _loadingDone = true;
+                var missing = _expectedConfigs.Except(_receivedConfigs).ToList();
+                if (missing.Count > 0)
+                    UpdateStatus(Loc("StrNcLoadingTimeout", string.Join(", ", missing)));
+                else
+                    UpdateStatus(Loc("StrNcConfigLoaded") != "StrNcConfigLoaded"
+                        ? Loc("StrNcConfigLoaded") : "Konfiguration geladen.");
+                Dispatcher.BeginInvoke(() => SaveButton.IsEnabled = true);
             }
         }
         catch (Exception ex)
@@ -227,9 +267,37 @@ public partial class NodeConfigWindow : Window
         }
     }
 
-    // 500 ms between requests — slower boards (e.g. Heltec) overflow the firmware queue at 200 ms
+    // Small delay between write commands in the Save path
     private static System.Threading.Tasks.Task Delay() =>
-        System.Threading.Tasks.Task.Delay(500);
+        System.Threading.Tasks.Task.Delay(300);
+
+    /// <summary>
+    /// Sends a config request and waits for the matching response event with a timeout.
+    /// The existing event handlers (OnXxxReceived) remain subscribed and handle UI/tracking;
+    /// this helper only adds a temporary one-shot handler to pace the sequential loading.
+    /// </summary>
+    private static async System.Threading.Tasks.Task Seq<T>(
+        Func<System.Threading.Tasks.Task> send,
+        Action<EventHandler<T>> subscribe,
+        Action<EventHandler<T>> unsubscribe,
+        int timeoutMs)
+    {
+        var tcs = new System.Threading.Tasks.TaskCompletionSource<bool>(
+            System.Threading.Tasks.TaskCreationOptions.RunContinuationsAsynchronously);
+        EventHandler<T> handler = (_, _) => tcs.TrySetResult(true);
+        subscribe(handler);
+        try
+        {
+            await send();
+            await System.Threading.Tasks.Task.WhenAny(
+                tcs.Task,
+                System.Threading.Tasks.Task.Delay(timeoutMs));
+        }
+        finally
+        {
+            unsubscribe(handler);
+        }
+    }
 
     private string Loc(string key, params string[] args)
     {
