@@ -52,6 +52,7 @@ public partial class MainWindow : Window
     private ChannelInfo? _messageChannelFilter = null;
     private DirectMessagesWindow? _dmWindow = null;
     private uint _myNodeId = 0;
+    private string _activeStationName = string.Empty;
     private string? _nodeSortColumn = null;
     private bool _nodeSortAscending = true;
     private Meshtastic.Protobufs.LoRaConfig? _currentLoRaConfig;
@@ -104,7 +105,8 @@ public partial class MainWindow : Window
         30,            // RemoteAdminTimeoutSeconds
         false,         // VirtualNodeEnabled
         4404,          // VirtualNodePort
-        false);        // VirtualNodeBlockAdmin
+        false,         // VirtualNodeBlockAdmin
+        new Dictionary<uint, string>()); // NodeStationNames
     private NodeInfo? _mapContextMenuNode;
     private uint? _alertNodeId;  // Stores the node ID for "Show on Map" button
 
@@ -315,7 +317,7 @@ public partial class MainWindow : Window
             var settings = SettingsService.Load();
             DarkModeCheckBox.IsChecked = settings.DarkMode;
             StationNameTextBox.Text = settings.StationName;
-            StationNameLabel.Text = settings.StationName;
+            RefreshActiveStationName();
             ShowEncryptedMessagesCheckBox.IsChecked = settings.ShowEncryptedMessages;
             _showEncryptedMessages = settings.ShowEncryptedMessages;
             DebugMessagesCheckBox.IsChecked = settings.DebugMessages;
@@ -562,7 +564,7 @@ public partial class MainWindow : Window
     {
         _myPosFeatures.Clear();
         var pos = SphericalMercator.FromLonLat(_currentSettings.MyLongitude, _currentSettings.MyLatitude);
-        var label = string.IsNullOrEmpty(_currentSettings.StationName) ? "Ich" : _currentSettings.StationName;
+        var label = string.IsNullOrEmpty(_activeStationName) ? "Ich" : _activeStationName;
         Services.Logger.WriteLine($"UpdateMyPositionPin: label='{label}' lat={_currentSettings.MyLatitude:F6}, lon={_currentSettings.MyLongitude:F6}");
         var feature = new PointFeature(new MPoint(pos.x, pos.y));
         feature.Styles.Add(new SymbolStyle
@@ -1456,6 +1458,9 @@ public partial class MainWindow : Window
                 ConnectButton.Content = Loc("StrConnect");
                 UpdateStatusBar(Loc("StrDisconnectedMsg"));
                 SetConnectionStatus(ConnectionStatus.Disconnected);
+                _myNodeId = 0;
+                StationNameEditButton.Visibility = Visibility.Collapsed;
+                RefreshActiveStationName();
             }
             catch (Exception ex)
             {
@@ -2095,7 +2100,8 @@ public partial class MainWindow : Window
                 RemoteAdminTimeoutSeconds: int.TryParse(RemoteAdminTimeoutTextBox.Text, out var rats) ? Math.Clamp(rats, 5, 120) : 30,
                 VirtualNodeEnabled: VirtualNodeEnableCheckBox?.IsChecked == true,
                 VirtualNodePort: int.TryParse(VirtualNodePortBox?.Text, out var vnp) ? Math.Clamp(vnp, 1, 65535) : 4404,
-                VirtualNodeBlockAdmin: VirtualNodeBlockAdminCheckBox?.IsChecked == true
+                VirtualNodeBlockAdmin: VirtualNodeBlockAdminCheckBox?.IsChecked == true,
+                NodeStationNames: _currentSettings.NodeStationNames
             );
             _currentSettings = settings;
             SettingsService.Save(settings);
@@ -2119,7 +2125,7 @@ public partial class MainWindow : Window
             _dmWindow?.SetMessageDbManager(_messageDbManager);
 
             _protocolService.SetPskMismatchAction(settings.NodeKeyMismatchAction);
-            StationNameLabel.Text = settings.StationName;
+            RefreshActiveStationName();
             _showEncryptedMessages = settings.ShowEncryptedMessages;
             TileDownloaderService.OSMTileUrl = settings.OSMTileUrl;
             TileDownloaderService.OSMTopoTileUrl = settings.OSMTopoTileUrl;
@@ -2623,6 +2629,7 @@ public partial class MainWindow : Window
                 // Speichere eigene Node-ID für DM-Fenster
                 _myNodeId = deviceInfo.NodeId;
                 OwnNodeIdText.Text = $"!{_myNodeId:x8}";
+                StationNameEditButton.Visibility = Visibility.Visible;
 
                 // Re-evaluate IsOwnMessage for messages already loaded from DB
                 // (DB load can race ahead of DeviceInfo, leaving IsOwnMessage=false for own messages)
@@ -2643,6 +2650,7 @@ public partial class MainWindow : Window
                     NodeInfoLongNameText.Text = myNode.Name;
                     NodeInfoShortNameText.Text = myNode.ShortName ?? "";
                     Services.Logger.WriteLine($"  Set device name: {myNode.Name}");
+                    RefreshActiveStationName();
                 }
                 else
                 {
@@ -2659,6 +2667,7 @@ public partial class MainWindow : Window
                                 NodeInfoShortNameText.Text = node.ShortName ?? "";
                                 Services.Logger.WriteLine($"  Set device name (delayed): {node.Name}");
                             }
+                            RefreshActiveStationName();
                         });
                     });
                 }
@@ -2852,6 +2861,135 @@ public partial class MainWindow : Window
                 Services.Logger.WriteLine($"ERROR updating packet count in UI: {ex.Message}");
             }
         });
+    }
+
+    private void RefreshActiveStationName()
+    {
+        string resolved;
+        bool isGlobal = false;
+        bool isNode = false;
+
+        if (!string.IsNullOrEmpty(_currentSettings.StationName))
+        {
+            resolved = _currentSettings.StationName;
+            isGlobal = true;
+        }
+        else if (_myNodeId != 0 &&
+                 _currentSettings.NodeStationNames.TryGetValue(_myNodeId, out var nodeSpecific) &&
+                 !string.IsNullOrEmpty(nodeSpecific))
+        {
+            resolved = nodeSpecific;
+            isNode = true;
+        }
+        else if (_myNodeId != 0)
+        {
+            resolved = _allNodes.FirstOrDefault(n => n.NodeId == _myNodeId)?.ShortName ?? string.Empty;
+        }
+        else
+        {
+            resolved = _currentSettings.StationName;
+        }
+
+        _activeStationName = resolved;
+        StationNameLabel.Text = resolved;
+
+        if (isGlobal)
+        {
+            StationNameLabel.Foreground = System.Windows.Media.Brushes.Red;
+            StationNameLabel.ToolTip = Loc("StrStationNameGlobalTooltip");
+        }
+        else if (isNode)
+        {
+            StationNameLabel.Foreground = new System.Windows.Media.SolidColorBrush(
+                System.Windows.Media.Color.FromRgb(0xFF, 0x80, 0x00));
+            StationNameLabel.ToolTip = Loc("StrStationNameNodeTooltip");
+        }
+        else if (_myNodeId != 0)
+        {
+            StationNameLabel.Foreground = System.Windows.Media.Brushes.Gray;
+            StationNameLabel.ToolTip = Loc("StrStationNameAutoTooltip");
+        }
+        else
+        {
+            StationNameLabel.Foreground = System.Windows.Media.Brushes.Red;
+            StationNameLabel.ToolTip = null;
+        }
+    }
+
+    private void StationNameEdit_Click(object sender, RoutedEventArgs e)
+    {
+        if (_myNodeId == 0) return;
+
+        _currentSettings.NodeStationNames.TryGetValue(_myNodeId, out var current);
+        var result = ShowInputDialog(
+            Loc("StrSetNodeStationNamePrompt"),
+            Loc("StrSetNodeStationNameTitle"),
+            current ?? string.Empty);
+
+        if (result == null) return; // cancelled
+
+        var updated = new Dictionary<uint, string>(_currentSettings.NodeStationNames);
+        if (string.IsNullOrWhiteSpace(result))
+            updated.Remove(_myNodeId);
+        else
+            updated[_myNodeId] = result.Trim();
+
+        _currentSettings = _currentSettings with { NodeStationNames = updated };
+        SettingsService.Save(_currentSettings);
+        RefreshActiveStationName();
+    }
+
+    private static string? ShowInputDialog(string prompt, string title, string defaultValue)
+    {
+        var dialog = new System.Windows.Window
+        {
+            Title = title,
+            Width = 400,
+            SizeToContent = System.Windows.SizeToContent.Height,
+            WindowStartupLocation = System.Windows.WindowStartupLocation.CenterScreen,
+            ResizeMode = System.Windows.ResizeMode.NoResize,
+            ShowInTaskbar = false
+        };
+        var panel = new System.Windows.Controls.StackPanel { Margin = new System.Windows.Thickness(12) };
+        panel.Children.Add(new System.Windows.Controls.TextBlock
+        {
+            Text = prompt,
+            TextWrapping = System.Windows.TextWrapping.Wrap,
+            Margin = new System.Windows.Thickness(0, 0, 0, 8)
+        });
+        var textBox = new System.Windows.Controls.TextBox
+        {
+            Text = defaultValue,
+            Margin = new System.Windows.Thickness(0, 0, 0, 8)
+        };
+        panel.Children.Add(textBox);
+        var buttons = new System.Windows.Controls.StackPanel
+        {
+            Orientation = System.Windows.Controls.Orientation.Horizontal,
+            HorizontalAlignment = System.Windows.HorizontalAlignment.Right
+        };
+        string? result = null;
+        var ok = new System.Windows.Controls.Button
+        {
+            Content = "OK", Width = 80,
+            Margin = new System.Windows.Thickness(0, 0, 8, 0),
+            IsDefault = true
+        };
+        var cancel = new System.Windows.Controls.Button
+        {
+            Content = "Abbrechen", Width = 80,
+            IsCancel = true
+        };
+        ok.Click += (_, _) => { result = textBox.Text; dialog.DialogResult = true; };
+        cancel.Click += (_, _) => { dialog.DialogResult = false; };
+        buttons.Children.Add(ok);
+        buttons.Children.Add(cancel);
+        panel.Children.Add(buttons);
+        dialog.Content = panel;
+        textBox.Focus();
+        textBox.SelectAll();
+        dialog.ShowDialog();
+        return dialog.DialogResult == true ? result : null;
     }
 
     private void UpdateStatusBar(string message)

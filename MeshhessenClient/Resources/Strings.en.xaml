@@ -109,7 +109,13 @@
 
     <!-- Settings tab -->
     <sys:String x:Key="StrAppearance">Appearance</sys:String>
-    <sys:String x:Key="StrStationNameHint">Displayed next to the connect button.</sys:String>
+    <sys:String x:Key="StrStationNameHint">Global override – takes precedence over node-specific names. Leave empty for automatic behaviour (node-specific or short name).</sys:String>
+    <sys:String x:Key="StrStationNameGlobalTooltip">Global station name (from settings) – overrides node-specific names</sys:String>
+    <sys:String x:Key="StrStationNameNodeTooltip">Node-specific station name (click to edit)</sys:String>
+    <sys:String x:Key="StrStationNameAutoTooltip">Automatic: short name of the connected node (click to set)</sys:String>
+    <sys:String x:Key="StrSetNodeStationNameTitle">Station name for this node</sys:String>
+    <sys:String x:Key="StrSetNodeStationNamePrompt">Station name (leave empty to use the node's short name):</sys:String>
+    <sys:String x:Key="StrSetNodeStationName">✏ Station Name</sys:String>
     <sys:String x:Key="StrNotifications">Notifications</sys:String>
     <sys:String x:Key="StrAlertBellSound">Play sound on Alert Bell (🔔)</sys:String>
     <sys:String x:Key="StrAlertBellSoundHint">Plays a notification sound when a message contains the Alert Bell Character (ASCII 7).</sys:String>

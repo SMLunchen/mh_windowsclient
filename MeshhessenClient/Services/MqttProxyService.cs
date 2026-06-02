@@ -128,6 +128,7 @@ public sealed class MqttProxyService : IDisposable
 
     public async Task StopAsync()
     {
+        bool wasRunning = _running;
         _protocol.MqttProxyMessageReceived -= OnRadioMqttMessage;
         _running = false;
 
@@ -138,7 +139,9 @@ public sealed class MqttProxyService : IDisposable
 
         _mqtt?.Dispose();
         _mqtt = null;
-        RaiseStatus("MQTT Proxy gestoppt.");
+
+        if (wasRunning)
+            RaiseStatus("MQTT Proxy gestoppt.");
     }
 
     // ─── broker → radio ──────────────────────────────────────────────────────

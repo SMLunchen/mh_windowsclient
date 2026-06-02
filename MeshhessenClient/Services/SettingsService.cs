@@ -44,7 +44,8 @@ public record AppSettings(
     int RemoteAdminTimeoutSeconds,         // Timeout for remote admin requests in seconds (default 30)
     bool VirtualNodeEnabled,               // Enable Virtual Node TCP proxy server
     int VirtualNodePort,                   // TCP port for Virtual Node (default 4404)
-    bool VirtualNodeBlockAdmin);           // Block admin commands from Virtual Node clients
+    bool VirtualNodeBlockAdmin,            // Block admin commands from Virtual Node clients
+    Dictionary<uint, string> NodeStationNames); // NodeId -> per-node station name
 
 public static class SettingsService
 {
@@ -91,7 +92,8 @@ public static class SettingsService
             30,                             // RemoteAdminTimeoutSeconds default 30s
             false,                          // VirtualNodeEnabled default off
             4404,                           // VirtualNodePort default 4404
-            false);                         // VirtualNodeBlockAdmin default off
+            false,                          // VirtualNodeBlockAdmin default off
+            new Dictionary<uint, string>()); // NodeStationNames default empty
 
         try
         {
@@ -168,6 +170,18 @@ public static class SettingsService
                 }
             }
 
+            // Load per-node station names
+            var nodeStationNames = new Dictionary<uint, string>();
+            foreach (var key in values.Keys)
+            {
+                if (key.StartsWith("NodeStationName_", StringComparison.OrdinalIgnoreCase))
+                {
+                    var nodeIdHex = key.Substring(16);
+                    if (uint.TryParse(nodeIdHex, NumberStyles.HexNumber, null, out uint nodeId))
+                        nodeStationNames[nodeId] = values[key];
+                }
+            }
+
             // Migration: Convert old TileServerUrl to new format
             string osmUrl = defaults.OSMTileUrl;
             string osmTopoUrl = defaults.OSMTopoTileUrl;
@@ -229,7 +243,8 @@ public static class SettingsService
                 RemoteAdminTimeoutSeconds: values.TryGetValue("RemoteAdminTimeoutSeconds", out var rats) && int.TryParse(rats, out var ratsInt) ? ratsInt : defaults.RemoteAdminTimeoutSeconds,
                 VirtualNodeEnabled: values.TryGetValue("VirtualNodeEnabled", out var vne) && bool.TryParse(vne, out var vneBool) && vneBool,
                 VirtualNodePort: values.TryGetValue("VirtualNodePort", out var vnp) && int.TryParse(vnp, out var vnpInt) ? vnpInt : defaults.VirtualNodePort,
-                VirtualNodeBlockAdmin: values.TryGetValue("VirtualNodeBlockAdmin", out var vnba) && bool.TryParse(vnba, out var vnbaBool) && vnbaBool
+                VirtualNodeBlockAdmin: values.TryGetValue("VirtualNodeBlockAdmin", out var vnba) && bool.TryParse(vnba, out var vnbaBool) && vnbaBool,
+                NodeStationNames: nodeStationNames
             );
         }
         catch (Exception ex)
@@ -306,6 +321,12 @@ public static class SettingsService
             foreach (var kvp in settings.FavoriteNodes.Where(p => p.Value))
             {
                 lines.Add($"FavoriteNode_{kvp.Key:X8}=true");
+            }
+
+            // Save per-node station names
+            foreach (var kvp in settings.NodeStationNames.Where(p => !string.IsNullOrEmpty(p.Value)))
+            {
+                lines.Add($"NodeStationName_{kvp.Key:X8}={kvp.Value}");
             }
 
             File.WriteAllLines(IniFilePath, lines);
