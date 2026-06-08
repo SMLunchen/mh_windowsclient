@@ -325,9 +325,7 @@ public static class SettingsService
 
             // Save per-node station names
             foreach (var kvp in settings.NodeStationNames.Where(p => !string.IsNullOrEmpty(p.Value)))
-            {
                 lines.Add($"NodeStationName_{kvp.Key:X8}={kvp.Value}");
-            }
 
             File.WriteAllLines(IniFilePath, lines);
             Logger.WriteLine($"Settings saved to {IniFilePath}");

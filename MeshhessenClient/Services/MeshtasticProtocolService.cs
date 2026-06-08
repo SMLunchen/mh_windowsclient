@@ -865,14 +865,15 @@ public class MeshtasticProtocolService
         {
             var data = packet.Decoded;
 
-            // Record every decoded packet for telemetry analysis
+            // Record every decoded packet for telemetry analysis + track direct-neighbor status
             if (packet.From != 0 && !_isInitializing)
             {
+                int? hops = (packet.HopStart == 0 || packet.HopLimit > packet.HopStart)
+                    ? null
+                    : (int)(packet.HopStart - packet.HopLimit);
+
                 try
                 {
-                    int? hops = (packet.HopStart == 0 || packet.HopLimit > packet.HopStart)
-                        ? null
-                        : (int)(packet.HopStart - packet.HopLimit);
                     _db?.InsertPacketRx(
                         nodeId:    packet.From,
                         packetId:  packet.Id,
@@ -885,6 +886,24 @@ public class MeshtasticProtocolService
                 catch (Exception ex)
                 {
                     Logger.WriteLine($"TelemetryDB packet_rx insert failed: {ex.Message}");
+                }
+
+                // Update direct-neighbor / routing metadata on every decoded packet
+                if (packet.From != _myNodeId)
+                {
+                    lock (_dataLock)
+                    {
+                        if (_knownNodes.TryGetValue(packet.From, out var knownNode))
+                        {
+                            knownNode.IsViaMqtt   = packet.ViaMqtt;
+                            knownNode.HopsToReach = hops;
+                            if (hops == 0 && !packet.ViaMqtt && packet.RxSnr != 0f)
+                            {
+                                knownNode.DirectNeighborAt  = DateTime.Now;
+                                knownNode.DirectNeighborSnr = packet.RxSnr;
+                            }
+                        }
+                    }
                 }
             }
 

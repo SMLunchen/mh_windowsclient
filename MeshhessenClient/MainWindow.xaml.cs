@@ -54,6 +54,18 @@ public partial class MainWindow : Window
     private uint _myNodeId = 0;
     private string _activeStationName = string.Empty;
     private string? _nodeSortColumn = null;
+
+    // Neighbour lines
+    private MemoryLayer? _neighborLinesLayer;
+    private readonly List<IFeature> _neighborLineFeatures = new();
+    private bool _showNeighborLines        = false;
+    private bool _neighborColorByAge       = false;   // false = SNR, true = age
+    private bool _neighborPermanent        = false;   // true = ignore 24 h cutoff
+
+    // Node-list advanced filters
+    private int  _nodeFilterLastSeenMinutes = 0;
+    private bool _nodeFilterHideMqtt        = false;
+    private bool _nodeFilterOnlyFavorites   = false;
     private bool _nodeSortAscending = true;
     private Meshtastic.Protobufs.LoRaConfig? _currentLoRaConfig;
 
@@ -507,6 +519,10 @@ public partial class MainWindow : Window
             var tileSource = new TileSource(tileProvider, schema);
             _map.Layers.Add(new TileLayer(tileSource) { Name = "OSM" });
 
+            // Neighbour-lines layer (rendered below node pins)
+            _neighborLinesLayer = new MemoryLayer("NeighborLines") { Features = _neighborLineFeatures, Style = null };
+            _map.Layers.Add(_neighborLinesLayer);
+
             // Node-Layer
             _nodeLayer = new MemoryLayer("Nodes") { Features = _nodeFeatures, Style = null };
             _map.Layers.Add(_nodeLayer);
@@ -653,6 +669,7 @@ public partial class MainWindow : Window
         {
             _nodeLayer.Features = _nodeFeatures;
             _nodeLayer.DataHasChanged();
+            if (_showNeighborLines) DrawNeighborLines();
             MapControl.Refresh();
         }
     }
@@ -2540,6 +2557,14 @@ public partial class MainWindow : Window
                     LocationLogger.Log(node);
                 }
 
+                // Restore direct-neighbour data from telemetry DB (only if no live data yet)
+                if (!node.DirectNeighborAt.HasValue && _db != null)
+                {
+                    var (lastSeen, snr) = _db.GetDirectNeighborContact(node.NodeId);
+                    if (lastSeen.HasValue) node.DirectNeighborAt  = lastSeen;
+                    if (snr.HasValue)      node.DirectNeighborSnr = snr;
+                }
+
                 // Update in _allNodes
                 var existingInAll = _allNodes.FirstOrDefault(n => n.Id == node.Id);
                 if (existingInAll != null)
@@ -2861,6 +2886,108 @@ public partial class MainWindow : Window
                 Services.Logger.WriteLine($"ERROR updating packet count in UI: {ex.Message}");
             }
         });
+    }
+
+    // ── Neighbour lines ──────────────────────────────────────────────────────────
+
+    private void DrawNeighborLines()
+    {
+        if (_neighborLinesLayer == null) return;
+
+        _neighborLineFeatures.Clear();
+
+        if (_showNeighborLines && _myNodeId != 0)
+        {
+            var myNode = _allNodes.FirstOrDefault(n => n.NodeId == _myNodeId);
+            double myLat = myNode?.Latitude  ?? _currentSettings.MyLatitude;
+            double myLon = myNode?.Longitude ?? _currentSettings.MyLongitude;
+
+            if (myLat != 0 || myLon != 0)
+            {
+                var myPos  = SphericalMercator.FromLonLat(myLon, myLat);
+                var cutoff = _neighborPermanent ? DateTime.MinValue : DateTime.Now.AddHours(-24);
+
+                foreach (var node in _allNodes)
+                {
+                    if (node.NodeId == _myNodeId) continue;
+                    if (!node.DirectNeighborAt.HasValue || node.DirectNeighborAt < cutoff) continue;
+                    if (!node.Latitude.HasValue || !node.Longitude.HasValue) continue;
+
+                    var nPos = SphericalMercator.FromLonLat(node.Longitude.Value, node.Latitude.Value);
+                    var line = new NetTopologySuite.Geometries.LineString(new[]
+                    {
+                        new NetTopologySuite.Geometries.Coordinate(myPos.x, myPos.y),
+                        new NetTopologySuite.Geometries.Coordinate(nPos.x,  nPos.y)
+                    });
+
+                    var color = _neighborColorByAge
+                        ? NeighborColorByAge(node.DirectNeighborAt)
+                        : NeighborColorBySnr(node.DirectNeighborSnr);
+
+                    var gf = new GeometryFeature { Geometry = line };
+                    gf.Styles.Add(new VectorStyle { Line = new Mapsui.Styles.Pen(color, 2.5) });
+                    _neighborLineFeatures.Add(gf);
+                }
+            }
+        }
+
+        _neighborLinesLayer.DataHasChanged();
+        MapControl?.Refresh();
+    }
+
+    private static Mapsui.Styles.Color NeighborColorBySnr(float? snr) => snr switch
+    {
+        null   => Mapsui.Styles.Color.FromArgb(160, 128, 128, 128),
+        >= 0f  => Mapsui.Styles.Color.FromArgb(220,  76, 175,  80),  // green
+        >= -5f => Mapsui.Styles.Color.FromArgb(220, 255, 152,   0),  // orange
+        _      => Mapsui.Styles.Color.FromArgb(220, 244,  67,  54)   // red
+    };
+
+    private static Mapsui.Styles.Color NeighborColorByAge(DateTime? seenAt)
+    {
+        if (!seenAt.HasValue) return Mapsui.Styles.Color.FromArgb(160, 128, 128, 128);
+        var ageMin = (DateTime.Now - seenAt.Value).TotalMinutes;
+        if (ageMin < 5)  return Mapsui.Styles.Color.FromArgb(220,   0, 229, 255); // cyan
+        if (ageMin < 30) return Mapsui.Styles.Color.FromArgb(220,  13, 138, 154); // teal
+        return                  Mapsui.Styles.Color.FromArgb(160, 100, 100, 100); // gray
+    }
+
+    private void NeighborLines_Changed(object sender, RoutedEventArgs e)
+    {
+        _showNeighborLines = NeighborLinesCheckBox.IsChecked == true;
+        NeighborLinesOptions.Visibility = _showNeighborLines ? Visibility.Visible : Visibility.Collapsed;
+        DrawNeighborLines();
+    }
+
+    private void NeighborPermanent_Changed(object sender, RoutedEventArgs e)
+    {
+        if (NeighborPermanentCheckBox == null) return;
+        _neighborPermanent = NeighborPermanentCheckBox.IsChecked == true;
+        DrawNeighborLines();
+    }
+
+    private void NeighborColorMode_Changed(object sender, RoutedEventArgs e)
+    {
+        if (NeighborColorAgeRadio == null || NeighborSnrLegendPanel == null || NeighborAgeLegendPanel == null)
+            return;
+        _neighborColorByAge = NeighborColorAgeRadio.IsChecked == true;
+        NeighborSnrLegendPanel.Visibility  = _neighborColorByAge ? Visibility.Collapsed : Visibility.Visible;
+        NeighborAgeLegendPanel.Visibility  = _neighborColorByAge ? Visibility.Visible   : Visibility.Collapsed;
+        DrawNeighborLines();
+    }
+
+    // ── Node-list advanced filters ────────────────────────────────────────────
+
+    private void NodeAdvancedFilter_Changed(object sender, RoutedEventArgs e)
+    {
+        if (NodeLastSeenFilterComboBox == null || HideMqttNodesCheckBox == null || OnlyFavoritesFilterCheckBox == null)
+            return;
+        _nodeFilterLastSeenMinutes =
+            int.TryParse((NodeLastSeenFilterComboBox.SelectedItem as System.Windows.Controls.ComboBoxItem)
+                         ?.Tag as string, out var m) ? m : 0;
+        _nodeFilterHideMqtt      = HideMqttNodesCheckBox.IsChecked == true;
+        _nodeFilterOnlyFavorites = OnlyFavoritesFilterCheckBox.IsChecked == true;
+        ApplyNodeSortAndFilter();
     }
 
     private void RefreshActiveStationName()
@@ -3620,6 +3747,18 @@ public partial class MainWindow : Window
                 n.LastSeen.ToLowerInvariant().Contains(filterText)
             );
         }
+
+        // Advanced filters
+        if (_nodeFilterLastSeenMinutes > 0)
+            filtered = filtered.Where(n =>
+                n.LastSeenDateTime.HasValue &&
+                (DateTime.Now - n.LastSeenDateTime.Value).TotalMinutes <= _nodeFilterLastSeenMinutes);
+
+        if (_nodeFilterHideMqtt)
+            filtered = filtered.Where(n => !n.IsViaMqtt);
+
+        if (_nodeFilterOnlyFavorites)
+            filtered = filtered.Where(n => n.IsFavorite);
 
         // Apply sorting
         if (!string.IsNullOrEmpty(_nodeSortColumn))

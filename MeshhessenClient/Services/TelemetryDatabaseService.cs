@@ -1438,6 +1438,25 @@ AND timestamp >= $s AND battery_percent IS NOT NULL";
         return con;
     }
 
+    /// Returns the most recent 0-hop (direct HF) contact for a node: timestamp + SNR.
+    public (DateTime? LastSeen, float? Snr) GetDirectNeighborContact(uint nodeId)
+    {
+        lock (_lock)
+        {
+            using var con = Open();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText =
+                "SELECT MAX(timestamp), rx_snr FROM packet_rx " +
+                "WHERE node_id = $n AND hop_count = 0 GROUP BY node_id";
+            cmd.Parameters.AddWithValue("$n", (long)nodeId);
+            using var r = cmd.ExecuteReader();
+            if (!r.Read() || r.IsDBNull(0)) return (null, null);
+            var ts  = FromUnix(r.GetInt64(0));
+            float? snr = r.IsDBNull(1) ? null : (float)r.GetDouble(1);
+            return (ts, snr);
+        }
+    }
+
     private static long ToUnix(DateTime dt)
         => (long)(dt.ToUniversalTime() - DateTime.UnixEpoch).TotalSeconds;
 

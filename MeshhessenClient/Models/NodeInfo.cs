@@ -31,6 +31,14 @@ public class NodeInfo
     public float? SnrValue     { get; set; }  // most recent rx_snr from this node
     public float? BatteryValue { get; set; }  // most recent battery_level (%) from this node
 
+    // Direct-neighbor tracking (set whenever a 0-hop, non-MQTT packet is received)
+    public DateTime? DirectNeighborAt  { get; set; }  // last time seen as 0-hop HF neighbour
+    public float?    DirectNeighborSnr { get; set; }  // rx_snr of that last direct packet
+
+    // Routing metadata from most recent received packet
+    public bool IsViaMqtt   { get; set; }   // last packet arrived via MQTT
+    public int? HopsToReach { get; set; }   // hop count of last received packet (null = unknown)
+
     public string SignalQualityColor => SnrValue switch
     {
         null   => string.Empty,

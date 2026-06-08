@@ -733,6 +733,14 @@
     <sys:String x:Key="StrLegendMqttHop">Via MQTT (zigzag)</sys:String>
     <sys:String x:Key="StrLegendUnknownHop">Unknown route (dashed)</sys:String>
     <sys:String x:Key="StrLegendSnrHint">Click on segment → SNR popup</sys:String>
+    <sys:String x:Key="StrNeighborLines">Neighbor lines (0-hop HF)</sys:String>
+    <sys:String x:Key="StrNeighborColorSnr">SNR</sys:String>
+    <sys:String x:Key="StrNeighborColorAge">Age</sys:String>
+
+    <!-- Node list advanced filters -->
+    <sys:String x:Key="StrNodeFilterLastSeen">Seen:</sys:String>
+    <sys:String x:Key="StrNodeFilterHideMqtt">Hide MQTT</sys:String>
+    <sys:String x:Key="StrNodeFilterOnlyFavorites">★ Only</sys:String>
 
     <!-- Waypoint status -->
     <sys:String x:Key="StrWpCreatedStatus">Waypoint {0} created and sent.</sys:String>

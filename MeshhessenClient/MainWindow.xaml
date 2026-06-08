@@ -786,17 +786,52 @@
                 <Grid Margin="10">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
                     <!-- Quick Filter -->
                     <TextBox x:Name="NodeFilterTextBox"
                              Grid.Row="0"
-                             Margin="0,0,0,6"
+                             Margin="0,0,0,4"
                              TextChanged="NodeFilterTextBox_TextChanged"
                              Tag="🔍 Filter nach Name, ID, SNR, Batterie..."/>
 
-                    <ListView x:Name="NodesListView" Grid.Row="1"
+                    <!-- Advanced Filters -->
+                    <WrapPanel Grid.Row="1" Margin="0,0,0,6" VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
+                            <TextBlock Text="{DynamicResource StrNodeFilterLastSeen}"
+                                       FontSize="11" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                            <ComboBox x:Name="NodeLastSeenFilterComboBox" Width="80" FontSize="11"
+                                      SelectionChanged="NodeAdvancedFilter_Changed">
+                                <ComboBoxItem Tag="0" IsSelected="True">—</ComboBoxItem>
+                                <ComboBoxItem Tag="5">5 Min</ComboBoxItem>
+                                <ComboBoxItem Tag="15">15 Min</ComboBoxItem>
+                                <ComboBoxItem Tag="30">30 Min</ComboBoxItem>
+                                <ComboBoxItem Tag="60">1 Std</ComboBoxItem>
+                                <ComboBoxItem Tag="360">6 Std</ComboBoxItem>
+                                <ComboBoxItem Tag="1440">24 Std</ComboBoxItem>
+                                <ComboBoxItem Tag="10080">7 Tage</ComboBoxItem>
+                                <ComboBoxItem Tag="20160">14 Tage</ComboBoxItem>
+                                <ComboBoxItem Tag="30240">21 Tage</ComboBoxItem>
+                                <ComboBoxItem Tag="43200">30 Tage</ComboBoxItem>
+                                <ComboBoxItem Tag="86400">60 Tage</ComboBoxItem>
+                            </ComboBox>
+                        </StackPanel>
+                        <CheckBox x:Name="HideMqttNodesCheckBox"
+                                  Content="{DynamicResource StrNodeFilterHideMqtt}"
+                                  FontSize="11" VerticalAlignment="Center"
+                                  Margin="0,0,10,0"
+                                  Checked="NodeAdvancedFilter_Changed"
+                                  Unchecked="NodeAdvancedFilter_Changed"/>
+                        <CheckBox x:Name="OnlyFavoritesFilterCheckBox"
+                                  Content="{DynamicResource StrNodeFilterOnlyFavorites}"
+                                  FontSize="11" VerticalAlignment="Center"
+                                  Checked="NodeAdvancedFilter_Changed"
+                                  Unchecked="NodeAdvancedFilter_Changed"/>
+                    </WrapPanel>
+
+                    <ListView x:Name="NodesListView" Grid.Row="2"
                               ContextMenuOpening="NodesListView_ContextMenuOpening">
                         <ListView.View>
                             <GridView x:Name="NodesGridView">
@@ -1137,6 +1172,68 @@
                             <!-- SNR click hint -->
                             <TextBlock Text="{DynamicResource StrLegendSnrHint}" Foreground="#AAAAAA" FontSize="9"
                                        Margin="0,4,0,0" TextWrapping="Wrap" MaxWidth="160"/>
+
+                            <!-- Separator -->
+                            <Border BorderBrush="#44FFFFFF" BorderThickness="0,1,0,0" Margin="0,6,0,4"/>
+
+                            <!-- Nachbar-Linien Toggle -->
+                            <CheckBox x:Name="NeighborLinesCheckBox"
+                                      Checked="NeighborLines_Changed"
+                                      Unchecked="NeighborLines_Changed">
+                                <TextBlock Text="{DynamicResource StrNeighborLines}" Foreground="White" FontSize="11"/>
+                            </CheckBox>
+
+                            <!-- Optionen (nur wenn aktiviert) -->
+                            <StackPanel x:Name="NeighborLinesOptions" Visibility="Collapsed" Margin="0,4,0,0">
+                                <!-- Dauerhaft anzeigen -->
+                                <CheckBox x:Name="NeighborPermanentCheckBox"
+                                          Margin="0,0,0,4"
+                                          Checked="NeighborPermanent_Changed"
+                                          Unchecked="NeighborPermanent_Changed">
+                                    <TextBlock Text="Dauerhaft (kein 24h-Limit)" Foreground="White" FontSize="11"/>
+                                </CheckBox>
+                                <!-- Farb-Modus -->
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                    <RadioButton x:Name="NeighborColorSnrRadio" GroupName="NeighborColor"
+                                                 IsChecked="True" Checked="NeighborColorMode_Changed">
+                                        <TextBlock Text="{DynamicResource StrNeighborColorSnr}" Foreground="White" FontSize="11"/>
+                                    </RadioButton>
+                                    <RadioButton x:Name="NeighborColorAgeRadio" GroupName="NeighborColor"
+                                                 Margin="8,0,0,0" Checked="NeighborColorMode_Changed">
+                                        <TextBlock Text="{DynamicResource StrNeighborColorAge}" Foreground="White" FontSize="11"/>
+                                    </RadioButton>
+                                </StackPanel>
+                                <!-- SNR-Legende -->
+                                <StackPanel x:Name="NeighborSnrLegendPanel">
+                                    <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
+                                        <Rectangle Width="22" Height="3" Fill="#4CAF50" VerticalAlignment="Center"/>
+                                        <TextBlock Text="SNR ≥ 0 dB" Foreground="White" FontSize="11" Margin="4,0,0,0" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
+                                        <Rectangle Width="22" Height="3" Fill="#FF9800" VerticalAlignment="Center"/>
+                                        <TextBlock Text="SNR −5…0 dB" Foreground="White" FontSize="11" Margin="4,0,0,0" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
+                                        <Rectangle Width="22" Height="3" Fill="#F44336" VerticalAlignment="Center"/>
+                                        <TextBlock Text="SNR &lt; −5 dB" Foreground="White" FontSize="11" Margin="4,0,0,0" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </StackPanel>
+                                <!-- Alters-Legende -->
+                                <StackPanel x:Name="NeighborAgeLegendPanel" Visibility="Collapsed">
+                                    <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
+                                        <Rectangle Width="22" Height="3" Fill="#00E5FF" VerticalAlignment="Center"/>
+                                        <TextBlock Text="&lt; 5 Min" Foreground="White" FontSize="11" Margin="4,0,0,0" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
+                                        <Rectangle Width="22" Height="3" Fill="#0D8A9A" VerticalAlignment="Center"/>
+                                        <TextBlock Text="5 – 30 Min" Foreground="White" FontSize="11" Margin="4,0,0,0" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
+                                        <Rectangle Width="22" Height="3" Fill="#888888" VerticalAlignment="Center"/>
+                                        <TextBlock Text="&gt; 30 Min" Foreground="White" FontSize="11" Margin="4,0,0,0" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </StackPanel>
                         </StackPanel>
                     </Border>
 
