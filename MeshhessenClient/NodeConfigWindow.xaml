@@ -299,6 +299,7 @@
                             <ComboBox x:Name="LoraRegionComboBox" Width="160" HorizontalAlignment="Left">
                                 <ComboBoxItem Content="Unset" Tag="0"/>
                                 <ComboBoxItem Content="US" Tag="1"/>
+                                <ComboBoxItem Content="EU_433" Tag="2"/>
                                 <ComboBoxItem Content="EU_868" Tag="3"/>
                                 <ComboBoxItem Content="CN" Tag="4"/>
                                 <ComboBoxItem Content="JP" Tag="5"/>
@@ -309,10 +310,12 @@
                                 <ComboBoxItem Content="IN" Tag="10"/>
                                 <ComboBoxItem Content="NZ_865" Tag="11"/>
                                 <ComboBoxItem Content="TH" Tag="12"/>
-                                <ComboBoxItem Content="UA_868" Tag="13"/>
-                                <ComboBoxItem Content="MY_919" Tag="14"/>
-                                <ComboBoxItem Content="SG_923" Tag="15"/>
-                                <ComboBoxItem Content="LORA_24" Tag="16"/>
+                                <ComboBoxItem Content="LORA_24" Tag="13"/>
+                                <ComboBoxItem Content="UA_433" Tag="14"/>
+                                <ComboBoxItem Content="UA_868" Tag="15"/>
+                                <ComboBoxItem Content="MY_433" Tag="16"/>
+                                <ComboBoxItem Content="MY_919" Tag="17"/>
+                                <ComboBoxItem Content="SG_923" Tag="18"/>
                             </ComboBox>
                             <TextBlock Text="{DynamicResource StrNcDescLoraRegion}" Style="{StaticResource DescStyle}"/>
                             <CheckBox x:Name="LoraUsePresetCheckBox" Content="{DynamicResource StrNcUsePreset}" Margin="0,12,0,0"

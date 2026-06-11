@@ -497,7 +497,8 @@ public partial class NodeConfigWindow : Window
             MqttRootTextBox.Text               = config.Root;
             MqttProxyCheckBox.IsChecked        = config.ProxyToClientEnabled;
             MqttMapReportingCheckBox.IsChecked = config.MapReportingEnabled;
-            SelectComboBoxByTag(MqttMapReportPrecisionComboBox, (int)config.MapReportPrecision);
+            SelectComboBoxByTag(MqttMapReportPrecisionComboBox,
+                (int)(config.MapReportSettings?.PositionPrecision ?? 0));
             MarkReceived("mqtt");
         });
     }
@@ -1109,7 +1110,10 @@ public partial class NodeConfigWindow : Window
             newMqtt.Root                 = MqttRootTextBox.Text.Trim();
             newMqtt.ProxyToClientEnabled = MqttProxyCheckBox.IsChecked == true;
             newMqtt.MapReportingEnabled  = MqttMapReportingCheckBox.IsChecked == true;
-            newMqtt.MapReportPrecision   = (uint)GetComboBoxTag(MqttMapReportPrecisionComboBox);
+            // map_report_precision lives inside the MapReportSettings sub-message (field 11)
+            var mapSettings = newMqtt.MapReportSettings ?? new MapReportSettings();
+            mapSettings.PositionPrecision = (uint)GetComboBoxTag(MqttMapReportPrecisionComboBox);
+            newMqtt.MapReportSettings = mapSettings;
             await _protocolService.SetMqttConfigAsync(newMqtt);
             await Delay();
 
