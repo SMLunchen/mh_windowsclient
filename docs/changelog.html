@@ -172,10 +172,111 @@
 <div class="section active" id="de">
 <main>
 
-  <!-- ── v1.5.11 ── -->
+  <!-- ── v1.5.13 ── -->
   <div class="version-entry current">
     <div class="version-header">
-      <span class="version-tag tag-latest">v1.5.11</span>
+      <span class="version-tag tag-latest">v1.5.13</span>
+      <span class="version-date">2026-06-11</span>
+      Node-Kachelansicht, Nachbar-Linien &amp; Protobuf-Abgleich
+    </div>
+    <p class="version-desc">Neue Node-Kachelansicht (Fancy View), direkte HF-Nachbar-Linien auf der Karte mit Farbverlauf nach SNR/Alter, „Informationen anfordern" wie in der Android-App, erweiterte Node-Filter – plus vollständig mit den Original-Protobufs abgeglichene Definitionen.</p>
+
+    <div class="cl-section added">
+      <h3>✨ Hinzugefügt</h3>
+
+      <div class="cl-group">
+        <div class="cl-group-title">🗺️ Direkte Nachbar-Linien auf der Karte</div>
+        <ul class="cl-list">
+          <li>Aktivierbar im Legenden-Feld: Linien von der eigenen Position zu allen <strong>direkt über HF empfangenen</strong> Nodes (0 Hops, kein MQTT)</li>
+          <li><strong>Farbverlauf</strong> nach <strong>SNR</strong> (rot → gelb → grün) oder <strong>Alter</strong> der letzten direkten Verbindung (cyan → violett) – echter Gradient</li>
+          <li><strong>Option „Dauerhaft":</strong> alle je direkt gehörten Nachbarn; historische 0-Hop-Kontakte aus der Telemetrie-DB (<code>packet_rx</code>, <code>hop_count=0</code>)</li>
+          <li>Dunkler Umriss unter jeder Linie für gute Sichtbarkeit auf der Topo-Karte</li>
+        </ul>
+      </div>
+
+      <div class="cl-group">
+        <div class="cl-group-title">🔧 Node-Kachelansicht (Fancy View)</div>
+        <ul class="cl-list">
+          <li>Optionale, responsive Kachel-Oberfläche statt Tabelle (Einstellungen → Darstellung); Spaltenanzahl wächst mit der Fensterbreite</li>
+          <li>Pro Kachel: ShortName-Badge in Node-Farbe, 🔑/🔓 PKI, voller Name, „vor X min", ⭐-Favorit, 📡 Infrastruktur, ☁ MQTT</li>
+          <li>Strom (extern/Batterie + Spannung), Entfernung + Höhe, Hops, RSSI/SNR mit Farbverlauf, Umwelt-Telemetrie, HW-Modell · Rolle · Node-ID</li>
+          <li>Eigener Node immer ganz oben; virtualisiertes Pixel-Scrolling auch bei 1000+ Nodes</li>
+        </ul>
+      </div>
+
+      <div class="cl-group">
+        <div class="cl-group-title">📥 Informationen anfordern (wie Android-App)</div>
+        <ul class="cl-list">
+          <li>Rechtsklick-Untermenü in Liste, Kachel und Karte: fordert gezielt Daten an (<code>want_response</code>)</li>
+          <li>Benutzer-Info, Position, Geräte-/Umwelt-/Luftqualität-/Strom-/Host-Metriken, Signalqualität/Mesh-Statistik, PAX-Zähler</li>
+        </ul>
+      </div>
+
+      <div class="cl-group">
+        <div class="cl-group-title">🔧 Erweiterte Node-Listen-Filter</div>
+        <ul class="cl-list">
+          <li>Filter nach zuletzt gesehen (5 Min – 60 Tage), MQTT-Nodes ausblenden, nur Favoriten, SNR-Einfärbung an/aus</li>
+          <li>Sortier-Dropdown im Kachelmodus (Name, SNR, Entfernung, Batterie, zuletzt gesehen)</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="cl-section fixed">
+      <h3>🐛 Behoben</h3>
+      <div class="cl-group">
+        <div class="cl-group-title">🧩 Protobuf-Definitionen mit Original abgeglichen</div>
+        <ul class="cl-list">
+          <li><code>Position.ground_speed/ground_track</code> lagen auf Feld 14/15 statt 15/16 → GPS-Geschwindigkeit/Kurs falsch dekodiert</li>
+          <li><code>Region</code>-Enum ab Wert 13 verschoben (UA_868/MY_919/SG_923/LORA_24) → korrigiert + vollständige Liste</li>
+          <li><code>MQTTConfig</code> Feld 11 war <code>uint32</code> statt verschachtelter <code>MapReportSettings</code> → Map-Report-Genauigkeit repariert</li>
+          <li><code>TelemetryConfig</code> Felder 3–9 verschoben → Telemetrie-Modul-Konfig jetzt korrekt</li>
+          <li><code>CannedMessageConfig</code> verschoben (<code>send_bell</code> u.a.); <code>ModemPreset</code> 8–13 ergänzt</li>
+        </ul>
+      </div>
+      <div class="cl-group">
+        <div class="cl-group-title">🔡 Sonstige Fixes</div>
+        <ul class="cl-list">
+          <li>RSSI/SNR nur bei direktem Empfang (0 Hops, kein MQTT); bei Relay-Nodes zeigt die Spalte die Hop-Anzahl</li>
+          <li>~90 kaputte Umlaute (U+FFFD) in Log-/Dialog-Texten repariert; Logging durchgängig UTF-8</li>
+          <li><strong>DM-Freeze behoben:</strong> Node-Refresh wird bei Paket-/DM-Verkehr immer gebündelt (700 ms)</li>
+          <li>LED-Tooltip-Zeilenumbruch, Legenden-i18n, Map-Topbar aufgeräumt, breitere Schlüssel-Spalte, breiteres Startfenster</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── v1.5.12 ── -->
+  <div class="version-entry">
+    <div class="version-header">
+      <span class="version-tag tag-release">v1.5.12</span>
+      <span class="version-date">2026-06-09</span>
+      Per-Node-Stationsname &amp; MQTT-Statusfix
+    </div>
+    <p class="version-desc">Eigener Stationsname pro verbundenem Node, plus Fix der MQTT-Proxy-Statusleiste.</p>
+
+    <div class="cl-section added">
+      <h3>✨ Hinzugefügt</h3>
+      <div class="cl-group">
+        <div class="cl-group-title">🏷️ Per-Node-Stationsname</div>
+        <ul class="cl-list">
+          <li>Pro verbundenem Node ein eigener Stationsname; ✏-Button neben dem Verbinden-Button</li>
+          <li>Auflösung: globaler Name → node-spezifisch → ShortName; Label-Farbe zeigt die Quelle</li>
+          <li>Persistenz pro Node in <code>meshhessen-client.ini</code></li>
+        </ul>
+      </div>
+    </div>
+    <div class="cl-section fixed">
+      <h3>🐛 Behoben</h3>
+      <ul class="cl-list">
+        <li>MQTT-Proxy-Statusleiste zeigte dauerhaft „gestoppt" auch ohne je gestarteten Proxy → nur noch gemeldet, wenn der Proxy lief</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ── v1.5.11 ── -->
+  <div class="version-entry">
+    <div class="version-header">
+      <span class="version-tag tag-release">v1.5.11</span>
       <span class="version-date">2026-05-24</span>
       Virtual Node, T-Deck Assistent, Fernverwaltung &amp; Bugfixes
     </div>
@@ -730,10 +831,111 @@
 <div class="section" id="en">
 <main>
 
-  <!-- ── v1.5.11 ── -->
+  <!-- ── v1.5.13 ── -->
   <div class="version-entry current">
     <div class="version-header">
-      <span class="version-tag tag-latest">v1.5.11</span>
+      <span class="version-tag tag-latest">v1.5.13</span>
+      <span class="version-date">2026-06-11</span>
+      Node tile view, neighbor lines &amp; protobuf alignment
+    </div>
+    <p class="version-desc">New node tile view (Fancy View), direct RF neighbor lines on the map with gradient by SNR/age, "Request information" like the Android app, advanced node filters – plus protobuf definitions fully aligned with the official sources.</p>
+
+    <div class="cl-section added">
+      <h3>✨ Added</h3>
+
+      <div class="cl-group">
+        <div class="cl-group-title">🗺️ Direct neighbor lines on the map</div>
+        <ul class="cl-list">
+          <li>Toggle in the legend box: lines from your own position to every node received <strong>directly over RF</strong> (0 hops, no MQTT)</li>
+          <li><strong>Color gradient</strong> by <strong>SNR</strong> (red → yellow → green) or <strong>age</strong> of the last direct contact (cyan → purple)</li>
+          <li><strong>"Permanent" option:</strong> every neighbor ever heard directly; historical 0-hop contacts from the telemetry DB (<code>packet_rx</code>, <code>hop_count=0</code>)</li>
+          <li>Dark outline beneath each line for good visibility on the topo map</li>
+        </ul>
+      </div>
+
+      <div class="cl-group">
+        <div class="cl-group-title">🔧 Node tile view (Fancy View)</div>
+        <ul class="cl-list">
+          <li>Optional responsive tile surface instead of a table (Settings → Appearance); column count grows with window width</li>
+          <li>Per tile: ShortName badge in node color, 🔑/🔓 PKI, full name, "X min ago", ⭐ favorite, 📡 infrastructure, ☁ MQTT</li>
+          <li>Power (external/battery + voltage), distance + altitude, hops, RSSI/SNR gradient, environment telemetry, HW model · role · node ID</li>
+          <li>Own node always on top; virtualized pixel scrolling even with 1000+ nodes</li>
+        </ul>
+      </div>
+
+      <div class="cl-group">
+        <div class="cl-group-title">📥 Request information (like the Android app)</div>
+        <ul class="cl-list">
+          <li>Right-click submenu in list, tile and map: requests data on demand (<code>want_response</code>)</li>
+          <li>User info, position, device/environment/air-quality/power/host metrics, signal quality/mesh stats, PAX counter</li>
+        </ul>
+      </div>
+
+      <div class="cl-group">
+        <div class="cl-group-title">🔧 Advanced node-list filters</div>
+        <ul class="cl-list">
+          <li>Filter by last seen (5 min – 60 days), hide MQTT nodes, favorites only, SNR coloring on/off</li>
+          <li>Sort dropdown in tile mode (name, SNR, distance, battery, last seen)</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="cl-section fixed">
+      <h3>🐛 Fixed</h3>
+      <div class="cl-group">
+        <div class="cl-group-title">🧩 Protobuf definitions aligned with originals</div>
+        <ul class="cl-list">
+          <li><code>Position.ground_speed/ground_track</code> were on field 14/15 instead of 15/16 → GPS speed/heading misdecoded</li>
+          <li><code>Region</code> enum shifted from value 13 (UA_868/MY_919/SG_923/LORA_24) → corrected + full list</li>
+          <li><code>MQTTConfig</code> field 11 was <code>uint32</code> instead of nested <code>MapReportSettings</code> → map-report precision fixed</li>
+          <li><code>TelemetryConfig</code> fields 3–9 shifted → telemetry module config now correct</li>
+          <li><code>CannedMessageConfig</code> shifted (<code>send_bell</code> etc.); <code>ModemPreset</code> 8–13 added</li>
+        </ul>
+      </div>
+      <div class="cl-group">
+        <div class="cl-group-title">🔡 Other fixes</div>
+        <ul class="cl-list">
+          <li>RSSI/SNR only for direct reception (0 hops, no MQTT); relayed nodes show the hop count instead</li>
+          <li>~90 corrupted umlauts (U+FFFD) in log/dialog text repaired; logging consistently UTF-8</li>
+          <li><strong>DM freeze fixed:</strong> node refresh is now always coalesced (700 ms) under packet/DM traffic</li>
+          <li>LED tooltip line break, legend i18n, tidied map top bar, wider key column, wider startup window</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── v1.5.12 ── -->
+  <div class="version-entry">
+    <div class="version-header">
+      <span class="version-tag tag-release">v1.5.12</span>
+      <span class="version-date">2026-06-09</span>
+      Per-node station name &amp; MQTT status fix
+    </div>
+    <p class="version-desc">A dedicated station name per connected node, plus a fix for the MQTT proxy status bar.</p>
+
+    <div class="cl-section added">
+      <h3>✨ Added</h3>
+      <div class="cl-group">
+        <div class="cl-group-title">🏷️ Per-node station name</div>
+        <ul class="cl-list">
+          <li>A dedicated station name per connected node; ✏ button next to the Connect button</li>
+          <li>Resolution: global name → node-specific → ShortName; label color shows the source</li>
+          <li>Persisted per node in <code>meshhessen-client.ini</code></li>
+        </ul>
+      </div>
+    </div>
+    <div class="cl-section fixed">
+      <h3>🐛 Fixed</h3>
+      <ul class="cl-list">
+        <li>MQTT proxy status bar showed "stopped" permanently even when the proxy never started → only reported when it actually ran</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ── v1.5.11 ── -->
+  <div class="version-entry">
+    <div class="version-header">
+      <span class="version-tag tag-release">v1.5.11</span>
       <span class="version-date">2026-05-24</span>
       Virtual Node, T-Deck Wizard, Remote Admin &amp; Bug Fixes
     </div>

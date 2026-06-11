@@ -7,6 +7,70 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
 
+## [1.5.13] - 2026-06-11
+
+### ✨ Hinzugefügt
+
+#### 🗺️ Direkte Nachbar-Linien auf der Karte
+- **Aktivierbar im Legenden-Feld:** zieht Linien von der eigenen Position zu allen Nodes, die wir **direkt über HF empfangen** haben (0 Hops, kein MQTT)
+- **Farbverlauf** wählbar nach **SNR** (rot → gelb → grün, −20…+10 dB) oder nach **Alter** der letzten direkten Verbindung (cyan → violett, jetzt…24 h) – echter Gradient statt Stufen
+- **Option „Dauerhaft"** zeigt alle je direkt gehörten Nachbarn statt nur der letzten 24 h; historische 0-Hop-Kontakte werden aus der Telemetrie-DB (`packet_rx`, `hop_count=0`) wiederhergestellt
+- Dunkler Umriss unter jeder Linie für gute Sichtbarkeit auch auf der Topo-Karte
+- Eigener Layer unterhalb der Node-Pins; aktualisiert sich live bei neuen Paketen
+
+#### 🔧 Node-Kachelansicht (Fancy View)
+- **Optionale Kachel-Oberfläche** statt Tabelle (Einstellungen → Darstellung): responsive, Spaltenanzahl wächst/schrumpft mit der Fensterbreite
+- **Pro Kachel:** ShortName-Badge in Node-Farbe, 🔑/🔓 PKI-Status, voller Name, „vor X min", ⭐-Favoritenstern (klickbar), 📡 Infrastruktur- und ☁ MQTT-Symbol
+  - Stromzeile: extern versorgt **oder** Batterie % + Spannung
+  - Entfernung + Höhe ü. MSL, Hop-Anzahl, RSSI/SNR mit Farbverlauf + Qualitätslabel
+  - Umwelt-Telemetrie (🌡 Temp / 💧 Feuchte / 🌬 Druck), Hardware-Modell · Geräterolle · Node-ID
+- **Eigener Node immer ganz oben**, virtualisiertes Pixel-Scrolling auch bei 1000+ Nodes (kein Einfrieren)
+- Eigener Node erscheint jetzt zuverlässig in der Liste und ist anheftbar
+
+#### 📥 Informationen anfordern (wie Android-App)
+- **Rechtsklick-Untermenü** in Node-Liste, Kachel und Karte: fordert gezielt Daten von einem Node an (`want_response`)
+- Typen: Benutzer-Info, Position austauschen, Geräte-/Umwelt-/Luftqualität-/Strom-/Host-Metriken, Signalqualität/Mesh-Statistik, PAX-Zähler
+- Proto erweitert um `AirQualityMetrics`, `PowerMetrics`, `LocalStats`, `HealthMetrics`, `HostMetrics`, `Paxcount` + `Telemetry`-oneof
+
+#### 🔧 Erweiterte Node-Listen-Filter
+- Filter nach **zuletzt gesehen** (5 Min / 15 Min / 30 Min / 1 Std / 6 Std / 24 Std / 7–60 Tage)
+- **MQTT-Nodes ausblenden**, **nur Favoriten**, **SNR-Einfärbung** an/aus
+- **Sortier-Dropdown** im Kachelmodus (Name, SNR, Entfernung, Batterie, zuletzt gesehen)
+
+### 🐛 Behoben
+
+#### 🧩 Protobuf-Definitionen mit Original abgeglichen
+- **`Position.ground_speed` / `ground_track`** lagen auf Feld 14/15 statt **15/16** → GPS-Geschwindigkeit/Kurs wurden falsch dekodiert
+- **`Region`-Enum** ab Wert 13 verschoben (UA_868/MY_919/SG_923/LORA_24 falsch) → korrigiert + `EU_433` und vollständige Liste ergänzt; ComboBox-Tags angepasst
+- **`MQTTConfig` Feld 11** war `uint32 map_report_precision` statt der verschachtelten `MapReportSettings`-Message → Map-Report-Genauigkeit lesen/schreiben repariert
+- **`TelemetryConfig`** Felder 3–9 waren verschoben → Telemetrie-Modul-Konfig (Mess-/Anzeige-Flags, Intervalle) jetzt korrekt
+- **`CannedMessageConfig`** Felder verschoben (`inputbroker_pin_a/b` fehlten) → `send_bell` u.a. jetzt auf korrekter Feldnummer
+- **`ModemPreset`** um `SHORT_TURBO`, `LONG_TURBO`, `LITE_FAST/SLOW`, `NARROW_FAST/SLOW` (8–13) ergänzt
+
+#### 🔡 Sonstige Fixes
+- **Signal-Anzeige:** RSSI/SNR werden nur noch bei direktem Empfang gezeigt (0 Hops, kein MQTT); bei Relay-Nodes zeigt die Spalte die Hop-Anzahl. RSSI/SNR erscheinen jetzt konsistent zusammen
+- **Encoding:** ~90 kaputte Umlaute (U+FFFD) in Log-/Dialog-Texten repariert; Logging-Pipeline durchgängig UTF-8
+- **DM-Freeze behoben:** Node-Refresh bei Paket-/DM-Verkehr wird jetzt immer gebündelt (700 ms), nicht mehr nur im Kachelmodus → kein UI-Einfrieren beim Schreiben von DMs
+- LED-Tooltip „Wetter-Effekt": literaler `\n` durch echten Zeilenumbruch ersetzt
+- Karten-Legende „Dauerhaft" jetzt mehrsprachig; Alter-Gradient-Grau kollidiert nicht mehr mit dem Lora-Hop-Grau
+- Map-Topbar aufgeräumt (Trenner + deskriptive Button-Namen); PKI-Schlüssel-Spalte verbreitert; Startfenster breiter
+
+---
+
+## [1.5.12] - 2026-06-09
+
+### ✨ Hinzugefügt
+
+#### 🏷️ Per-Node-Stationsname
+- **Pro verbundenem Node ein eigener Stationsname** – ✏-Button neben dem Verbinden-Button öffnet einen Eingabedialog
+- **Auflösungsreihenfolge:** globaler Name (Einstellungen) → node-spezifischer Name → ShortName des Nodes; Label-Farbe zeigt die Quelle (rot/orange/grau)
+- Persistenz pro Node in `meshhessen-client.ini` (`NodeStationName_<id>`)
+
+### 🐛 Behoben
+- **MQTT-Proxy-Statusleiste:** zeigte dauerhaft „MQTT Proxy gestoppt" auch wenn der Proxy nie gestartet war → Status wird nur noch gemeldet, wenn der Proxy tatsächlich lief
+
+---
+
 ## [1.5.11] - 2026-05-24
 
 ### ✨ Hinzugefügt
