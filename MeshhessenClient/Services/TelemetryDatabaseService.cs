@@ -1438,22 +1438,24 @@ AND timestamp >= $s AND battery_percent IS NOT NULL";
         return con;
     }
 
-    /// Returns the most recent 0-hop (direct HF) contact for a node: timestamp + SNR.
-    public (DateTime? LastSeen, float? Snr) GetDirectNeighborContact(uint nodeId)
+    /// Returns the most recent 0-hop (direct HF) contact for a node: timestamp + SNR + RSSI.
+    public (DateTime? LastSeen, float? Snr, int? Rssi) GetDirectNeighborContact(uint nodeId)
     {
         lock (_lock)
         {
             using var con = Open();
             using var cmd = con.CreateCommand();
+            // SQLite: non-aggregated columns come from the MAX(timestamp) row
             cmd.CommandText =
-                "SELECT MAX(timestamp), rx_snr FROM packet_rx " +
+                "SELECT MAX(timestamp), rx_snr, rx_rssi FROM packet_rx " +
                 "WHERE node_id = $n AND hop_count = 0 GROUP BY node_id";
             cmd.Parameters.AddWithValue("$n", (long)nodeId);
             using var r = cmd.ExecuteReader();
-            if (!r.Read() || r.IsDBNull(0)) return (null, null);
-            var ts  = FromUnix(r.GetInt64(0));
-            float? snr = r.IsDBNull(1) ? null : (float)r.GetDouble(1);
-            return (ts, snr);
+            if (!r.Read() || r.IsDBNull(0)) return (null, null, null);
+            var ts   = FromUnix(r.GetInt64(0));
+            float? snr  = r.IsDBNull(1) ? null : (float)r.GetDouble(1);
+            int?   rssi = r.IsDBNull(2) ? null : (int)r.GetInt64(2);
+            return (ts, snr, rssi);
         }
     }
 

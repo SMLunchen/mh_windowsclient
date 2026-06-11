@@ -45,7 +45,9 @@ public record AppSettings(
     bool VirtualNodeEnabled,               // Enable Virtual Node TCP proxy server
     int VirtualNodePort,                   // TCP port for Virtual Node (default 4404)
     bool VirtualNodeBlockAdmin,            // Block admin commands from Virtual Node clients
-    Dictionary<uint, string> NodeStationNames); // NodeId -> per-node station name
+    Dictionary<uint, string> NodeStationNames, // NodeId -> per-node station name
+    bool FancyNodeList,                    // Show tile view instead of table in Nodes tab
+    bool FancyNodeListColorful);           // Color tiles by signal quality (when no node color set)
 
 public static class SettingsService
 {
@@ -93,7 +95,9 @@ public static class SettingsService
             false,                          // VirtualNodeEnabled default off
             4404,                           // VirtualNodePort default 4404
             false,                          // VirtualNodeBlockAdmin default off
-            new Dictionary<uint, string>()); // NodeStationNames default empty
+            new Dictionary<uint, string>(), // NodeStationNames default empty
+            false,                          // FancyNodeList default off
+            true);                          // FancyNodeListColorful default on
 
         try
         {
@@ -244,7 +248,9 @@ public static class SettingsService
                 VirtualNodeEnabled: values.TryGetValue("VirtualNodeEnabled", out var vne) && bool.TryParse(vne, out var vneBool) && vneBool,
                 VirtualNodePort: values.TryGetValue("VirtualNodePort", out var vnp) && int.TryParse(vnp, out var vnpInt) ? vnpInt : defaults.VirtualNodePort,
                 VirtualNodeBlockAdmin: values.TryGetValue("VirtualNodeBlockAdmin", out var vnba) && bool.TryParse(vnba, out var vnbaBool) && vnbaBool,
-                NodeStationNames: nodeStationNames
+                NodeStationNames: nodeStationNames,
+                FancyNodeList: values.TryGetValue("FancyNodeList", out var fnl) && bool.TryParse(fnl, out var fnlBool) && fnlBool,
+                FancyNodeListColorful: !values.TryGetValue("FancyNodeListColorful", out var fnc) || !bool.TryParse(fnc, out var fncBool) || fncBool
             );
         }
         catch (Exception ex)
@@ -296,7 +302,9 @@ public static class SettingsService
                 $"RemoteAdminTimeoutSeconds={settings.RemoteAdminTimeoutSeconds}",
                 $"VirtualNodeEnabled={settings.VirtualNodeEnabled}",
                 $"VirtualNodePort={settings.VirtualNodePort}",
-                $"VirtualNodeBlockAdmin={settings.VirtualNodeBlockAdmin}"
+                $"VirtualNodeBlockAdmin={settings.VirtualNodeBlockAdmin}",
+                $"FancyNodeList={settings.FancyNodeList}",
+                $"FancyNodeListColorful={settings.FancyNodeListColorful}"
             };
 
             // Save node colors

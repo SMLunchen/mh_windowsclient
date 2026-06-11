@@ -1240,6 +1240,88 @@ public class MeshtasticProtocolService
         }
     }
 
+    // ── Info / telemetry requests (like the Android app's node menu) ──────────
+    // All of these set want_response=true so the remote node replies with its data,
+    // which then arrives as a normal packet routed through RouteDecodedData().
+
+    public enum InfoRequestType
+    {
+        UserInfo, Position,
+        DeviceMetrics, EnvironmentMetrics, AirQualityMetrics,
+        PowerMetrics, LocalStats, HostMetrics, PaxCounter
+    }
+
+    public async Task RequestNodeInfoAsync(uint destinationId, InfoRequestType type)
+    {
+        try
+        {
+            uint portnum;
+            ByteString payload;
+
+            switch (type)
+            {
+                case InfoRequestType.UserInfo:
+                    portnum = 4; // NODEINFO_APP — want_response triggers reply with their User
+                    payload = ByteString.Empty;
+                    break;
+
+                case InfoRequestType.Position:
+                    portnum = 3; // POSITION_APP
+                    payload = new Position
+                    {
+                        Time = (uint)DateTimeOffset.UtcNow.ToUnixTimeSeconds()
+                    }.ToByteString();
+                    break;
+
+                case InfoRequestType.PaxCounter:
+                    portnum = 34; // PAXCOUNTER_APP
+                    payload = new Paxcount().ToByteString();
+                    break;
+
+                default:
+                    portnum = 67; // TELEMETRY_APP
+                    var t = new Telemetry();
+                    switch (type)
+                    {
+                        case InfoRequestType.DeviceMetrics:      t.DeviceMetrics      = new DeviceMetrics();      break;
+                        case InfoRequestType.EnvironmentMetrics: t.EnvironmentMetrics = new EnvironmentMetrics(); break;
+                        case InfoRequestType.AirQualityMetrics:  t.AirQualityMetrics  = new AirQualityMetrics();  break;
+                        case InfoRequestType.PowerMetrics:       t.PowerMetrics       = new PowerMetrics();       break;
+                        case InfoRequestType.LocalStats:         t.LocalStats         = new LocalStats();         break;
+                        case InfoRequestType.HostMetrics:        t.HostMetrics        = new HostMetrics();        break;
+                    }
+                    payload = t.ToByteString();
+                    break;
+            }
+
+            var meshPacket = new MeshPacket
+            {
+                From = _myNodeId,
+                To = destinationId,
+                Channel = 0,
+                Decoded = new Data
+                {
+                    Portnum = portnum,
+                    Payload = payload,
+                    WantResponse = true,
+                    Dest = destinationId,
+                },
+                Id = (uint)Random.Shared.Next(),
+                WantAck = false,
+                HopLimit = 7,
+                HopStart = 7,
+            };
+
+            await SendToRadioAsync(new ToRadio { Packet = meshPacket });
+            Logger.WriteLine($"Info request ({type}) sent to !{destinationId:x8}");
+        }
+        catch (Exception ex)
+        {
+            Logger.WriteLine($"Error sending info request ({type}): {ex.Message}");
+            throw;
+        }
+    }
+
     public Dictionary<uint, ModelNodeInfo> GetKnownNodes()
     {
         lock (_dataLock)
@@ -1307,8 +1389,12 @@ public class MeshtasticProtocolService
                     _pskMismatchAction);
             }
 
-            nodeInfo.PkiKeyKnown = _nodeKeyService?.GetPublicKey(protoNodeInfo.Num) != null;
-            nodeInfo.IsFavorite = protoNodeInfo.IsFavorite;
+            nodeInfo.PkiKeyKnown  = _nodeKeyService?.GetPublicKey(protoNodeInfo.Num) != null;
+            nodeInfo.IsFavorite   = protoNodeInfo.IsFavorite;
+            nodeInfo.IsViaMqtt    = protoNodeInfo.ViaMqtt;
+            nodeInfo.HopsToReach  = (int)protoNodeInfo.HopsAway;
+            if (protoNodeInfo.User != null)
+                nodeInfo.Role = protoNodeInfo.User.Role.ToString();
 
             // Update DeviceInfo if this is our own node
             if (protoNodeInfo.Num == _myNodeId && _myDeviceInfo != null && !string.IsNullOrEmpty(nodeInfo.HardwareModel))
@@ -1372,7 +1458,8 @@ public class MeshtasticProtocolService
                 LastSeen = FormatLastSeen(DateTime.Now),
                 LastSeenDateTime = DateTime.Now,
                 HardwareModel = user.HwModel != HardwareModel.Unset ? user.HwModel.ToString() : "",
-                PkiKeyKnown = _nodeKeyService?.GetPublicKey(packet.From) != null
+                PkiKeyKnown = _nodeKeyService?.GetPublicKey(packet.From) != null,
+                Role = user.Role.ToString()
             };
 
             // Update DeviceInfo if this is our own node
@@ -1531,12 +1618,23 @@ public class MeshtasticProtocolService
                     nodeInfo.LastSeenDateTime = DateTime.Now;
                     if (packet.RxRssi != 0) nodeInfo.Rssi = packet.RxRssi.ToString();
                     if (packet.RxSnr != 0f) { nodeInfo.Snr = packet.RxSnr.ToString("F1"); nodeInfo.SnrValue = packet.RxSnr; }
-                    // Live-update battery from telemetry payload
+                    // Live-update battery and voltage from telemetry payload
                     if (batteryPercent > 0)
                     {
                         nodeInfo.Battery = $"{batteryPercent:F0}%";
                         nodeInfo.BatteryValue = batteryPercent;
                     }
+                    if (voltage > 0f)
+                        nodeInfo.BatteryVoltage = voltage;
+
+                    // Live-update environment telemetry
+                    if (telemetry?.EnvironmentMetrics is { } em2)
+                    {
+                        if (em2.Temperature != 0f) nodeInfo.Temperature = em2.Temperature;
+                        if (em2.RelativeHumidity != 0f) nodeInfo.RelativeHumidity = em2.RelativeHumidity;
+                        if (em2.BarometricPressure != 0f) nodeInfo.BarometricPressure = em2.BarometricPressure;
+                    }
+
                     nodeToFire = nodeInfo;
                     shouldFireEvent = !_isInitializing;
                 }

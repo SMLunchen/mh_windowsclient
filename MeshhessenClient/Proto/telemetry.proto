@@ -17,10 +17,87 @@ message EnvironmentMetrics {
   uint32 iaq = 7;
 }
 
+// Air quality / particulate metrics
+message AirQualityMetrics {
+  optional uint32 pm10_standard = 1;
+  optional uint32 pm25_standard = 2;
+  optional uint32 pm100_standard = 3;
+  optional uint32 pm10_environmental = 4;
+  optional uint32 pm25_environmental = 5;
+  optional uint32 pm100_environmental = 6;
+  optional uint32 particles_03um = 7;
+  optional uint32 particles_05um = 8;
+  optional uint32 particles_10um = 9;
+  optional uint32 particles_25um = 10;
+  optional uint32 particles_50um = 11;
+  optional uint32 particles_100um = 12;
+  optional uint32 co2 = 13;
+  optional float co2_temperature = 14;
+  optional float co2_humidity = 15;
+}
+
+// INA-style multi-channel power monitoring
+message PowerMetrics {
+  optional float ch1_voltage = 1;
+  optional float ch1_current = 2;
+  optional float ch2_voltage = 3;
+  optional float ch2_current = 4;
+  optional float ch3_voltage = 5;
+  optional float ch3_current = 6;
+}
+
+// Local device mesh statistics
+message LocalStats {
+  uint32 uptime_seconds = 1;
+  float channel_utilization = 2;
+  float air_util_tx = 3;
+  uint32 num_packets_tx = 4;
+  uint32 num_packets_rx = 5;
+  uint32 num_packets_rx_bad = 6;
+  uint32 num_online_nodes = 7;
+  uint32 num_total_nodes = 8;
+  uint32 num_rx_dupe = 9;
+  uint32 num_tx_relay = 10;
+  uint32 num_tx_relay_canceled = 11;
+}
+
+// Wearable / health sensor metrics
+message HealthMetrics {
+  optional uint32 heart_bpm = 1;
+  optional uint32 spO2 = 2;
+  optional float temperature = 3;
+}
+
+// Linux host system metrics
+message HostMetrics {
+  uint32 uptime_seconds = 1;
+  uint64 freemem_bytes = 2;
+  uint64 diskfree1_bytes = 3;
+  optional uint64 diskfree2_bytes = 4;
+  optional uint64 diskfree3_bytes = 5;
+  uint32 load1 = 6;
+  uint32 load5 = 7;
+  uint32 load15 = 8;
+  optional string user_string = 9;
+}
+
 // Telemetry message sent on port 67 (TELEMETRY_APP)
-// Contains one of: device_metrics or environment_metrics
 message Telemetry {
   fixed32 time = 1;
-  DeviceMetrics device_metrics = 2;
-  EnvironmentMetrics environment_metrics = 3;
+  oneof variant {
+    DeviceMetrics device_metrics = 2;
+    EnvironmentMetrics environment_metrics = 3;
+    AirQualityMetrics air_quality_metrics = 4;
+    PowerMetrics power_metrics = 5;
+    LocalStats local_stats = 6;
+    HealthMetrics health_metrics = 7;
+    HostMetrics host_metrics = 8;
+  }
+}
+
+// PAX counter message sent on port 34 (PAXCOUNTER_APP)
+message Paxcount {
+  uint32 wifi = 1;
+  uint32 ble = 2;
+  uint32 uptime = 3;
 }
