@@ -1155,7 +1155,8 @@ Green ≤15% | Yellow 15–25% | Red &gt;25% | Gray = no airtime data</sys:Strin
     <sys:String x:Key="StrSigWeak">Weak</sys:String>
     <sys:String x:Key="StrPowered">Externally powered</sys:String>
     <sys:String x:Key="StrFancyNodeListSection">Fancy Tile View</sys:String>
-    <sys:String x:Key="StrFancyNodeListEnable">Enable tile view</sys:String>
+    <sys:String x:Key="StrFancyNodeListEnable">Node tab: tiled view instead of table (Fancy View)</sys:String>
+    <sys:String x:Key="StrFancyNodeListEnableHint">Shows the node list as info tiles with details like power, telemetry and signal quality. Note: uses more processing power than the table – with very large meshes (1000+ nodes) the UI may respond more slowly.</sys:String>
     <sys:String x:Key="StrFancyNodeListColorful">SNR coloring (Colorful)</sys:String>
     <sys:String x:Key="StrFancyNodeListColorfulHint">Color tiles by SNR quality when no node color is set. Node color always takes priority.</sys:String>
 

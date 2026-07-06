@@ -983,7 +983,9 @@ public class MeshtasticProtocolService
                 Channel = FormatChannelDisplay(packet.Channel),
                 IsEncrypted = true,
                 IsViaMqtt = packet.ViaMqtt,
-                HopCount = encHops
+                HopCount = encHops,
+                RxSnr  = encHops == 0 && !packet.ViaMqtt && packet.RxSnr  != 0f ? packet.RxSnr  : null,
+                RxRssi = encHops == 0 && !packet.ViaMqtt && packet.RxRssi != 0  ? packet.RxRssi : null,
             };
             MessageReceived?.Invoke(this, messageItem);
         }
@@ -1092,7 +1094,9 @@ public class MeshtasticProtocolService
                 Channel = FormatChannelDisplay(packet.Channel),
                 IsViaMqtt = packet.ViaMqtt,
                 ReplyId = data.ReplyId,
-                HopCount = hops
+                HopCount = hops,
+                RxSnr  = hops == 0 && !packet.ViaMqtt && packet.RxSnr  != 0f ? packet.RxSnr  : null,
+                RxRssi = hops == 0 && !packet.ViaMqtt && packet.RxRssi != 0  ? packet.RxRssi : null,
             };
 
             MessageReceived?.Invoke(this, messageItem);

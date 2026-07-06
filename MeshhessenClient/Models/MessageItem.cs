@@ -32,6 +32,15 @@ public class MessageItem : INotifyPropertyChanged
     public bool HasHopCount => HopCount >= 0;
     public string HopCountDisplay => HopCount >= 0 ? $"↪ {HopCount}" : string.Empty;
 
+    // Signal info — only set when we received the packet directly (0 hops, no MQTT)
+    public float? RxSnr  { get; set; }
+    public int?   RxRssi { get; set; }
+    public bool HasSignalInfo  => RxSnr.HasValue || RxRssi.HasValue;
+    public string SnrDisplay   => RxSnr.HasValue  ? $"SNR {RxSnr.Value:F1}" : string.Empty;
+    public string RssiDisplay  => RxRssi.HasValue ? $"RSSI {RxRssi.Value}"  : string.Empty;
+    public string SnrColorHex  => RxSnr.HasValue  ? NodeInfo.SnrToColor(RxSnr.Value)   : "#9E9E9E";
+    public string RssiColorHex => RxRssi.HasValue ? NodeInfo.RssiToColor(RxRssi.Value) : "#9E9E9E";
+
     // Protocol-level reply (Meshtastic Data.reply_id field 7)
     public uint ReplyId { get; set; }
     public string ReplyFromName { get; set; } = string.Empty;

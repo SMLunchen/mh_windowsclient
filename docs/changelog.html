@@ -219,6 +219,13 @@
           <li>Sortier-Dropdown im Kachelmodus (Name, SNR, Entfernung, Batterie, zuletzt gesehen)</li>
         </ul>
       </div>
+
+      <div class="cl-group">
+        <div class="cl-group-title">💬 Signalwerte in Nachrichten</div>
+        <ul class="cl-list">
+          <li>SNR + RSSI direkt in der Nachrichten-Bubble bei Direktempfang (0 Hops, kein MQTT) – farbig gemäß Signal-Gradient</li>
+        </ul>
+      </div>
     </div>
 
     <div class="cl-section fixed">
@@ -239,6 +246,8 @@
           <li>RSSI/SNR nur bei direktem Empfang (0 Hops, kein MQTT); bei Relay-Nodes zeigt die Spalte die Hop-Anzahl</li>
           <li>~90 kaputte Umlaute (U+FFFD) in Log-/Dialog-Texten repariert; Logging durchgängig UTF-8</li>
           <li><strong>DM-Freeze behoben:</strong> Node-Refresh wird bei Paket-/DM-Verkehr immer gebündelt (700 ms)</li>
+          <li>Nachrichten: Scrollbar überdeckt die Chat-Bubbles nicht mehr</li>
+          <li>Kachelmodus: leere Einträge im „Farbe setzen"-Menü behoben (fehlende Resource-Keys)</li>
           <li>LED-Tooltip-Zeilenumbruch, Legenden-i18n, Map-Topbar aufgeräumt, breitere Schlüssel-Spalte, breiteres Startfenster</li>
         </ul>
       </div>
@@ -878,6 +887,13 @@
           <li>Sort dropdown in tile mode (name, SNR, distance, battery, last seen)</li>
         </ul>
       </div>
+
+      <div class="cl-group">
+        <div class="cl-group-title">💬 Signal values in messages</div>
+        <ul class="cl-list">
+          <li>SNR + RSSI right in the message bubble for direct reception (0 hops, no MQTT) – colored by the signal gradient</li>
+        </ul>
+      </div>
     </div>
 
     <div class="cl-section fixed">
@@ -898,6 +914,8 @@
           <li>RSSI/SNR only for direct reception (0 hops, no MQTT); relayed nodes show the hop count instead</li>
           <li>~90 corrupted umlauts (U+FFFD) in log/dialog text repaired; logging consistently UTF-8</li>
           <li><strong>DM freeze fixed:</strong> node refresh is now always coalesced (700 ms) under packet/DM traffic</li>
+          <li>Messages: scrollbar no longer overlaps the chat bubbles</li>
+          <li>Tile mode: fixed empty entries in the "Set color" menu (missing resource keys)</li>
           <li>LED tooltip line break, legend i18n, tidied map top bar, wider key column, wider startup window</li>
         </ul>
       </div>

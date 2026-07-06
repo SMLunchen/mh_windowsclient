@@ -49,8 +49,11 @@
                             <MenuItem Tag="#FFFF00" Click="SetNodeColor_Click"><MenuItem.Header><TextBlock Text="{DynamicResource StrColorYellow}" Foreground="#FFFF00" FontWeight="Bold"/></MenuItem.Header></MenuItem>
                             <MenuItem Tag="#FF8000" Click="SetNodeColor_Click"><MenuItem.Header><TextBlock Text="{DynamicResource StrColorOrange}" Foreground="#FF8000" FontWeight="Bold"/></MenuItem.Header></MenuItem>
                             <MenuItem Tag="#8000FF" Click="SetNodeColor_Click"><MenuItem.Header><TextBlock Text="{DynamicResource StrColorPurple}" Foreground="#8000FF" FontWeight="Bold"/></MenuItem.Header></MenuItem>
-                            <MenuItem Tag="#FF0040" Click="SetNodeColor_Click"><MenuItem.Header><TextBlock Text="{DynamicResource StrColorRed}"    Foreground="#FF0040" FontWeight="Bold"/></MenuItem.Header></MenuItem>
-                            <MenuItem Tag=""        Click="SetNodeColor_Click"><MenuItem.Header><TextBlock Text="{DynamicResource StrColorNone}"/></MenuItem.Header></MenuItem>
+                            <MenuItem Tag="#804000" Click="SetNodeColor_Click"><MenuItem.Header><TextBlock Text="{DynamicResource StrColorBrown}"  Foreground="#804000" FontWeight="Bold"/></MenuItem.Header></MenuItem>
+                            <MenuItem Tag="#FF00FF" Click="SetNodeColor_Click"><MenuItem.Header><TextBlock Text="{DynamicResource StrColorPink}"   Foreground="#FF00FF" FontWeight="Bold"/></MenuItem.Header></MenuItem>
+                            <MenuItem Tag="#00FFFF" Click="SetNodeColor_Click"><MenuItem.Header><TextBlock Text="{DynamicResource StrColorCyan}"   Foreground="#00FFFF" FontWeight="Bold"/></MenuItem.Header></MenuItem>
+                            <Separator/>
+                            <MenuItem Header="{DynamicResource StrRemoveColor}" Click="RemoveNodeColor_Click"/>
                         </MenuItem>
                         <MenuItem Header="{DynamicResource StrEditNote}"       Click="EditNodeNote_Click"/>
                         <Separator/>
@@ -609,6 +612,7 @@
                     <ListView x:Name="MessageListView"
                              Grid.Row="1"
                              Margin="4,5,4,10"
+                             Padding="0,0,14,0"
                              ContextMenuOpening="MessagesListView_ContextMenuOpening"
                              ScrollViewer.ScrollChanged="MessageListView_ScrollChanged"
                              ScrollViewer.HorizontalScrollBarVisibility="Disabled"
@@ -841,6 +845,35 @@
                                                                 <Style TargetType="TextBlock">
                                                                     <Style.Triggers>
                                                                         <DataTrigger Binding="{Binding HasHopCount}" Value="False">
+                                                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </TextBlock.Style>
+                                                        </TextBlock>
+                                                        <!-- RSSI/SNR: nur bei Direktempfang (0 Hops, kein MQTT) -->
+                                                        <TextBlock Text="{Binding RssiDisplay}"
+                                                                   FontSize="10" FontWeight="SemiBold"
+                                                                   Foreground="{Binding RssiColorHex, Converter={StaticResource HexToColorConverter}}"
+                                                                   VerticalAlignment="Center" Margin="0,0,6,0">
+                                                            <TextBlock.Style>
+                                                                <Style TargetType="TextBlock">
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding RssiDisplay}" Value="">
+                                                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </TextBlock.Style>
+                                                        </TextBlock>
+                                                        <TextBlock Text="{Binding SnrDisplay}"
+                                                                   FontSize="10" FontWeight="SemiBold"
+                                                                   Foreground="{Binding SnrColorHex, Converter={StaticResource HexToColorConverter}}"
+                                                                   VerticalAlignment="Center" Margin="0,0,6,0">
+                                                            <TextBlock.Style>
+                                                                <Style TargetType="TextBlock">
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding SnrDisplay}" Value="">
                                                                             <Setter Property="Visibility" Value="Collapsed"/>
                                                                         </DataTrigger>
                                                                     </Style.Triggers>
@@ -1714,6 +1747,9 @@
                                               Content="{DynamicResource StrFancyNodeListEnable}"
                                               Checked="FancyNodeList_Changed"
                                               Unchecked="FancyNodeList_Changed"/>
+                                    <TextBlock Text="{DynamicResource StrFancyNodeListEnableHint}"
+                                              FontStyle="Italic" Foreground="Gray" FontSize="11"
+                                              TextWrapping="Wrap" Margin="0,4,0,0"/>
                                 </StackPanel>
                             </GroupBox>
 

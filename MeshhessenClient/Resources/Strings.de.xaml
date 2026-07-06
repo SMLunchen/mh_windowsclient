@@ -1155,7 +1155,8 @@ Grün ≤15% | Gelb 15–25% | Rot &gt;25% | Grau = keine Airtime-Daten</sys:Str
     <sys:String x:Key="StrSigWeak">Schwach</sys:String>
     <sys:String x:Key="StrPowered">Extern versorgt</sys:String>
     <sys:String x:Key="StrFancyNodeListSection">Erweiterte Kachelansicht (Fancy View)</sys:String>
-    <sys:String x:Key="StrFancyNodeListEnable">Kachelansicht aktivieren</sys:String>
+    <sys:String x:Key="StrFancyNodeListEnable">Node-Tab: gekachelte Ansicht statt Tabelle (Fancy View)</sys:String>
+    <sys:String x:Key="StrFancyNodeListEnableHint">Zeigt die Node-Liste als Info-Kacheln mit Details wie Strom, Telemetrie und Signalqualität. Hinweis: benötigt mehr Rechenleistung als die Tabelle – bei sehr großen Meshes (1000+ Nodes) kann das UI träger reagieren.</sys:String>
     <sys:String x:Key="StrFancyNodeListColorful">Einfärbung nach SNR (Colorful)</sys:String>
     <sys:String x:Key="StrFancyNodeListColorfulHint">Kacheln nach SNR-Qualität einfärben wenn keine Node-Farbe gesetzt ist. Die Node-Farbe hat immer Vorrang.</sys:String>
 

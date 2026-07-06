@@ -37,6 +37,9 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 - **MQTT-Nodes ausblenden**, **nur Favoriten**, **SNR-Einfärbung** an/aus
 - **Sortier-Dropdown** im Kachelmodus (Name, SNR, Entfernung, Batterie, zuletzt gesehen)
 
+#### 💬 Signalwerte in Nachrichten
+- **SNR + RSSI direkt in der Nachrichten-Bubble** bei Direktempfang (0 Hops, kein MQTT) – farbig gemäß Signalqualitäts-Gradient (rot → gelb → grün)
+
 ### 🐛 Behoben
 
 #### 🧩 Protobuf-Definitionen mit Original abgeglichen
@@ -54,6 +57,9 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 - LED-Tooltip „Wetter-Effekt": literaler `\n` durch echten Zeilenumbruch ersetzt
 - Karten-Legende „Dauerhaft" jetzt mehrsprachig; Alter-Gradient-Grau kollidiert nicht mehr mit dem Lora-Hop-Grau
 - Map-Topbar aufgeräumt (Trenner + deskriptive Button-Namen); PKI-Schlüssel-Spalte verbreitert; Startfenster breiter
+- **Nachrichten:** Scrollbar überdeckt die Chat-Bubbles nicht mehr (Innenabstand rechts)
+- **Kachelmodus:** „Farbe setzen"-Kontextmenü zeigte zwei leere Einträge (fehlende Resource-Keys) → Farbliste an Tabellen-Menü angeglichen (Braun/Pink/Cyan + „Farbe entfernen")
+- Einstellungen: Kachelansicht-Option deskriptiver benannt + Performance-Hinweis ergänzt
 
 ---
 

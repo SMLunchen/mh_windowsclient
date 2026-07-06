@@ -75,6 +75,10 @@ public class NodeInfo
         "#546E7A";
 
     // Gradient color helpers: red (-20 dB) → yellow (0 dB) → green (+10 dB)
+    // Shared with MessageItem for per-message signal display.
+    public static string SnrToColor(float snr)  => SignalGradient(Math.Clamp((snr + 20f) / 30f, 0f, 1f));
+    public static string RssiToColor(int rssi)  => SignalGradient(Math.Clamp((rssi + 130f) / 50f, 0f, 1f));
+
     private static string SignalGradient(float t)
     {
         t = Math.Clamp(t, 0f, 1f);
