@@ -54,6 +54,26 @@ public partial class MainWindow : Window
     private uint _myNodeId = 0;
     private string _activeStationName = string.Empty;
     private string? _nodeSortColumn = null;
+
+    // Fancy tile view
+    private Models.NodeInfo? _tileContextNode;
+    private System.Windows.Threading.DispatcherTimer? _tileSortFilterTimer;
+    private bool _tileSortFilterPending;
+    private int _tileColumnCount = 3;
+    private Models.NodeInfo? SelectedNodeForMenu =>
+        _tileContextNode ?? (NodesListView?.SelectedItem as Models.NodeInfo);
+
+    // Neighbour lines
+    private MemoryLayer? _neighborLinesLayer;
+    private readonly List<IFeature> _neighborLineFeatures = new();
+    private bool _showNeighborLines        = false;
+    private bool _neighborColorByAge       = false;   // false = SNR, true = age
+    private bool _neighborPermanent        = false;   // true = ignore 24 h cutoff
+
+    // Node-list advanced filters
+    private int  _nodeFilterLastSeenMinutes = 0;
+    private bool _nodeFilterHideMqtt        = false;
+    private bool _nodeFilterOnlyFavorites   = false;
     private bool _nodeSortAscending = true;
     private Meshtastic.Protobufs.LoRaConfig? _currentLoRaConfig;
 
@@ -106,7 +126,9 @@ public partial class MainWindow : Window
         false,         // VirtualNodeEnabled
         4404,          // VirtualNodePort
         false,         // VirtualNodeBlockAdmin
-        new Dictionary<uint, string>()); // NodeStationNames
+        new Dictionary<uint, string>(), // NodeStationNames
+        false,         // FancyNodeList
+        true);         // FancyNodeListColorful
     private NodeInfo? _mapContextMenuNode;
     private uint? _alertNodeId;  // Stores the node ID for "Show on Map" button
 
@@ -118,8 +140,8 @@ public partial class MainWindow : Window
     private readonly Dictionary<uint, TracerouteWindow> _tracerouteWindows = new();
     // Keyed by layerKey: "live_{destId:x8}" for live routes, filename for loaded routes
     private readonly Dictionary<string, MemoryLayer> _tracerouteLayers = new();
-    private readonly Dictionary<string, string> _tracerouteNames = new();  // layerKey → display name
-    private readonly Dictionary<string, Mapsui.Styles.Color> _tracerouteColors = new(); // layerKey → color
+    private readonly Dictionary<string, string> _tracerouteNames = new();  // layerKey ? display name
+    private readonly Dictionary<string, Mapsui.Styles.Color> _tracerouteColors = new(); // layerKey ? color
     private int _tracerouteColorIndex = 0;
 
     // Segment midpoints for click detection (T3)
@@ -143,7 +165,7 @@ public partial class MainWindow : Window
         new( 29, 233, 182, 255), // Teal
         new(255, 171,  64, 255), // Amber
     };
-    // Map from packet-ID → MessageItem (for attaching reactions)
+    // Map from packet-ID ? MessageItem (for attaching reactions)
     private readonly Dictionary<uint, MessageItem> _messageById = new();
     // Currently pending reply (set by context menu "Reply")
     private MessageItem? _replyToMessage;
@@ -221,7 +243,7 @@ public partial class MainWindow : Window
         _mqttProxyService = new MqttProxyService(_protocolService);
         _mqttProxyService.StatusChanged += (s, msg) => Dispatcher.Invoke(() => UpdateStatusBar(msg));
 
-        // LoadRegions / LoadModemPresets removed — now displayed as read-only TextBlocks in Settings right column
+        // LoadRegions / LoadModemPresets removed – now displayed as read-only TextBlocks in Settings right column
 
         // Context menu opening for dynamic pin label
         NodesListView.ContextMenuOpening += NodesListView_ContextMenuOpening;
@@ -423,6 +445,11 @@ public partial class MainWindow : Window
             // Remote Admin
             if (RemoteAdminTimeoutTextBox != null) RemoteAdminTimeoutTextBox.Text = settings.RemoteAdminTimeoutSeconds.ToString();
 
+            // Fancy Node List
+            if (FancyNodeListCheckBox != null)         FancyNodeListCheckBox.IsChecked         = settings.FancyNodeList;
+            Models.NodeInfo.FancyColorful = settings.FancyNodeListColorful;
+            ApplyFancyNodeListSetting(settings.FancyNodeList);
+
             // Virtual Node
             if (VirtualNodeEnableCheckBox != null) VirtualNodeEnableCheckBox.IsChecked = settings.VirtualNodeEnabled;
             if (VirtualNodePortBox != null) VirtualNodePortBox.Text = settings.VirtualNodePort.ToString();
@@ -507,6 +534,10 @@ public partial class MainWindow : Window
             var tileSource = new TileSource(tileProvider, schema);
             _map.Layers.Add(new TileLayer(tileSource) { Name = "OSM" });
 
+            // Neighbour-lines layer (rendered below node pins)
+            _neighborLinesLayer = new MemoryLayer("NeighborLines") { Features = _neighborLineFeatures, Style = null };
+            _map.Layers.Add(_neighborLinesLayer);
+
             // Node-Layer
             _nodeLayer = new MemoryLayer("Nodes") { Features = _nodeFeatures, Style = null };
             _map.Layers.Add(_nodeLayer);
@@ -518,7 +549,7 @@ public partial class MainWindow : Window
             MapControl.Map = _map;
             MapControl.MouseRightButtonUp += MapControl_RightClick;
             // PreviewMouseLeftButtonDown fires before Mapsui starts pan tracking.
-            // Mark handled on segment hit → Mapsui never starts pan, map stays put.
+            // Mark handled on segment hit ? Mapsui never starts pan, map stays put.
             MapControl.PreviewMouseLeftButtonDown += MapControl_LeftClick_Preview;
             // MouseMove: cursor feedback when hovering near a segment
             MapControl.MouseMove += MapControl_MouseMoveSegmentHover;
@@ -653,6 +684,7 @@ public partial class MainWindow : Window
         {
             _nodeLayer.Features = _nodeFeatures;
             _nodeLayer.DataHasChanged();
+            if (_showNeighborLines) DrawNeighborLines();
             MapControl.Refresh();
         }
     }
@@ -813,11 +845,27 @@ public partial class MainWindow : Window
                         OpenTelemetryForNode(_mapContextMenuNode);
                 };
                 menu.Items.Add(telItem);
+
+                // Request information submenu
+                menu.Items.Add(new Separator());
+                var reqMenu = new MenuItem { Header = Loc("StrRequestInfo") };
+                foreach (var (key, tag) in InfoRequestMenuEntries)
+                {
+                    var label = Loc(key);
+                    var reqItem = new MenuItem { Header = label, Tag = tag };
+                    reqItem.Click += (s, ev) =>
+                    {
+                        if (_mapContextMenuNode != null && s is MenuItem m && m.Tag is string t)
+                            SendInfoRequest(_mapContextMenuNode, t, label);
+                    };
+                    reqMenu.Items.Add(reqItem);
+                }
+                menu.Items.Add(reqMenu);
             }
             else if (hitWaypoint != null)
             {
                 var wp = hitWaypoint;
-                var wpNameItem = new MenuItem { Header = $"📍 {wp.Name}", IsEnabled = false };
+                var wpNameItem = new MenuItem { Header = $"?? {wp.Name}", IsEnabled = false };
                 menu.Items.Add(wpNameItem);
                 menu.Items.Add(new Separator());
                 var deleteWpItem = new MenuItem { Header = Loc("StrDeleteWaypoint") };
@@ -860,7 +908,7 @@ public partial class MainWindow : Window
         }
     }
 
-    // Fires on PreviewMouseLeftButtonDown — before Mapsui starts pan tracking.
+    // Fires on PreviewMouseLeftButtonDown – before Mapsui starts pan tracking.
     // If a segment is hit, mark e.Handled = true so Mapsui never pans the map.
     private void MapControl_LeftClick_Preview(object sender, MouseButtonEventArgs e)
     {
@@ -916,10 +964,10 @@ public partial class MainWindow : Window
                     {
                         MapControl.Cursor = Cursors.Hand;
                         string snrInfo = seg.CurrentSnr.HasValue ? $" | SNR: {seg.CurrentSnr.Value:F1} dB" : "";
-                        string type = seg.IsMqtt ? "⚡ MQTT" : "LoRa";
+                        string type = seg.IsMqtt ? "? MQTT" : "LoRa";
                         string from = seg.FromId == _myNodeId ? Loc("StrMe") : (_allNodes.FirstOrDefault(n => n.NodeId == seg.FromId)?.ShortName ?? $"!{seg.FromId:x4}");
                         string to   = seg.ToId   == _myNodeId ? Loc("StrMe") : (_allNodes.FirstOrDefault(n => n.NodeId == seg.ToId  )?.ShortName ?? $"!{seg.ToId  :x4}");
-                        MapStatusText.Text = $"{type}: {from} → {to}{snrInfo} — {Loc("StrLegendSnrHint")}";
+                        MapStatusText.Text = $"{type}: {from} ? {to}{snrInfo} – {Loc("StrLegendSnrHint")}";
                         return;
                     }
                 }
@@ -1000,7 +1048,7 @@ public partial class MainWindow : Window
 
         string fromLabel = NodeLabel(seg.FromId);
         string toLabel   = NodeLabel(seg.ToId);
-        string header    = seg.IsMqtt ? $"⚡ {fromLabel} → {toLabel} (MQTT)" : $"{fromLabel} → {toLabel}";
+        string header    = seg.IsMqtt ? $"? {fromLabel} ? {toLabel} (MQTT)" : $"{fromLabel} ? {toLabel}";
 
         var sb = new System.Text.StringBuilder(header);
 
@@ -1011,7 +1059,7 @@ public partial class MainWindow : Window
 
             var stats = _db.GetSegmentSnrStats(seg.FromId, seg.ToId, days: 30);
             if (stats != null)
-                sb.Append($" | 30d Min/Avg/Max: {stats.Min:F1}/{stats.Avg:F1}/{stats.Max:F1} dB ({stats.Count}×)");
+                sb.Append($" | 30d Min/Avg/Max: {stats.Min:F1}/{stats.Avg:F1}/{stats.Max:F1} dB ({stats.Count}–)");
 
             // T6: Open SNR chart popup
             var points = _db.GetSegmentSnrTimeSeries(seg.FromId, seg.ToId, days: 30);
@@ -1687,20 +1735,20 @@ public partial class MainWindow : Window
         {
             AlertBellButton.IsEnabled = false;
 
-            // Send Alert Bell - use EMOJI 🔔 (as used by other clients)
+            // Send Alert Bell - use EMOJI ?? (as used by other clients)
             string alertMessage;
             var additionalText = MessageTextBox.Text.Trim();
 
             if (!string.IsNullOrEmpty(additionalText))
             {
                 // Bell emoji + user text
-                alertMessage = "🔔 " + additionalText;
+                alertMessage = "?? " + additionalText;
                 MessageTextBox.Clear();
             }
             else
             {
                 // Bell emoji + standard text (compatible with other Meshtastic clients)
-                alertMessage = "🔔 Alert Bell Character!";
+                alertMessage = "?? Alert Bell Character!";
             }
 
             // Debug log with hex dump (only if debug messages enabled)
@@ -1959,9 +2007,9 @@ public partial class MainWindow : Window
                 {
                     var changes = new System.Text.StringBuilder();
                     changes.AppendLine("Für Mesh-Hessen werden folgende Einstellungen empfohlen:\n");
-                    if (needsPreset) changes.AppendLine($"  • Modem-Preset: {_currentLoRaConfig.ModemPreset} → SHORT_SLOW");
-                    if (needsRegion) changes.AppendLine("  • Region: Unset → EU_868");
-                    if (needsHop)   changes.AppendLine($"  • Hop-Limit: {_currentLoRaConfig.HopLimit} → 7");
+                    if (needsPreset) changes.AppendLine($"  – Modem-Preset: {_currentLoRaConfig.ModemPreset} ? SHORT_SLOW");
+                    if (needsRegion) changes.AppendLine("  – Region: Unset ? EU_868");
+                    if (needsHop)   changes.AppendLine($"  – Hop-Limit: {_currentLoRaConfig.HopLimit} ? 7");
                     changes.AppendLine("\nJetzt ändern?");
 
                     var result = MessageBox.Show(
@@ -2101,7 +2149,9 @@ public partial class MainWindow : Window
                 VirtualNodeEnabled: VirtualNodeEnableCheckBox?.IsChecked == true,
                 VirtualNodePort: int.TryParse(VirtualNodePortBox?.Text, out var vnp) ? Math.Clamp(vnp, 1, 65535) : 4404,
                 VirtualNodeBlockAdmin: VirtualNodeBlockAdminCheckBox?.IsChecked == true,
-                NodeStationNames: _currentSettings.NodeStationNames
+                NodeStationNames: _currentSettings.NodeStationNames,
+                FancyNodeList: FancyNodeListCheckBox?.IsChecked == true,
+                FancyNodeListColorful: Models.NodeInfo.FancyColorful
             );
             _currentSettings = settings;
             SettingsService.Save(settings);
@@ -2185,7 +2235,7 @@ public partial class MainWindow : Window
 
                     if (!_intentionalDisconnect && !_isReconnecting && _lastConnectionParams != null)
                     {
-                        // Unexpected disconnect (e.g. node reboot) — try to reconnect
+                        // Unexpected disconnect (e.g. node reboot) – try to reconnect
                         _isReconnecting = true;
                         StatusIndicator.Fill = Brushes.Orange;
                         StatusText.Text = Loc("StrConnectionLost");
@@ -2340,9 +2390,9 @@ public partial class MainWindow : Window
                     Services.Logger.WriteLine($"[MSG DEBUG] Received message: From={message.From} (ID=!{message.FromId:x8}), To=!{message.ToId:x8}, Channel={message.Channel}, Encrypted={message.IsEncrypted}, MQTT={message.IsViaMqtt}, Text={msgPreview}...");
                 }
 
-                // Check for Alert Bell - both ASCII (0x07) and Emoji (🔔)
+                // Check for Alert Bell - both ASCII (0x07) and Emoji (??)
                 bool hasAlertBell = !string.IsNullOrEmpty(message.Message) &&
-                                   (message.Message.Contains('\u0007') || message.Message.Contains("🔔"));
+                                   (message.Message.Contains('\u0007') || message.Message.Contains("??"));
 
                 if (hasAlertBell)
                 {
@@ -2360,7 +2410,7 @@ public partial class MainWindow : Window
                     }
 
                     // Remove both ASCII bell character and bell emoji for display
-                    message.Message = message.Message.Replace("\u0007", "").Replace("🔔", "");
+                    message.Message = message.Message.Replace("\u0007", "").Replace("??", "");
 
                     // Trim whitespace
                     message.Message = message.Message.Trim();
@@ -2540,6 +2590,21 @@ public partial class MainWindow : Window
                     LocationLogger.Log(node);
                 }
 
+                // Restore direct-neighbour data from telemetry DB (only if no live data yet)
+                if (!node.DirectNeighborAt.HasValue && _db != null)
+                {
+                    var (lastSeen, snr, rssi) = _db.GetDirectNeighborContact(node.NodeId);
+                    if (lastSeen.HasValue) node.DirectNeighborAt = lastSeen;
+                    if (snr.HasValue)
+                    {
+                        node.DirectNeighborSnr = snr;
+                        node.SnrValue          = snr;
+                        node.Snr               = $"{snr.Value:F1}";
+                    }
+                    if (rssi.HasValue && rssi != 0)
+                        node.Rssi = rssi.Value.ToString();
+                }
+
                 // Update in _allNodes
                 var existingInAll = _allNodes.FirstOrDefault(n => n.Id == node.Id);
                 if (existingInAll != null)
@@ -2643,6 +2708,27 @@ public partial class MainWindow : Window
                 Services.Logger.WriteLine($"  Hardware: {deviceInfo.HardwareModel}");
                 Services.Logger.WriteLine($"  Firmware: {deviceInfo.FirmwareVersion}");
 
+                // Ensure our own node is present in the list so it can be pinned/favorited.
+                // Some firmwares omit self from the NodeDB; create a minimal entry that
+                // the real NodeInfo (if it arrives) will replace via Id-based dedup.
+                if (!_allNodes.Any(n => n.NodeId == deviceInfo.NodeId))
+                {
+                    OnNodeInfoReceived(this, new Models.NodeInfo
+                    {
+                        NodeId        = deviceInfo.NodeId,
+                        Id            = deviceInfo.NodeIdHex,
+                        ShortName     = deviceInfo.ShortName,
+                        LongName      = deviceInfo.LongName,
+                        Name          = string.IsNullOrEmpty(deviceInfo.LongName)
+                                            ? (string.IsNullOrEmpty(deviceInfo.ShortName) ? deviceInfo.NodeIdHex : deviceInfo.ShortName)
+                                            : deviceInfo.LongName,
+                        HardwareModel = deviceInfo.HardwareModel,
+                        LastSeen      = Loc("StrMe"),
+                        LastSeenDateTime = DateTime.Now,
+                        HopsToReach   = 0,
+                    });
+                }
+
                 // Suche die eigene NodeInfo in der Node-Liste
                 var myNode = _nodes.FirstOrDefault(n => n.NodeId == deviceInfo.NodeId);
                 if (myNode != null)
@@ -2714,10 +2800,10 @@ public partial class MainWindow : Window
         _ = _mqttProxyService.StartAsync(mqttConfig, _myNodeId);
     }
 
-    // ── Virtual Node ──────────────────────────────────────────────────────────
+    // -- Virtual Node ----------------------------------------------------------
 
     // Phase 1: called right after new MeshtasticProtocolService is created so that
-    // RawFrameReceived is wired before InitializeAsync runs — this way the VN cache
+    // RawFrameReceived is wired before InitializeAsync runs – this way the VN cache
     // fills naturally during init and needs no separate populate step.
     private void PrepareVirtualNode()
     {
@@ -2745,7 +2831,7 @@ public partial class MainWindow : Window
         _protocolService.RawFrameReceived += OnVnRawFrame;
     }
 
-    // Phase 2: called after Ready — starts the TCP listener
+    // Phase 2: called after Ready – starts the TCP listener
     private void StartVirtualNodeIfEnabled()
     {
         if (!_currentSettings.VirtualNodeEnabled) return;
@@ -2753,7 +2839,7 @@ public partial class MainWindow : Window
         if (_virtualNodeService?.IsRunning == true) return;
 
         // If PrepareVirtualNode was never called (e.g. VN was enabled after connect)
-        // create the service now — cache will be partially filled but that is acceptable
+        // create the service now – cache will be partially filled but that is acceptable
         if (_virtualNodeService == null)
             PrepareVirtualNode();
 
@@ -2845,7 +2931,7 @@ public partial class MainWindow : Window
             : Loc("StrVirtualNodeNoClients");
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
+    // -------------------------------------------------------------------------
 
     private void OnPacketCountChanged(object? sender, int count)
     {
@@ -2861,6 +2947,267 @@ public partial class MainWindow : Window
                 Services.Logger.WriteLine($"ERROR updating packet count in UI: {ex.Message}");
             }
         });
+    }
+
+    // -- Neighbour lines ----------------------------------------------------------
+
+    private void DrawNeighborLines()
+    {
+        if (_neighborLinesLayer == null) return;
+
+        _neighborLineFeatures.Clear();
+
+        if (_showNeighborLines && _myNodeId != 0)
+        {
+            var myNode = _allNodes.FirstOrDefault(n => n.NodeId == _myNodeId);
+            double myLat = myNode?.Latitude  ?? _currentSettings.MyLatitude;
+            double myLon = myNode?.Longitude ?? _currentSettings.MyLongitude;
+
+            if (myLat != 0 || myLon != 0)
+            {
+                var myPos  = SphericalMercator.FromLonLat(myLon, myLat);
+                var cutoff = _neighborPermanent ? DateTime.MinValue : DateTime.Now.AddHours(-24);
+
+                // Collect segments first so we can draw outlines before colors
+                var segments = new List<(NetTopologySuite.Geometries.LineString line, Mapsui.Styles.Color color)>();
+
+                foreach (var node in _allNodes)
+                {
+                    if (node.NodeId == _myNodeId) continue;
+                    if (!node.DirectNeighborAt.HasValue || node.DirectNeighborAt < cutoff) continue;
+                    if (!node.Latitude.HasValue || !node.Longitude.HasValue) continue;
+
+                    Mapsui.Styles.Color color;
+                    if (_neighborColorByAge)
+                    {
+                        color = NeighborColorByAge(node.DirectNeighborAt);
+                    }
+                    else
+                    {
+                        if (!node.DirectNeighborSnr.HasValue) continue;
+                        color = NeighborColorBySnr(node.DirectNeighborSnr);
+                    }
+
+                    var nPos = SphericalMercator.FromLonLat(node.Longitude.Value, node.Latitude.Value);
+                    var line = new NetTopologySuite.Geometries.LineString(new[]
+                    {
+                        new NetTopologySuite.Geometries.Coordinate(myPos.x, myPos.y),
+                        new NetTopologySuite.Geometries.Coordinate(nPos.x,  nPos.y)
+                    });
+                    segments.Add((line, color));
+                }
+
+                // Pass 1: dark outlines (behind color lines)
+                var outline = Mapsui.Styles.Color.FromArgb(200, 20, 20, 20);
+                foreach (var (line, _) in segments)
+                {
+                    var gf = new GeometryFeature { Geometry = line };
+                    gf.Styles.Add(new VectorStyle { Line = new Mapsui.Styles.Pen(outline, 4.5) });
+                    _neighborLineFeatures.Add(gf);
+                }
+
+                // Pass 2: colored lines on top
+                foreach (var (line, color) in segments)
+                {
+                    var gf = new GeometryFeature { Geometry = line };
+                    gf.Styles.Add(new VectorStyle { Line = new Mapsui.Styles.Pen(color, 2.5) });
+                    _neighborLineFeatures.Add(gf);
+                }
+            }
+        }
+
+        _neighborLinesLayer.DataHasChanged();
+        MapControl?.Refresh();
+    }
+
+    private static Mapsui.Styles.Color LerpColor(Mapsui.Styles.Color a, Mapsui.Styles.Color b, float t)
+    {
+        t = Math.Clamp(t, 0f, 1f);
+        return Mapsui.Styles.Color.FromArgb(
+            (int)(a.A + (b.A - a.A) * t),
+            (int)(a.R + (b.R - a.R) * t),
+            (int)(a.G + (b.G - a.G) * t),
+            (int)(a.B + (b.B - a.B) * t));
+    }
+
+    // SNR gradient: -20 dB ? red  –  0 dB ? yellow  –  +10 dB ? green
+    private static Mapsui.Styles.Color NeighborColorBySnr(float? snr)
+    {
+        if (!snr.HasValue) return Mapsui.Styles.Color.FromArgb(160, 128, 128, 128);
+        float t = Math.Clamp((snr.Value + 20f) / 30f, 0f, 1f);
+        var red    = Mapsui.Styles.Color.FromArgb(255, 244,  67,  54);
+        var yellow = Mapsui.Styles.Color.FromArgb(255, 255, 193,   7);
+        var green  = Mapsui.Styles.Color.FromArgb(255,  76, 175,  80);
+        return t < 0.5f
+            ? LerpColor(red, yellow, t * 2f)
+            : LerpColor(yellow, green, (t - 0.5f) * 2f);
+    }
+
+    // Age gradient: 0 min ? cyan  –  24 h ? gray
+    private static Mapsui.Styles.Color NeighborColorByAge(DateTime? seenAt)
+    {
+        if (!seenAt.HasValue) return Mapsui.Styles.Color.FromArgb(160, 94, 53, 177);
+        float t = Math.Clamp((float)(DateTime.Now - seenAt.Value).TotalMinutes / (24f * 60f), 0f, 1f);
+        var fresh = Mapsui.Styles.Color.FromArgb(255,   0, 229, 255);  // cyan
+        var old   = Mapsui.Styles.Color.FromArgb(255,  94,  53, 177);  // deep purple (distinct from hop-gray)
+        return LerpColor(fresh, old, t);
+    }
+
+    private void NeighborLines_Changed(object sender, RoutedEventArgs e)
+    {
+        _showNeighborLines = NeighborLinesCheckBox.IsChecked == true;
+        NeighborLinesOptions.Visibility = _showNeighborLines ? Visibility.Visible : Visibility.Collapsed;
+        DrawNeighborLines();
+    }
+
+    private void NeighborPermanent_Changed(object sender, RoutedEventArgs e)
+    {
+        if (NeighborPermanentCheckBox == null) return;
+        _neighborPermanent = NeighborPermanentCheckBox.IsChecked == true;
+        DrawNeighborLines();
+    }
+
+    private void NeighborColorMode_Changed(object sender, RoutedEventArgs e)
+    {
+        if (NeighborColorAgeRadio == null || NeighborSnrLegendPanel == null || NeighborAgeLegendPanel == null)
+            return;
+        _neighborColorByAge = NeighborColorAgeRadio.IsChecked == true;
+        NeighborSnrLegendPanel.Visibility  = _neighborColorByAge ? Visibility.Collapsed : Visibility.Visible;
+        NeighborAgeLegendPanel.Visibility  = _neighborColorByAge ? Visibility.Visible   : Visibility.Collapsed;
+        DrawNeighborLines();
+    }
+
+    // -- Node-list advanced filters --------------------------------------------
+
+    // -- Fancy Node List ---------------------------------------------------
+
+    private void TileViewGrid_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        int cols = Math.Max(1, (int)(e.NewSize.Width / 295));
+        if (cols != _tileColumnCount)
+        {
+            _tileColumnCount = cols;
+            if (IsTileViewActive) ApplyNodeSortAndFilterCore();
+        }
+    }
+
+    private void ApplyFancyNodeListSetting(bool fancy)
+    {
+        if (TileViewGrid == null || NodesListView == null) return;
+        TileViewGrid.Visibility  = fancy ? Visibility.Visible : Visibility.Collapsed;
+        NodesListView.Visibility = fancy ? Visibility.Collapsed : Visibility.Visible;
+        if (TileSortPanel != null)
+            TileSortPanel.Visibility = fancy ? Visibility.Visible : Visibility.Collapsed;
+        if (fancy) ApplyNodeSortAndFilterCore();
+    }
+
+    private void FancyNodeList_Changed(object sender, RoutedEventArgs e)
+    {
+        if (FancyNodeListCheckBox == null) return;
+        ApplyFancyNodeListSetting(FancyNodeListCheckBox.IsChecked == true);
+    }
+
+    private void TileSort_Changed(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    {
+        if (TileSortComboBox == null) return;
+        var tag = (TileSortComboBox.SelectedItem as System.Windows.Controls.ComboBoxItem)?.Tag as string ?? "Name_asc";
+        var parts = tag.Split('_');
+        _nodeSortColumn    = parts[0] == "None" ? null : parts[0];
+        _nodeSortAscending = parts.Length < 2 || parts[1] == "asc";
+        ApplyNodeSortAndFilterCore(); // immediate — user action
+    }
+
+    private void TileNode_ContextMenuOpening(object sender, ContextMenuEventArgs e)
+    {
+        _tileContextNode = (sender as FrameworkElement)?.DataContext as Models.NodeInfo;
+
+        // Update dynamic Favorite / Pin headers in the tile context menu
+        if (_tileContextNode is not Models.NodeInfo n) return;
+        var cm = (sender as FrameworkElement)?.ContextMenu;
+        if (cm == null) return;
+        bool isOwn = n.NodeId == _myNodeId;
+        foreach (var item in cm.Items.OfType<System.Windows.Controls.MenuItem>())
+        {
+            // Time sync only makes sense for our own node
+            if (item.Name == "TileTimeSyncMenuItem")
+            {
+                item.Visibility = isOwn ? Visibility.Visible : Visibility.Collapsed;
+                continue;
+            }
+            if (item.Header is string h)
+            {
+                if (h == Loc("StrFavorite") || h == Loc("StrUnfavorite"))
+                    item.Header = n.IsFavorite ? Loc("StrUnfavorite") : Loc("StrFavorite");
+                else if (h == Loc("StrPin") || h == Loc("StrUnpin"))
+                    item.Header = n.IsPinned ? Loc("StrUnpin") : Loc("StrPin");
+            }
+        }
+    }
+
+    private void RequestInfo_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem mi || mi.Tag is not string tag) return;
+        if (SelectedNodeForMenu is not NodeInfo node) return;
+        SendInfoRequest(node, tag, mi.Header as string);
+    }
+
+    private async void SendInfoRequest(NodeInfo node, string tag, string? label)
+    {
+        if (_connectionService?.IsConnected != true) return;
+        if (!Enum.TryParse<Services.MeshtasticProtocolService.InfoRequestType>(tag, out var type)) return;
+        try
+        {
+            await _protocolService.RequestNodeInfoAsync(node.NodeId, type);
+            UpdateStatusBar(string.Format(Loc("StrInfoRequestSent"), label ?? tag, node.Name));
+        }
+        catch
+        {
+            UpdateStatusBar(Loc("StrInfoRequestFailed"));
+        }
+    }
+
+    private static readonly (string key, string tag)[] InfoRequestMenuEntries =
+    {
+        ("StrReqUserInfo",      "UserInfo"),
+        ("StrReqPosition",      "Position"),
+        ("StrReqDeviceMetrics", "DeviceMetrics"),
+        ("StrReqEnvMetrics",    "EnvironmentMetrics"),
+        ("StrReqAirQuality",    "AirQualityMetrics"),
+        ("StrReqPowerMetrics",  "PowerMetrics"),
+        ("StrReqLocalStats",    "LocalStats"),
+        ("StrReqHostMetrics",   "HostMetrics"),
+        ("StrReqPax",           "PaxCounter"),
+    };
+
+    private void TileFavorite_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.DataContext is not Models.NodeInfo node) return;
+        _tileContextNode = node;
+        ToggleFavoriteInternal(node);
+        e.Handled = true;
+    }
+
+    private void SnrColor_Changed(object sender, RoutedEventArgs e)
+    {
+        if (SnrColorCheckBox == null || NodesListView == null) return;
+        bool on = SnrColorCheckBox.IsChecked == true;
+        Models.NodeInfo.ShowSignalColors = on;
+        Models.NodeInfo.FancyColorful    = on;  // Kachelfarbe folgt derselben Checkbox
+        NodesListView.Items.Refresh();
+        if (IsTileViewActive && NodeTileView != null)
+            ApplyNodeSortAndFilterCore();
+    }
+
+    private void NodeAdvancedFilter_Changed(object sender, RoutedEventArgs e)
+    {
+        if (NodeLastSeenFilterComboBox == null || HideMqttNodesCheckBox == null || OnlyFavoritesFilterCheckBox == null)
+            return;
+        _nodeFilterLastSeenMinutes =
+            int.TryParse((NodeLastSeenFilterComboBox.SelectedItem as System.Windows.Controls.ComboBoxItem)
+                         ?.Tag as string, out var m) ? m : 0;
+        _nodeFilterHideMqtt      = HideMqttNodesCheckBox.IsChecked == true;
+        _nodeFilterOnlyFavorites = OnlyFavoritesFilterCheckBox.IsChecked == true;
+        ApplyNodeSortAndFilterCore();
     }
 
     private void RefreshActiveStationName()
@@ -3120,7 +3467,7 @@ public partial class MainWindow : Window
         }
     }
 
-    // ── Message DB load / lazy-load ───────────────────────────────────────────
+    // -- Message DB load / lazy-load -------------------------------------------
 
     /// <summary>Load last 24h from DB on connection ready. Runs on background thread.</summary>
     private void LoadMessagesFromDbAsync()
@@ -3490,7 +3837,7 @@ public partial class MainWindow : Window
         try
         {
             // Hole ausgewählten Knoten
-            var selectedNode = NodesListView.SelectedItem as Models.NodeInfo;
+            var selectedNode = SelectedNodeForMenu;
             if (selectedNode == null)
             {
                 MessageBox.Show("Bitte wählen Sie einen Knoten aus.", "Hinweis", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -3567,19 +3914,19 @@ public partial class MainWindow : Window
                 _nodeSortAscending = true;
             }
 
-            ApplyNodeSortAndFilter();
+            ApplyNodeSortAndFilterCore();
         }
     }
 
     private void NodeContextMenu_NodeInfo_Click(object sender, RoutedEventArgs e)
     {
-        if (NodesListView.SelectedItem is NodeInfo node)
+        if (SelectedNodeForMenu is NodeInfo node)
             ShowNodeInfoDialog(node);
     }
 
     private void NodeContextMenu_ShowOnMap_Click(object sender, RoutedEventArgs e)
     {
-        if (NodesListView.SelectedItem is not NodeInfo node || !node.Latitude.HasValue || !node.Longitude.HasValue)
+        if (SelectedNodeForMenu is not NodeInfo node || !node.Latitude.HasValue || !node.Longitude.HasValue)
         {
             MessageBox.Show("Position für diesen Node ist nicht bekannt.", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
             return;
@@ -3596,10 +3943,36 @@ public partial class MainWindow : Window
 
     private void NodeFilterTextBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
     {
-        ApplyNodeSortAndFilter();
+        ApplyNodeSortAndFilterCore();
     }
 
+    // Packet-driven path: throttled in tile mode (max 1 update per 700 ms)
+    private bool IsTileViewActive => TileViewGrid?.Visibility == Visibility.Visible;
+
+    // Packet-driven refresh: always coalesced via a timer so a burst of node/DM
+    // traffic can't saturate the UI thread (rebuilding the bound node collection is
+    // expensive with many nodes, even when the Nodes tab is not the active view).
     private void ApplyNodeSortAndFilter()
+    {
+        if (!_tileSortFilterPending)
+        {
+            _tileSortFilterPending = true;
+            if (_tileSortFilterTimer == null)
+            {
+                _tileSortFilterTimer = new System.Windows.Threading.DispatcherTimer
+                    { Interval = TimeSpan.FromMilliseconds(700) };
+                _tileSortFilterTimer.Tick += (_, _) =>
+                {
+                    _tileSortFilterTimer.Stop();
+                    _tileSortFilterPending = false;
+                    ApplyNodeSortAndFilterCore();
+                };
+            }
+            _tileSortFilterTimer.Start();
+        }
+    }
+
+    private void ApplyNodeSortAndFilterCore()
     {
         var filterText = NodeFilterTextBox?.Text?.ToLowerInvariant() ?? string.Empty;
 
@@ -3614,12 +3987,24 @@ public partial class MainWindow : Window
                 n.ShortName.ToLowerInvariant().Contains(filterText) ||
                 n.Id.ToLowerInvariant().Contains(filterText) ||
                 n.Distance.ToLowerInvariant().Contains(filterText) ||
-                n.Snr.ToLowerInvariant().Contains(filterText) ||
+                n.SnrDisplay.ToLowerInvariant().Contains(filterText) ||
                 n.Rssi.ToLowerInvariant().Contains(filterText) ||
                 n.Battery.ToLowerInvariant().Contains(filterText) ||
                 n.LastSeen.ToLowerInvariant().Contains(filterText)
             );
         }
+
+        // Advanced filters
+        if (_nodeFilterLastSeenMinutes > 0)
+            filtered = filtered.Where(n =>
+                n.LastSeenDateTime.HasValue &&
+                (DateTime.Now - n.LastSeenDateTime.Value).TotalMinutes <= _nodeFilterLastSeenMinutes);
+
+        if (_nodeFilterHideMqtt)
+            filtered = filtered.Where(n => !n.IsViaMqtt);
+
+        if (_nodeFilterOnlyFavorites)
+            filtered = filtered.Where(n => n.IsFavorite);
 
         // Apply sorting
         if (!string.IsNullOrEmpty(_nodeSortColumn))
@@ -3670,14 +4055,35 @@ public partial class MainWindow : Window
             };
         }
 
-        // Favorites first, then pinned, then rest
-        filtered = filtered.OrderBy(n => n.IsFavorite ? 0 : n.IsPinned ? 1 : 2);
+        // Own node always first, then favorites, then pinned, then rest
+        filtered = filtered.OrderBy(n =>
+            n.NodeId == _myNodeId ? 0 : n.IsFavorite ? 1 : n.IsPinned ? 2 : 3);
 
-        // Update UI
-        _nodes.Clear();
-        foreach (var node in filtered)
+        if (IsTileViewActive && NodeTileView != null)
         {
-            _nodes.Add(node);
+            // Group into rows of _tileColumnCount for VirtualizingStackPanel
+            // — only visible rows are rendered regardless of total node count
+            var allFiltered = filtered.ToList();
+            int cols = Math.Max(1, _tileColumnCount);
+            var rows = allFiltered
+                .Select((n, i) => (n, i))
+                .GroupBy(x => x.i / cols)
+                .Select(g => g.Select(x => x.n).ToList())
+                .ToList();
+            NodeTileView.ItemsSource = rows;
+
+            if (TileNodeCountText != null)
+                TileNodeCountText.Text = $"{allFiltered.Count} / {_allNodes.Count} Nodes";
+
+            // Keep _nodes in sync for any fallback usage
+            _nodes.Clear();
+            foreach (var n in allFiltered) _nodes.Add(n);
+        }
+        else
+        {
+            _nodes.Clear();
+            foreach (var node in filtered)
+                _nodes.Add(node);
         }
     }
 
@@ -3886,7 +4292,7 @@ public partial class MainWindow : Window
 
     private void SetNodeColor_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is MenuItem menuItem && menuItem.Tag is string color && NodesListView.SelectedItem is NodeInfo node)
+        if (sender is MenuItem menuItem && menuItem.Tag is string color && SelectedNodeForMenu is NodeInfo node)
         {
             SetNodeColorInternal(node, color);
         }
@@ -3894,7 +4300,7 @@ public partial class MainWindow : Window
 
     private void RemoveNodeColor_Click(object sender, RoutedEventArgs e)
     {
-        if (NodesListView.SelectedItem is NodeInfo node)
+        if (SelectedNodeForMenu is NodeInfo node)
         {
             RemoveNodeColorInternal(node);
         }
@@ -3902,7 +4308,7 @@ public partial class MainWindow : Window
 
     private void EditNodeNote_Click(object sender, RoutedEventArgs e)
     {
-        if (NodesListView.SelectedItem is NodeInfo node)
+        if (SelectedNodeForMenu is NodeInfo node)
         {
             EditNodeNoteInternal(node);
         }
@@ -3924,7 +4330,7 @@ public partial class MainWindow : Window
             }
 
             // Refresh display
-            ApplyNodeSortAndFilter();
+            ApplyNodeSortAndFilterCore();
             UpdateNodePin(node);
 
             Services.Logger.WriteLine($"Set color {color} for node {node.Name} ({node.Id})");
@@ -3951,7 +4357,7 @@ public partial class MainWindow : Window
             }
 
             // Refresh display
-            ApplyNodeSortAndFilter();
+            ApplyNodeSortAndFilterCore();
             UpdateNodePin(node);
 
             Services.Logger.WriteLine($"Removed color from node {node.Name} ({node.Id})");
@@ -3968,7 +4374,7 @@ public partial class MainWindow : Window
         {
             var dialog = new System.Windows.Window
             {
-                Title = $"Notiz für {node.Name}",
+                Title = string.Format(Loc("StrEditNoteTitle"), node.Name),
                 Width = 400,
                 Height = 200,
                 WindowStartupLocation = WindowStartupLocation.CenterOwner,
@@ -3996,7 +4402,7 @@ public partial class MainWindow : Window
             okButton.Click += (s, ev) => { dialog.DialogResult = true; dialog.Close(); };
             buttonPanel.Children.Add(okButton);
 
-            var cancelButton = new Button { Content = "Abbrechen", Width = 80, IsCancel = true };
+            var cancelButton = new Button { Content = Loc("StrCancel"), Width = 80, IsCancel = true };
             cancelButton.Click += (s, ev) => { dialog.DialogResult = false; dialog.Close(); };
             buttonPanel.Children.Add(cancelButton);
 
@@ -4027,7 +4433,7 @@ public partial class MainWindow : Window
                 }
 
                 // Refresh display
-                ApplyNodeSortAndFilter();
+                ApplyNodeSortAndFilterCore();
                 UpdateNodePin(node);
 
                 Services.Logger.WriteLine($"Updated note for node {node.Name} ({node.Id}): {newNote}");
@@ -4338,13 +4744,16 @@ public partial class MainWindow : Window
 
     private void NodesListView_ContextMenuOpening(object sender, ContextMenuEventArgs e)
     {
-        if (NodesListView.SelectedItem is NodeInfo node)
+        _tileContextNode = null; // list always uses its own selection
+        if (SelectedNodeForMenu is NodeInfo node)
         {
             PinNodeMenuItem.Header      = node.IsPinned    ? Loc("StrUnpin")       : Loc("StrPin");
             FavoriteNodeMenuItem.Header = node.IsFavorite  ? Loc("StrUnfavorite")  : Loc("StrFavorite");
             bool pathActive = _pathLayers.ContainsKey(node.NodeId);
             ShowPathNodeMenuItem.Visibility = pathActive ? Visibility.Collapsed : Visibility.Visible;
             HidePathMenuItem.Visibility = pathActive ? Visibility.Visible : Visibility.Collapsed;
+            // Time sync only for our own node
+            TimeSyncNodeMenuItem.Visibility = node.NodeId == _myNodeId ? Visibility.Visible : Visibility.Collapsed;
         }
     }
 
@@ -4361,7 +4770,7 @@ public partial class MainWindow : Window
             _currentSettings.PinnedNodes.Remove(node.NodeId);
         SettingsService.Save(_currentSettings);
 
-        ApplyNodeSortAndFilter();
+        ApplyNodeSortAndFilterCore();
         Services.Logger.WriteLine($"Node {node.Name} ({node.Id}) {(node.IsPinned ? "pinned" : "unpinned")}");
     }
 
@@ -4385,19 +4794,19 @@ public partial class MainWindow : Window
                 : _protocolService.RemoveFavoriteNodeAsync(node.NodeId);
         }
 
-        ApplyNodeSortAndFilter();
+        ApplyNodeSortAndFilterCore();
         Services.Logger.WriteLine($"Node {node.Name} ({node.Id}) {(node.IsFavorite ? "favorited" : "unfavorited")}");
     }
 
     private void NodeContextMenu_Favorite_Click(object sender, RoutedEventArgs e)
     {
-        if (NodesListView.SelectedItem is NodeInfo node)
+        if (SelectedNodeForMenu is NodeInfo node)
             ToggleFavoriteInternal(node);
     }
 
     private void NodeContextMenu_Pin_Click(object sender, RoutedEventArgs e)
     {
-        if (NodesListView.SelectedItem is not NodeInfo node) return;
+        if (SelectedNodeForMenu is not NodeInfo node) return;
         PinNodeInternal(node);
     }
 
@@ -4405,13 +4814,13 @@ public partial class MainWindow : Window
 
     private void NodeContextMenu_ShowPath_Click(object sender, RoutedEventArgs e)
     {
-        if (NodesListView.SelectedItem is not NodeInfo node) return;
+        if (SelectedNodeForMenu is not NodeInfo node) return;
         ShowPathForNode(node);
     }
 
     private void NodeContextMenu_HidePath_Click(object sender, RoutedEventArgs e)
     {
-        if (NodesListView.SelectedItem is not NodeInfo node) return;
+        if (SelectedNodeForMenu is not NodeInfo node) return;
         HidePathForNode(node);
         HidePathMenuItem.Visibility = Visibility.Collapsed;
     }
@@ -4475,7 +4884,7 @@ public partial class MainWindow : Window
             for (int i = 0; i < n - 1; i++)
             {
                 double t = n > 2 ? (double)i / (n - 2) : 1.0;
-                int alpha = (int)(80 + t * 175);  // 80 (oldest) → 255 (newest)
+                int alpha = (int)(80 + t * 175);  // 80 (oldest) ? 255 (newest)
                 var segColor = new Mapsui.Styles.Color(baseColor.R, baseColor.G, baseColor.B, alpha);
                 var segCoords = new[] { new Coordinate(coords[i].X, coords[i].Y), new Coordinate(coords[i + 1].X, coords[i + 1].Y) };
                 var segLine = new GeometryFeature(new NetTopologySuite.Geometries.LineString(segCoords));
@@ -4582,7 +4991,7 @@ public partial class MainWindow : Window
         // Amplitude: 3% of segment length
         double amp = len * 0.03;
 
-        // Build zigzag points: from → peaks alternating sides → to
+        // Build zigzag points: from ? peaks alternating sides ? to
         int totalPts = peaks * 2 + 2;
         var coords = new Coordinate[totalPts];
         coords[0] = new Coordinate(from.X, from.Y);
@@ -4619,7 +5028,7 @@ public partial class MainWindow : Window
                 _alertNodeId = nodeId;
 
                 // Update notification text
-                AlertNotificationText.Text = $"🚨 Notruf von {nodeName}!";
+                AlertNotificationText.Text = $"?? Notruf von {nodeName}!";
 
                 // Check if we have position for this node
                 var node = _nodes.FirstOrDefault(n => n.NodeId == nodeId);
@@ -4693,9 +5102,9 @@ public partial class MainWindow : Window
         }
     }
 
-    // ═══════════════════════════════════════════════════════════════════════
+    // -----------------------------------------------------------------------
     //  TRACEROUTE
-    // ═══════════════════════════════════════════════════════════════════════
+    // -----------------------------------------------------------------------
 
     private void OpenTracerouteForNode(NodeInfo node)
     {
@@ -4813,7 +5222,7 @@ public partial class MainWindow : Window
         var features = new List<IFeature>();
         MPoint? lastKnownPoint = null;
 
-        const int MqttSentinelRaw = -128; // raw SnrTowards = -128 → -32 dB = MQTT hop
+        const int MqttSentinelRaw = -128; // raw SnrTowards = -128 ? -32 dB = MQTT hop
 
         for (int i = 0; i < orderedIds.Count - 1; i++)
         {
@@ -4836,7 +5245,7 @@ public partial class MainWindow : Window
 
                 if (isMqtt)
                 {
-                    // ⚡ Zickzack-Blitzlinie für MQTT-Hops (statt gerader Linie)
+                    // ? Zickzack-Blitzlinie für MQTT-Hops (statt gerader Linie)
                     var zigCoords = BuildMqttZigzag(mFrom, mTo);
                     var zigGeom = new NetTopologySuite.Geometries.LineString(zigCoords);
 
@@ -4863,7 +5272,7 @@ public partial class MainWindow : Window
                     var midX = (ptFrom.x + ptTo.x) / 2;
                     var midY = (ptFrom.y + ptTo.y) / 2;
                     var midPt = new MPoint(midX, midY);
-                    // Atan2 gibt Winkel Ost=0 CCW; Mapsui-Rotation: 0=Norden CW → konvertieren
+                    // Atan2 gibt Winkel Ost=0 CCW; Mapsui-Rotation: 0=Norden CW ? konvertieren
                     var bearing    = Math.Atan2(ptTo.y - ptFrom.y, ptTo.x - ptFrom.x) * 180 / Math.PI;
                     var mapRotation = (90 - bearing + 360) % 360;
                     var arrow = new PointFeature(midPt);
@@ -5071,9 +5480,9 @@ public partial class MainWindow : Window
             days = d;
 
         var traceroutes = _db.GetRecentTracerouteResults(days);
-        if (traceroutes.Count == 0) { MessageBox.Show($"Keine Traceroutes in den letzten {(days == 0 ? "∞" : days.ToString())} Tagen.", "Traceroute aus DB", MessageBoxButton.OK, MessageBoxImage.Information); return; }
+        if (traceroutes.Count == 0) { MessageBox.Show($"Keine Traceroutes in den letzten {(days == 0 ? "8" : days.ToString())} Tagen.", "Traceroute aus DB", MessageBoxButton.OK, MessageBoxImage.Information); return; }
 
-        // T5: node-pair deduplication (only keep newest per A↔B pair)
+        // T5: node-pair deduplication (only keep newest per A?B pair)
         bool dedupe = TracerouteDedupeCheckBox?.IsChecked == true;
         if (dedupe)
         {
@@ -5226,7 +5635,7 @@ public partial class MainWindow : Window
             if (isLive)
                 row.Children.Add(new TextBlock
                 {
-                    Text = "📡",
+                    Text = "??",
                     FontSize = 10,
                     Margin = new Thickness(0, 0, 3, 0),
                     VerticalAlignment = VerticalAlignment.Center,
@@ -5246,7 +5655,7 @@ public partial class MainWindow : Window
             // Clear button
             var clearBtn = new Button
             {
-                Content = "✕",
+                Content = "?",
                 FontSize = 10,
                 Padding = new Thickness(4, 1, 4, 1),
                 Margin = new Thickness(8, 0, 0, 0),
@@ -5286,9 +5695,9 @@ public partial class MainWindow : Window
         return f;
     }
 
-    // ═══════════════════════════════════════════════════════════════════════
+    // -----------------------------------------------------------------------
     //  TELEMETRY
-    // ═══════════════════════════════════════════════════════════════════════
+    // -----------------------------------------------------------------------
 
     private void OnDeviceTelemetryReceived(object? sender, (uint NodeId, float BatteryPercent, float Voltage) e)
     {
@@ -5348,8 +5757,8 @@ public partial class MainWindow : Window
             var pt = SphericalMercator.FromLonLat(wp.Longitude, wp.Latitude);
             var mpt = new MPoint(pt.x, pt.y);
 
-            // Icon: use emoji char if available, else 📍
-            string iconText = wp.Icon > 0 ? char.ConvertFromUtf32((int)wp.Icon) : "📍";
+            // Icon: use emoji char if available, else ??
+            string iconText = wp.Icon > 0 ? char.ConvertFromUtf32((int)wp.Icon) : "??";
 
             var pin = new PointFeature(mpt);
             pin.Styles.Add(new SymbolStyle
@@ -5457,7 +5866,7 @@ public partial class MainWindow : Window
             int shortH = _currentSettings.SignalWeatherWindowHours;
             int longD  = _currentSettings.SignalAntennaWindowDays;
 
-            // Global signal analysis (nodeId=0 → all nodes)
+            // Global signal analysis (nodeId=0 ? all nodes)
             var analysis = _db.GetSignalAnalysis(0, shortH, longD, nodeNames);
             // Global mesh health
             var health = _db.GetMeshHealthScore(longD);
@@ -5505,7 +5914,7 @@ public partial class MainWindow : Window
                 }
                 NodesListView.Items.Refresh();
 
-                // ── Individuelle Trend-Pfeile pro Metrik ───────────────────────────────
+                // -- Individuelle Trend-Pfeile pro Metrik -------------------------------
                 SetTopArrow(GlobalWeatherArrow,
                     up:   analysis.TotalNeighbors > 0 && analysis.DecliningNeighbors == 0,
                     down: analysis.TotalNeighbors > 0 && analysis.DecliningNeighbors >= Math.Max(1, analysis.TotalNeighbors * 0.25),
@@ -5577,8 +5986,8 @@ public partial class MainWindow : Window
         string upTip, string flatTip, string downTip)
     {
         if (noData) { tb.Text = ""; ToolTipService.SetToolTip(tb, null); return; }
-        tb.Text = up ? "↑" : down ? "↓" : "→";
-        tb.ClearValue(TextBlock.ForegroundProperty); // inherit theme color — LED provides the color indicator
+        tb.Text = up ? "?" : down ? "?" : "?";
+        tb.ClearValue(TextBlock.ForegroundProperty); // inherit theme color – LED provides the color indicator
         ToolTipService.SetToolTip(tb, up ? upTip : down ? downTip : flatTip);
     }
 
@@ -5609,7 +6018,7 @@ public partial class MainWindow : Window
 
     private void NodeContextMenu_Telemetry_Click(object sender, RoutedEventArgs e)
     {
-        if (NodesListView.SelectedItem is not NodeInfo node) return;
+        if (SelectedNodeForMenu is not NodeInfo node) return;
         OpenTelemetryForNode(node);
     }
 
@@ -5628,7 +6037,7 @@ public partial class MainWindow : Window
     // Context menu handlers for traceroute
     private void NodeContextMenu_Traceroute_Click(object sender, RoutedEventArgs e)
     {
-        if (NodesListView.SelectedItem is not NodeInfo node) return;
+        if (SelectedNodeForMenu is not NodeInfo node) return;
         OpenTracerouteForNode(node);
     }
 
@@ -5653,9 +6062,9 @@ public partial class MainWindow : Window
         win.Activate();
     }
 
-    // ═══════════════════════════════════════════════════════════════════════
+    // -----------------------------------------------------------------------
     //  UPDATE CHECK
-    // ═══════════════════════════════════════════════════════════════════════
+    // -----------------------------------------------------------------------
 
     private static readonly HttpClient _httpClient = new() { Timeout = TimeSpan.FromSeconds(6) };
 
@@ -5682,10 +6091,10 @@ public partial class MainWindow : Window
             {
                 Dispatcher.Invoke(() =>
                 {
-                    UpdateHintRun.Text = $"🔔 Update verfügbar: {tagName}";
+                    UpdateHintRun.Text = $"?? Update verfügbar: {tagName}";
                     UpdateHintLink.NavigateUri = new Uri(htmlUrl);
                     UpdateBanner.Visibility = Visibility.Visible;
-                    Services.Logger.WriteLine($"Update available: {tagName} → {htmlUrl}");
+                    Services.Logger.WriteLine($"Update available: {tagName} ? {htmlUrl}");
                 });
             }
         }
@@ -5702,9 +6111,9 @@ public partial class MainWindow : Window
         e.Handled = true;
     }
 
-    // ═══════════════════════════════════════════════════════════════════════
+    // -----------------------------------------------------------------------
     //  REACTIONS / TAP-BACKS
-    // ═══════════════════════════════════════════════════════════════════════
+    // -----------------------------------------------------------------------
 
     private void OnReactionReceived(object? sender, (uint ReplyId, string Emoji, uint FromId) reaction)
     {
@@ -5727,10 +6136,10 @@ public partial class MainWindow : Window
     {
         var quickEmojis = new[]
         {
-            "👍", "👎", "❤️", "😂", "😢", "😮", "😡", "🎉",
-            "❓", "❗", "‼️", "*️⃣", "1️⃣", "2️⃣", "3️⃣", "4️⃣",
-            "5️⃣", "6️⃣", "7️⃣", "💩", "👋", "🤠", "🐭", "😈",
-            "☀️", "☔", "☁️", "🌫️", "✅", "❌", "🔥", "💯",
+            "??", "??", "??", "??", "??", "??", "??", "??",
+            "?", "?", "??", "*??", "1??", "2??", "3??", "4??",
+            "5??", "6??", "7??", "??", "??", "??", "??", "??",
+            "??", "?", "??", "???", "?", "?", "??", "??",
         };
 
         var popup = new System.Windows.Controls.Primitives.Popup
@@ -5750,7 +6159,7 @@ public partial class MainWindow : Window
             Effect = new System.Windows.Media.Effects.DropShadowEffect { BlurRadius = 10, ShadowDepth = 2, Opacity = 0.3 },
         };
 
-        var panel = new WrapPanel { MaxWidth = 380 }; // 8 columns × ~47px
+        var panel = new WrapPanel { MaxWidth = 380 }; // 8 columns – ~47px
 
         foreach (var emoji in quickEmojis)
         {
@@ -5832,9 +6241,9 @@ public partial class MainWindow : Window
         ReplyIndicatorPanel.Visibility = Visibility.Collapsed;
     }
 
-    // ═══════════════════════════════════════════
+    // -------------------------------------------
     // Easter Eggs
-    // ═══════════════════════════════════════════
+    // -------------------------------------------
 
     private void CheckMidnight()
     {
@@ -5859,17 +6268,17 @@ public partial class MainWindow : Window
         var lines = new[]
         {
             "- - - - - - - - - - - - - - - - - - - -",
-            $"SENDESTELLE {myShortName.ToUpper()} — OSTEREI",
+            $"SENDESTELLE {myShortName.ToUpper()} – OSTEREI",
             "AM-SENDELEISTUNG WIRD JETZT REDUZIERT",
             "Ionosphäre aktiv: AM-Signale reichen nachts",
             "hunderte km weit (Skywave-Propagation).",
-            "FCC-Nachtpflicht seit 1934 · LoRa: unaffected",
+            "FCC-Nachtpflicht seit 1934 – LoRa: unaffected",
             "- - - - - - - - - - - - - - - - - - - -"
         };
         var msg = new MessageItem
         {
             Time        = "00:00",
-            From        = "⚡ SENDESTELLE OSTEREI",
+            From        = "? SENDESTELLE OSTEREI",
             Message     = string.Join("\n", lines),
             ChannelName = "SYSTEM",
             IsOwnMessage = false
@@ -5949,7 +6358,7 @@ public partial class MainWindow : Window
     private static void PlaySineTone(int freqHz, int durationMs)
     {
         const int SampleRate = 44100;
-        const int FadeMs     = 8; // Fade-in/out in ms — eliminiert Knackgeräusche
+        const int FadeMs     = 8; // Fade-in/out in ms – eliminiert Knackgeräusche
         int totalSamples = SampleRate * durationMs / 1000;
         int fadeSamples  = SampleRate * FadeMs / 1000;
 

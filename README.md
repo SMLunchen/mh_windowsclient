@@ -4,7 +4,7 @@ Der **Meshhessen Client** ist ein **kostenloser, nativer Windows-Client für Mes
 
 ![Windows](https://img.shields.io/badge/Windows-10%2F11-blue)
 ![.NET](https://img.shields.io/badge/.NET-8.0-purple)
-![Status](https://img.shields.io/badge/Status-v1.5.11-yellow)
+![Status](https://img.shields.io/badge/Status-v1.5.13-yellow)
 ![License](https://img.shields.io/github/license/SMLunchen/mh_windowsclient)
 ![Stars](https://img.shields.io/github/stars/SMLunchen/mh_windowsclient)
 
@@ -83,6 +83,10 @@ Der **Meshhessen Client** ist ein **kostenloser, nativer Windows-Client für Mes
   * **Online – OpenStreetMap** – weltweite Abdeckung über `tile.openstreetmap.org`; nur Standardkarte; OSM-Tile-Policy-konform (kein Bulk-Download, Tiles lokal gecacht)
 * **Node-Positionen** als farbige Pins auf der Karte
 * **Node-Pfade** – GPS-Positionsverläufe aufzeichnen und auf der Karte anzeigen
+* **Direkte Nachbar-Linien** – aktivierbar im Legenden-Feld: zieht Linien von der eigenen Position zu allen Nodes, die wir **direkt über HF (0 Hops, kein MQTT)** empfangen haben
+  * Farbverlauf wählbar nach **SNR** (rot → gelb → grün) oder **Alter** der letzten direkten Verbindung (cyan → violett)
+  * Option **„Dauerhaft"** zeigt alle je direkt gehörten Nachbarn (statt nur der letzten 24 h); historische 0-Hop-Kontakte kommen aus der Telemetrie-DB
+  * Dunkler Umriss unter jeder Linie für gute Sichtbarkeit auch auf der Topo-Karte
 * **Wegpunkte (Waypoints)** – empfangene Wegpunkte werden auf der Karte angezeigt; Wegpunkte per Karte-Rechtsklick erstellen und senden
 
 ### 📡 Traceroute
@@ -133,11 +137,19 @@ Der **Meshhessen Client** ist ein **kostenloser, nativer Windows-Client für Mes
 ### 🔧 Node-Verwaltung
 
 * **Knoten-Übersicht** – alle Nodes im Mesh mit SNR, Batterie, Entfernung, Hop-Anzahl
+  * **Kachelansicht (Fancy View)** – optional in Einstellungen → Darstellung aktivierbar: tauscht die Tabelle gegen eine responsive Kachel-Oberfläche (Spaltenanzahl wächst/schrumpft mit der Fensterbreite)
+    * Pro Kachel: ShortName-Badge in Node-Farbe, 🔑/🔓 PKI-Status, voller Name, „vor X min", ⭐-Favoritenstern, 📡 Infrastruktur- und ☁ MQTT-Symbol
+    * Strom (extern versorgt oder Batterie + Spannung), Entfernung + Höhe, Hops, RSSI/SNR mit Farbverlauf, Umwelt-Telemetrie (🌡/💧/🌬), Hardware-Modell · Geräterolle · Node-ID
+    * Eigener Node immer ganz oben, virtualisiertes Scrolling auch bei 1000+ Nodes
+  * **SNR/RSSI nur bei direktem Empfang** – Signalwerte werden nur angezeigt, wenn wir den Node direkt (0 Hops, kein MQTT) hören; bei Relay-Nodes zeigt die Spalte stattdessen die Hop-Anzahl
+  * **Erweiterte Filter** – nach „zuletzt gesehen" (5 Min bis 60 Tage), MQTT-Nodes ausblenden, nur Favoriten, SNR-Einfärbung an/aus; Sortier-Dropdown im Kachelmodus
+* **Informationen anfordern** – Rechtsklick-Untermenü (Liste, Kachel, Karte) fordert wie die Android-App gezielt Daten von einem Node an: Benutzer-Info, Position, Geräte-/Umwelt-/Luftqualität-/Strom-/Host-Metriken, Signalqualität/Mesh-Statistik, PAX-Zähler
 * **Firmware-Version & Hardware-Modell** – werden automatisch beim Verbinden abgefragt und im Node-Info-Fenster angezeigt
 * **PKI-Schlüssel-Indikator** – 🔑-Spalte zeigt, ob der Public Key des Nodes bekannt ist
 * **Node-Farben** – Nodes individuell einfärben (Karte + Listen)
 * **Node-Notizen** – Freitext-Notizen pro Node
-* **Nodes anpinnen** – Nodes in der Liste oben fixieren (unabhängig von Sortierung)
+* **Nodes anpinnen** – Nodes in der Liste oben fixieren (unabhängig von Sortierung); der eigene Node ist ebenfalls anheftbar
+* **Per-Node-Stationsname** – pro verbundenem Node ein eigener Stationsname; ✏-Button neben dem Verbinden-Button; Auflösung global → node-spezifisch → ShortName
 * **Favoriten** – Nodes als Favoriten markieren (★-Symbol, Rechtsklick-Menü); wird mit dem Gerät synchronisiert (`set_favorite_node` / `remove_favorite_node`); Favoriten erscheinen oben in der Liste
 * **Fernverwaltung** – vollständige Remote-Admin-Oberfläche für Favoriten-Nodes:
   * Alle Konfigurations-Reiter: Besitzer, Gerät, Position, LoRa, Bluetooth, Netzwerk, Anzeige, Kanäle, **Sicherheit**, Steuerung
@@ -185,8 +197,14 @@ Der Meshhessen Client ist ein Gemeinschaftsprojekt der Meshtastic-Community in H
 Offline-Karte mit Node-Positionen und Entfernungsanzeige:
 <img width="1250" height="813" alt="Meshhessen Client – Windows-App für Meshtastic-Geräte: Offline-Karte mit Node-Positionen (OSM)" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/map.png" />
 
-Node-Übersicht mit SNR, Batterie und Hop-Anzahl:
-<img width="1249" height="812" alt="Meshhessen Client – Node-Übersicht mit SNR, RSSI, Batterie und Signal-LEDs" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/nodes.png" />
+Node-Übersicht als Tabelle – mit Avatar, Signal-LEDs, Filtern und Sortierung:
+<img alt="Meshhessen Client – Node-Übersicht als Tabelle mit Avatar, SNR, RSSI, Batterie und Signal-LEDs" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/nodelist_new.png" />
+
+Node-Übersicht als Kachelansicht (Fancy View) – mit Telemetrie, Strom und Signalqualität pro Kachel:
+<img alt="Meshhessen Client – Node-Kachelansicht (Fancy View) mit Telemetrie, Batterie und Signalqualität pro Node" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/nodelist_new_tiles.png" />
+
+Direkte HF-Nachbarn als Linien auf der Karte (Farbverlauf nach SNR oder Alter):
+<img alt="Meshhessen Client – Direkte Meshtastic-Nachbarn als farbige Linien auf der Karte (0-Hop HF, SNR-Farbverlauf)" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/map_neighbor_lines.png" />
 
 Nachrichtenansicht mit Kanal-Chat und Direktnachrichten:
 <img width="1443" height="813" alt="Meshhessen Client – Meshtastic Nachrichten, Kanal-Chat und Direktnachrichten (DM) unter Windows" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/messaging.png" />
@@ -377,7 +395,7 @@ Meshhessen Client · Windows-Client für Meshtastic-Geräte · Meshtastic Window
 
  ![Windows](https://img.shields.io/badge/Windows-10%2F11-blue)
  ![.NET](https://img.shields.io/badge/.NET-8.0-purple)
- ![Status](https://img.shields.io/badge/Status-v1.5.11-yellow)
+ ![Status](https://img.shields.io/badge/Status-v1.5.13-yellow)
  ![License](https://img.shields.io/github/license/SMLunchen/mh_windowsclient)
  ![Stars](https://img.shields.io/github/stars/SMLunchen/mh_windowsclient)
 
@@ -451,6 +469,10 @@ Meshhessen Client · Windows-Client für Meshtastic-Geräte · Meshtastic Window
   * **Online – OpenStreetMap** – worldwide coverage via `tile.openstreetmap.org`; standard map only; OSM tile policy compliant (no bulk download, tiles cached locally)
 * **Node positions** as colored pins on the map
 * **Node paths** – record GPS position history and display tracks on the map
+* **Direct neighbor lines** – toggle in the legend box: draws lines from your own position to every node we received **directly over RF (0 hops, no MQTT)**
+  * Color gradient by **SNR** (red → yellow → green) or by **age** of the last direct contact (cyan → purple)
+  * **"Permanent"** option shows every neighbor ever heard directly (instead of only the last 24 h); historical 0-hop contacts come from the telemetry DB
+  * Dark outline beneath each line for good visibility even on the topo map
 * **Waypoints** – received waypoints are displayed on the map; create and send waypoints via right-click on the map
 
 ### 📡 Traceroute
@@ -486,11 +508,19 @@ Meshhessen Client · Windows-Client für Meshtastic-Geräte · Meshtastic Window
 ### 🔧 Node Management
 
 * **Node overview** – all nodes in the mesh with SNR, battery, distance, hop count
+  * **Tile view (Fancy View)** – optionally enabled in Settings → Appearance: replaces the table with a responsive tile surface (column count grows/shrinks with the window width)
+    * Per tile: ShortName badge in node color, 🔑/🔓 PKI status, full name, "X min ago", ⭐ favorite star, 📡 infrastructure and ☁ MQTT icons
+    * Power (externally powered or battery + voltage), distance + altitude, hops, RSSI/SNR with color gradient, environment telemetry (🌡/💧/🌬), hardware model · device role · node ID
+    * Own node always on top, virtualized scrolling even with 1000+ nodes
+  * **SNR/RSSI only for direct reception** – signal values are shown only when we hear the node directly (0 hops, no MQTT); for relayed nodes the column shows the hop count instead
+  * **Advanced filters** – by "last seen" (5 min to 60 days), hide MQTT nodes, favorites only, SNR coloring on/off; sort dropdown in tile mode
+* **Request information** – right-click submenu (list, tile, map) requests data from a node like the Android app: user info, position, device/environment/air-quality/power/host metrics, signal quality/mesh stats, PAX counter
 * **Firmware version & hardware model** – queried automatically on connect and shown in the node info window
 * **PKI key indicator** – 🔑 column shows whether a node's public key is known
 * **Node colors** – color-code nodes individually (map + lists)
 * **Node notes** – free-text annotations per node
-* **Pin nodes** – pin nodes to the top of the list (independent of sorting)
+* **Pin nodes** – pin nodes to the top of the list (independent of sorting); your own node can be pinned too
+* **Per-node station name** – a dedicated station name per connected node; ✏ button next to the Connect button; resolution global → node-specific → ShortName
 * **Favorites** – mark nodes as favorites (★ icon, right-click menu); synced with the device (`set_favorite_node` / `remove_favorite_node`); favorites shown at the top of the list
 * **Remote Administration** – full remote admin UI for favorite nodes: all configuration tabs (Owner, Device, Position, LoRa, Bluetooth, Network, Display, Channels, Security, Control), session-key handshake, configurable timeout, lazy loading (load-on-demand per tab) and "↻ Reload Tab" button
 * **Node configuration** – full device configuration directly from the client, all modules in one window:

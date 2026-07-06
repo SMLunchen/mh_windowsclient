@@ -35,6 +35,19 @@
     <sys:String x:Key="StrTraceroute">📡 Traceroute</sys:String>
     <sys:String x:Key="StrTelemetry">📊 Telemetrie</sys:String>
     <sys:String x:Key="StrReact">😀 Reaktion...</sys:String>
+    <sys:String x:Key="StrEditNoteTitle">Notiz für {0}</sys:String>
+    <sys:String x:Key="StrRequestInfo">📥 Informationen anfordern</sys:String>
+    <sys:String x:Key="StrReqUserInfo">Benutzer-Info</sys:String>
+    <sys:String x:Key="StrReqPosition">Position austauschen</sys:String>
+    <sys:String x:Key="StrReqDeviceMetrics">Geräte-Metriken</sys:String>
+    <sys:String x:Key="StrReqEnvMetrics">Umwelt-Metriken</sys:String>
+    <sys:String x:Key="StrReqAirQuality">Luftqualität</sys:String>
+    <sys:String x:Key="StrReqPowerMetrics">Strom-Metriken</sys:String>
+    <sys:String x:Key="StrReqLocalStats">Signalqualität / Mesh-Statistik</sys:String>
+    <sys:String x:Key="StrReqHostMetrics">Host-Metriken</sys:String>
+    <sys:String x:Key="StrReqPax">PAX-Zähler</sys:String>
+    <sys:String x:Key="StrInfoRequestSent">Anfrage „{0}" an {1} gesendet.</sys:String>
+    <sys:String x:Key="StrInfoRequestFailed">Anfrage fehlgeschlagen.</sys:String>
 
     <!-- Status texts -->
     <sys:String x:Key="StrConnected">Verbunden</sys:String>
@@ -611,13 +624,13 @@
     <sys:String x:Key="StrMeshHealthTooltip">Globale Mesh-Gesundheit (0–100%) basierend auf Pfad-Kosten, Route-Änderungen, Empfangsrate und Kanalauslastung. Kanalauslastung ist ein gleitender Durchschnitt des Firmware-Counters.</sys:String>
 
     <!-- Map toolbar traceroute -->
-    <sys:String x:Key="StrLoadTraceroute">📂 Traceroute laden</sys:String>
+    <sys:String x:Key="StrLoadTraceroute">📂 Traceroute von Festplatte laden</sys:String>
     <sys:String x:Key="StrLoadTracerouteTooltip">Gespeicherte Traceroute(s) auf der Karte anzeigen</sys:String>
     <sys:String x:Key="StrTracerouteDbTimeTooltip">Traceroutes aus DB: Zeitraum</sys:String>
-    <sys:String x:Key="StrLoadFromDb">🗄 Aus DB</sys:String>
+    <sys:String x:Key="StrLoadFromDb">🗄 Traceroutes aus DB laden</sys:String>
     <sys:String x:Key="StrLoadFromDbTooltip">Traceroutes aus Datenbank für den gewählten Zeitraum laden</sys:String>
     <sys:String x:Key="StrDedupeTooltip">Nur neueste Traceroute pro Node-Paar anzeigen (Deduplizierung)</sys:String>
-    <sys:String x:Key="StrRemoveAllTraceroutes">🗑 Alle</sys:String>
+    <sys:String x:Key="StrRemoveAllTraceroutes">🗑 Traceroutes von Karte löschen</sys:String>
     <sys:String x:Key="StrRemoveAllTooltip">Alle Traceroutes von der Karte entfernen</sys:String>
     <sys:String x:Key="StrAllTimeRange">Alle</sys:String>
     <!-- Settings tab - position history -->
@@ -733,6 +746,17 @@
     <sys:String x:Key="StrLegendMqttHop">Via MQTT (Blitz)</sys:String>
     <sys:String x:Key="StrLegendUnknownHop">Unbekannte Route (gestrichelt)</sys:String>
     <sys:String x:Key="StrLegendSnrHint">Klick auf Segment → SNR-Popup</sys:String>
+    <sys:String x:Key="StrNeighborLines">Nachbar-Linien (0-Hop HF)</sys:String>
+    <sys:String x:Key="StrNeighborColorSnr">SNR</sys:String>
+    <sys:String x:Key="StrNeighborColorAge">Alter</sys:String>
+    <sys:String x:Key="StrNeighborPermanent">Dauerhaft (kein 24h-Limit)</sys:String>
+
+    <!-- Node list advanced filters -->
+    <sys:String x:Key="StrNodeFilterLastSeen">Gesehen:</sys:String>
+    <sys:String x:Key="StrNodeFilterHideMqtt">MQTT ausblenden</sys:String>
+    <sys:String x:Key="StrNodeFilterOnlyFavorites">Favoriten ⭐ only</sys:String>
+    <sys:String x:Key="StrNodeFilterSnrColor">SNR-Farbe</sys:String>
+    <sys:String x:Key="StrNodeFilterSnrColorTooltip">Avatar-Kreis nach SNR einfärben (nur direkte HF-Pakete, kein MQTT)</sys:String>
 
     <!-- Waypoint status -->
     <sys:String x:Key="StrWpCreatedStatus">Waypoint {0} erstellt und gesendet.</sys:String>
@@ -757,7 +781,7 @@
     <sys:String x:Key="StrNodeDistanceStatus">{0} ({1}): {2:F2} km Entfernung | Letzte Sichtung: {3}</sys:String>
 
     <!-- LED tooltip dynamic content -->
-    <sys:String x:Key="StrLedWeatherEffect">Wetter-Effekt: {0} von {1} Nodes zeigen gleichzeitigen kurzfristigen SNR-Abfall.\nMehrere Nodes gleichzeitig fallend → wahrscheinlich Wetter / atmosphärische Effekte.</sys:String>
+    <sys:String x:Key="StrLedWeatherEffect">Wetter-Effekt: {0} von {1} Nodes zeigen gleichzeitigen kurzfristigen SNR-Abfall.&#x0a;Mehrere Nodes gleichzeitig fallend → wahrscheinlich Wetter / atmosphärische Effekte.</sys:String>
     <sys:String x:Key="StrLedNeighborProblem">Node '{0}' zeigt signifikant schlechteren SNR als die anderen Nachbarn → mögliches Hardware-/Positionsproblem bei diesem Node.</sys:String>
     <sys:String x:Key="StrLedAllGoodNeighbor">Alle Nachbar-Nodes zeigen ähnliche SNR-Werte → kein einzelner Ausreißer erkennbar.</sys:String>
     <sys:String x:Key="StrLedAntennaUp">↑ SNR-Langzeittrend: {0:+0.00} dB/Tag – langfristig steigend – eigene Antenne und Position sind gut.</sys:String>
@@ -1119,6 +1143,23 @@ Grün ≤15% | Gelb 15–25% | Rot &gt;25% | Grau = keine Airtime-Daten</sys:Str
     <sys:String x:Key="StrToolsExportBtn">📦 Tiles als ZIP exportieren...</sys:String>
 
     <!-- Virtual Node -->
+    <sys:String x:Key="StrTileSortNameAsc">Name A→Z</sys:String>
+    <sys:String x:Key="StrTileSortNameDesc">Name Z→A</sys:String>
+    <sys:String x:Key="StrTileSortSnrDesc">SNR best→worst</sys:String>
+    <sys:String x:Key="StrTileSortSnrAsc">SNR worst→best</sys:String>
+    <sys:String x:Key="StrTileSortDistance">Entfernung ↑</sys:String>
+    <sys:String x:Key="StrTileSortBattery">Batterie ↓</sys:String>
+    <sys:String x:Key="StrTileSortLastSeen">Zuletzt gesehen</sys:String>
+    <sys:String x:Key="StrSigGood">Gut</sys:String>
+    <sys:String x:Key="StrSigFair">Mittel</sys:String>
+    <sys:String x:Key="StrSigWeak">Schwach</sys:String>
+    <sys:String x:Key="StrPowered">Extern versorgt</sys:String>
+    <sys:String x:Key="StrFancyNodeListSection">Erweiterte Kachelansicht (Fancy View)</sys:String>
+    <sys:String x:Key="StrFancyNodeListEnable">Node-Tab: gekachelte Ansicht statt Tabelle (Fancy View)</sys:String>
+    <sys:String x:Key="StrFancyNodeListEnableHint">Zeigt die Node-Liste als Info-Kacheln mit Details wie Strom, Telemetrie und Signalqualität. Hinweis: benötigt mehr Rechenleistung als die Tabelle – bei sehr großen Meshes (1000+ Nodes) kann das UI träger reagieren.</sys:String>
+    <sys:String x:Key="StrFancyNodeListColorful">Einfärbung nach SNR (Colorful)</sys:String>
+    <sys:String x:Key="StrFancyNodeListColorfulHint">Kacheln nach SNR-Qualität einfärben wenn keine Node-Farbe gesetzt ist. Die Node-Farbe hat immer Vorrang.</sys:String>
+
     <sys:String x:Key="StrVirtualNodeSection">Virtual Node</sys:String>
     <sys:String x:Key="StrVirtualNodeDesc">Startet einen TCP-Server, mit dem sich Meshtastic-Apps (Android/iOS) verbinden können – als wäre es ein echtes Gerät. Erfordert eine bestehende Verbindung zu einem physischen Node.</sys:String>
     <sys:String x:Key="StrVirtualNodeEnable">Virtual Node aktivieren</sys:String>

@@ -41,7 +41,7 @@
     "url": "https://smlunchen.github.io/mh_windowsclient/",
     "downloadUrl": "https://github.com/SMLunchen/mh_windowsclient/releases/latest",
     "author": { "@type": "Organization", "name": "Meshhessen Community", "url": "https://www.meshhessen.de" },
-    "softwareVersion": "1.5.11",
+    "softwareVersion": "1.5.13",
     "screenshot": "https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map.png",
     "keywords": "Meshtastic, Windows, LoRa, Mesh, Telemetrie, Traceroute, Offline-Karte, PKI"
   }
@@ -312,8 +312,8 @@
 <main>
 
   <div class="whats-new">
-    <span class="vbadge">v1.5.11</span>
-    <span class="summary">🚀 Großes Release: Virtual Node TCP-Proxy, T-Deck Karten-Assistent, Remote Admin Lazy Loading + Sicherheits-Reiter, sequentielles Config-Laden (Heltec-Fix), Kanal-Filter-Sync und weitere Bugfixes.</span>
+    <span class="vbadge">v1.5.13</span>
+    <span class="summary">🚀 Neu: Node-Kachelansicht (Fancy View), direkte HF-Nachbar-Linien auf der Karte (Farbverlauf nach SNR/Alter), „Informationen anfordern" wie in der Android-App, erweiterte Node-Filter – plus abgeglichene Protobuf-Definitionen.</span>
     <a href="changelog.html">Changelog ansehen →</a>
   </div>
 
@@ -339,6 +339,7 @@
         <li><strong>Online Meshhessen</strong> (lazy download, Deutschland)</li>
         <li><strong>Online OSM</strong> (weltweit, Policy-konform)</li>
         <li>Node-Pins, GPS-Tracks, Wegpunkte</li>
+        <li><strong>Direkte Nachbar-Linien</strong> (0-Hop HF, Farbverlauf nach SNR/Alter)</li>
         <li>HTTP/3, ETag-Cache, tile.meshhessenclient.de</li>
       </ul>
     </div>
@@ -411,12 +412,12 @@
       <span class="badge-new">NEU</span>
       <h3>🔧 Node-Verwaltung &amp; Konfiguration</h3>
       <ul>
-        <li>Node-Farben, Notizen, Anpinnen, Schnellfilter</li>
+        <li><strong>Kachelansicht (Fancy View)</strong> – responsive Kacheln statt Tabelle, eigener Node oben</li>
+        <li><strong>Informationen anfordern</strong> – Telemetrie/Position/Metriken gezielt abfragen (wie Android-App)</li>
+        <li>Erweiterte Filter: zuletzt gesehen, MQTT ausblenden, nur Favoriten</li>
+        <li>Node-Farben, Notizen, Anpinnen, Per-Node-Stationsname</li>
         <li><strong>Favoriten</strong> – Stern-Symbol, sync mit Gerät via <code>set_favorite_node</code></li>
-        <li><strong>Vollständige Node-Konfiguration</strong> (Device, LoRa, Position, Network, Display, BT, Security, MQTT, Telemetrie, Kanäle)</li>
-        <li><strong>Fernverwaltung</strong> für Favoriten-Nodes: alle Konfig-Reiter inkl. Sicherheits-Reiter (Public Key + Admin-Keys, Base64)</li>
-        <li><strong>Lazy Loading</strong> im Remote Admin – seitenweise oder alles auf einmal; „↻ Tab neu laden"</li>
-        <li><strong>Sequentielles Laden</strong> (lokal) – kein Queue-Overflow mehr auf Heltec/langsamen Boards</li>
+        <li><strong>Vollständige Node-Konfiguration</strong> + <strong>Fernverwaltung</strong> (inkl. Sicherheits-Reiter, Lazy Loading)</li>
         <li>Bluetooth-PIN direkt ändern; Meshhessen-Schnellkonfiguration</li>
       </ul>
     </div>
@@ -718,8 +719,8 @@
 <main>
 
   <div class="whats-new">
-    <span class="vbadge">v1.5.11</span>
-    <span class="summary">🚀 Big release: Virtual Node TCP proxy, T-Deck map wizard, Remote Admin lazy loading + security tab, sequential config loading (Heltec fix), channel filter sync and more bug fixes.</span>
+    <span class="vbadge">v1.5.13</span>
+    <span class="summary">🚀 New: node tile view (Fancy View), direct RF neighbor lines on the map (gradient by SNR/age), "Request information" like the Android app, advanced node filters – plus aligned protobuf definitions.</span>
     <a href="changelog.html">View changelog →</a>
   </div>
 
@@ -745,6 +746,7 @@
         <li><strong>Online Meshhessen</strong> (lazy download, Germany)</li>
         <li><strong>Online OSM</strong> (worldwide, policy-compliant)</li>
         <li>Node pins, GPS tracks, waypoints</li>
+        <li><strong>Direct neighbor lines</strong> (0-hop RF, gradient by SNR/age)</li>
         <li>HTTP/3, ETag cache, tile.meshhessenclient.de</li>
       </ul>
     </div>
@@ -816,12 +818,12 @@
       <span class="badge-new">NEW</span>
       <h3>🔧 Node Management &amp; Config</h3>
       <ul>
-        <li>Node colors, notes, pin to top, quick filter</li>
+        <li><strong>Tile view (Fancy View)</strong> – responsive tiles instead of a table, own node on top</li>
+        <li><strong>Request information</strong> – pull telemetry/position/metrics on demand (like the Android app)</li>
+        <li>Advanced filters: last seen, hide MQTT, favorites only</li>
+        <li>Node colors, notes, pin to top, per-node station name</li>
         <li><strong>Favorites</strong> – star icon, synced with device via <code>set_favorite_node</code></li>
-        <li><strong>Full node configuration</strong> (device, LoRa, position, network, display, BT, security, MQTT, telemetry, channels)</li>
-        <li><strong>Remote Admin</strong> for favorite nodes: all config tabs incl. security tab (Public Key + Admin Keys, Base64)</li>
-        <li><strong>Lazy loading</strong> in Remote Admin – page-by-page or all at once; "↻ Reload Tab" button</li>
-        <li><strong>Sequential loading</strong> (local) – no more queue overflow on Heltec/slow boards</li>
+        <li><strong>Full node configuration</strong> + <strong>Remote Admin</strong> (incl. security tab, lazy loading)</li>
         <li>Change Bluetooth PIN; Meshhessen quick-config</li>
       </ul>
     </div>

@@ -9,8 +9,8 @@ message Position {
   sfixed32 longitude_i = 2;
   int32 altitude = 3;
   fixed32 time = 4;
-  uint32 ground_speed = 14;   // m/s
-  uint32 ground_track = 15;   // degrees * 100000 (0=North, clockwise)
+  uint32 ground_speed = 15;   // m/s  (field number per official protobufs)
+  uint32 ground_track = 16;   // degrees * 100000 (0=North, clockwise)
 }
 
 message User {
@@ -323,12 +323,18 @@ message MQTTConfig {
   string username = 3;
   string password = 4;
   bool encryption_enabled = 5;
-  bool json_enabled = 6;
+  bool json_enabled = 6;       // deprecated in firmware
   bool tls_enabled = 7;
   string root = 8;
   bool proxy_to_client_enabled = 9;
   bool map_reporting_enabled = 10;
-  uint32 map_report_precision = 11;
+  MapReportSettings map_report_settings = 11;
+}
+
+message MapReportSettings {
+  uint32 publish_interval_secs = 1;
+  uint32 position_precision = 2;
+  bool should_report_location = 3;
 }
 
 message SerialConfig {
@@ -367,23 +373,28 @@ message RangeTestConfig {
 message TelemetryConfig {
   uint32 device_update_interval = 1;
   uint32 environment_update_interval = 2;
-  bool environment_display_fahrenheit = 3;
-  bool environment_measurement_enabled = 4;
-  uint32 air_quality_interval = 5;
-  uint32 power_update_interval = 6;
-  bool power_measurement_enabled = 7;
+  bool environment_measurement_enabled = 3;
+  bool environment_screen_enabled = 4;
+  bool environment_display_fahrenheit = 5;
+  bool air_quality_enabled = 6;
+  uint32 air_quality_interval = 7;
+  bool power_measurement_enabled = 8;
+  uint32 power_update_interval = 9;
+  bool power_screen_enabled = 10;
 }
 
 message CannedMessageConfig {
   bool rotary1_enabled = 1;
-  uint32 inputbroker_pin_press = 2;
-  uint32 inputbroker_event_cw = 3;
-  uint32 inputbroker_event_ccw = 4;
-  uint32 inputbroker_event_press = 5;
-  bool updown1_enabled = 6;
-  bool enabled = 7;
-  string allow_input_source = 8;
-  bool send_bell = 9;
+  uint32 inputbroker_pin_a = 2;
+  uint32 inputbroker_pin_b = 3;
+  uint32 inputbroker_pin_press = 4;
+  uint32 inputbroker_event_cw = 5;
+  uint32 inputbroker_event_ccw = 6;
+  uint32 inputbroker_event_press = 7;
+  bool updown1_enabled = 8;
+  bool enabled = 9;
+  string allow_input_source = 10;
+  bool send_bell = 11;
 }
 
 message AudioConfig {
@@ -576,6 +587,7 @@ enum Priority {
 enum Region {
   UNSET_REGION = 0;
   US = 1;
+  EU_433 = 2;
   EU_868 = 3;
   CN = 4;
   JP = 5;
@@ -586,21 +598,44 @@ enum Region {
   IN = 10;
   NZ_865 = 11;
   TH = 12;
-  UA_868 = 13;
-  MY_919 = 14;
-  SG_923 = 15;
-  LORA_24 = 16;
+  LORA_24 = 13;
+  UA_433 = 14;
+  UA_868 = 15;
+  MY_433 = 16;
+  MY_919 = 17;
+  SG_923 = 18;
+  PH_433 = 19;
+  PH_868 = 20;
+  PH_915 = 21;
+  ANZ_433 = 22;
+  KZ_433 = 23;
+  KZ_863 = 24;
+  NP_865 = 25;
+  BR_902 = 26;
+  ITU1_2M = 27;
+  ITU2_2M = 28;
+  EU_866 = 29;
+  EU_874 = 30;
+  EU_917 = 31;
+  EU_N_868 = 32;
+  ITU3_2M = 33;
 }
 
 enum ModemPreset {
   LONG_FAST = 0;
-  LONG_SLOW = 1;
-  VERY_LONG_SLOW = 2;
+  LONG_SLOW = 1;          // deprecated in firmware
+  VERY_LONG_SLOW = 2;     // deprecated in firmware
   MEDIUM_SLOW = 3;
   MEDIUM_FAST = 4;
   SHORT_SLOW = 5;
   SHORT_FAST = 6;
   LONG_MODERATE = 7;
+  SHORT_TURBO = 8;
+  LONG_TURBO = 9;
+  LITE_FAST = 10;
+  LITE_SLOW = 11;
+  NARROW_FAST = 12;
+  NARROW_SLOW = 13;
 }
 
 enum GpsCoordinateFormat {

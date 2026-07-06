@@ -12,8 +12,8 @@
         ui:WindowHelper.UseModernWindowStyle="True"
         Icon="pack://application:,,,/Resources/app.ico"
         Title="Meshhessen Client"
-        Height="650"
-        Width="1000"
+        Height="700"
+        Width="1240"
         MinHeight="450"
         MinWidth="700">
     <Window.Resources>
@@ -31,6 +31,244 @@
         <Style TargetType="ComboBoxItem">
             <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
         </Style>
+
+        <!-- ── Fancy Node Tile DataTemplate ─────────────────────────────── -->
+        <DataTemplate x:Key="NodeTileTemplate">
+            <Border Width="280" Margin="4,4" CornerRadius="8" BorderThickness="2"
+                    BorderBrush="{Binding TileColor, Converter={StaticResource HexToColorConverter}}"
+                    ContextMenuOpening="TileNode_ContextMenuOpening">
+                <Border.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Header="{DynamicResource StrSendDm}"        Click="SendDmToNode_Click"/>
+                        <MenuItem Header="{DynamicResource StrNodeInfo}"       Click="NodeContextMenu_NodeInfo_Click"/>
+                        <MenuItem Header="{DynamicResource StrShowOnMap}"      Click="NodeContextMenu_ShowOnMap_Click"/>
+                        <Separator/>
+                        <MenuItem Header="{DynamicResource StrSetColor}">
+                            <MenuItem Tag="#00FF00" Click="SetNodeColor_Click"><MenuItem.Header><TextBlock Text="{DynamicResource StrColorGreen}"  Foreground="#00FF00" FontWeight="Bold"/></MenuItem.Header></MenuItem>
+                            <MenuItem Tag="#0080FF" Click="SetNodeColor_Click"><MenuItem.Header><TextBlock Text="{DynamicResource StrColorBlue}"   Foreground="#0080FF" FontWeight="Bold"/></MenuItem.Header></MenuItem>
+                            <MenuItem Tag="#FFFF00" Click="SetNodeColor_Click"><MenuItem.Header><TextBlock Text="{DynamicResource StrColorYellow}" Foreground="#FFFF00" FontWeight="Bold"/></MenuItem.Header></MenuItem>
+                            <MenuItem Tag="#FF8000" Click="SetNodeColor_Click"><MenuItem.Header><TextBlock Text="{DynamicResource StrColorOrange}" Foreground="#FF8000" FontWeight="Bold"/></MenuItem.Header></MenuItem>
+                            <MenuItem Tag="#8000FF" Click="SetNodeColor_Click"><MenuItem.Header><TextBlock Text="{DynamicResource StrColorPurple}" Foreground="#8000FF" FontWeight="Bold"/></MenuItem.Header></MenuItem>
+                            <MenuItem Tag="#804000" Click="SetNodeColor_Click"><MenuItem.Header><TextBlock Text="{DynamicResource StrColorBrown}"  Foreground="#804000" FontWeight="Bold"/></MenuItem.Header></MenuItem>
+                            <MenuItem Tag="#FF00FF" Click="SetNodeColor_Click"><MenuItem.Header><TextBlock Text="{DynamicResource StrColorPink}"   Foreground="#FF00FF" FontWeight="Bold"/></MenuItem.Header></MenuItem>
+                            <MenuItem Tag="#00FFFF" Click="SetNodeColor_Click"><MenuItem.Header><TextBlock Text="{DynamicResource StrColorCyan}"   Foreground="#00FFFF" FontWeight="Bold"/></MenuItem.Header></MenuItem>
+                            <Separator/>
+                            <MenuItem Header="{DynamicResource StrRemoveColor}" Click="RemoveNodeColor_Click"/>
+                        </MenuItem>
+                        <MenuItem Header="{DynamicResource StrEditNote}"       Click="EditNodeNote_Click"/>
+                        <Separator/>
+                        <MenuItem Header="{DynamicResource StrFavorite}"       Click="NodeContextMenu_Favorite_Click"/>
+                        <MenuItem Header="{DynamicResource StrPin}"            Click="NodeContextMenu_Pin_Click"/>
+                        <Separator/>
+                        <MenuItem Header="{DynamicResource StrTraceroute}"     Click="NodeContextMenu_Traceroute_Click"/>
+                        <MenuItem Header="{DynamicResource StrShowPath}"       Click="NodeContextMenu_ShowPath_Click"/>
+                        <MenuItem Header="{DynamicResource StrHidePath}"       Click="NodeContextMenu_HidePath_Click"/>
+                        <Separator/>
+                        <MenuItem Header="{DynamicResource StrRequestInfo}">
+                            <MenuItem Header="{DynamicResource StrReqUserInfo}"      Tag="UserInfo"           Click="RequestInfo_Click"/>
+                            <MenuItem Header="{DynamicResource StrReqPosition}"      Tag="Position"           Click="RequestInfo_Click"/>
+                            <MenuItem Header="{DynamicResource StrReqDeviceMetrics}" Tag="DeviceMetrics"      Click="RequestInfo_Click"/>
+                            <MenuItem Header="{DynamicResource StrReqEnvMetrics}"    Tag="EnvironmentMetrics" Click="RequestInfo_Click"/>
+                            <MenuItem Header="{DynamicResource StrReqAirQuality}"    Tag="AirQualityMetrics"  Click="RequestInfo_Click"/>
+                            <MenuItem Header="{DynamicResource StrReqPowerMetrics}"  Tag="PowerMetrics"       Click="RequestInfo_Click"/>
+                            <MenuItem Header="{DynamicResource StrReqLocalStats}"    Tag="LocalStats"         Click="RequestInfo_Click"/>
+                            <MenuItem Header="{DynamicResource StrReqHostMetrics}"   Tag="HostMetrics"        Click="RequestInfo_Click"/>
+                            <MenuItem Header="{DynamicResource StrReqPax}"           Tag="PaxCounter"         Click="RequestInfo_Click"/>
+                        </MenuItem>
+                        <MenuItem Header="{DynamicResource StrTelemetry}"      Click="NodeContextMenu_Telemetry_Click"/>
+                        <MenuItem Header="{DynamicResource StrRemoteAdmin}"    Click="RemoteAdmin_Click"/>
+                        <MenuItem x:Name="TileTimeSyncMenuItem" Header="{DynamicResource StrTimeSyncNow}" Click="TimeSyncManual_Click"/>
+                    </ContextMenu>
+                </Border.ContextMenu>
+                <Grid>
+                    <!-- Blasser Hintergrund aus Node-Farbe -->
+                    <Rectangle Fill="{Binding TileColor, Converter={StaticResource HexToColorConverter}}"
+                               Opacity="0.10" RadiusX="6" RadiusY="6"/>
+
+                    <StackPanel Margin="10,8,10,8">
+
+                        <!-- ── Zeile 1: Badge + PKI + Name + Icons ──────── -->
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- ShortName-Badge + PKI-Lock -->
+                            <StackPanel Grid.Column="0" Orientation="Horizontal"
+                                        VerticalAlignment="Top" Margin="0,0,8,0">
+                                <Border CornerRadius="5" Padding="5,2"
+                                        Background="{Binding TileColor, Converter={StaticResource HexToColorConverter}}">
+                                    <TextBlock Text="{Binding ShortName}" Foreground="White"
+                                               FontWeight="Bold" FontSize="13"/>
+                                </Border>
+                                <TextBlock Text="{Binding PkiStatusIcon}"
+                                           Foreground="{Binding PkiStatusColor, Converter={StaticResource HexToColorConverter}}"
+                                           Margin="5,0,0,0" VerticalAlignment="Center" FontSize="12"/>
+                            </StackPanel>
+
+                            <!-- Voller Name + Zeit -->
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="12"
+                                           TextTrimming="CharacterEllipsis"/>
+                                <TextBlock Text="{Binding TimeAgoDisplay}" FontSize="10" Foreground="Gray"/>
+                            </StackPanel>
+
+                            <!-- Icons: Favorit, Infrastruktur, MQTT -->
+                            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Top">
+                                <TextBlock Text="⭐" FontSize="14" Cursor="Hand" Margin="2,0,0,0"
+                                           ToolTip="{DynamicResource StrFavoriteColTooltip}"
+                                           MouseLeftButtonUp="TileFavorite_Click">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Opacity" Value="0.25"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsFavorite}" Value="True">
+                                                    <Setter Property="Opacity" Value="1"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                                <TextBlock Text="📡" FontSize="12" Margin="3,0,0,0"
+                                           Visibility="{Binding IsInfrastructure, Converter={StaticResource BoolToVis}}"
+                                           ToolTip="Infrastruktur-Node (Router / Repeater)"/>
+                                <TextBlock Text="☁" FontSize="12" Margin="3,0,0,0"
+                                           Visibility="{Binding IsViaMqtt, Converter={StaticResource BoolToVis}}"
+                                           ToolTip="Via MQTT empfangen"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <Border BorderBrush="#20808080" BorderThickness="0,1,0,0" Margin="0,5,0,4"/>
+
+                        <!-- ── Zeile 2: Strom + Entfernung/Höhe ──────────── -->
+                        <Grid>
+                            <!-- Links: Powered oder Batterie + Spannung -->
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                                <!-- Extern versorgt -->
+                                <TextBlock Text="⚡ " FontSize="10" VerticalAlignment="Center"
+                                           Visibility="{Binding IsPowered, Converter={StaticResource BoolToVis}}"/>
+                                <TextBlock Text="{DynamicResource StrPowered}" FontSize="11"
+                                           Visibility="{Binding IsPowered, Converter={StaticResource BoolToVis}}"/>
+                                <!-- Batterie (nur wenn nicht Powered) -->
+                                <TextBlock Text="🔋 " FontSize="10" VerticalAlignment="Center">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                            <Style.Triggers>
+                                                <MultiDataTrigger>
+                                                    <MultiDataTrigger.Conditions>
+                                                        <Condition Binding="{Binding HasBattery}" Value="True"/>
+                                                        <Condition Binding="{Binding IsPowered}" Value="False"/>
+                                                    </MultiDataTrigger.Conditions>
+                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                </MultiDataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                                <TextBlock Text="{Binding Battery}" FontSize="11">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                            <Style.Triggers>
+                                                <MultiDataTrigger>
+                                                    <MultiDataTrigger.Conditions>
+                                                        <Condition Binding="{Binding HasBattery}" Value="True"/>
+                                                        <Condition Binding="{Binding IsPowered}" Value="False"/>
+                                                    </MultiDataTrigger.Conditions>
+                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                </MultiDataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                                <TextBlock Text=" · " FontSize="11"
+                                           Visibility="{Binding HasVoltage, Converter={StaticResource BoolToVis}}"/>
+                                <TextBlock Text="{Binding BatteryVoltage, StringFormat={}{0:F2} V}" FontSize="11"
+                                           Visibility="{Binding HasVoltage, Converter={StaticResource BoolToVis}}"/>
+                            </StackPanel>
+                            <!-- Rechts: Entfernung + Höhe -->
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                <TextBlock Text="→ " FontSize="11"
+                                           Visibility="{Binding HasDistance, Converter={StaticResource BoolToVis}}"/>
+                                <TextBlock Text="{Binding Distance}" FontSize="11"
+                                           Visibility="{Binding HasDistance, Converter={StaticResource BoolToVis}}"/>
+                                <TextBlock Text="  " FontSize="11"
+                                           Visibility="{Binding HasAltitude, Converter={StaticResource BoolToVis}}"/>
+                                <TextBlock Text="{Binding AltitudeDisplay}" FontSize="11"
+                                           Visibility="{Binding HasAltitude, Converter={StaticResource BoolToVis}}"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- ── Zeile 3: Hops + RSSI + SNR + Qualität ──── -->
+                        <Grid Margin="0,3,0,0"
+                              Visibility="{Binding HasHops, Converter={StaticResource BoolToVis}}">
+                            <!-- Links: Hops -->
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                                <TextBlock Text="↗ " FontSize="10"/>
+                                <TextBlock Text="{Binding HopsToReach}" FontSize="11"/>
+                                <TextBlock Text=" Hop(s)" FontSize="11"/>
+                                <TextBlock Text="  ☁" FontSize="11" Foreground="Gray"
+                                           Visibility="{Binding IsViaMqtt, Converter={StaticResource BoolToVis}}"/>
+                            </StackPanel>
+                            <!-- Rechts: RSSI · SNR · Qualität — nur bei eigenem Empfang (nicht Relay/MQTT) -->
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right"
+                                        Visibility="{Binding ShowLinkQuality, Converter={StaticResource BoolToVis}}">
+                                <TextBlock Text="RSSI: " FontSize="10" Foreground="Gray"
+                                           Visibility="{Binding HasRssi, Converter={StaticResource BoolToVis}}"/>
+                                <TextBlock Text="{Binding Rssi}"
+                                           Foreground="{Binding RssiGradientColor, Converter={StaticResource HexToColorConverter}}"
+                                           FontSize="11" FontWeight="Bold" FontFamily="Consolas"
+                                           Visibility="{Binding HasRssi, Converter={StaticResource BoolToVis}}"/>
+                                <TextBlock Text="  SNR: " FontSize="10" Foreground="Gray"
+                                           Visibility="{Binding HasSnr, Converter={StaticResource BoolToVis}}"/>
+                                <TextBlock Text="{Binding Snr}"
+                                           Foreground="{Binding SnrGradientColor, Converter={StaticResource HexToColorConverter}}"
+                                           FontSize="11" FontWeight="Bold" FontFamily="Consolas"
+                                           Visibility="{Binding HasSnr, Converter={StaticResource BoolToVis}}"/>
+                                <TextBlock FontSize="10" Margin="4,0,0,0"
+                                           Foreground="{Binding SnrGradientColor, Converter={StaticResource HexToColorConverter}}"
+                                           Visibility="{Binding HasSnr, Converter={StaticResource BoolToVis}}"
+                                           Text="{Binding SignalQualityLabel, StringFormat='– {0}'}"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- ── Zeile 4: Telemetrie ───────────────────────── -->
+                        <StackPanel Orientation="Horizontal" Margin="0,3,0,0"
+                                    Visibility="{Binding HasTelemetry, Converter={StaticResource BoolToVis}}">
+                            <TextBlock Text="🌡 " FontSize="10"
+                                       Visibility="{Binding Temperature, Converter={StaticResource IsNotEmptyConverter}}"/>
+                            <TextBlock Text="{Binding Temperature, StringFormat={}{0:F1}°C}" FontSize="11"
+                                       Visibility="{Binding Temperature, Converter={StaticResource IsNotEmptyConverter}}"/>
+                            <TextBlock Text="  💧 " FontSize="10"
+                                       Visibility="{Binding RelativeHumidity, Converter={StaticResource IsNotEmptyConverter}}"/>
+                            <TextBlock Text="{Binding RelativeHumidity, StringFormat={}{0:F0}%}" FontSize="11"
+                                       Visibility="{Binding RelativeHumidity, Converter={StaticResource IsNotEmptyConverter}}"/>
+                            <TextBlock Text="  🌬 " FontSize="10"
+                                       Visibility="{Binding BarometricPressure, Converter={StaticResource IsNotEmptyConverter}}"/>
+                            <TextBlock Text="{Binding BarometricPressure, StringFormat={}{0:F0} hPa}" FontSize="11"
+                                       Visibility="{Binding BarometricPressure, Converter={StaticResource IsNotEmptyConverter}}"/>
+                        </StackPanel>
+
+                        <Border BorderBrush="#20808080" BorderThickness="0,1,0,0" Margin="0,5,0,4"/>
+
+                        <!-- ── Zeile 5: HW-Modell · Rolle · Node-ID ──────── -->
+                        <Grid>
+                            <TextBlock Text="{Binding HardwareModel}" FontSize="10" Foreground="Gray"
+                                       HorizontalAlignment="Left" TextTrimming="CharacterEllipsis" MaxWidth="90"/>
+                            <TextBlock Text="{Binding RoleDisplay}" FontSize="10" Foreground="Gray"
+                                       HorizontalAlignment="Center"/>
+                            <TextBlock Text="{Binding Id}" FontSize="10" Foreground="Gray"
+                                       HorizontalAlignment="Right"/>
+                        </Grid>
+
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </DataTemplate>
+
     </Window.Resources>
 
     <Grid>
@@ -374,6 +612,7 @@
                     <ListView x:Name="MessageListView"
                              Grid.Row="1"
                              Margin="4,5,4,10"
+                             Padding="0,0,14,0"
                              ContextMenuOpening="MessagesListView_ContextMenuOpening"
                              ScrollViewer.ScrollChanged="MessageListView_ScrollChanged"
                              ScrollViewer.HorizontalScrollBarVisibility="Disabled"
@@ -612,6 +851,35 @@
                                                                 </Style>
                                                             </TextBlock.Style>
                                                         </TextBlock>
+                                                        <!-- RSSI/SNR: nur bei Direktempfang (0 Hops, kein MQTT) -->
+                                                        <TextBlock Text="{Binding RssiDisplay}"
+                                                                   FontSize="10" FontWeight="SemiBold"
+                                                                   Foreground="{Binding RssiColorHex, Converter={StaticResource HexToColorConverter}}"
+                                                                   VerticalAlignment="Center" Margin="0,0,6,0">
+                                                            <TextBlock.Style>
+                                                                <Style TargetType="TextBlock">
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding RssiDisplay}" Value="">
+                                                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </TextBlock.Style>
+                                                        </TextBlock>
+                                                        <TextBlock Text="{Binding SnrDisplay}"
+                                                                   FontSize="10" FontWeight="SemiBold"
+                                                                   Foreground="{Binding SnrColorHex, Converter={StaticResource HexToColorConverter}}"
+                                                                   VerticalAlignment="Center" Margin="0,0,6,0">
+                                                            <TextBlock.Style>
+                                                                <Style TargetType="TextBlock">
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding SnrDisplay}" Value="">
+                                                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </TextBlock.Style>
+                                                        </TextBlock>
                                                         <TextBlock Text="{Binding Time}"
                                                                    FontSize="10" Foreground="{DynamicResource MsgSubtleFg}"
                                                                    VerticalAlignment="Center" Margin="0,0,6,0"/>
@@ -786,20 +1054,172 @@
                 <Grid Margin="10">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
                     <!-- Quick Filter -->
                     <TextBox x:Name="NodeFilterTextBox"
                              Grid.Row="0"
-                             Margin="0,0,0,6"
+                             Margin="0,0,0,4"
                              TextChanged="NodeFilterTextBox_TextChanged"
                              Tag="🔍 Filter nach Name, ID, SNR, Batterie..."/>
 
-                    <ListView x:Name="NodesListView" Grid.Row="1"
+                    <!-- Advanced Filters -->
+                    <WrapPanel Grid.Row="1" Margin="0,0,0,6" VerticalAlignment="Center">
+                        <!-- Sort (nur Kachelmodus) -->
+                        <StackPanel x:Name="TileSortPanel" Orientation="Horizontal"
+                                    VerticalAlignment="Center" Margin="0,0,12,0" Visibility="Collapsed">
+                            <TextBlock Text="↕" FontSize="11" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                            <ComboBox x:Name="TileSortComboBox" Width="140" FontSize="11"
+                                      SelectionChanged="TileSort_Changed">
+                                <ComboBoxItem Tag="Name_asc"      IsSelected="True" Content="{DynamicResource StrTileSortNameAsc}"/>
+                                <ComboBoxItem Tag="Name_desc"     Content="{DynamicResource StrTileSortNameDesc}"/>
+                                <ComboBoxItem Tag="Snr_desc"      Content="{DynamicResource StrTileSortSnrDesc}"/>
+                                <ComboBoxItem Tag="Snr_asc"       Content="{DynamicResource StrTileSortSnrAsc}"/>
+                                <ComboBoxItem Tag="Distance_asc"  Content="{DynamicResource StrTileSortDistance}"/>
+                                <ComboBoxItem Tag="Battery_desc"  Content="{DynamicResource StrTileSortBattery}"/>
+                                <ComboBoxItem Tag="LastSeen_desc" Content="{DynamicResource StrTileSortLastSeen}"/>
+                            </ComboBox>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
+                            <TextBlock Text="{DynamicResource StrNodeFilterLastSeen}"
+                                       FontSize="11" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                            <ComboBox x:Name="NodeLastSeenFilterComboBox" Width="80" FontSize="11"
+                                      SelectionChanged="NodeAdvancedFilter_Changed">
+                                <ComboBoxItem Tag="0" IsSelected="True">—</ComboBoxItem>
+                                <ComboBoxItem Tag="5">5 Min</ComboBoxItem>
+                                <ComboBoxItem Tag="15">15 Min</ComboBoxItem>
+                                <ComboBoxItem Tag="30">30 Min</ComboBoxItem>
+                                <ComboBoxItem Tag="60">1 Std</ComboBoxItem>
+                                <ComboBoxItem Tag="360">6 Std</ComboBoxItem>
+                                <ComboBoxItem Tag="1440">24 Std</ComboBoxItem>
+                                <ComboBoxItem Tag="10080">7 Tage</ComboBoxItem>
+                                <ComboBoxItem Tag="20160">14 Tage</ComboBoxItem>
+                                <ComboBoxItem Tag="30240">21 Tage</ComboBoxItem>
+                                <ComboBoxItem Tag="43200">30 Tage</ComboBoxItem>
+                                <ComboBoxItem Tag="86400">60 Tage</ComboBoxItem>
+                            </ComboBox>
+                        </StackPanel>
+                        <CheckBox x:Name="HideMqttNodesCheckBox"
+                                  Content="{DynamicResource StrNodeFilterHideMqtt}"
+                                  FontSize="11" VerticalAlignment="Center"
+                                  Margin="0,0,10,0"
+                                  Checked="NodeAdvancedFilter_Changed"
+                                  Unchecked="NodeAdvancedFilter_Changed"/>
+                        <CheckBox x:Name="OnlyFavoritesFilterCheckBox"
+                                  Content="{DynamicResource StrNodeFilterOnlyFavorites}"
+                                  FontSize="11" VerticalAlignment="Center"
+                                  Margin="0,0,10,0"
+                                  Checked="NodeAdvancedFilter_Changed"
+                                  Unchecked="NodeAdvancedFilter_Changed"/>
+                        <CheckBox x:Name="SnrColorCheckBox"
+                                  Content="{DynamicResource StrNodeFilterSnrColor}"
+                                  ToolTip="{DynamicResource StrNodeFilterSnrColorTooltip}"
+                                  FontSize="11" VerticalAlignment="Center"
+                                  IsChecked="True"
+                                  Checked="SnrColor_Changed"
+                                  Unchecked="SnrColor_Changed"/>
+                    </WrapPanel>
+
+                    <!-- Kachel-Ansicht (Fancy View) — Zeilen-basiert für VirtualizingStackPanel -->
+                    <Grid x:Name="TileViewGrid" Grid.Row="2" Visibility="Collapsed"
+                          SizeChanged="TileViewGrid_SizeChanged">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- ListView mit VirtualizingStackPanel — rendert nur sichtbare Zeilen -->
+                        <ListView x:Name="NodeTileView" Grid.Row="0"
+                                  ScrollViewer.CanContentScroll="True"
+                                  VirtualizingPanel.IsVirtualizing="True"
+                                  VirtualizingPanel.VirtualizationMode="Recycling"
+                                  VirtualizingPanel.ScrollUnit="Pixel"
+                                  BorderThickness="0">
+                            <ListView.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <VirtualizingStackPanel/>
+                                </ItemsPanelTemplate>
+                            </ListView.ItemsPanel>
+                            <ListView.ItemContainerStyle>
+                                <Style TargetType="ListViewItem">
+                                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                    <Setter Property="Padding" Value="0"/>
+                                    <Setter Property="Margin" Value="0"/>
+                                    <Setter Property="BorderThickness" Value="0"/>
+                                    <Setter Property="Background" Value="Transparent"/>
+                                    <!-- Minimal template: no hover/selection highlight on tile rows -->
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="ListViewItem">
+                                                <ContentPresenter HorizontalAlignment="Stretch"/>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </ListView.ItemContainerStyle>
+                            <!-- Jedes Item = eine Zeile (List<NodeInfo>) -->
+                            <ListView.ItemTemplate>
+                                <DataTemplate>
+                                    <ItemsControl ItemsSource="{Binding}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <StackPanel Orientation="Horizontal"/>
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <ContentPresenter
+                                                    ContentTemplate="{StaticResource NodeTileTemplate}"
+                                                    Content="{Binding}"/>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                        </ListView>
+
+                        <TextBlock x:Name="TileNodeCountText" Grid.Row="1"
+                                   FontSize="10" Foreground="Gray" Margin="4,2,0,0"/>
+                    </Grid>
+
+                    <ListView x:Name="NodesListView" Grid.Row="2"
+                              AlternationCount="2"
                               ContextMenuOpening="NodesListView_ContextMenuOpening">
+
+                        <ListView.ItemContainerStyle>
+                            <Style TargetType="ListViewItem">
+                                <Setter Property="MinHeight" Value="42"/>
+                                <Setter Property="BorderThickness" Value="0"/>
+                                <Setter Property="Padding" Value="0,2"/>
+                                <Style.Triggers>
+                                    <!-- Ungerade Zeilen: dezentes Grau -->
+                                    <Trigger Property="ItemsControl.AlternationIndex" Value="1">
+                                        <Setter Property="Background" Value="#14808080"/>
+                                    </Trigger>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Background" Value="#1A58a6ff"/>
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ListView.ItemContainerStyle>
+
                         <ListView.View>
                             <GridView x:Name="NodesGridView">
+
+                                <!-- Farbiger Akzentstreifen (Node-Farbe) -->
+                                <GridViewColumn Width="8">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Rectangle Width="4" MinHeight="38" HorizontalAlignment="Left"
+                                                       Fill="{Binding AvatarColor, Converter={StaticResource HexToColorConverter}}"
+                                                       Margin="-6,-3,2,-3"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+
+                                <!-- Favorit-Stern -->
                                 <GridViewColumn Width="24">
                                     <GridViewColumn.Header>
                                         <GridViewColumnHeader Content="★" ToolTip="{DynamicResource StrFavoriteColTooltip}"/>
@@ -822,29 +1242,36 @@
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
-                                <GridViewColumn Width="30">
-                                    <GridViewColumn.Header>
-                                        <GridViewColumnHeader Content="🎨"/>
-                                    </GridViewColumn.Header>
-                                    <GridViewColumn.CellTemplate>
-                                        <DataTemplate>
-                                            <Border Width="16" Height="16"
-                                                    BorderBrush="Gray"
-                                                    BorderThickness="1"
-                                                    Background="{Binding ColorHex, Converter={StaticResource HexToColorConverter}}"
-                                                    Visibility="{Binding ColorHex, Converter={StaticResource IsNotEmptyConverter}}"/>
-                                        </DataTemplate>
-                                    </GridViewColumn.CellTemplate>
-                                </GridViewColumn>
-                                <GridViewColumn Width="150">
+
+                                <!-- Avatar + Name -->
+                                <GridViewColumn Width="200">
                                     <GridViewColumn.Header>
                                         <GridViewColumnHeader Content="Name" Click="NodeColumnHeader_Click" Tag="Name"/>
                                     </GridViewColumn.Header>
-                                    <GridViewColumn.DisplayMemberBinding>
-                                        <Binding Path="Name"/>
-                                    </GridViewColumn.DisplayMemberBinding>
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                <Border Width="28" Height="28" CornerRadius="14"
+                                                        Background="{Binding AvatarColor, Converter={StaticResource HexToColorConverter}}"
+                                                        Margin="0,0,7,0">
+                                                    <TextBlock Text="{Binding AvatarLabel}"
+                                                               HorizontalAlignment="Center"
+                                                               VerticalAlignment="Center"
+                                                               FontSize="9" FontWeight="Bold"
+                                                               Foreground="White"/>
+                                                </Border>
+                                                <TextBlock Text="{Binding Name}"
+                                                           VerticalAlignment="Center"
+                                                           FontWeight="SemiBold"
+                                                           TextTrimming="CharacterEllipsis"
+                                                           MaxWidth="155"/>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
-                                <GridViewColumn Width="80">
+
+                                <!-- ShortName (Sortierung erhalten) -->
+                                <GridViewColumn Width="70">
                                     <GridViewColumn.Header>
                                         <GridViewColumnHeader Content="{DynamicResource StrColShort}" Click="NodeColumnHeader_Click" Tag="ShortName"/>
                                     </GridViewColumn.Header>
@@ -852,7 +1279,9 @@
                                         <Binding Path="ShortName"/>
                                     </GridViewColumn.DisplayMemberBinding>
                                 </GridViewColumn>
-                                <GridViewColumn Width="120">
+
+                                <!-- ID -->
+                                <GridViewColumn Width="110">
                                     <GridViewColumn.Header>
                                         <GridViewColumnHeader Content="ID" Click="NodeColumnHeader_Click" Tag="Id"/>
                                     </GridViewColumn.Header>
@@ -860,7 +1289,9 @@
                                         <Binding Path="Id"/>
                                     </GridViewColumn.DisplayMemberBinding>
                                 </GridViewColumn>
-                                <GridViewColumn Width="100">
+
+                                <!-- Entfernung -->
+                                <GridViewColumn Width="90">
                                     <GridViewColumn.Header>
                                         <GridViewColumnHeader Content="{DynamicResource StrColDistance}" Click="NodeColumnHeader_Click" Tag="Distance"/>
                                     </GridViewColumn.Header>
@@ -868,23 +1299,29 @@
                                         <Binding Path="Distance"/>
                                     </GridViewColumn.DisplayMemberBinding>
                                 </GridViewColumn>
-                                <GridViewColumn Width="80">
+
+                                <!-- SNR (HF-Wert, oder letzter HF-SNR / MQTT) -->
+                                <GridViewColumn Width="105">
                                     <GridViewColumn.Header>
                                         <GridViewColumnHeader Content="SNR" Click="NodeColumnHeader_Click" Tag="Snr"/>
                                     </GridViewColumn.Header>
                                     <GridViewColumn.DisplayMemberBinding>
-                                        <Binding Path="Snr"/>
+                                        <Binding Path="SnrDisplay"/>
                                     </GridViewColumn.DisplayMemberBinding>
                                 </GridViewColumn>
-                                <GridViewColumn Width="80">
+
+                                <!-- RSSI (nur bei 0-Hop direkt) -->
+                                <GridViewColumn Width="72">
                                     <GridViewColumn.Header>
                                         <GridViewColumnHeader Content="RSSI" Click="NodeColumnHeader_Click" Tag="Rssi"/>
                                     </GridViewColumn.Header>
                                     <GridViewColumn.DisplayMemberBinding>
-                                        <Binding Path="Rssi"/>
+                                        <Binding Path="RssiDisplay"/>
                                     </GridViewColumn.DisplayMemberBinding>
                                 </GridViewColumn>
-                                <GridViewColumn Width="80">
+
+                                <!-- Batterie -->
+                                <GridViewColumn Width="72">
                                     <GridViewColumn.Header>
                                         <GridViewColumnHeader Content="{DynamicResource StrColBattery}" Click="NodeColumnHeader_Click" Tag="Battery"/>
                                     </GridViewColumn.Header>
@@ -892,19 +1329,32 @@
                                         <Binding Path="Battery"/>
                                     </GridViewColumn.DisplayMemberBinding>
                                 </GridViewColumn>
-                                <GridViewColumn Width="150">
+
+                                <!-- Zuletzt gesehen + Status-Punkt -->
+                                <GridViewColumn Width="140">
                                     <GridViewColumn.Header>
                                         <GridViewColumnHeader Content="{DynamicResource StrColLastSeen}" Click="NodeColumnHeader_Click" Tag="LastSeen"/>
                                     </GridViewColumn.Header>
-                                    <GridViewColumn.DisplayMemberBinding>
-                                        <Binding Path="LastSeen"/>
-                                    </GridViewColumn.DisplayMemberBinding>
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                <Ellipse Width="8" Height="8" Margin="0,0,5,0"
+                                                         VerticalAlignment="Center"
+                                                         Fill="{Binding LastSeenStatusColor, Converter={StaticResource HexToColorConverter}}"/>
+                                                <TextBlock Text="{Binding LastSeen}" VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
-                                <GridViewColumn Width="35" DisplayMemberBinding="{Binding PkiKeyIcon}">
+
+                                <!-- PKI-Schlüssel -->
+                                <GridViewColumn Width="48" DisplayMemberBinding="{Binding PkiKeyIcon}">
                                     <GridViewColumn.Header>
                                         <GridViewColumnHeader Content="🔑" ToolTip="PKI Public Key bekannt"/>
                                     </GridViewColumn.Header>
                                 </GridViewColumn>
+
+                                <!-- Signal-Indikatoren (●●●) -->
                                 <GridViewColumn Width="56">
                                     <GridViewColumn.Header>
                                         <GridViewColumnHeader ToolTip="Signal-Indikatoren: SNR-Qualität | SNR-Trend | Batterie&#xa;Grün=gut, Gelb=mittel, Rot=schlecht, Grau/leer=keine Daten"/>
@@ -929,6 +1379,7 @@
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
+
                             </GridView>
                         </ListView.View>
                         <ListView.ContextMenu>
@@ -989,6 +1440,19 @@
                                 <MenuItem x:Name="HidePathMenuItem" Header="{DynamicResource StrHidePath}" Click="NodeContextMenu_HidePath_Click" Visibility="Collapsed"/>
                                 <MenuItem Header="{DynamicResource StrTraceroute}" Click="NodeContextMenu_Traceroute_Click"/>
                                 <MenuItem Header="{DynamicResource StrTelemetry}" Click="NodeContextMenu_Telemetry_Click"/>
+                                <Separator/>
+                                <MenuItem Header="{DynamicResource StrRequestInfo}">
+                                    <MenuItem Header="{DynamicResource StrReqUserInfo}"      Tag="UserInfo"           Click="RequestInfo_Click"/>
+                                    <MenuItem Header="{DynamicResource StrReqPosition}"      Tag="Position"           Click="RequestInfo_Click"/>
+                                    <MenuItem Header="{DynamicResource StrReqDeviceMetrics}" Tag="DeviceMetrics"      Click="RequestInfo_Click"/>
+                                    <MenuItem Header="{DynamicResource StrReqEnvMetrics}"    Tag="EnvironmentMetrics" Click="RequestInfo_Click"/>
+                                    <MenuItem Header="{DynamicResource StrReqAirQuality}"    Tag="AirQualityMetrics"  Click="RequestInfo_Click"/>
+                                    <MenuItem Header="{DynamicResource StrReqPowerMetrics}"  Tag="PowerMetrics"       Click="RequestInfo_Click"/>
+                                    <MenuItem Header="{DynamicResource StrReqLocalStats}"    Tag="LocalStats"         Click="RequestInfo_Click"/>
+                                    <MenuItem Header="{DynamicResource StrReqHostMetrics}"   Tag="HostMetrics"        Click="RequestInfo_Click"/>
+                                    <MenuItem Header="{DynamicResource StrReqPax}"           Tag="PaxCounter"         Click="RequestInfo_Click"/>
+                                </MenuItem>
+                                <MenuItem x:Name="TimeSyncNodeMenuItem" Header="{DynamicResource StrTimeSyncNow}" Click="TimeSyncManual_Click" Visibility="Collapsed"/>
                             </ContextMenu>
                         </ListView.ContextMenu>
                     </ListView>
@@ -1015,7 +1479,7 @@
                                 <GridViewColumn Header="Name" Width="150" DisplayMemberBinding="{Binding Name}"/>
                                 <GridViewColumn Header="PSK" Width="300" DisplayMemberBinding="{Binding Psk}"/>
                                 <GridViewColumn Header="Role" Width="100" DisplayMemberBinding="{Binding Role}"/>
-                                <GridViewColumn Header="{DynamicResource StrMsgDbClearSelectedChannel}" Width="120">
+                                <GridViewColumn Header="{DynamicResource StrMsgDbClearSelectedChannel}" Width="170">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate>
                                             <Button Content="{DynamicResource StrMsgDbClearBtn}"
@@ -1053,14 +1517,23 @@
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
                         <StackPanel Grid.Column="0" Orientation="Horizontal">
+                            <!-- Zoom -->
                             <Button Content="+" Width="32" Height="32" Margin="0,0,4,0"
                                     Click="MapZoomIn_Click" ToolTip="Zoom In"/>
-                            <Button Content="-" Width="32" Height="32" Margin="0,0,10,0"
+                            <Button Content="-" Width="32" Height="32" Margin="0,0,8,0"
                                     Click="MapZoomOut_Click" ToolTip="Zoom Out"/>
-                            <Button Content="{DynamicResource StrLoadTraceroute}" Height="28" Margin="0,0,6,0"
+
+                            <Border Width="1" Background="#40808080" Margin="4,3,14,3"/>
+
+                            <!-- Traceroutes von Festplatte laden -->
+                            <Button Content="{DynamicResource StrLoadTraceroute}" Height="28" Margin="0,0,0,0"
                                     Padding="8,2"
                                     Click="MapLoadTraceroute_Click"
                                     ToolTip="{DynamicResource StrLoadTracerouteTooltip}"/>
+
+                            <Border Width="1" Background="#40808080" Margin="14,3,14,3"/>
+
+                            <!-- Traceroutes aus DB laden (mit Zeiteinstellung) -->
                             <ComboBox x:Name="TracerouteAgeFilterCombo" Height="28" Width="70"
                                       Margin="0,0,4,0" ToolTip="{DynamicResource StrTracerouteDbTimeTooltip}">
                                 <ComboBoxItem Content="3d"  Tag="3"   />
@@ -1074,10 +1547,14 @@
                                     Click="MapLoadTracerouteFromDb_Click"
                                     ToolTip="{DynamicResource StrLoadFromDbTooltip}"/>
                             <CheckBox x:Name="TracerouteDedupeCheckBox" VerticalAlignment="Center"
-                                      IsChecked="True" Margin="0,0,6,0"
+                                      IsChecked="True" Margin="0,0,0,0"
                                       ToolTip="{DynamicResource StrDedupeTooltip}">
                                 <TextBlock Text="Dedupe" FontSize="11"/>
                             </CheckBox>
+
+                            <Border Width="1" Background="#40808080" Margin="14,3,14,3"/>
+
+                            <!-- Alle Traceroutes löschen -->
                             <Button Content="{DynamicResource StrRemoveAllTraceroutes}" Height="28" Padding="8,2" Margin="0,0,0,0"
                                     Click="ClearAllTraceroutes_Click"
                                     ToolTip="{DynamicResource StrRemoveAllTooltip}"/>
@@ -1137,6 +1614,70 @@
                             <!-- SNR click hint -->
                             <TextBlock Text="{DynamicResource StrLegendSnrHint}" Foreground="#AAAAAA" FontSize="9"
                                        Margin="0,4,0,0" TextWrapping="Wrap" MaxWidth="160"/>
+
+                            <!-- Separator -->
+                            <Border BorderBrush="#44FFFFFF" BorderThickness="0,1,0,0" Margin="0,6,0,4"/>
+
+                            <!-- Nachbar-Linien Toggle -->
+                            <CheckBox x:Name="NeighborLinesCheckBox"
+                                      Checked="NeighborLines_Changed"
+                                      Unchecked="NeighborLines_Changed">
+                                <TextBlock Text="{DynamicResource StrNeighborLines}" Foreground="White" FontSize="11"/>
+                            </CheckBox>
+
+                            <!-- Optionen (nur wenn aktiviert) -->
+                            <StackPanel x:Name="NeighborLinesOptions" Visibility="Collapsed" Margin="0,4,0,0">
+                                <!-- Dauerhaft anzeigen -->
+                                <CheckBox x:Name="NeighborPermanentCheckBox"
+                                          Margin="0,0,0,4"
+                                          Checked="NeighborPermanent_Changed"
+                                          Unchecked="NeighborPermanent_Changed">
+                                    <TextBlock Text="{DynamicResource StrNeighborPermanent}" Foreground="White" FontSize="11"/>
+                                </CheckBox>
+                                <!-- Farb-Modus -->
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                    <RadioButton x:Name="NeighborColorSnrRadio" GroupName="NeighborColor"
+                                                 IsChecked="True" Checked="NeighborColorMode_Changed">
+                                        <TextBlock Text="{DynamicResource StrNeighborColorSnr}" Foreground="White" FontSize="11"/>
+                                    </RadioButton>
+                                    <RadioButton x:Name="NeighborColorAgeRadio" GroupName="NeighborColor"
+                                                 Margin="8,0,0,0" Checked="NeighborColorMode_Changed">
+                                        <TextBlock Text="{DynamicResource StrNeighborColorAge}" Foreground="White" FontSize="11"/>
+                                    </RadioButton>
+                                </StackPanel>
+                                <!-- SNR-Legende (Gradient) -->
+                                <StackPanel x:Name="NeighborSnrLegendPanel" Margin="0,4,0,0">
+                                    <Rectangle Width="130" Height="5" VerticalAlignment="Center">
+                                        <Rectangle.Fill>
+                                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                                <GradientStop Color="#F44336" Offset="0"/>
+                                                <GradientStop Color="#FFC107" Offset="0.5"/>
+                                                <GradientStop Color="#4CAF50" Offset="1"/>
+                                            </LinearGradientBrush>
+                                        </Rectangle.Fill>
+                                    </Rectangle>
+                                    <Grid Margin="0,2,0,0" Width="130">
+                                        <TextBlock Text="−20 dB" Foreground="#AAAAAA" FontSize="9" HorizontalAlignment="Left"/>
+                                        <TextBlock Text="0" Foreground="#AAAAAA" FontSize="9" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="+10 dB" Foreground="#AAAAAA" FontSize="9" HorizontalAlignment="Right"/>
+                                    </Grid>
+                                </StackPanel>
+                                <!-- Alters-Legende (Gradient) -->
+                                <StackPanel x:Name="NeighborAgeLegendPanel" Visibility="Collapsed" Margin="0,4,0,0">
+                                    <Rectangle Width="130" Height="5" VerticalAlignment="Center">
+                                        <Rectangle.Fill>
+                                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                                <GradientStop Color="#00E5FF" Offset="0"/>
+                                                <GradientStop Color="#5E35B1" Offset="1"/>
+                                            </LinearGradientBrush>
+                                        </Rectangle.Fill>
+                                    </Rectangle>
+                                    <Grid Margin="0,2,0,0" Width="130">
+                                        <TextBlock Text="jetzt" Foreground="#AAAAAA" FontSize="9" HorizontalAlignment="Left"/>
+                                        <TextBlock Text="24 h" Foreground="#AAAAAA" FontSize="9" HorizontalAlignment="Right"/>
+                                    </Grid>
+                                </StackPanel>
+                            </StackPanel>
                         </StackPanel>
                     </Border>
 
@@ -1200,7 +1741,15 @@
                                              Content="{DynamicResource StrDarkMode}"
                                              IsChecked="False"
                                              Checked="DarkMode_Changed"
-                                             Unchecked="DarkMode_Changed"/>
+                                             Unchecked="DarkMode_Changed"
+                                             Margin="0,0,0,6"/>
+                                    <CheckBox x:Name="FancyNodeListCheckBox"
+                                              Content="{DynamicResource StrFancyNodeListEnable}"
+                                              Checked="FancyNodeList_Changed"
+                                              Unchecked="FancyNodeList_Changed"/>
+                                    <TextBlock Text="{DynamicResource StrFancyNodeListEnableHint}"
+                                              FontStyle="Italic" Foreground="Gray" FontSize="11"
+                                              TextWrapping="Wrap" Margin="0,4,0,0"/>
                                 </StackPanel>
                             </GroupBox>
 
