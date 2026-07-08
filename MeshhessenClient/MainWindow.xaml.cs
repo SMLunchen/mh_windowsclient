@@ -53,6 +53,7 @@ public partial class MainWindow : Window
     private DirectMessagesWindow? _dmWindow = null;
     private uint _myNodeId = 0;
     private string _activeStationName = string.Empty;
+    private bool _kioskLocked = false;   // kiosk/training mode: true = features hidden
     private string? _nodeSortColumn = null;
 
     // Fancy tile view
@@ -128,7 +129,10 @@ public partial class MainWindow : Window
         false,         // VirtualNodeBlockAdmin
         new Dictionary<uint, string>(), // NodeStationNames
         false,         // FancyNodeList
-        true);         // FancyNodeListColorful
+        true,          // FancyNodeListColorful
+        false,         // KioskModeEnabled
+        string.Empty,  // KioskPasswordHash
+        string.Empty); // KioskLockedFeatures
     private NodeInfo? _mapContextMenuNode;
     private uint? _alertNodeId;  // Stores the node ID for "Show on Map" button
 
@@ -449,6 +453,15 @@ public partial class MainWindow : Window
             if (FancyNodeListCheckBox != null)         FancyNodeListCheckBox.IsChecked         = settings.FancyNodeList;
             Models.NodeInfo.FancyColorful = settings.FancyNodeListColorful;
             ApplyFancyNodeListSetting(settings.FancyNodeList);
+
+            // Kiosk / Training mode
+            if (KioskEnableCheckBox != null) KioskEnableCheckBox.IsChecked = settings.KioskModeEnabled;
+            ApplyKioskCheckboxes(settings.KioskLockedFeatures);
+            // Kiosk stations always start locked (survives restart)
+            if (settings.KioskModeEnabled && !string.IsNullOrEmpty(settings.KioskPasswordHash))
+                ApplyKioskLock(true);
+            else
+                UpdateKioskLockButton();
 
             // Virtual Node
             if (VirtualNodeEnableCheckBox != null) VirtualNodeEnableCheckBox.IsChecked = settings.VirtualNodeEnabled;
@@ -2151,7 +2164,10 @@ public partial class MainWindow : Window
                 VirtualNodeBlockAdmin: VirtualNodeBlockAdminCheckBox?.IsChecked == true,
                 NodeStationNames: _currentSettings.NodeStationNames,
                 FancyNodeList: FancyNodeListCheckBox?.IsChecked == true,
-                FancyNodeListColorful: Models.NodeInfo.FancyColorful
+                FancyNodeListColorful: Models.NodeInfo.FancyColorful,
+                KioskModeEnabled: KioskEnableCheckBox?.IsChecked == true,
+                KioskPasswordHash: _currentSettings.KioskPasswordHash,  // only changed via "Set password" button
+                KioskLockedFeatures: CollectKioskLockedFeatures()
             );
             _currentSettings = settings;
             SettingsService.Save(settings);
@@ -2183,6 +2199,7 @@ public partial class MainWindow : Window
             _protocolService.SetDebugSerial(settings.DebugSerial);
             _protocolService.SetDebugDevice(settings.DebugDevice);
             BluetoothConnectionService.SetDebugEnabled(settings.DebugBluetooth);
+            UpdateKioskLockButton();
             MessageBox.Show(Loc("StrSettingsSaved"), Loc("StrSettingsSavedTitle"), MessageBoxButton.OK, MessageBoxImage.Information);
         }
         catch (Exception ex)
@@ -2823,7 +2840,8 @@ public partial class MainWindow : Window
         _virtualNodeService = new Services.VirtualNodeService(_connectionService!)
         {
             Port = _currentSettings.VirtualNodePort,
-            BlockAdminCommands = _currentSettings.VirtualNodeBlockAdmin
+            // Kiosk lock enforces admin blocking regardless of the VNode setting
+            BlockAdminCommands = _currentSettings.VirtualNodeBlockAdmin || _kioskLocked
         };
         _virtualNodeService.ClientCountChanged += (_, _) => Dispatcher.BeginInvoke(RefreshVirtualNodeStatus);
         _virtualNodeService.LogMessage += (_, msg) => Services.Logger.WriteLine($"[VN] {msg}");
@@ -3140,6 +3158,8 @@ public partial class MainWindow : Window
                     item.Header = n.IsFavorite ? Loc("StrUnfavorite") : Loc("StrFavorite");
                 else if (h == Loc("StrPin") || h == Loc("StrUnpin"))
                     item.Header = n.IsPinned ? Loc("StrUnpin") : Loc("StrPin");
+                else if (h == Loc("StrRemoteAdmin"))
+                    item.Visibility = IsKioskFeatureLocked("RemoteAdmin") ? Visibility.Collapsed : Visibility.Visible;
             }
         }
     }
@@ -3208,6 +3228,193 @@ public partial class MainWindow : Window
         _nodeFilterHideMqtt      = HideMqttNodesCheckBox.IsChecked == true;
         _nodeFilterOnlyFavorites = OnlyFavoritesFilterCheckBox.IsChecked == true;
         ApplyNodeSortAndFilterCore();
+    }
+
+    // ── Kiosk / Training mode ─────────────────────────────────────────────────
+    // Accident protection for shared stations, not a security boundary:
+    // anyone who can edit meshhessen-client.ini can disable it (documented).
+
+    private static string KioskHashPassword(string password)
+    {
+        byte[] salt = System.Security.Cryptography.RandomNumberGenerator.GetBytes(16);
+        byte[] hash = System.Security.Cryptography.Rfc2898DeriveBytes.Pbkdf2(
+            password, salt, 100_000, System.Security.Cryptography.HashAlgorithmName.SHA256, 32);
+        return $"{Convert.ToBase64String(salt)}:{Convert.ToBase64String(hash)}";
+    }
+
+    private static bool KioskVerifyPassword(string password, string stored)
+    {
+        try
+        {
+            var parts = stored.Split(':');
+            if (parts.Length != 2) return false;
+            byte[] salt     = Convert.FromBase64String(parts[0]);
+            byte[] expected = Convert.FromBase64String(parts[1]);
+            byte[] actual   = System.Security.Cryptography.Rfc2898DeriveBytes.Pbkdf2(
+                password, salt, 100_000, System.Security.Cryptography.HashAlgorithmName.SHA256, 32);
+            return System.Security.Cryptography.CryptographicOperations.FixedTimeEquals(expected, actual);
+        }
+        catch { return false; }
+    }
+
+    private string CollectKioskLockedFeatures()
+    {
+        var f = new List<string>();
+        if (KioskLockTabNodesCheckBox?.IsChecked == true)    f.Add("TabNodes");
+        if (KioskLockTabChannelsCheckBox?.IsChecked == true) f.Add("TabChannels");
+        if (KioskLockTabSettingsCheckBox?.IsChecked == true) f.Add("TabSettings");
+        if (KioskLockTabInfoCheckBox?.IsChecked == true)     f.Add("TabInfo");
+        if (KioskLockTabToolsCheckBox?.IsChecked == true)    f.Add("TabTools");
+        if (KioskLockTabDebugCheckBox?.IsChecked == true)    f.Add("TabDebug");
+        if (KioskLockNodeConfigCheckBox?.IsChecked == true)  f.Add("NodeConfig");
+        if (KioskLockRemoteAdminCheckBox?.IsChecked == true) f.Add("RemoteAdmin");
+        if (KioskLockDashboardCheckBox?.IsChecked == true)   f.Add("Dashboard");
+        if (KioskLockSosCheckBox?.IsChecked == true)         f.Add("Sos");
+        if (KioskLockMeshHessenCheckBox?.IsChecked == true)  f.Add("MeshHessen");
+        return string.Join(",", f);
+    }
+
+    private void ApplyKioskCheckboxes(string csv)
+    {
+        var set = new HashSet<string>(csv.Split(',', StringSplitOptions.RemoveEmptyEntries));
+        if (KioskLockTabNodesCheckBox    != null) KioskLockTabNodesCheckBox.IsChecked    = set.Contains("TabNodes");
+        if (KioskLockTabChannelsCheckBox != null) KioskLockTabChannelsCheckBox.IsChecked = set.Contains("TabChannels");
+        if (KioskLockTabSettingsCheckBox != null) KioskLockTabSettingsCheckBox.IsChecked = set.Contains("TabSettings");
+        if (KioskLockTabInfoCheckBox     != null) KioskLockTabInfoCheckBox.IsChecked     = set.Contains("TabInfo");
+        if (KioskLockTabToolsCheckBox    != null) KioskLockTabToolsCheckBox.IsChecked    = set.Contains("TabTools");
+        if (KioskLockTabDebugCheckBox    != null) KioskLockTabDebugCheckBox.IsChecked    = set.Contains("TabDebug");
+        if (KioskLockNodeConfigCheckBox  != null) KioskLockNodeConfigCheckBox.IsChecked  = set.Contains("NodeConfig");
+        if (KioskLockRemoteAdminCheckBox != null) KioskLockRemoteAdminCheckBox.IsChecked = set.Contains("RemoteAdmin");
+        if (KioskLockDashboardCheckBox   != null) KioskLockDashboardCheckBox.IsChecked   = set.Contains("Dashboard");
+        if (KioskLockSosCheckBox         != null) KioskLockSosCheckBox.IsChecked         = set.Contains("Sos");
+        if (KioskLockMeshHessenCheckBox  != null) KioskLockMeshHessenCheckBox.IsChecked  = set.Contains("MeshHessen");
+    }
+
+    private bool IsKioskFeatureLocked(string feature) =>
+        _kioskLocked &&
+        _currentSettings.KioskLockedFeatures.Split(',', StringSplitOptions.RemoveEmptyEntries).Contains(feature);
+
+    private void ApplyKioskLock(bool locked)
+    {
+        _kioskLocked = locked;
+        var vis = (string feature) =>
+            locked && _currentSettings.KioskLockedFeatures
+                .Split(',', StringSplitOptions.RemoveEmptyEntries).Contains(feature)
+                ? Visibility.Collapsed : Visibility.Visible;
+
+        // Tabs (Messages + Map are never lockable so the app can't be emptied out)
+        TabItemNodes.Visibility    = vis("TabNodes");
+        TabItemChannels.Visibility = vis("TabChannels");
+        TabItemSettings.Visibility = vis("TabSettings");
+        TabItemInfo.Visibility     = vis("TabInfo");
+        TabItemTools.Visibility    = vis("TabTools");
+        TabItemDebug.Visibility    = vis("TabDebug");
+
+        // If the currently selected tab is now hidden, jump to Messages (index 0)
+        if (locked && MainTabs.SelectedItem is TabItem sel && sel.Visibility == Visibility.Collapsed)
+            MainTabs.SelectedIndex = 0;
+
+        // Buttons / functions
+        NodeConfigButton.Visibility    = vis("NodeConfig");
+        RemoteAdminButton.Visibility   = vis("RemoteAdmin");
+        OpenDashboardButton.Visibility = vis("Dashboard");
+        AlertBellButton.Visibility     = vis("Sos");
+        MeshHessenButton.Visibility    = vis("MeshHessen");
+
+        // Enforce VNode admin blocking while locked (revert to setting when unlocked)
+        if (_virtualNodeService != null)
+            _virtualNodeService.BlockAdminCommands = locked || _currentSettings.VirtualNodeBlockAdmin;
+
+        UpdateKioskLockButton();
+        UpdateStatusBar(Loc(locked ? "StrKioskLockedStatus" : "StrKioskUnlockedStatus"));
+    }
+
+    private void UpdateKioskLockButton()
+    {
+        bool available = _currentSettings.KioskModeEnabled &&
+                         !string.IsNullOrEmpty(_currentSettings.KioskPasswordHash);
+        KioskLockButton.Visibility = available ? Visibility.Visible : Visibility.Collapsed;
+        KioskLockButton.Content = _kioskLocked ? "🔒" : "🔓";
+        KioskLockButton.ToolTip = Loc(_kioskLocked ? "StrKioskLockedTooltip" : "StrKioskUnlockedTooltip");
+    }
+
+    private void KioskLock_Click(object sender, RoutedEventArgs e)
+    {
+        if (_kioskLocked)
+        {
+            // Unlock: ask for password
+            var pw = ShowPasswordDialog(Loc("StrKioskUnlockPrompt"), Loc("StrKioskUnlockTitle"));
+            if (pw == null) return; // cancelled
+            if (!KioskVerifyPassword(pw, _currentSettings.KioskPasswordHash))
+            {
+                MessageBox.Show(Loc("StrKioskWrongPassword"), Loc("StrKioskUnlockTitle"),
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            ApplyKioskLock(false);
+        }
+        else
+        {
+            // Re-lock: take over the current checkbox selection and persist it,
+            // so the lock state and feature list survive a restart
+            _currentSettings = _currentSettings with { KioskLockedFeatures = CollectKioskLockedFeatures() };
+            SettingsService.Save(_currentSettings);
+            ApplyKioskLock(true);
+        }
+    }
+
+    private void KioskEnable_Changed(object sender, RoutedEventArgs e)
+    {
+        if (KioskEnableCheckBox == null) return;
+        if (KioskEnableCheckBox.IsChecked == true &&
+            string.IsNullOrEmpty(_currentSettings.KioskPasswordHash))
+        {
+            UpdateStatusBar(Loc("StrKioskNoPasswordWarning"));
+        }
+    }
+
+    private void KioskSetPassword_Click(object sender, RoutedEventArgs e)
+    {
+        var pw = KioskPasswordBox.Password;
+        if (string.IsNullOrEmpty(pw))
+        {
+            MessageBox.Show(Loc("StrKioskPasswordEmpty"), Loc("StrKioskSection"),
+                MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+        _currentSettings = _currentSettings with { KioskPasswordHash = KioskHashPassword(pw) };
+        SettingsService.Save(_currentSettings);
+        KioskPasswordBox.Clear();
+        UpdateKioskLockButton();
+        UpdateStatusBar(Loc("StrKioskPasswordSet"));
+    }
+
+    private string? ShowPasswordDialog(string prompt, string title)
+    {
+        var dialog = new System.Windows.Window
+        {
+            Title = title,
+            Width = 340,
+            SizeToContent = SizeToContent.Height,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            Owner = this,
+            ResizeMode = ResizeMode.NoResize,
+            ShowInTaskbar = false
+        };
+        var panel = new StackPanel { Margin = new Thickness(12) };
+        panel.Children.Add(new TextBlock { Text = prompt, Margin = new Thickness(0, 0, 0, 8) });
+        var pwBox = new PasswordBox { Margin = new Thickness(0, 0, 0, 10) };
+        panel.Children.Add(pwBox);
+        var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
+        var ok = new Button { Content = "OK", Width = 80, Margin = new Thickness(0, 0, 8, 0), IsDefault = true };
+        var cancel = new Button { Content = Loc("StrCancel"), Width = 80, IsCancel = true };
+        ok.Click += (_, _) => { dialog.DialogResult = true; };
+        buttons.Children.Add(ok);
+        buttons.Children.Add(cancel);
+        panel.Children.Add(buttons);
+        dialog.Content = panel;
+        pwBox.Focus();
+        return dialog.ShowDialog() == true ? pwBox.Password : null;
     }
 
     private void RefreshActiveStationName()

@@ -1154,6 +1154,36 @@ Green ≤15% | Yellow 15–25% | Red &gt;25% | Gray = no airtime data</sys:Strin
     <sys:String x:Key="StrSigFair">Fair</sys:String>
     <sys:String x:Key="StrSigWeak">Weak</sys:String>
     <sys:String x:Key="StrPowered">Externally powered</sys:String>
+    <!-- Kiosk / Training mode -->
+    <sys:String x:Key="StrKioskSection">Kiosk / Training Mode</sys:String>
+    <sys:String x:Key="StrKioskEnable">Enable kiosk mode</sys:String>
+    <sys:String x:Key="StrKioskHint">Hides selected features while locked – for shared stations (club room, training, events). Protects against accidents, not attacks. While kiosk mode is active, admin commands from Virtual Node clients are also blocked.</sys:String>
+    <sys:String x:Key="StrKioskPassword">Password:</sys:String>
+    <sys:String x:Key="StrKioskSetPassword">Set password</sys:String>
+    <sys:String x:Key="StrKioskPasswordSet">Kiosk password saved.</sys:String>
+    <sys:String x:Key="StrKioskPasswordEmpty">Please enter a password.</sys:String>
+    <sys:String x:Key="StrKioskNoPasswordWarning">No password set – kiosk mode can only be locked once a password is set.</sys:String>
+    <sys:String x:Key="StrKioskWhatToLock">Hide while locked:</sys:String>
+    <sys:String x:Key="StrKioskLockTabNodes">Tab: Nodes</sys:String>
+    <sys:String x:Key="StrKioskLockTabChannels">Tab: Channels</sys:String>
+    <sys:String x:Key="StrKioskLockTabSettings">Tab: Settings</sys:String>
+    <sys:String x:Key="StrKioskLockTabInfo">Tab: Info</sys:String>
+    <sys:String x:Key="StrKioskLockTabTools">Tab: Tools</sys:String>
+    <sys:String x:Key="StrKioskLockTabDebug">Tab: Debug</sys:String>
+    <sys:String x:Key="StrKioskLockNodeConfig">Node configuration</sys:String>
+    <sys:String x:Key="StrKioskLockRemoteAdmin">Remote admin</sys:String>
+    <sys:String x:Key="StrKioskLockDashboard">Telemetry dashboard</sys:String>
+    <sys:String x:Key="StrKioskLockSos">Send SOS / alert bell</sys:String>
+    <sys:String x:Key="StrKioskLockMeshHessen">Meshhessen quick config</sys:String>
+    <sys:String x:Key="StrKioskForgotHint">Forgot the password? Close the client and set "KioskModeEnabled=True" to "False" in meshhessen-client.ini.</sys:String>
+    <sys:String x:Key="StrKioskUnlockTitle">Unlock kiosk mode</sys:String>
+    <sys:String x:Key="StrKioskUnlockPrompt">Enter password:</sys:String>
+    <sys:String x:Key="StrKioskWrongPassword">Wrong password.</sys:String>
+    <sys:String x:Key="StrKioskLockedTooltip">Kiosk mode active – click to unlock</sys:String>
+    <sys:String x:Key="StrKioskUnlockedTooltip">Unlocked – click to lock</sys:String>
+    <sys:String x:Key="StrKioskLockedStatus">Kiosk mode locked.</sys:String>
+    <sys:String x:Key="StrKioskUnlockedStatus">Kiosk mode unlocked.</sys:String>
+
     <sys:String x:Key="StrFancyNodeListSection">Fancy Tile View</sys:String>
     <sys:String x:Key="StrFancyNodeListEnable">Node tab: tiled view instead of table (Fancy View)</sys:String>
     <sys:String x:Key="StrFancyNodeListEnableHint">Shows the node list as info tiles with details like power, telemetry and signal quality. Note: uses more processing power than the table – with very large meshes (1000+ nodes) the UI may respond more slowly.</sys:String>

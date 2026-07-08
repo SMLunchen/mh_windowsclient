@@ -181,6 +181,12 @@ Der **Meshhessen Client** ist ein **kostenloser, nativer Windows-Client für Mes
 * **Automatisches Logging** aller Nachrichten (`logs/`)
 * **Debug-Tab** mit Live-Log fürs Troubleshooting
 * **Meshhessen-Schnellkonfiguration** – One-Click für Short Slow + EU868 + Meshhessen-Kanal
+* **Kiosk-/Trainingsmodus** – für geteilte Stationen (Vereinslokal, Schulung, Veranstaltung):
+  * In den Einstellungen aktivieren, Passwort setzen und wählen, was im gesperrten Zustand ausgeblendet wird: Tabs (Nodes, Kanäle, Einstellungen, Info, Tools, Debug), Node-Konfiguration, Fernverwaltung, Telemetrie-Dashboard, SOS-Button, Meshhessen-Schnellkonfiguration
+  * **🔒-Schloss in der Fußleiste** zum Sperren/Entsperren (erscheint nur, wenn ein Passwort gesetzt ist); Entsperren per Passwort, App startet im Kiosk-Modus immer gesperrt
+  * Bei aktiver Sperre werden zusätzlich **Admin-Befehle von Virtual-Node-Clients blockiert** (unabhängig von der VNode-Einstellung)
+  * ⚠️ **Versehens-Schutz, kein Angriffs-Schutz** – das Passwort wird als PBKDF2-Hash gespeichert, aber wer die INI-Datei bearbeiten kann, kann den Modus deaktivieren
+  * **Passwort vergessen?** Client beenden und in `meshhessen-client.ini` die Zeile `KioskModeEnabled=True` auf `False` setzen (oder die Zeile `KioskPasswordHash=…` leeren und neu setzen)
 
 
 ## 💬 Die Meshhessen Community
@@ -547,6 +553,12 @@ Meshhessen Client · Windows-Client für Meshtastic-Geräte · Meshtastic Window
 * **Automatic logging** of all messages (`logs/`)
 * **Debug tab** with live log for troubleshooting
 * **Meshhessen quick-config** – one-click Short Slow + EU868 + Meshhessen channel setup
+* **Kiosk / training mode** – for shared stations (club room, training, events):
+  * Enable in settings, set a password and choose what gets hidden while locked: tabs (Nodes, Channels, Settings, Info, Tools, Debug), node configuration, remote admin, telemetry dashboard, SOS button, Meshhessen quick-config
+  * **🔒 lock in the footer bar** to lock/unlock (only shown once a password is set); unlock via password, the app always starts locked in kiosk mode
+  * While locked, **admin commands from Virtual Node clients are additionally blocked** (regardless of the VNode setting)
+  * ⚠️ **Protects against accidents, not attacks** – the password is stored as a PBKDF2 hash, but anyone who can edit the INI file can disable the mode
+  * **Forgot the password?** Close the client and set `KioskModeEnabled=True` to `False` in `meshhessen-client.ini` (or clear the `KioskPasswordHash=…` line and set a new one)
 
 
 ## 💬 The Meshhessen Community

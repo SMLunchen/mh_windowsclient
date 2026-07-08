@@ -1050,7 +1050,7 @@
             </TabItem>
 
             <!-- Nodes Tab -->
-            <TabItem Header="{DynamicResource StrTabNodes}">
+            <TabItem x:Name="TabItemNodes" Header="{DynamicResource StrTabNodes}">
                 <Grid Margin="10">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -1460,7 +1460,7 @@
             </TabItem>
 
             <!-- Channels Tab -->
-            <TabItem Header="{DynamicResource StrTabChannels}">
+            <TabItem x:Name="TabItemChannels" Header="{DynamicResource StrTabChannels}">
                 <Grid Margin="10">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*"/>
@@ -1698,7 +1698,7 @@
             </TabItem>
 
             <!-- Settings Tab -->
-            <TabItem Header="{DynamicResource StrTabSettings}">
+            <TabItem x:Name="TabItemSettings" Header="{DynamicResource StrTabSettings}">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
@@ -1750,6 +1750,43 @@
                                     <TextBlock Text="{DynamicResource StrFancyNodeListEnableHint}"
                                               FontStyle="Italic" Foreground="Gray" FontSize="11"
                                               TextWrapping="Wrap" Margin="0,4,0,0"/>
+                                </StackPanel>
+                            </GroupBox>
+
+                            <!-- Kiosk / Training mode -->
+                            <GroupBox x:Name="KioskGroupBox" Header="{DynamicResource StrKioskSection}" Margin="0,0,0,16">
+                                <StackPanel Margin="10">
+                                    <TextBlock Text="{DynamicResource StrKioskHint}"
+                                              FontStyle="Italic" Foreground="Gray" FontSize="11"
+                                              TextWrapping="Wrap" Margin="0,0,0,8"/>
+                                    <CheckBox x:Name="KioskEnableCheckBox"
+                                              Content="{DynamicResource StrKioskEnable}"
+                                              Checked="KioskEnable_Changed"
+                                              Unchecked="KioskEnable_Changed"
+                                              Margin="0,0,0,8"/>
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                        <TextBlock Text="{DynamicResource StrKioskPassword}" Width="80" VerticalAlignment="Center"/>
+                                        <PasswordBox x:Name="KioskPasswordBox" Width="160" Margin="0,0,8,0"/>
+                                        <Button Content="{DynamicResource StrKioskSetPassword}" Padding="8,2"
+                                                Click="KioskSetPassword_Click"/>
+                                    </StackPanel>
+                                    <TextBlock Text="{DynamicResource StrKioskWhatToLock}" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                    <WrapPanel>
+                                        <CheckBox x:Name="KioskLockTabNodesCheckBox"    Content="{DynamicResource StrKioskLockTabNodes}"    Margin="0,0,14,4"/>
+                                        <CheckBox x:Name="KioskLockTabChannelsCheckBox" Content="{DynamicResource StrKioskLockTabChannels}" Margin="0,0,14,4"/>
+                                        <CheckBox x:Name="KioskLockTabSettingsCheckBox" Content="{DynamicResource StrKioskLockTabSettings}" Margin="0,0,14,4"/>
+                                        <CheckBox x:Name="KioskLockTabInfoCheckBox"     Content="{DynamicResource StrKioskLockTabInfo}"     Margin="0,0,14,4"/>
+                                        <CheckBox x:Name="KioskLockTabToolsCheckBox"    Content="{DynamicResource StrKioskLockTabTools}"    Margin="0,0,14,4"/>
+                                        <CheckBox x:Name="KioskLockTabDebugCheckBox"    Content="{DynamicResource StrKioskLockTabDebug}"    Margin="0,0,14,4"/>
+                                        <CheckBox x:Name="KioskLockNodeConfigCheckBox"  Content="{DynamicResource StrKioskLockNodeConfig}"  Margin="0,0,14,4"/>
+                                        <CheckBox x:Name="KioskLockRemoteAdminCheckBox" Content="{DynamicResource StrKioskLockRemoteAdmin}" Margin="0,0,14,4"/>
+                                        <CheckBox x:Name="KioskLockDashboardCheckBox"   Content="{DynamicResource StrKioskLockDashboard}"   Margin="0,0,14,4"/>
+                                        <CheckBox x:Name="KioskLockSosCheckBox"         Content="{DynamicResource StrKioskLockSos}"         Margin="0,0,14,4"/>
+                                        <CheckBox x:Name="KioskLockMeshHessenCheckBox"  Content="{DynamicResource StrKioskLockMeshHessen}"  Margin="0,0,14,4"/>
+                                    </WrapPanel>
+                                    <TextBlock Text="{DynamicResource StrKioskForgotHint}"
+                                              FontStyle="Italic" Foreground="Gray" FontSize="11"
+                                              TextWrapping="Wrap" Margin="0,8,0,0"/>
                                 </StackPanel>
                             </GroupBox>
 
@@ -2079,7 +2116,7 @@
             </TabItem>
 
             <!-- Info Tab -->
-            <TabItem Header="{DynamicResource StrTabInfo}">
+            <TabItem x:Name="TabItemInfo" Header="{DynamicResource StrTabInfo}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="20">
                         <TextBlock Text="Meshhessen Client" FontSize="24" FontWeight="Bold" Margin="0,0,0,4"/>
@@ -2194,7 +2231,7 @@
             </TabItem>
 
             <!-- Tools Tab -->
-            <TabItem Header="{DynamicResource StrTabTools}">
+            <TabItem x:Name="TabItemTools" Header="{DynamicResource StrTabTools}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="24">
 
@@ -2279,7 +2316,7 @@
             </TabItem>
 
             <!-- Debug Tab -->
-            <TabItem Header="🐛 Debug">
+            <TabItem x:Name="TabItemDebug" Header="🐛 Debug">
                 <Grid Margin="10">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -2338,6 +2375,12 @@
                 </StackPanel>
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                    <!-- Kiosk mode lock (visible only when kiosk mode enabled AND a password is set) -->
+                    <Button x:Name="KioskLockButton"
+                            Content="🔒" FontSize="13" Padding="4,0"
+                            Background="Transparent" BorderThickness="0"
+                            Visibility="Collapsed" Margin="0,0,12,0"
+                            Click="KioskLock_Click"/>
                     <!-- Update hint: shown when a newer release is detected -->
                     <Border x:Name="UpdateBanner" Visibility="Collapsed"
                             Background="#33FF8800" CornerRadius="3" Padding="6,2" Margin="0,0,12,0">

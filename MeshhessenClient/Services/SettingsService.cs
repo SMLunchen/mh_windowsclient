@@ -47,7 +47,10 @@ public record AppSettings(
     bool VirtualNodeBlockAdmin,            // Block admin commands from Virtual Node clients
     Dictionary<uint, string> NodeStationNames, // NodeId -> per-node station name
     bool FancyNodeList,                    // Show tile view instead of table in Nodes tab
-    bool FancyNodeListColorful);           // Color tiles by signal quality (when no node color set)
+    bool FancyNodeListColorful,            // Color tiles by signal quality (when no node color set)
+    bool KioskModeEnabled,                 // Kiosk/training mode: lockable UI for shared stations
+    string KioskPasswordHash,              // PBKDF2 "salt:hash" (base64); empty = no password set
+    string KioskLockedFeatures);           // CSV of feature keys hidden while locked
 
 public static class SettingsService
 {
@@ -97,7 +100,10 @@ public static class SettingsService
             false,                          // VirtualNodeBlockAdmin default off
             new Dictionary<uint, string>(), // NodeStationNames default empty
             false,                          // FancyNodeList default off
-            true);                          // FancyNodeListColorful default on
+            true,                           // FancyNodeListColorful default on
+            false,                          // KioskModeEnabled default off
+            string.Empty,                   // KioskPasswordHash default empty
+            string.Empty);                  // KioskLockedFeatures default empty
 
         try
         {
@@ -250,7 +256,10 @@ public static class SettingsService
                 VirtualNodeBlockAdmin: values.TryGetValue("VirtualNodeBlockAdmin", out var vnba) && bool.TryParse(vnba, out var vnbaBool) && vnbaBool,
                 NodeStationNames: nodeStationNames,
                 FancyNodeList: values.TryGetValue("FancyNodeList", out var fnl) && bool.TryParse(fnl, out var fnlBool) && fnlBool,
-                FancyNodeListColorful: !values.TryGetValue("FancyNodeListColorful", out var fnc) || !bool.TryParse(fnc, out var fncBool) || fncBool
+                FancyNodeListColorful: !values.TryGetValue("FancyNodeListColorful", out var fnc) || !bool.TryParse(fnc, out var fncBool) || fncBool,
+                KioskModeEnabled: values.TryGetValue("KioskModeEnabled", out var kme) && bool.TryParse(kme, out var kmeBool) && kmeBool,
+                KioskPasswordHash: values.TryGetValue("KioskPasswordHash", out var kph) ? kph : string.Empty,
+                KioskLockedFeatures: values.TryGetValue("KioskLockedFeatures", out var klf) ? klf : string.Empty
             );
         }
         catch (Exception ex)
@@ -304,7 +313,10 @@ public static class SettingsService
                 $"VirtualNodePort={settings.VirtualNodePort}",
                 $"VirtualNodeBlockAdmin={settings.VirtualNodeBlockAdmin}",
                 $"FancyNodeList={settings.FancyNodeList}",
-                $"FancyNodeListColorful={settings.FancyNodeListColorful}"
+                $"FancyNodeListColorful={settings.FancyNodeListColorful}",
+                $"KioskModeEnabled={settings.KioskModeEnabled}",
+                $"KioskPasswordHash={settings.KioskPasswordHash}",
+                $"KioskLockedFeatures={settings.KioskLockedFeatures}"
             };
 
             // Save node colors

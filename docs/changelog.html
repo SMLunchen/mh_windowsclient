@@ -226,6 +226,16 @@
           <li>SNR + RSSI direkt in der Nachrichten-Bubble bei Direktempfang (0 Hops, kein MQTT) – farbig gemäß Signal-Gradient</li>
         </ul>
       </div>
+
+      <div class="cl-group">
+        <div class="cl-group-title">🔒 Kiosk-/Trainingsmodus</div>
+        <ul class="cl-list">
+          <li>Sperrbare UI für geteilte Stationen (Vereinslokal, Schulung, Veranstaltung) – Versehens-Schutz, kein Angriffs-Schutz</li>
+          <li>Passwortgeschützt (PBKDF2-Hash); konfigurierbar, welche Tabs und Funktionen im gesperrten Zustand ausgeblendet werden</li>
+          <li>🔒-Schloss in der Fußleiste zum Sperren/Entsperren; App startet im Kiosk-Modus immer gesperrt</li>
+          <li>Bei aktiver Sperre werden Admin-Befehle von Virtual-Node-Clients erzwungen blockiert</li>
+        </ul>
+      </div>
     </div>
 
     <div class="cl-section fixed">
@@ -892,6 +902,16 @@
         <div class="cl-group-title">💬 Signal values in messages</div>
         <ul class="cl-list">
           <li>SNR + RSSI right in the message bubble for direct reception (0 hops, no MQTT) – colored by the signal gradient</li>
+        </ul>
+      </div>
+
+      <div class="cl-group">
+        <div class="cl-group-title">🔒 Kiosk / training mode</div>
+        <ul class="cl-list">
+          <li>Lockable UI for shared stations (club room, training, events) – protects against accidents, not attacks</li>
+          <li>Password-protected (PBKDF2 hash); configurable which tabs and functions are hidden while locked</li>
+          <li>🔒 lock in the footer bar to lock/unlock; the app always starts locked in kiosk mode</li>
+          <li>While locked, admin commands from Virtual Node clients are force-blocked</li>
         </ul>
       </div>
     </div>

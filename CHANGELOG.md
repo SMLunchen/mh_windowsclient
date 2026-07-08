@@ -40,6 +40,14 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 #### 💬 Signalwerte in Nachrichten
 - **SNR + RSSI direkt in der Nachrichten-Bubble** bei Direktempfang (0 Hops, kein MQTT) – farbig gemäß Signalqualitäts-Gradient (rot → gelb → grün)
 
+#### 🔒 Kiosk-/Trainingsmodus
+- **Für geteilte Stationen** (Vereinslokal, Schulung, Veranstaltung): sperrbare UI als Versehens-Schutz
+- **Aktivierung in den Einstellungen** mit Passwort (PBKDF2-Hash, kein Klartext in der INI)
+- **Konfigurierbar, was im gesperrten Zustand ausgeblendet wird:** Tabs (Nodes, Kanäle, Einstellungen, Info, Tools, Debug), Node-Konfiguration, Fernverwaltung, Telemetrie-Dashboard, SOS-Button, Meshhessen-Schnellkonfiguration – Nachrichten- und Karten-Tab bleiben immer sichtbar
+- **🔒-Schloss in der Fußleiste** zum Sperren/Entsperren; nur sichtbar wenn ein Passwort gesetzt ist; App startet im Kiosk-Modus immer gesperrt
+- **VNode-Härtung:** bei aktiver Sperre werden Admin-Befehle von Virtual-Node-Clients erzwungen blockiert
+- **Passwort vergessen:** `KioskModeEnabled=False` in `meshhessen-client.ini` setzen (dokumentiert in der README)
+
 ### 🐛 Behoben
 
 #### 🧩 Protobuf-Definitionen mit Original abgeglichen
