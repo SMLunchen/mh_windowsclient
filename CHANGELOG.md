@@ -65,6 +65,8 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 - LED-Tooltip „Wetter-Effekt": literaler `\n` durch echten Zeilenumbruch ersetzt
 - Karten-Legende „Dauerhaft" jetzt mehrsprachig; Alter-Gradient-Grau kollidiert nicht mehr mit dem Lora-Hop-Grau
 - Map-Topbar aufgeräumt (Trenner + deskriptive Button-Namen); PKI-Schlüssel-Spalte verbreitert; Startfenster breiter
+- **Tile-Downloader:** Rate-Limit (2 Anfragen/s) für eigene/benutzerdefinierte Tile-Server entfernt; Massen-Downloads von öffentlichen OSM-/OpenTopoMap-Servern werden stattdessen mit klarer Fehlermeldung abgelehnt (Tile-Usage-Policy) – gilt für Tile-Downloader und T-Deck-Assistent
+- **Neuer vierter Karten-Modus „Online – eigener Tile-Server":** lädt Kacheln on-demand von den selbst konfigurierten Tile-URLs (mit dauerhaftem lokalem Cache); der Meshhessen-Modus nutzt jetzt immer fest die offiziellen Server. Öffentliche OSM-/OpenTopoMap-URLs werden im Custom-Modus abgelehnt
 - **Nachrichten:** Scrollbar überdeckt die Chat-Bubbles nicht mehr (Innenabstand rechts)
 - **Kachelmodus:** „Farbe setzen"-Kontextmenü zeigte zwei leere Einträge (fehlende Resource-Keys) → Farbliste an Tabellen-Menü angeglichen (Braun/Pink/Cyan + „Farbe entfernen")
 - Einstellungen: Kachelansicht-Option deskriptiver benannt + Performance-Hinweis ergänzt

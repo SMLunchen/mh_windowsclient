@@ -32,6 +32,22 @@ public static class TileDownloaderService
         _ => throw new ArgumentException($"Unknown map source: {source}")
     };
 
+    // Public tile servers whose usage policy forbids bulk downloads.
+    // Single-tile fetching for the live map (CachingHttpTileProvider) stays allowed.
+    public static bool IsPublicTileServer(string urlTemplate) =>
+        urlTemplate.Contains("openstreetmap.org", StringComparison.OrdinalIgnoreCase) ||
+        urlTemplate.Contains("opentopomap.org", StringComparison.OrdinalIgnoreCase);
+
+    public static void EnsureBulkDownloadAllowed(MapSource source)
+    {
+        if (IsPublicTileServer(GetTileUrlTemplate(source)))
+        {
+            var msg = System.Windows.Application.Current?.Resources["StrPublicTileServerBlocked"] as string
+                ?? "Bulk downloading from public OSM/OpenTopoMap servers is not allowed (tile usage policy).";
+            throw new InvalidOperationException(msg);
+        }
+    }
+
     // Gibt den Ordnernamen für die lokale Tile-Speicherung zurück
     public static string GetSourceFolderName(MapSource source) => source switch
     {
@@ -73,6 +89,8 @@ public static class TileDownloaderService
         IProgress<(int done, int total, string status)> progress,
         CancellationToken ct)
     {
+        EnsureBulkDownloadAllowed(source);
+
         int total = EstimateTileCount(north, south, east, west, minZoom, maxZoom);
         int done = 0;
 
@@ -106,14 +124,9 @@ public static class TileDownloaderService
 
                             var data = await _httpClient.GetByteArrayAsync(url, ct);
                             await File.WriteAllBytesAsync(filePath, data, ct);
-
-                            // Rate-Limiting nur für externe Server (nicht für eigene Server)
-                            if (!url.Contains("tile.meshhessenclient.de", StringComparison.OrdinalIgnoreCase) &&
-                                !url.Contains("tile.meshhessen.de", StringComparison.OrdinalIgnoreCase) &&
-                                !url.Contains("tile.schwarzes-seelenreich.de", StringComparison.OrdinalIgnoreCase))
-                            {
-                                await Task.Delay(500, ct);
-                            }
+                            // No rate limiting: public OSM/OpenTopo servers are rejected
+                            // up-front (EnsureBulkDownloadAllowed); any other server is
+                            // either our own or deliberately configured by the user.
                         }
                         catch (Exception ex) when (!ct.IsCancellationRequested)
                         {

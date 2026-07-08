@@ -1754,42 +1754,6 @@
                             </GroupBox>
 
                             <!-- Kiosk / Training mode -->
-                            <GroupBox x:Name="KioskGroupBox" Header="{DynamicResource StrKioskSection}" Margin="0,0,0,16">
-                                <StackPanel Margin="10">
-                                    <TextBlock Text="{DynamicResource StrKioskHint}"
-                                              FontStyle="Italic" Foreground="Gray" FontSize="11"
-                                              TextWrapping="Wrap" Margin="0,0,0,8"/>
-                                    <CheckBox x:Name="KioskEnableCheckBox"
-                                              Content="{DynamicResource StrKioskEnable}"
-                                              Checked="KioskEnable_Changed"
-                                              Unchecked="KioskEnable_Changed"
-                                              Margin="0,0,0,8"/>
-                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                                        <TextBlock Text="{DynamicResource StrKioskPassword}" Width="80" VerticalAlignment="Center"/>
-                                        <PasswordBox x:Name="KioskPasswordBox" Width="160" Margin="0,0,8,0"/>
-                                        <Button Content="{DynamicResource StrKioskSetPassword}" Padding="8,2"
-                                                Click="KioskSetPassword_Click"/>
-                                    </StackPanel>
-                                    <TextBlock Text="{DynamicResource StrKioskWhatToLock}" FontWeight="SemiBold" Margin="0,0,0,4"/>
-                                    <WrapPanel>
-                                        <CheckBox x:Name="KioskLockTabNodesCheckBox"    Content="{DynamicResource StrKioskLockTabNodes}"    Margin="0,0,14,4"/>
-                                        <CheckBox x:Name="KioskLockTabChannelsCheckBox" Content="{DynamicResource StrKioskLockTabChannels}" Margin="0,0,14,4"/>
-                                        <CheckBox x:Name="KioskLockTabSettingsCheckBox" Content="{DynamicResource StrKioskLockTabSettings}" Margin="0,0,14,4"/>
-                                        <CheckBox x:Name="KioskLockTabInfoCheckBox"     Content="{DynamicResource StrKioskLockTabInfo}"     Margin="0,0,14,4"/>
-                                        <CheckBox x:Name="KioskLockTabToolsCheckBox"    Content="{DynamicResource StrKioskLockTabTools}"    Margin="0,0,14,4"/>
-                                        <CheckBox x:Name="KioskLockTabDebugCheckBox"    Content="{DynamicResource StrKioskLockTabDebug}"    Margin="0,0,14,4"/>
-                                        <CheckBox x:Name="KioskLockNodeConfigCheckBox"  Content="{DynamicResource StrKioskLockNodeConfig}"  Margin="0,0,14,4"/>
-                                        <CheckBox x:Name="KioskLockRemoteAdminCheckBox" Content="{DynamicResource StrKioskLockRemoteAdmin}" Margin="0,0,14,4"/>
-                                        <CheckBox x:Name="KioskLockDashboardCheckBox"   Content="{DynamicResource StrKioskLockDashboard}"   Margin="0,0,14,4"/>
-                                        <CheckBox x:Name="KioskLockSosCheckBox"         Content="{DynamicResource StrKioskLockSos}"         Margin="0,0,14,4"/>
-                                        <CheckBox x:Name="KioskLockMeshHessenCheckBox"  Content="{DynamicResource StrKioskLockMeshHessen}"  Margin="0,0,14,4"/>
-                                    </WrapPanel>
-                                    <TextBlock Text="{DynamicResource StrKioskForgotHint}"
-                                              FontStyle="Italic" Foreground="Gray" FontSize="11"
-                                              TextWrapping="Wrap" Margin="0,8,0,0"/>
-                                </StackPanel>
-                            </GroupBox>
-
                             <!-- c) Alert Bell -->
                             <GroupBox Header="{DynamicResource StrNotifications}" Margin="0,0,0,16">
                                 <StackPanel Margin="10">
@@ -1835,6 +1799,14 @@
                                                 Content="{DynamicResource StrMapModeOnlineOwn}"
                                                 Margin="0,0,0,2" Checked="MapModeRadio_Changed"/>
                                     <TextBlock Text="{DynamicResource StrMapModeOnlineOwnDesc}"
+                                              FontSize="11" Foreground="Gray" FontStyle="Italic"
+                                              TextWrapping="Wrap" Margin="20,0,0,8"/>
+
+                                    <!-- Online custom tile server -->
+                                    <RadioButton x:Name="MapModeOnlineCustomRadio" GroupName="MapMode"
+                                                Content="{DynamicResource StrMapModeOnlineCustom}"
+                                                Margin="0,0,0,2" Checked="MapModeRadio_Changed"/>
+                                    <TextBlock Text="{DynamicResource StrMapModeOnlineCustomDesc}"
                                               FontSize="11" Foreground="Gray" FontStyle="Italic"
                                               TextWrapping="Wrap" Margin="20,0,0,8"/>
 
@@ -2035,6 +2007,43 @@
                             </GroupBox>
 
                             <!-- g) Debug -->
+                            <!-- Kiosk / Training mode -->
+                            <GroupBox x:Name="KioskGroupBox" Header="{DynamicResource StrKioskSection}" Margin="0,0,0,16">
+                                <StackPanel Margin="10">
+                                    <TextBlock Text="{DynamicResource StrKioskHint}"
+                                              FontStyle="Italic" Foreground="Gray" FontSize="11"
+                                              TextWrapping="Wrap" Margin="0,0,0,8"/>
+                                    <CheckBox x:Name="KioskEnableCheckBox"
+                                              Content="{DynamicResource StrKioskEnable}"
+                                              Checked="KioskEnable_Changed"
+                                              Unchecked="KioskEnable_Changed"
+                                              Margin="0,0,0,8"/>
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                        <TextBlock Text="{DynamicResource StrKioskPassword}" Width="80" VerticalAlignment="Center"/>
+                                        <PasswordBox x:Name="KioskPasswordBox" Width="160" Margin="0,0,8,0"/>
+                                        <Button Content="{DynamicResource StrKioskSetPassword}" Padding="8,2"
+                                                Click="KioskSetPassword_Click"/>
+                                    </StackPanel>
+                                    <TextBlock Text="{DynamicResource StrKioskWhatToLock}" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                    <WrapPanel>
+                                        <CheckBox x:Name="KioskLockTabNodesCheckBox"    Content="{DynamicResource StrKioskLockTabNodes}"    Margin="0,0,14,4"/>
+                                        <CheckBox x:Name="KioskLockTabChannelsCheckBox" Content="{DynamicResource StrKioskLockTabChannels}" Margin="0,0,14,4"/>
+                                        <CheckBox x:Name="KioskLockTabSettingsCheckBox" Content="{DynamicResource StrKioskLockTabSettings}" Margin="0,0,14,4"/>
+                                        <CheckBox x:Name="KioskLockTabInfoCheckBox"     Content="{DynamicResource StrKioskLockTabInfo}"     Margin="0,0,14,4"/>
+                                        <CheckBox x:Name="KioskLockTabToolsCheckBox"    Content="{DynamicResource StrKioskLockTabTools}"    Margin="0,0,14,4"/>
+                                        <CheckBox x:Name="KioskLockTabDebugCheckBox"    Content="{DynamicResource StrKioskLockTabDebug}"    Margin="0,0,14,4"/>
+                                        <CheckBox x:Name="KioskLockNodeConfigCheckBox"  Content="{DynamicResource StrKioskLockNodeConfig}"  Margin="0,0,14,4"/>
+                                        <CheckBox x:Name="KioskLockRemoteAdminCheckBox" Content="{DynamicResource StrKioskLockRemoteAdmin}" Margin="0,0,14,4"/>
+                                        <CheckBox x:Name="KioskLockDashboardCheckBox"   Content="{DynamicResource StrKioskLockDashboard}"   Margin="0,0,14,4"/>
+                                        <CheckBox x:Name="KioskLockSosCheckBox"         Content="{DynamicResource StrKioskLockSos}"         Margin="0,0,14,4"/>
+                                        <CheckBox x:Name="KioskLockMeshHessenCheckBox"  Content="{DynamicResource StrKioskLockMeshHessen}"  Margin="0,0,14,4"/>
+                                    </WrapPanel>
+                                    <TextBlock Text="{DynamicResource StrKioskForgotHint}"
+                                              FontStyle="Italic" Foreground="Gray" FontSize="11"
+                                              TextWrapping="Wrap" Margin="0,8,0,0"/>
+                                </StackPanel>
+                            </GroupBox>
+
                             <GroupBox Header="Debug" Margin="0,0,0,16">
                                 <StackPanel Margin="10">
                                     <CheckBox x:Name="DebugMessagesCheckBox"

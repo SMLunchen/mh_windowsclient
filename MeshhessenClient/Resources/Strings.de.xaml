@@ -143,6 +143,9 @@
     <sys:String x:Key="StrMapModeOfflineDesc">Nutzt vorher heruntergeladene Kacheln vom Meshhessen-Server. Alle drei Kartenstile verfügbar. Nur Deutschland abgedeckt. Kein Internet erforderlich.</sys:String>
     <sys:String x:Key="StrMapModeOnlineOwn">Online – Meshhessen-Server (nur Deutschland)</sys:String>
     <sys:String x:Key="StrMapModeOnlineOwnDesc">Lädt fehlende Kacheln bei Bedarf direkt vom Meshhessen-Server und speichert sie dauerhaft lokal. Alle drei Kartenstile verfügbar. Nur Deutschland abgedeckt. Internet erforderlich.</sys:String>
+    <sys:String x:Key="StrMapModeOnlineCustom">Online – eigener Tile-Server</sys:String>
+    <sys:String x:Key="StrMapModeOnlineCustomDesc">Lädt fehlende Kacheln bei Bedarf vom selbst konfigurierten Tile-Server (Tile-URLs unten) und speichert sie dauerhaft lokal. Öffentliche OSM-/OpenTopoMap-Server sind hier nicht zulässig – dafür den Modus „Online – OpenStreetMap" verwenden. Internet erforderlich.</sys:String>
+    <sys:String x:Key="StrCustomTileServerPublicBlocked">Der Modus „Online – eigener Tile-Server" kann nicht mit öffentlichen OSM-/OpenTopoMap-URLs verwendet werden (Tile-Usage-Policy). Bitte einen eigenen Server eintragen oder den Modus „Online – OpenStreetMap" wählen.</sys:String>
     <sys:String x:Key="StrMapModeOnlineOsm">Online – OpenStreetMap (weltweit)</sys:String>
     <sys:String x:Key="StrMapModeOnlineOsmWarn">⚠ Bitte beachten: Der OSM-Tile-Server ist spendenfinanziert und nur für interaktive Nutzung vorgesehen. Bitte diesen Modus nur nutzen, wenn kein Meshhessen-Server verfügbar ist (z. B. außerhalb Deutschlands). Nur der Standard-Kartenstil ist verfügbar (kein Topo/Dark). Kein manueller Tile-Download in diesem Modus. Angesehene Kacheln werden lokal zwischengespeichert.</sys:String>
     <sys:String x:Key="StrMapModeOnlineOsmSourceLocked">Im OSM-Online-Modus ist nur die Standardkarte verfügbar.</sys:String>
@@ -1154,6 +1157,8 @@ Grün ≤15% | Gelb 15–25% | Rot &gt;25% | Grau = keine Airtime-Daten</sys:Str
     <sys:String x:Key="StrSigFair">Mittel</sys:String>
     <sys:String x:Key="StrSigWeak">Schwach</sys:String>
     <sys:String x:Key="StrPowered">Extern versorgt</sys:String>
+    <sys:String x:Key="StrPublicTileServerBlocked">Massen-Download von öffentlichen OSM-/OpenTopoMap-Servern ist nicht erlaubt (Tile-Usage-Policy). Bitte in den Einstellungen einen eigenen Tile-Server eintragen.</sys:String>
+
     <!-- Kiosk / Training mode -->
     <sys:String x:Key="StrKioskSection">Kiosk-/Trainingsmodus</sys:String>
     <sys:String x:Key="StrKioskEnable">Kiosk-Modus aktivieren</sys:String>

@@ -77,9 +77,10 @@ Der **Meshhessen Client** ist ein **kostenloser, nativer Windows-Client für Mes
 ### 🗺️ Karte
 
 * **Drei Kartentypen:** OSM Standard, OSM Dark Mode, OpenTopoMap (topografisch)
-* **Drei Karten-Modi** (umschaltbar in Einstellungen):
+* **Vier Karten-Modi** (umschaltbar in Einstellungen):
   * **Offline** (Standard) – vorher heruntergeladene Tiles vom Meshhessen-Server, kein Internet, nur Deutschland
   * **Online – Meshhessen-Server** – Tiles werden on-demand von `tile.meshhessenclient.de` geladen und dauerhaft lokal gespeichert; alle drei Stile, nur Deutschland
+  * **Online – eigener Tile-Server** – wie oben, aber mit den selbst konfigurierten Tile-URLs aus den Einstellungen; öffentliche OSM-/OpenTopoMap-Server sind hier nicht zulässig (Tile-Usage-Policy)
   * **Online – OpenStreetMap** – weltweite Abdeckung über `tile.openstreetmap.org`; nur Standardkarte; OSM-Tile-Policy-konform (kein Bulk-Download, Tiles lokal gecacht)
 * **Node-Positionen** als farbige Pins auf der Karte
 * **Node-Pfade** – GPS-Positionsverläufe aufzeichnen und auf der Karte anzeigen
@@ -469,9 +470,10 @@ Meshhessen Client · Windows-Client für Meshtastic-Geräte · Meshtastic Window
 ### 🗺️ Map
 
 * **Three map styles:** OSM Standard, OSM Dark Mode, OpenTopoMap (topographic)
-* **Three map modes** (switchable in settings):
+* **Four map modes** (switchable in settings):
   * **Offline** (default) – pre-downloaded tiles from the Meshhessen server, no internet required, Germany only
   * **Online – Meshhessen Server** – tiles fetched on demand from `tile.meshhessenclient.de` and stored permanently; all three styles, Germany only
+  * **Online – custom tile server** – same as above but using your own configured tile URLs from the settings; public OSM/OpenTopoMap servers are not allowed here (tile usage policy)
   * **Online – OpenStreetMap** – worldwide coverage via `tile.openstreetmap.org`; standard map only; OSM tile policy compliant (no bulk download, tiles cached locally)
 * **Node positions** as colored pins on the map
 * **Node paths** – record GPS position history and display tracks on the map

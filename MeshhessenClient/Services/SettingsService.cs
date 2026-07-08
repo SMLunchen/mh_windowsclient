@@ -36,7 +36,7 @@ public record AppSettings(
     int PositionHistoryHours,                // Hours of position history to show on map (0=unlimited, default 24)
     bool AutoTimeSyncOnConnect,              // Send time sync packet after connection init
     int TimeSyncDriftThresholdSeconds,       // Trigger time sync if rx_time drifts more than N seconds (default 300)
-    string MapMode,                          // Tile fetch mode: "offline", "online-own", "online-osm"
+    string MapMode,                          // Tile fetch mode: "offline", "online-own", "online-custom", "online-osm"
     bool EnableMessageDb,                    // Persist messages in SQLite DB
     int MessageDbRetentionDays,              // 0=unlimited, 30/90/365
     string LastConnectionType,              // "Serial", "Bluetooth", "Tcp"

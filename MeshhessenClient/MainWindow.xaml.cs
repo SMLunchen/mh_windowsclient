@@ -405,9 +405,10 @@ public partial class MainWindow : Window
             }
 
             // Load Map Mode
-            MapModeOfflineRadio.IsChecked   = settings.MapMode != "online-own" && settings.MapMode != "online-osm";
-            MapModeOnlineOwnRadio.IsChecked = settings.MapMode == "online-own";
-            MapModeOnlineOsmRadio.IsChecked = settings.MapMode == "online-osm";
+            MapModeOfflineRadio.IsChecked      = settings.MapMode is not ("online-own" or "online-osm" or "online-custom");
+            MapModeOnlineOwnRadio.IsChecked    = settings.MapMode == "online-own";
+            MapModeOnlineCustomRadio.IsChecked = settings.MapMode == "online-custom";
+            MapModeOnlineOsmRadio.IsChecked    = settings.MapMode == "online-osm";
             ApplyMapModeUi(settings.MapMode);
 
             if (settings.DarkMode)
@@ -513,12 +514,21 @@ public partial class MainWindow : Window
 
     #region Karte
 
+    // Custom mode: URLs as configured in the settings
     private string GetUrlForSource(string source) => source switch
     {
         "osm"     => _currentSettings.OSMTileUrl,
         "osmtopo" => _currentSettings.OSMTopoTileUrl,
         "osmdark" => _currentSettings.OSMDarkTileUrl,
         _         => _currentSettings.OSMTileUrl
+    };
+
+    // Meshhessen mode: always the official servers, independent of the URL fields
+    private static string GetMeshhessenUrlForSource(string source) => source switch
+    {
+        "osmtopo" => "https://tile.meshhessenclient.de/opentopo/{z}/{x}/{y}.png",
+        "osmdark" => "https://tile.meshhessenclient.de/dark/{z}/{x}/{y}.png",
+        _         => "https://tile.meshhessenclient.de/osm/{z}/{x}/{y}.png"
     };
 
     private void InitializeMap()
@@ -538,6 +548,10 @@ public partial class MainWindow : Window
                     "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
                     useHttpCacheHeaders: true),
                 "online-own" => new Services.CachingHttpTileProvider(
+                    tileDir, sourceFolder,
+                    GetMeshhessenUrlForSource(sourceFolder),
+                    useHttpCacheHeaders: false),
+                "online-custom" => new Services.CachingHttpTileProvider(
                     tileDir, sourceFolder,
                     GetUrlForSource(sourceFolder),
                     useHttpCacheHeaders: false),
@@ -574,7 +588,7 @@ public partial class MainWindow : Window
 
             UpdateMyPositionPin();
 
-            if (_currentSettings.MapMode is "online-own" or "online-osm")
+            if (_currentSettings.MapMode is "online-own" or "online-osm" or "online-custom")
             {
                 MapStatusText.Text = "";
             }
@@ -1152,7 +1166,7 @@ public partial class MainWindow : Window
 
     private void UpdateMapTileStatus()
     {
-        if (_currentSettings.MapMode is "online-own" or "online-osm")
+        if (_currentSettings.MapMode is "online-own" or "online-osm" or "online-custom")
         {
             MapStatusText.Text = "";
             return;
@@ -1197,11 +1211,28 @@ public partial class MainWindow : Window
         // Guard: RadioButton fires Checked during initial binding before _currentSettings is fully populated
         if (_currentSettings is null) return;
 
-        var mode = MapModeOnlineOsmRadio?.IsChecked == true ? "online-osm"
-                 : MapModeOnlineOwnRadio?.IsChecked  == true ? "online-own"
+        var mode = MapModeOnlineOsmRadio?.IsChecked    == true ? "online-osm"
+                 : MapModeOnlineOwnRadio?.IsChecked    == true ? "online-own"
+                 : MapModeOnlineCustomRadio?.IsChecked == true ? "online-custom"
                  : "offline";
 
         if (mode == _currentSettings.MapMode) return;
+
+        // Custom mode must not point at public OSM/OpenTopo servers (tile usage policy)
+        if (mode == "online-custom" &&
+            (Services.TileDownloaderService.IsPublicTileServer(_currentSettings.OSMTileUrl) ||
+             Services.TileDownloaderService.IsPublicTileServer(_currentSettings.OSMTopoTileUrl) ||
+             Services.TileDownloaderService.IsPublicTileServer(_currentSettings.OSMDarkTileUrl)))
+        {
+            MessageBox.Show(Loc("StrCustomTileServerPublicBlocked"), Loc("StrMapModeOnlineCustom"),
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+            // Revert the radio selection to the previous mode
+            MapModeOfflineRadio.IsChecked      = _currentSettings.MapMode is not ("online-own" or "online-osm");
+            MapModeOnlineOwnRadio.IsChecked    = _currentSettings.MapMode == "online-own";
+            MapModeOnlineOsmRadio.IsChecked    = _currentSettings.MapMode == "online-osm";
+            MapModeOnlineCustomRadio.IsChecked = false;
+            return;
+        }
 
         // OSM mode forces standard map
         var newSource = (mode == "online-osm") ? "osm" : _currentSettings.MapSource;
@@ -1231,7 +1262,7 @@ public partial class MainWindow : Window
         if (OsmWarnBorder is null) return; // Called before XAML is loaded
 
         var isOsm     = mode == "online-osm";
-        var isOffline = mode != "online-own" && mode != "online-osm";
+        var isOffline = mode is not ("online-own" or "online-osm" or "online-custom");
 
         OsmWarnBorder.Visibility        = isOsm     ? Visibility.Visible   : Visibility.Collapsed;
         MapSourceLockedHint.Visibility  = isOsm     ? Visibility.Visible   : Visibility.Collapsed;
@@ -4941,6 +4972,8 @@ public partial class MainWindow : Window
             "online-osm" => new Services.CachingHttpTileProvider(tileDir, "osm_online",
                 "https://tile.openstreetmap.org/{z}/{x}/{y}.png", useHttpCacheHeaders: true),
             "online-own" => new Services.CachingHttpTileProvider(tileDir, sourceFolder,
+                GetMeshhessenUrlForSource(sourceFolder), useHttpCacheHeaders: false),
+            "online-custom" => new Services.CachingHttpTileProvider(tileDir, sourceFolder,
                 GetUrlForSource(sourceFolder), useHttpCacheHeaders: false),
             _ => new Services.LocalFileTileProvider(tileDir, sourceFolder)
         };
