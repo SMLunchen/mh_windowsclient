@@ -149,6 +149,36 @@
     <sys:String x:Key="StrMapModeOnlineOsm">Online – OpenStreetMap (worldwide)</sys:String>
     <sys:String x:Key="StrMapModeOnlineOsmWarn">⚠ Please note: The OSM tile server is donation-funded and intended for interactive use only. Please use this mode only when the Meshhessen server is unavailable (e.g. outside Germany). Only the standard map style is available (no Topo/Dark). Manual tile download is disabled in this mode. Viewed tiles are cached locally.</sys:String>
     <sys:String x:Key="StrMapModeOnlineOsmSourceLocked">Only the standard map style is available in OSM online mode.</sys:String>
+    <sys:String x:Key="StrMapRenderMode">Map rendering:</sys:String>
+    <sys:String x:Key="StrMapRenderRaster">Raster (proven, maximum compatibility)</sys:String>
+    <sys:String x:Key="StrMapRenderRasterDesc">Pre-rendered map images. Pros: runs on any hardware, full feature set (node pins, traceroutes, right-click). Cons: slightly blurry with display scaling, much larger offline downloads, fixed map style.</sys:String>
+    <sys:String x:Key="StrMapRenderVector">Vector (new: sharp, compact, extra layers)</sys:String>
+    <sys:String x:Key="StrMapRenderVectorDesc">The map is drawn locally from vector data. Pros: razor-sharp at any zoom level, much smaller offline data, switchable feature layers (e.g. fire service with hydrants, stations, rescue points), map style updates without a client update. Cons: requires Microsoft WebView2 (preinstalled on Windows 11) and a bit more graphics power.</sys:String>
+    <sys:String x:Key="StrMapRenderVectorPreviewHint">Note: Vector mode is new. Node pins, traceroutes, neighbor lines and right-click functions are supported – minor rendering differences compared to the raster map are possible. Areas viewed online are stored automatically for offline use.</sys:String>
+    <sys:String x:Key="StrVectorOsmRasterFallback">There are no vector maps in "Online – OpenStreetMap" mode – the raster map is shown automatically.</sys:String>
+    <sys:String x:Key="StrVectorNoWebView2">Vector mode requires the Microsoft WebView2 runtime, which was not found on this system. The raster map will continue to be used. WebView2 can be installed free of charge from Microsoft.</sys:String>
+    <sys:String x:Key="StrVectorStyleUrl">Vector style URL (style JSON):</sys:String>
+    <sys:String x:Key="StrVectorStyleUrlHint">URL of the MapLibre style JSON for the selected map style, e.g. https://server/styles/osm.json. Tiles, fonts and sprites are loaded from the style and cached locally.</sys:String>
+    <sys:String x:Key="StrNoVectorTiles">No vector map data stored. View the map online once – visited areas are stored automatically for offline use.</sys:String>
+    <sys:String x:Key="StrOverlayEmergency">🚒 Fire service / rescue</sys:String>
+    <sys:String x:Key="StrOverlayEmergencyTooltip">Fire service / rescue layer: hydrants (from zoom 15), stations, sirens, fire ponds, rescue points, defibrillators and more (from zoom 13). No data is loaded while switched off.</sys:String>
+    <sys:String x:Key="StrMapLayersBtn">🗂️ Layers</sys:String>
+    <sys:String x:Key="StrMapLayersBtnTooltip">Toggle map overlay layers</sys:String>
+    <sys:String x:Key="StrVectorOverlaysTitle">Overlay layers:</sys:String>
+    <sys:String x:Key="StrVectorOverlaysHint">Specialist layers are drawn on top of the vector map. While a layer is off, no data is loaded for it. Also switchable via the 🗂️ button on the map.</sys:String>
+    <sys:String x:Key="StrDownloadVectorTiles">Download vector package…</sys:String>
+    <sys:String x:Key="StrDownloadVectorTilesHint">Downloads the base map and selected overlay layers for an area into the offline store (vectortiles/). Existing tiles are skipped. One basemap download covers all three map styles.</sys:String>
+    <sys:String x:Key="StrVdTitle">Vector offline package</sys:String>
+    <sys:String x:Key="StrVdDoc">Downloads vector tiles, map styles, fonts and sprites for the selected area into the offline store. One basemap download covers all three map styles (OSM, Dark, OpenTopo) – OpenTopo additionally needs the topo extras (contour lines + hillshade). Existing tiles are skipped; re-running only fetches what is missing.</sys:String>
+    <sys:String x:Key="StrVdMaxZoom">Max. detail zoom (12–17):</sys:String>
+    <sys:String x:Key="StrVdMaxZoomHint">14 = default (complete base map, small downloads – higher zoom levels are rendered from z14). 15–17 only needed for detail layers such as hydrants and contour labels; much larger downloads.</sys:String>
+    <sys:String x:Key="StrVdTopoExtras">OpenTopo extras (contour lines + hillshade)</sys:String>
+    <sys:String x:Key="StrVdTopoExtrasHint">Only needed for the OpenTopo map style. Contour lines from zoom 11, hillshade relief.</sys:String>
+    <sys:String x:Key="StrVdOverlays">Include overlay layers:</sys:String>
+    <sys:String x:Key="StrVdEstimate">Estimated: {0} tiles</sys:String>
+    <sys:String x:Key="StrVdInvalidParams">Please enter valid coordinates and a detail zoom between 12 and 17.</sys:String>
+    <sys:String x:Key="StrVdDone">Done! {0} downloaded, {1} skipped, {2} errors.</sys:String>
+    <sys:String x:Key="StrVdCancelled">Cancelled – tiles already downloaded remain usable.</sys:String>
     <sys:String x:Key="StrTelemetryDbGroup">Telemetry Database</sys:String>
     <sys:String x:Key="StrRetentionLabel">Data retention period</sys:String>
     <sys:String x:Key="StrRetention30">30 days</sys:String>
@@ -776,6 +806,9 @@
     <sys:String x:Key="StrBruTileDesc">Tile schema and handling</sys:String>
     <sys:String x:Key="StrModernWpfDesc">Fluent Design UI theming for WPF</sys:String>
     <sys:String x:Key="StrProtobufDesc">Protocol serialization for Meshtastic communication</sys:String>
+    <sys:String x:Key="StrOpenMapTilesDesc">Vector map schema and data © OpenMapTiles © OpenStreetMap contributors</sys:String>
+    <sys:String x:Key="StrMapLibreDesc">Vector map rendering (MapLibre GL JS)</sys:String>
+    <sys:String x:Key="StrNotoSansDesc">Map label font Noto Sans © Google LLC</sys:String>
     <sys:String x:Key="StrLicense">License</sys:String>
 
     <!-- Status bar channel/sent messages -->

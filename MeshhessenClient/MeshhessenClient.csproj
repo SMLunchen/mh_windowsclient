@@ -18,9 +18,9 @@
     <PublishDir>..\public\</PublishDir>
 
     <AssemblyName>MeshhessenClient</AssemblyName>
-    <Version>1.5.13.0</Version>
-    <AssemblyVersion>1.5.13.0</AssemblyVersion>
-    <FileVersion>1.5.13.0</FileVersion>
+    <Version>1.5.14.0</Version>
+    <AssemblyVersion>1.5.14.0</AssemblyVersion>
+    <FileVersion>1.5.14.0</FileVersion>
     <Company>Meshtastic Community</Company>
     <Product>Meshhessen Client</Product>
     <Description>Offline-fähiger Windows Client für Meshtastic Geräte</Description>
@@ -31,6 +31,7 @@
     <!-- Serial Port Communication -->
     <PackageReference Include="Mapsui.Nts" Version="4.1.7" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.3" />
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4078.44" />
     <PackageReference Include="OxyPlot.Wpf" Version="2.2.0" />
     <PackageReference Include="System.IO.Ports" Version="8.0.0" />
 
@@ -76,6 +77,11 @@
 
   <ItemGroup>
     <EmbeddedResource Include="..\CHANNELS.csv" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Vector map assets (MapLibre GL JS + map page), extracted at runtime for the WebView2 map -->
+    <EmbeddedResource Include="Resources\VectorMap\**" />
   </ItemGroup>
 
 </Project>

@@ -7,6 +7,25 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
 
+## [1.5.14] - 2026-07-15
+
+### ✨ Hinzugefügt
+
+#### 🗺️ Vektorkarten (Vorschau)
+- **Neue Kartendarstellung „Vektor"** in den Einstellungen umschaltbar – Raster bleibt Standard und wird voll weiter unterstützt; Beschreibung der Vor-/Nachteile direkt in den Einstellungen
+- **Rendering mit MapLibre GL JS** im eingebetteten WebView2: gestochen scharf in jeder Zoomstufe, alle drei Kartenstile (OSM, OpenTopo mit Höhenlinien+Relief, Dark) vom Meshhessen-Vektorserver; Stil-Updates kommen ohne Client-Update an
+- **Alle vier Karten-Modi** wie bei Raster: Offline / Meshhessen-Server / eigener Server (Style-URL konfigurierbar) – im OSM-Online-Modus wird automatisch die Rasterkarte verwendet (kein öffentlicher Vektorserver)
+- **Automatischer Offline-Cache:** online betrachtete Gebiete werden unter `vectortiles/` gespeichert (Tiles, Styles, Schriften, Symbole, Relief) und sind ohne Internet weiter nutzbar; deutlich kleinere Datenmengen als Raster
+- **🚒 Feuerwehr-/Rettungs-Layer** per Checkbox in der Karten-Toolbar zuschaltbar: Hydranten (ab Zoom 15, Überflur/Unterflur unterscheidbar), Wachen, Sirenen, Löschteiche, Saugstellen, Rettungspunkte, Defibrillatoren u. v. m. (ab Zoom 13). Solange ausgeschaltet, wird **kein Byte** dafür geladen. Architektur vorbereitet für weitere Fach-Layer (z. B. THW, Krankenhäuser)
+- **Klick auf ein Feuerwehr-Objekt** öffnet ein Detail-Popup: Bauart, Kupplungen, Durchfluss, Druck, Wasserquelle, Betreiber, Standort, Erfassungsdatum u. a. (zweisprachig DE/EN)
+- **Voller Karten-Funktionsumfang auch im Vektor-Modus:** Node-Pins (Farben, Notizen, Emoji-Labels), eigener Standort, Waypoints, Traceroutes (MQTT-Hops gestrichelt, klickbare Segment-Punkte mit SNR-Popup), Nachbar-Linien mit SNR-/Alter-Farbverlauf, Positionsverläufe sowie das komplette Rechtsklick-Kontextmenü (Position setzen, Waypoint anlegen, DM/Info/Farbe/Traceroute/Telemetrie je Node)
+- **Layer-Auswahl:** Zusatz-Layer in den Einstellungen an-/abwählbar und zusätzlich über den 🗂️-Button direkt auf der Karte (Auswahl-Popup); Registry vorbereitet für weitere abonnierbare Layer
+- **Vektor-Offlinepaket-Downloader:** Bundesland-Presets oder eigene Bounding-Box, wählbarer Detail-Zoom (12–17), OpenTopo-Extras (Höhenlinien + Relief) und Zusatz-Layer als Opt-in; lädt Styles, Schriften und Symbole automatisch mit; bereits vorhandene Kacheln werden übersprungen (Wiederaufnahme möglich); Abbruch stoppt sauber ohne die Oberfläche zu blockieren
+- **Automatischer Rückfall auf Raster** mit Hinweis, falls die WebView2-Runtime fehlt
+- **Pflicht-Attribution** „© OpenMapTiles © OpenStreetMap contributors" in der Vektorkarte; neue Lizenz-Einträge im Info-Tab: OpenMapTiles (CC-BY/ODbL), MapLibre GL JS (BSD-3-Clause), Noto Sans (SIL Open Font License 1.1)
+
+---
+
 ## [1.5.13] - 2026-06-11
 
 ### ✨ Hinzugefügt

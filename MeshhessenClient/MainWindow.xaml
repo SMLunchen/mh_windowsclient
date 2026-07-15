@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ui="http://schemas.modernwpf.com/2019"
         xmlns:mapsui="clr-namespace:Mapsui.UI.Wpf;assembly=Mapsui.UI.Wpf"
+        xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:converters="clr-namespace:MeshhessenClient.Converters"
@@ -1558,11 +1559,37 @@
                             <Button Content="{DynamicResource StrRemoveAllTraceroutes}" Height="28" Padding="8,2" Margin="0,0,0,0"
                                     Click="ClearAllTraceroutes_Click"
                                     ToolTip="{DynamicResource StrRemoveAllTooltip}"/>
+
+                            <Border x:Name="MapOverlaySeparator" Width="1" Background="#40808080" Margin="14,3,14,3"
+                                    Visibility="Collapsed"/>
+
+                            <!-- Zusatz-Layer (nur Vektor-Modus): Button öffnet Auswahl-Popup -->
+                            <Button x:Name="MapLayersBtn" Height="28" Padding="8,2"
+                                    Visibility="Collapsed" Click="MapLayersBtn_Click"
+                                    Content="{DynamicResource StrMapLayersBtn}"
+                                    ToolTip="{DynamicResource StrMapLayersBtnTooltip}"/>
+                            <Popup x:Name="MapLayersPopup" StaysOpen="False" Placement="Bottom"
+                                   AllowsTransparency="True">
+                                <Border Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                                        BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}"
+                                        BorderThickness="1" CornerRadius="4" Padding="12,10">
+                                    <StackPanel>
+                                        <TextBlock Text="{DynamicResource StrVectorOverlaysTitle}"
+                                                   FontWeight="SemiBold" FontSize="12" Margin="0,0,0,8"/>
+                                        <StackPanel x:Name="MapLayersPopupPanel"/>
+                                    </StackPanel>
+                                </Border>
+                            </Popup>
                         </StackPanel>
                         <TextBlock x:Name="MapStatusText" Grid.Column="1" VerticalAlignment="Center" Foreground="Gray" FontStyle="Italic"/>
                     </Grid>
                     <Grid Grid.Row="1">
                         <mapsui:MapControl x:Name="MapControl"/>
+
+                        <!-- Vector map (MapLibre GL JS in WebView2). HWND-based: WPF overlays
+                             (legend, copyright) cannot render above it – attribution and
+                             controls live inside the map page instead. -->
+                        <wv2:WebView2 x:Name="VectorMapView" Visibility="Collapsed"/>
 
                         <!-- Traceroute Legend (top-left overlay) -->
                         <Border x:Name="TracerouteLegend"
@@ -1769,6 +1796,46 @@
                             <GroupBox Header="{DynamicResource StrMapGroup}" Margin="0,0,0,16">
                                 <StackPanel Margin="10">
 
+                                    <!-- Kartendarstellung: Raster / Vektor -->
+                                    <TextBlock Text="{DynamicResource StrMapRenderMode}" Margin="0,0,0,6" FontWeight="SemiBold"/>
+
+                                    <RadioButton x:Name="MapRenderRasterRadio" GroupName="MapRenderMode"
+                                                Content="{DynamicResource StrMapRenderRaster}"
+                                                Margin="0,0,0,2" Checked="MapRenderModeRadio_Changed"/>
+                                    <TextBlock Text="{DynamicResource StrMapRenderRasterDesc}"
+                                              FontSize="11" Foreground="Gray" FontStyle="Italic"
+                                              TextWrapping="Wrap" Margin="20,0,0,8"/>
+
+                                    <RadioButton x:Name="MapRenderVectorRadio" GroupName="MapRenderMode"
+                                                Content="{DynamicResource StrMapRenderVector}"
+                                                Margin="0,0,0,2" Checked="MapRenderModeRadio_Changed"/>
+                                    <TextBlock Text="{DynamicResource StrMapRenderVectorDesc}"
+                                              FontSize="11" Foreground="Gray" FontStyle="Italic"
+                                              TextWrapping="Wrap" Margin="20,0,0,4"/>
+                                    <Border x:Name="VectorPreviewHintBorder"
+                                           Margin="20,2,0,8" Padding="8,6"
+                                           Background="#E3F2FD" BorderBrush="#1E6AB8" BorderThickness="1"
+                                           CornerRadius="3" Visibility="Collapsed">
+                                        <TextBlock Text="{DynamicResource StrMapRenderVectorPreviewHint}"
+                                                  FontSize="11" TextWrapping="Wrap" Foreground="#0D3C61"/>
+                                    </Border>
+                                    <TextBlock x:Name="VectorOsmFallbackHint"
+                                              Text="{DynamicResource StrVectorOsmRasterFallback}"
+                                              FontSize="11" FontStyle="Italic" Foreground="#B26500"
+                                              TextWrapping="Wrap" Margin="20,0,0,8" Visibility="Collapsed"/>
+
+                                    <!-- Zusatz-Layer-Auswahl (nur Vektor-Modus) -->
+                                    <TextBlock x:Name="VectorOverlaysTitle"
+                                              Text="{DynamicResource StrVectorOverlaysTitle}"
+                                              FontWeight="SemiBold" Margin="0,4,0,4" Visibility="Collapsed"/>
+                                    <TextBlock x:Name="VectorOverlaysHint"
+                                              Text="{DynamicResource StrVectorOverlaysHint}"
+                                              FontSize="11" Foreground="Gray" FontStyle="Italic"
+                                              TextWrapping="Wrap" Margin="0,0,0,4" Visibility="Collapsed"/>
+                                    <StackPanel x:Name="VectorOverlaysPanel" Margin="0,0,0,8" Visibility="Collapsed"/>
+
+                                    <Separator Margin="0,4,0,10"/>
+
                                     <!-- Kartenstil -->
                                     <TextBlock Text="{DynamicResource StrMapSource}" Margin="0,0,0,4"/>
                                     <ComboBox x:Name="MapSourceComboBox"
@@ -1822,7 +1889,7 @@
                                                   FontSize="11" TextWrapping="Wrap" Foreground="#7B4700"/>
                                     </Border>
 
-                                    <!-- Tile-Server URL (ausgeblendet im OSM-Online-Modus) -->
+                                    <!-- Tile-Server URL (ausgeblendet im OSM-Online-Modus und im Vektor-Modus) -->
                                     <StackPanel x:Name="TileServerPanel">
                                         <TextBlock Text="{DynamicResource StrTileServerUrl}" Margin="0,4,0,4"/>
                                         <TextBox x:Name="TileServerUrlTextBox" HorizontalAlignment="Stretch" Margin="0,0,0,4"/>
@@ -1830,12 +1897,28 @@
                                                   FontStyle="Italic" Foreground="Gray" FontSize="11" Margin="0,0,0,10"/>
                                     </StackPanel>
 
-                                    <!-- Download/Import (nur im Offline-Modus) -->
+                                    <!-- Vector-Style URL (nur im Vektor-Modus mit eigenem Server) -->
+                                    <StackPanel x:Name="VectorStylePanel" Visibility="Collapsed">
+                                        <TextBlock Text="{DynamicResource StrVectorStyleUrl}" Margin="0,4,0,4"/>
+                                        <TextBox x:Name="VectorStyleUrlTextBox" HorizontalAlignment="Stretch" Margin="0,0,0,4"/>
+                                        <TextBlock Text="{DynamicResource StrVectorStyleUrlHint}"
+                                                  FontStyle="Italic" Foreground="Gray" FontSize="11" Margin="0,0,0,10"/>
+                                    </StackPanel>
+
+                                    <!-- Download/Import (nur im Offline-Modus, Raster) -->
                                     <StackPanel x:Name="TileDownloadPanel">
                                         <Button Content="{DynamicResource StrDownloadTiles}" Width="200" HorizontalAlignment="Left"
                                                Margin="0,0,0,6" Click="DownloadTiles_Click"/>
                                         <Button Content="{DynamicResource StrImportTilesZip}" Width="200" HorizontalAlignment="Left"
                                                Click="ImportTilesFromZip_Click"/>
+                                    </StackPanel>
+
+                                    <!-- Vektor-Offlinepaket (nur Vektor-Modus) -->
+                                    <StackPanel x:Name="VectorDownloadPanel" Visibility="Collapsed">
+                                        <Button Content="{DynamicResource StrDownloadVectorTiles}" MinWidth="240" HorizontalAlignment="Left"
+                                               Margin="0,0,0,4" Click="DownloadVectorTiles_Click"/>
+                                        <TextBlock Text="{DynamicResource StrDownloadVectorTilesHint}"
+                                                  FontStyle="Italic" Foreground="Gray" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,6"/>
                                     </StackPanel>
 
                                 </StackPanel>
@@ -2221,6 +2304,51 @@
                                 <TextBlock Text="{DynamicResource StrProtobufDesc}" TextWrapping="Wrap"/>
                                 <TextBlock Foreground="Gray" FontSize="11">
                                     <Run Text="{DynamicResource StrLicense}"/><Run Text=": BSD-3-Clause"/>
+                                </TextBlock>
+                            </StackPanel>
+                        </Border>
+
+                        <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}" BorderThickness="0,0,0,1" Padding="0,0,0,10" Margin="0,0,0,10">
+                            <StackPanel>
+                                <TextBlock Text="OpenMapTiles" FontWeight="Bold"/>
+                                <TextBlock Text="{DynamicResource StrOpenMapTilesDesc}" TextWrapping="Wrap"/>
+                                <TextBlock Foreground="Gray" FontSize="11">
+                                    <Run Text="{DynamicResource StrLicense}"/><Run Text=": CC-BY 4.0 / ODbL"/>
+                                </TextBlock>
+                                <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray">
+                                    <Hyperlink NavigateUri="https://openmaptiles.org/" RequestNavigate="Hyperlink_RequestNavigate">
+                                        <Run Text="openmaptiles.org"/>
+                                    </Hyperlink>
+                                </TextBlock>
+                            </StackPanel>
+                        </Border>
+
+                        <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}" BorderThickness="0,0,0,1" Padding="0,0,0,10" Margin="0,0,0,10">
+                            <StackPanel>
+                                <TextBlock Text="MapLibre GL JS" FontWeight="Bold"/>
+                                <TextBlock Text="{DynamicResource StrMapLibreDesc}" TextWrapping="Wrap"/>
+                                <TextBlock Foreground="Gray" FontSize="11">
+                                    <Run Text="{DynamicResource StrLicense}"/><Run Text=": BSD-3-Clause"/>
+                                </TextBlock>
+                                <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray">
+                                    <Hyperlink NavigateUri="https://maplibre.org/" RequestNavigate="Hyperlink_RequestNavigate">
+                                        <Run Text="maplibre.org"/>
+                                    </Hyperlink>
+                                </TextBlock>
+                            </StackPanel>
+                        </Border>
+
+                        <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}" BorderThickness="0,0,0,1" Padding="0,0,0,10" Margin="0,0,0,10">
+                            <StackPanel>
+                                <TextBlock Text="Noto Sans" FontWeight="Bold"/>
+                                <TextBlock Text="{DynamicResource StrNotoSansDesc}" TextWrapping="Wrap"/>
+                                <TextBlock Foreground="Gray" FontSize="11">
+                                    <Run Text="{DynamicResource StrLicense}"/><Run Text=": SIL Open Font License 1.1"/>
+                                </TextBlock>
+                                <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray">
+                                    <Hyperlink NavigateUri="https://openfontlicense.org/" RequestNavigate="Hyperlink_RequestNavigate">
+                                        <Run Text="openfontlicense.org"/>
+                                    </Hyperlink>
                                 </TextBlock>
                             </StackPanel>
                         </Border>

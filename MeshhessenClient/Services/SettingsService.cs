@@ -50,7 +50,12 @@ public record AppSettings(
     bool FancyNodeListColorful,            // Color tiles by signal quality (when no node color set)
     bool KioskModeEnabled,                 // Kiosk/training mode: lockable UI for shared stations
     string KioskPasswordHash,              // PBKDF2 "salt:hash" (base64); empty = no password set
-    string KioskLockedFeatures);           // CSV of feature keys hidden while locked
+    string KioskLockedFeatures,            // CSV of feature keys hidden while locked
+    string MapRenderMode,                  // Map rendering: "raster" (Mapsui, compatible) or "vector" (MapLibre/WebView2)
+    string VectorStyleOsmUrl,              // Vector style URL for OSM (online-custom mode)
+    string VectorStyleTopoUrl,             // Vector style URL for OpenTopo (online-custom mode)
+    string VectorStyleDarkUrl,             // Vector style URL for Dark (online-custom mode)
+    string MapOverlays);                   // CSV of active vector overlay keys (see MapOverlayRegistry)
 
 public static class SettingsService
 {
@@ -103,7 +108,12 @@ public static class SettingsService
             true,                           // FancyNodeListColorful default on
             false,                          // KioskModeEnabled default off
             string.Empty,                   // KioskPasswordHash default empty
-            string.Empty);                  // KioskLockedFeatures default empty
+            string.Empty,                   // KioskLockedFeatures default empty
+            "raster",                       // MapRenderMode default raster (backward compatible)
+            "https://vectortile.meshhessenclient.de/styles/osm.json",      // VectorStyleOsmUrl
+            "https://vectortile.meshhessenclient.de/styles/opentopo.json", // VectorStyleTopoUrl
+            "https://vectortile.meshhessenclient.de/styles/dark.json",     // VectorStyleDarkUrl
+            string.Empty);                  // MapOverlays default: none active
 
         try
         {
@@ -259,7 +269,12 @@ public static class SettingsService
                 FancyNodeListColorful: !values.TryGetValue("FancyNodeListColorful", out var fnc) || !bool.TryParse(fnc, out var fncBool) || fncBool,
                 KioskModeEnabled: values.TryGetValue("KioskModeEnabled", out var kme) && bool.TryParse(kme, out var kmeBool) && kmeBool,
                 KioskPasswordHash: values.TryGetValue("KioskPasswordHash", out var kph) ? kph : string.Empty,
-                KioskLockedFeatures: values.TryGetValue("KioskLockedFeatures", out var klf) ? klf : string.Empty
+                KioskLockedFeatures: values.TryGetValue("KioskLockedFeatures", out var klf) ? klf : string.Empty,
+                MapRenderMode: values.TryGetValue("MapRenderMode", out var mrm) && !string.IsNullOrEmpty(mrm) ? mrm : defaults.MapRenderMode,
+                VectorStyleOsmUrl: values.TryGetValue("VectorStyleOsmUrl", out var vso) && !string.IsNullOrWhiteSpace(vso) ? vso : defaults.VectorStyleOsmUrl,
+                VectorStyleTopoUrl: values.TryGetValue("VectorStyleTopoUrl", out var vst) && !string.IsNullOrWhiteSpace(vst) ? vst : defaults.VectorStyleTopoUrl,
+                VectorStyleDarkUrl: values.TryGetValue("VectorStyleDarkUrl", out var vsd) && !string.IsNullOrWhiteSpace(vsd) ? vsd : defaults.VectorStyleDarkUrl,
+                MapOverlays: values.TryGetValue("MapOverlays", out var mov) ? mov : defaults.MapOverlays
             );
         }
         catch (Exception ex)
@@ -316,7 +331,12 @@ public static class SettingsService
                 $"FancyNodeListColorful={settings.FancyNodeListColorful}",
                 $"KioskModeEnabled={settings.KioskModeEnabled}",
                 $"KioskPasswordHash={settings.KioskPasswordHash}",
-                $"KioskLockedFeatures={settings.KioskLockedFeatures}"
+                $"KioskLockedFeatures={settings.KioskLockedFeatures}",
+                $"MapRenderMode={settings.MapRenderMode}",
+                $"VectorStyleOsmUrl={settings.VectorStyleOsmUrl}",
+                $"VectorStyleTopoUrl={settings.VectorStyleTopoUrl}",
+                $"VectorStyleDarkUrl={settings.VectorStyleDarkUrl}",
+                $"MapOverlays={settings.MapOverlays}"
             };
 
             // Save node colors

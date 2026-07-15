@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<link rel="stylesheet" href="maplibre-gl.css"/>
+<style>
+  html, body, #map { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #e8e6e0; }
+  /* Own-position marker: blue dot with white ring (matches the raster map pin) */
+  .my-pos {
+    width: 16px; height: 16px; border-radius: 50%;
+    background: #1565c0; border: 3px solid #ffffff;
+    box-shadow: 0 0 4px rgba(0,0,0,0.5);
+  }
+  .my-pos-label {
+    position: absolute; left: 20px; top: -2px; white-space: nowrap;
+    font: 12px "Segoe UI", sans-serif; color: #000;
+    background: rgba(255,255,255,0.75); padding: 0 4px; border-radius: 3px;
+  }
+  /* Emergency feature popup */
+  .em-popup { font: 12px "Segoe UI", sans-serif; color: #1a1a1a; max-width: 260px; }
+  .em-popup h4 { margin: 0 0 6px 0; font-size: 13px; }
+  .em-popup table { border-collapse: collapse; }
+  .em-popup td { padding: 1px 0; vertical-align: top; }
+  .em-popup td.k { color: #666; padding-right: 10px; white-space: nowrap; }
+  .maplibregl-popup-content { padding: 10px 12px; }
+  /* Node pins (HTML markers – full emoji support in labels) */
+  .node-pin { position: relative; width: 14px; height: 14px; cursor: pointer; }
+  .node-pin-dot {
+    width: 14px; height: 14px; border-radius: 50%;
+    border: 2px solid #ffffff; box-sizing: border-box;
+    box-shadow: 0 0 3px rgba(0,0,0,0.6);
+  }
+  .node-pin-label {
+    position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%);
+    white-space: nowrap; font: 11px "Segoe UI", "Segoe UI Emoji", sans-serif; color: #000;
+    background: rgba(255,255,255,0.72); padding: 0 4px; border-radius: 3px;
+    pointer-events: none;
+  }
+  /* Waypoint pins */
+  .wp-pin { position: relative; width: 13px; height: 13px; cursor: pointer; }
+  .wp-pin-dot {
+    width: 13px; height: 13px; border-radius: 50%;
+    background: rgba(255,165,0,0.86); border: 1.5px solid #fff; box-sizing: border-box;
+    box-shadow: 0 0 3px rgba(0,0,0,0.5);
+  }
+  .wp-pin-label {
+    position: absolute; left: 17px; top: -1px; white-space: nowrap;
+    font: 11px "Segoe UI", "Segoe UI Emoji", sans-serif; color: #000;
+    background: rgba(255,255,255,0.75); padding: 0 4px; border-radius: 3px;
+    pointer-events: none;
+  }
+</style>
+<script src="maplibre-gl.js"></script>
+</head>
+<body>
+<div id="map"></div>
+<script>
+'use strict';
+
+let map = null;
+let myPosMarker = null;
+let uiLang = 'de';
+const knownOverlays = new Set();   // layer-id prefixes managed by the client, e.g. "em-"
+const activeOverlays = new Set();  // subset of knownOverlays currently switched on
+
+// Labels for the emergency-overlay feature popup (attributes per server doc §9.3)
+const EM_I18N = {
+  de: {
+    classes: {
+      hydrant: 'Hydrant', defibrillator: 'Defibrillator (AED)', emergency_phone: 'Notrufsäule',
+      suction_point: 'Saugstelle', water_tank: 'Löschwasserbehälter', fire_water_pond: 'Löschteich',
+      siren: 'Sirene', access_point: 'Rettungspunkt', assembly_point: 'Sammelplatz',
+      fire_station: 'Feuerwache', ambulance_station: 'Rettungswache',
+      disaster_help_point: 'Katastrophenschutz-Anlaufstelle', mountain_rescue: 'Bergrettung',
+      landing_site: 'Hubschrauberlandeplatz', lifeguard: 'Wasserrettung', ladder_site: 'Anleiterstelle',
+      fire_service_inlet: 'Einspeisung', fire_extinguisher: 'Feuerlöscher', fire_alarm_box: 'Feuermelder',
+      fire_hose: 'Löschschlauch', key_depot: 'Feuerwehrschlüsseldepot (FSD)', life_ring: 'Rettungsring',
+      first_aid_kit: 'Erste-Hilfe-Kasten'
+    },
+    types: { underground: 'Unterflur', pillar: 'Überflur', wall: 'Wandhydrant', pipe: 'Rohranschluss' },
+    fields: {
+      name: 'Name', ref: 'Nummer', type: 'Bauart', couplings: 'Kupplungen', colour: 'Farbe',
+      water_source: 'Wasserquelle', flow_rate: 'Durchfluss', pressure: 'Druck',
+      water_volume: 'Wasservolumen', operator: 'Betreiber', opening_hours: 'Öffnungszeiten',
+      location: 'Standort', level: 'Ebene', access: 'Zugang', survey_date: 'Erfasst'
+    }
+  },
+  en: {
+    classes: {
+      hydrant: 'Hydrant', defibrillator: 'Defibrillator (AED)', emergency_phone: 'Emergency phone',
+      suction_point: 'Suction point', water_tank: 'Water tank', fire_water_pond: 'Fire water pond',
+      siren: 'Siren', access_point: 'Rescue point', assembly_point: 'Assembly point',
+      fire_station: 'Fire station', ambulance_station: 'Ambulance station',
+      disaster_help_point: 'Disaster help point', mountain_rescue: 'Mountain rescue',
+      landing_site: 'Helicopter landing site', lifeguard: 'Lifeguard', ladder_site: 'Ladder site',
+      fire_service_inlet: 'Fire service inlet', fire_extinguisher: 'Fire extinguisher',
+      fire_alarm_box: 'Fire alarm box', fire_hose: 'Fire hose', key_depot: 'Key depot (FSD)',
+      life_ring: 'Life ring', first_aid_kit: 'First aid kit'
+    },
+    types: { underground: 'underground', pillar: 'pillar', wall: 'wall hydrant', pipe: 'pipe' },
+    fields: {
+      name: 'Name', ref: 'Number', type: 'Type', couplings: 'Couplings', colour: 'Colour',
+      water_source: 'Water source', flow_rate: 'Flow rate', pressure: 'Pressure',
+      water_volume: 'Water volume', operator: 'Operator', opening_hours: 'Opening hours',
+      location: 'Location', level: 'Level', access: 'Access', survey_date: 'Surveyed'
+    }
+  }
+};
+
+function post(type, data) {
+  try { window.chrome.webview.postMessage(Object.assign({ type: type }, data || {})); } catch (e) { }
+}
+
+function initMap(styleUrl, lon, lat, zoom, attribution, lang) {
+  if (lang) uiLang = (lang === 'en') ? 'en' : 'de';
+  if (map) { try { map.remove(); } catch (e) { } map = null; }
+  map = new maplibregl.Map({
+    container: 'map',
+    style: styleUrl,
+    center: [lon, lat],
+    zoom: zoom,
+    maxZoom: 19,
+    attributionControl: false
+  });
+  // Attribution rendered inside the map: WPF overlays cannot be drawn on top of
+  // the WebView2 HWND (airspace), so the OpenMapTiles notice must live here.
+  map.addControl(new maplibregl.AttributionControl({
+    compact: false,
+    customAttribution: attribution || ''
+  }), 'bottom-right');
+  map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  map.addControl(new maplibregl.ScaleControl({ maxWidth: 120, unit: 'metric' }), 'bottom-left');
+
+  map.on('load', function () { post('ready'); });
+  map.on('error', function (e) {
+    post('maperror', { message: (e && e.error && e.error.message) || 'unknown' });
+  });
+  // setStyle() resets layer visibility and custom layers – re-apply on every style(data) load
+  map.on('styledata', function () { applyOverlays(); restoreLineLayers(); });
+
+  // Clicks: bridge circles (traceroute midpoints) first, then emergency features
+  map.on('click', onMapClick);
+  map.on('mousemove', function (e) {
+    const f = queryEmergencyAt(e.point) || queryClickableCircleAt(e.point);
+    map.getCanvas().style.cursor = f ? 'pointer' : '';
+  });
+
+  // Right-click anywhere on the map -> context menu in the host app
+  map.on('contextmenu', function (e) {
+    post('mapcontext', { lon: e.lngLat.lng, lat: e.lngLat.lat });
+  });
+}
+
+function zoomIn()  { if (map) map.zoomIn(); }
+function zoomOut() { if (map) map.zoomOut(); }
+
+function fitBounds(w, s, e, n) {
+  if (!map) return;
+  if (w === e && s === n) { map.jumpTo({ center: [w, s], zoom: 13 }); return; }
+  try { map.fitBounds([[w, s], [e, n]], { padding: 60, maxZoom: 15, duration: 400 }); } catch (ex) { }
+}
+
+// ── Node / waypoint markers (HTML – emoji-capable labels) ────────────────
+
+const nodeMarkers = new Map();
+const waypointMarkers = new Map();
+
+function makePinMarker(cls, color, label, lon, lat, onClick, onContext) {
+  const el = document.createElement('div');
+  el.className = cls;
+  const dot = document.createElement('div');
+  dot.className = cls + '-dot';
+  if (color) dot.style.background = color;
+  el.appendChild(dot);
+  if (label) {
+    const span = document.createElement('span');
+    span.className = cls + '-label';
+    span.textContent = label;
+    el.appendChild(span);
+  }
+  if (onClick) el.addEventListener('click', function (ev) { ev.stopPropagation(); onClick(); });
+  if (onContext) el.addEventListener('contextmenu', function (ev) {
+    ev.preventDefault(); ev.stopPropagation(); onContext();
+  });
+  return new maplibregl.Marker({ element: el, anchor: 'center' }).setLngLat([lon, lat]).addTo(map);
+}
+
+function setNodes(nodes) {
+  if (!map) return;
+  nodeMarkers.forEach(function (m) { m.remove(); });
+  nodeMarkers.clear();
+  (nodes || []).forEach(function (n) {
+    const m = makePinMarker('node-pin', n.color || '#e53935', n.label || '', n.lon, n.lat,
+      function () { post('nodeclick', { id: n.id }); },
+      function () { post('nodecontext', { id: n.id }); });
+    nodeMarkers.set(n.id, m);
+  });
+}
+
+function setWaypoints(wps) {
+  if (!map) return;
+  waypointMarkers.forEach(function (m) { m.remove(); });
+  waypointMarkers.clear();
+  (wps || []).forEach(function (w) {
+    const m = makePinMarker('wp-pin', null, w.label || '', w.lon, w.lat,
+      null,
+      function () { post('waypointcontext', { id: w.id }); });
+    waypointMarkers.set(w.id, m);
+  });
+}
+
+// ── Generic line/point overlays (traceroutes, neighbor lines, paths) ─────
+// Feature properties: color (css), width, outline:1 (below pass), dash:1,
+// radius (points), label (points), click:1 + arbitrary metadata for lineclick.
+
+const lineData = new Map();   // key -> FeatureCollection (survives style switches)
+
+function setLines(key, fc) {
+  lineData.set(key, fc);
+  addLineLayers(key, fc);
+}
+
+function removeLines(key) {
+  lineData.delete(key);
+  removeLineLayers(key);
+}
+
+function clearLines() {
+  Array.from(lineData.keys()).forEach(removeLines);
+}
+
+function removeLineLayers(key) {
+  if (!map) return;
+  const src = 'ln-' + key;
+  ['-outline', '-line', '-dash', '-circle', '-label'].forEach(function (sfx) {
+    try { if (map.getLayer(src + sfx)) map.removeLayer(src + sfx); } catch (e) { }
+  });
+  try { if (map.getSource(src)) map.removeSource(src); } catch (e) { }
+}
+
+function addLineLayers(key, fc) {
+  if (!map) return;
+  removeLineLayers(key);
+  const src = 'ln-' + key;
+  try {
+    map.addSource(src, { type: 'geojson', data: fc });
+    map.addLayer({
+      id: src + '-outline', type: 'line', source: src,
+      filter: ['==', ['get', 'outline'], 1],
+      layout: { 'line-cap': 'round' },
+      paint: { 'line-color': ['coalesce', ['get', 'color'], '#000'], 'line-width': ['coalesce', ['get', 'width'], 4.5] }
+    });
+    map.addLayer({
+      id: src + '-line', type: 'line', source: src,
+      filter: ['all', ['==', ['geometry-type'], 'LineString'], ['!=', ['get', 'outline'], 1], ['!=', ['get', 'dash'], 1]],
+      layout: { 'line-cap': 'round' },
+      paint: { 'line-color': ['coalesce', ['get', 'color'], '#f00'], 'line-width': ['coalesce', ['get', 'width'], 2.5] }
+    });
+    map.addLayer({
+      id: src + '-dash', type: 'line', source: src,
+      filter: ['all', ['==', ['geometry-type'], 'LineString'], ['==', ['get', 'dash'], 1]],
+      paint: { 'line-color': ['coalesce', ['get', 'color'], '#ffdc00'], 'line-width': ['coalesce', ['get', 'width'], 2.5], 'line-dasharray': [2, 2] }
+    });
+    map.addLayer({
+      id: src + '-circle', type: 'circle', source: src,
+      filter: ['==', ['geometry-type'], 'Point'],
+      paint: {
+        'circle-color': ['coalesce', ['get', 'color'], '#333'],
+        'circle-radius': ['coalesce', ['get', 'radius'], 5],
+        'circle-stroke-color': '#ffffff', 'circle-stroke-width': 1.2
+      }
+    });
+    map.addLayer({
+      id: src + '-label', type: 'symbol', source: src,
+      filter: ['all', ['==', ['geometry-type'], 'Point'], ['has', 'label']],
+      layout: {
+        'text-field': ['get', 'label'], 'text-font': ['Noto Sans Regular'], 'text-size': 11,
+        'text-anchor': 'left', 'text-offset': [0.8, 0], 'text-allow-overlap': true, 'text-ignore-placement': true
+      },
+      paint: { 'text-color': '#111', 'text-halo-color': 'rgba(255,255,255,0.85)', 'text-halo-width': 1.5 }
+    });
+  } catch (e) {
+    // Style may still be loading – restoreLineLayers() retries on the next styledata event
+  }
+}
+
+function restoreLineLayers() {
+  if (!map) return;
+  lineData.forEach(function (fc, key) {
+    try { if (!map.getSource('ln-' + key)) addLineLayers(key, fc); } catch (e) { }
+  });
+}
+
+function clickableCircleLayers() {
+  const ids = [];
+  lineData.forEach(function (v, k) {
+    try { if (map.getLayer('ln-' + k + '-circle')) ids.push('ln-' + k + '-circle'); } catch (e) { }
+  });
+  return ids;
+}
+
+function queryClickableCircleAt(point) {
+  if (!map) return null;
+  const ids = clickableCircleLayers();
+  if (!ids.length) return null;
+  try {
+    const fs = map.queryRenderedFeatures(point, { layers: ids });
+    for (let i = 0; i < fs.length; i++) {
+      if (fs[i].properties && fs[i].properties.click === 1) return fs[i];
+    }
+  } catch (e) { }
+  return null;
+}
+
+function onMapClick(e) {
+  // 1) Bridge circles (e.g. traceroute segment midpoints)
+  const c = queryClickableCircleAt(e.point);
+  if (c) {
+    const layerId = c.layer.id;                       // "ln-<key>-circle"
+    const key = layerId.substring(3, layerId.length - 7);
+    post('lineclick', { key: key, props: c.properties });
+    return;
+  }
+  // 2) Emergency overlay features
+  onEmergencyClick(e);
+}
+
+function visibleEmergencyLayers() {
+  let layers;
+  try { layers = (map.getStyle() || {}).layers || []; } catch (e) { return []; }
+  return layers.filter(function (l) { return l.id.indexOf('em-') === 0; }).map(function (l) { return l.id; });
+}
+
+function queryEmergencyAt(point) {
+  if (!map || !activeOverlays.has('em-')) return null;
+  const ids = visibleEmergencyLayers();
+  if (!ids.length) return null;
+  try {
+    const fs = map.queryRenderedFeatures(point, { layers: ids });
+    return fs.length ? fs[0] : null;
+  } catch (e) { return null; }
+}
+
+function esc(s) {
+  return String(s).replace(/[&<>"]/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+  });
+}
+
+function onEmergencyClick(e) {
+  const f = queryEmergencyAt(e.point);
+  if (!f) return;
+  const t = EM_I18N[uiLang];
+  const p = f.properties || {};
+
+  let title = t.classes[p['class']] || p['class'] || '?';
+  if (p['class'] === 'hydrant' && p.type && t.types[p.type]) title += ' (' + t.types[p.type] + ')';
+  if (p.ref) title += ' ' + p.ref;
+
+  let rows = '';
+  const order = ['name', 'type', 'couplings', 'colour', 'water_source', 'flow_rate', 'pressure',
+                 'water_volume', 'operator', 'opening_hours', 'location', 'level', 'access', 'survey_date'];
+  order.forEach(function (key) {
+    if (!(key in p) || p[key] === '' || p[key] == null) return;
+    if (key === 'type' && p['class'] === 'hydrant') return; // already in the title
+    let val = String(p[key]);
+    if (key === 'type' && t.types[val]) val = t.types[val];
+    rows += '<tr><td class="k">' + esc(t.fields[key] || key) + '</td><td>' + esc(val) + '</td></tr>';
+  });
+
+  const html = '<div class="em-popup"><h4>' + esc(title) + '</h4>' +
+               (rows ? '<table>' + rows + '</table>' : '') + '</div>';
+  new maplibregl.Popup({ closeButton: true, maxWidth: '280px' })
+    .setLngLat(e.lngLat).setHTML(html).addTo(map);
+}
+
+function setStyle(styleUrl) {
+  if (map) map.setStyle(styleUrl);
+}
+
+function setCenter(lon, lat, zoom) {
+  if (!map) return;
+  if (typeof zoom === 'number') map.jumpTo({ center: [lon, lat], zoom: zoom });
+  else map.jumpTo({ center: [lon, lat] });
+}
+
+function setMyPosition(lon, lat, label) {
+  if (!map) return;
+  if (myPosMarker) { myPosMarker.remove(); myPosMarker = null; }
+  const el = document.createElement('div');
+  el.className = 'my-pos';
+  if (label) {
+    const span = document.createElement('span');
+    span.className = 'my-pos-label';
+    span.textContent = label;
+    el.appendChild(span);
+  }
+  myPosMarker = new maplibregl.Marker({ element: el }).setLngLat([lon, lat]).addTo(map);
+}
+
+// Overlay toggling (e.g. "em-" = fire service layers). Layers ship inside the
+// style with visibility:none; turning a prefix on makes all matching layers visible.
+function setOverlay(prefix, on) {
+  knownOverlays.add(prefix);
+  if (on) activeOverlays.add(prefix); else activeOverlays.delete(prefix);
+  applyOverlays();
+}
+
+function applyOverlays() {
+  if (!map) return;
+  let layers;
+  try { layers = (map.getStyle() || {}).layers || []; } catch (e) { return; }
+  knownOverlays.forEach(function (prefix) {
+    const vis = activeOverlays.has(prefix) ? 'visible' : 'none';
+    layers.forEach(function (l) {
+      if (l.id.indexOf(prefix) === 0) {
+        try { map.setLayoutProperty(l.id, 'visibility', vis); } catch (e) { }
+      }
+    });
+  });
+}
+</script>
+</body>
+</html>
