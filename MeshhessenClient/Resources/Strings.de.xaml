@@ -164,6 +164,8 @@
     <sys:String x:Key="StrOverlayEmergencyTooltip">Feuerwehr-/Rettungs-Layer: Hydranten (ab Zoom 15), Wachen, Sirenen, Löschteiche, Rettungspunkte, Defibrillatoren u. a. (ab Zoom 13). Solange ausgeschaltet, werden keine Daten geladen.</sys:String>
     <sys:String x:Key="StrMapLayersBtn">🗂️ Layer</sys:String>
     <sys:String x:Key="StrMapLayersBtnTooltip">Zusatz-Layer auf der Karte an-/abwählen</sys:String>
+    <sys:String x:Key="StrMapLegendBtn">🧭 Legende</sys:String>
+    <sys:String x:Key="StrMapLegendBtnTooltip">Legende und Nachbar-Linien-Optionen anzeigen</sys:String>
     <sys:String x:Key="StrVectorOverlaysTitle">Zusatz-Layer:</sys:String>
     <sys:String x:Key="StrVectorOverlaysHint">Fach-Layer werden über die Vektorkarte gelegt. Solange ein Layer aus ist, werden keine Daten dafür geladen. Auch über den 🗂️-Button auf der Karte umschaltbar.</sys:String>
     <sys:String x:Key="StrDownloadVectorTiles">Vektor-Paket herunterladen…</sys:String>

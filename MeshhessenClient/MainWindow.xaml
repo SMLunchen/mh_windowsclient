@@ -1580,10 +1580,21 @@
                                     </StackPanel>
                                 </Border>
                             </Popup>
+
+                            <!-- Legende (nur Vektor-Modus: WPF-Overlays sind über dem WebView
+                                 unsichtbar, daher wandert die Legende hier in ein Popup) -->
+                            <Button x:Name="MapLegendBtn" Height="28" Padding="8,2" Margin="6,0,0,0"
+                                    Visibility="Collapsed" Click="MapLegendBtn_Click"
+                                    Content="{DynamicResource StrMapLegendBtn}"
+                                    ToolTip="{DynamicResource StrMapLegendBtnTooltip}"/>
+                            <Popup x:Name="MapLegendPopup" StaysOpen="False" Placement="Bottom"
+                                   AllowsTransparency="True">
+                                <StackPanel x:Name="VectorLegendHost"/>
+                            </Popup>
                         </StackPanel>
                         <TextBlock x:Name="MapStatusText" Grid.Column="1" VerticalAlignment="Center" Foreground="Gray" FontStyle="Italic"/>
                     </Grid>
-                    <Grid Grid.Row="1">
+                    <Grid Grid.Row="1" x:Name="MapAreaGrid">
                         <mapsui:MapControl x:Name="MapControl"/>
 
                         <!-- Vector map (MapLibre GL JS in WebView2). HWND-based: WPF overlays

@@ -233,10 +233,27 @@ function clearLines() {
 function removeLineLayers(key) {
   if (!map) return;
   const src = 'ln-' + key;
-  ['-outline', '-line', '-dash', '-circle', '-label'].forEach(function (sfx) {
+  ['-outline', '-line', '-dash', '-circle', '-arrow', '-label'].forEach(function (sfx) {
     try { if (map.getLayer(src + sfx)) map.removeLayer(src + sfx); } catch (e) { }
   });
   try { if (map.getSource(src)) map.removeSource(src); } catch (e) { }
+}
+
+// Tintable direction arrow (SDF): drawn pointing north, rotated per-feature
+function ensureArrowImage() {
+  if (!map) return;
+  try {
+    if (map.hasImage('bridge-arrow')) return;
+    const size = 24;
+    const c = document.createElement('canvas');
+    c.width = size; c.height = size;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.moveTo(12, 2); ctx.lineTo(21, 22); ctx.lineTo(12, 16); ctx.lineTo(3, 22); ctx.closePath();
+    ctx.fill();
+    map.addImage('bridge-arrow', ctx.getImageData(0, 0, size, size), { sdf: true });
+  } catch (e) { }
 }
 
 function addLineLayers(key, fc) {
@@ -264,11 +281,27 @@ function addLineLayers(key, fc) {
     });
     map.addLayer({
       id: src + '-circle', type: 'circle', source: src,
-      filter: ['==', ['geometry-type'], 'Point'],
+      filter: ['all', ['==', ['geometry-type'], 'Point'], ['has', 'radius']],
       paint: {
         'circle-color': ['coalesce', ['get', 'color'], '#333'],
         'circle-radius': ['coalesce', ['get', 'radius'], 5],
         'circle-stroke-color': '#ffffff', 'circle-stroke-width': 1.2
+      }
+    });
+    ensureArrowImage();
+    map.addLayer({
+      id: src + '-arrow', type: 'symbol', source: src,
+      filter: ['all', ['==', ['geometry-type'], 'Point'], ['has', 'bearing']],
+      layout: {
+        'icon-image': 'bridge-arrow',
+        'icon-size': ['coalesce', ['get', 'iconSize'], 0.5],
+        'icon-rotate': ['get', 'bearing'],
+        'icon-rotation-alignment': 'map',
+        'icon-allow-overlap': true, 'icon-ignore-placement': true
+      },
+      paint: {
+        'icon-color': ['coalesce', ['get', 'color'], '#333'],
+        'icon-halo-color': '#ffffff', 'icon-halo-width': 1
       }
     });
     map.addLayer({
@@ -287,6 +320,7 @@ function addLineLayers(key, fc) {
 
 function restoreLineLayers() {
   if (!map) return;
+  ensureArrowImage();   // style switches drop custom images
   lineData.forEach(function (fc, key) {
     try { if (!map.getSource('ln-' + key)) addLineLayers(key, fc); } catch (e) { }
   });

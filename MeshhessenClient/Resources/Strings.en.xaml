@@ -164,6 +164,8 @@
     <sys:String x:Key="StrOverlayEmergencyTooltip">Fire service / rescue layer: hydrants (from zoom 15), stations, sirens, fire ponds, rescue points, defibrillators and more (from zoom 13). No data is loaded while switched off.</sys:String>
     <sys:String x:Key="StrMapLayersBtn">🗂️ Layers</sys:String>
     <sys:String x:Key="StrMapLayersBtnTooltip">Toggle map overlay layers</sys:String>
+    <sys:String x:Key="StrMapLegendBtn">🧭 Legend</sys:String>
+    <sys:String x:Key="StrMapLegendBtnTooltip">Show legend and neighbor line options</sys:String>
     <sys:String x:Key="StrVectorOverlaysTitle">Overlay layers:</sys:String>
     <sys:String x:Key="StrVectorOverlaysHint">Specialist layers are drawn on top of the vector map. While a layer is off, no data is loaded for it. Also switchable via the 🗂️ button on the map.</sys:String>
     <sys:String x:Key="StrDownloadVectorTiles">Download vector package…</sys:String>

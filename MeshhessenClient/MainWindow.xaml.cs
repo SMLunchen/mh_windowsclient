@@ -576,6 +576,7 @@ public partial class MainWindow : Window
             MapCopyrightText.Visibility = Visibility.Visible;
             MapOverlaySeparator.Visibility = Visibility.Collapsed;
             MapLayersBtn.Visibility = Visibility.Collapsed;
+            PlaceMapLegendsForRenderMode();
 
             _map = new Mapsui.Map();
 
@@ -694,6 +695,7 @@ public partial class MainWindow : Window
             MapCopyrightText.Visibility = Visibility.Collapsed;
             MapOverlaySeparator.Visibility = Visibility.Visible;
             MapLayersBtn.Visibility = Visibility.Visible;
+            PlaceMapLegendsForRenderMode();
 
             var baseDir = AppDomain.CurrentDomain.BaseDirectory;
             var cacheDir = Path.Combine(baseDir, "vectortiles");
@@ -886,6 +888,54 @@ public partial class MainWindow : Window
     {
         MapLayersPopup.PlacementTarget = MapLayersBtn;
         MapLayersPopup.IsOpen = !MapLayersPopup.IsOpen;
+    }
+
+    private void MapLegendBtn_Click(object sender, RoutedEventArgs e)
+    {
+        MapLegendBorder.Visibility = Visibility.Visible;   // re-show after ✕ inside the popup
+        MapLegendPopup.PlacementTarget = MapLegendBtn;
+        MapLegendPopup.IsOpen = !MapLegendPopup.IsOpen;
+    }
+
+    /// <summary>
+    /// The legend and the traceroute list are WPF overlays inside the map grid.
+    /// Over the WebView2 HWND they are invisible (airspace), so in vector mode
+    /// they are reparented into the legend button popup and back for raster.
+    /// </summary>
+    private void PlaceMapLegendsForRenderMode()
+    {
+        if (MapLegendBorder == null || VectorLegendHost == null) return;
+
+        if (UseVectorMap)
+        {
+            if (MapLegendBorder.Parent == MapAreaGrid)
+            {
+                MapAreaGrid.Children.Remove(MapLegendBorder);
+                VectorLegendHost.Children.Add(MapLegendBorder);
+            }
+            if (TracerouteLegend.Parent == MapAreaGrid)
+            {
+                MapAreaGrid.Children.Remove(TracerouteLegend);
+                VectorLegendHost.Children.Add(TracerouteLegend);
+            }
+            MapLegendBorder.Visibility = Visibility.Visible;   // may have been closed via ✕ on the raster map
+            MapLegendBtn.Visibility = Visibility.Visible;
+        }
+        else
+        {
+            MapLegendPopup.IsOpen = false;
+            if (VectorLegendHost.Children.Contains(MapLegendBorder))
+            {
+                VectorLegendHost.Children.Remove(MapLegendBorder);
+                MapAreaGrid.Children.Add(MapLegendBorder);
+            }
+            if (VectorLegendHost.Children.Contains(TracerouteLegend))
+            {
+                VectorLegendHost.Children.Remove(TracerouteLegend);
+                MapAreaGrid.Children.Add(TracerouteLegend);
+            }
+            MapLegendBtn.Visibility = Visibility.Collapsed;
+        }
     }
 
     private async void PushOverlaysToVectorMap()
@@ -1132,6 +1182,13 @@ public partial class MainWindow : Window
         properties = props
     };
 
+    private static object LineFeatureCoords(IEnumerable<double[]> lonLatCoords, object props) => new
+    {
+        type = "Feature",
+        geometry = new { type = "LineString", coordinates = lonLatCoords.ToArray() },
+        properties = props
+    };
+
     private static object PointFeatureGeo(double lon, double lat, object props) => new
     {
         type = "Feature",
@@ -1278,9 +1335,11 @@ public partial class MainWindow : Window
         {
             _nodeLayer.Features = _nodeFeatures;
             _nodeLayer.DataHasChanged();
-            if (_showNeighborLines) DrawNeighborLines();
             MapControl.Refresh();
         }
+        // Outside the layer guard: in vector-only mode _nodeLayer is null,
+        // but neighbor lines still need refreshing (DrawNeighborLines pushes to the vector map)
+        if (_showNeighborLines) DrawNeighborLines();
         ScheduleNodePinPushToVectorMap();
     }
 
@@ -5833,7 +5892,7 @@ public partial class MainWindow : Window
             _pathLayers[node.NodeId] = pathLayer;
             _map?.Layers.Add(pathLayer);
 
-            // Vector map: gradient path segments (oldest transparent -> newest opaque)
+            // Vector map: gradient path segments (oldest transparent -> newest opaque) + direction arrows
             var vecFeatures = new List<object>();
             for (int i = 0; i < n - 1; i++)
             {
@@ -5842,6 +5901,22 @@ public partial class MainWindow : Window
                 var segColor = new Mapsui.Styles.Color(baseColor.R, baseColor.G, baseColor.B, alpha);
                 vecFeatures.Add(LineFeature(points[i].Lon, points[i].Lat, points[i + 1].Lon, points[i + 1].Lat,
                     new { color = CssColor(segColor), width = 3 }));
+            }
+            foreach (int i in arrowIndices)
+            {
+                var pt = points[i];
+                double t = n > 1 ? (double)i / (n - 1) : 1.0;
+                int alpha = (int)(80 + t * 175);
+                double rotation = 0;
+                if (pt.Track.HasValue) rotation = pt.Track.Value;
+                else if (i < n - 1) rotation = BearingDeg(pt.Lat, pt.Lon, points[i + 1].Lat, points[i + 1].Lon);
+                else if (i > 0) rotation = BearingDeg(points[i - 1].Lat, points[i - 1].Lon, pt.Lat, pt.Lon);
+                vecFeatures.Add(PointFeatureGeo(pt.Lon, pt.Lat, new
+                {
+                    bearing = Math.Round(rotation, 1),
+                    iconSize = 0.6,
+                    color = CssColor(new Mapsui.Styles.Color(baseColor.R, baseColor.G, baseColor.B, alpha))
+                }));
             }
             PushVectorLines($"path_{node.NodeId:x8}", FeatureCollection(vecFeatures));
 
@@ -6310,8 +6385,9 @@ public partial class MainWindow : Window
         PushTracerouteToVectorMap(result, positions, nodeNames, color, layerKey);
     }
 
-    /// <summary>Mirrors DrawTracerouteLayer() onto the vector map (straight segments,
-    /// dashed yellow MQTT hops, clickable midpoint dots, labeled hop dots).</summary>
+    /// <summary>Mirrors DrawTracerouteLayer() onto the vector map: colored segments with
+    /// direction arrows, MQTT zigzag ("Blitz"), dashed unknown-route bridges with "?"
+    /// markers, clickable midpoint dots and labeled hop dots.</summary>
     private void PushTracerouteToVectorMap(
         TracerouteResult result,
         Dictionary<uint, (double Lat, double Lon)> positions,
@@ -6328,43 +6404,80 @@ public partial class MainWindow : Window
             const int MqttSentinelRaw = -128;
             var features = new List<object>();
             var colorCss = CssColor(color);
+            (double Lat, double Lon)? lastKnown = null;
+
+            void AddUnknownMarker(double lon, double lat) =>
+                features.Add(PointFeatureGeo(lon, lat, new { label = "?", radius = 4, color = "rgba(120,120,120,0.85)" }));
+
+            void AddDashedBridge((double Lat, double Lon) from, (double Lat, double Lon) to)
+            {
+                features.Add(LineFeature(from.Lon, from.Lat, to.Lon, to.Lat,
+                    new { dash = 1, color = colorCss, width = 2.0 }));
+                AddUnknownMarker(to.Lon, to.Lat);
+            }
 
             for (int i = 0; i < orderedIds.Count - 1; i++)
             {
                 uint fromId = orderedIds[i];
                 uint toId = orderedIds[i + 1];
-                if (!positions.TryGetValue(fromId, out var fromPos) ||
-                    !positions.TryGetValue(toId, out var toPos)) continue;
+                bool hasFrom = positions.TryGetValue(fromId, out var fromPos);
+                bool hasTo = positions.TryGetValue(toId, out var toPos);
 
                 bool isMqtt = result.IsViaMqtt
                             || (result.SnrTowards.Count > i && result.SnrTowards[i] == MqttSentinelRaw);
                 float? segSnr = (!isMqtt && result.SnrTowards.Count > i) ? result.SnrTowards[i] / 4f : null;
 
-                if (isMqtt)
+                if (hasFrom && hasTo)
                 {
-                    features.Add(LineFeature(fromPos.Lon, fromPos.Lat, toPos.Lon, toPos.Lat,
-                        new { outline = 1, color = "rgba(0,0,0,0.85)", width = 4.5 }));
-                    features.Add(LineFeature(fromPos.Lon, fromPos.Lat, toPos.Lon, toPos.Lat,
-                        new { dash = 1, color = "#ffdc00", width = 2.5 }));
-                }
-                else
-                {
-                    features.Add(LineFeature(fromPos.Lon, fromPos.Lat, toPos.Lon, toPos.Lat,
-                        new { color = colorCss, width = 2.5 }));
-                }
+                    if (isMqtt)
+                    {
+                        // Zigzag "Blitz" polyline like the raster map (built in Mercator, converted back)
+                        var mFrom = SphericalMercator.FromLonLat(fromPos.Lon, fromPos.Lat);
+                        var mTo = SphericalMercator.FromLonLat(toPos.Lon, toPos.Lat);
+                        var zig = BuildMqttZigzag(new MPoint(mFrom.x, mFrom.y), new MPoint(mTo.x, mTo.y))
+                            .Select(c => { var ll = SphericalMercator.ToLonLat(c.X, c.Y); return new[] { ll.lon, ll.lat }; })
+                            .ToList();
+                        features.Add(LineFeatureCoords(zig, new { outline = 1, color = "rgba(0,0,0,0.85)", width = 4.5 }));
+                        features.Add(LineFeatureCoords(zig, new { color = "#ffdc00", width = 2.5 }));
+                    }
+                    else
+                    {
+                        features.Add(LineFeature(fromPos.Lon, fromPos.Lat, toPos.Lon, toPos.Lat,
+                            new { color = colorCss, width = 2.5 }));
+                    }
 
-                // Clickable midpoint dot -> SNR popup (like the raster click target)
-                var midProps = new Dictionary<string, object?>
+                    // Clickable midpoint dot -> SNR popup; direction arrow on RF segments
+                    var midProps = new Dictionary<string, object?>
+                    {
+                        ["click"] = 1,
+                        ["fromId"] = fromId,
+                        ["toId"] = toId,
+                        ["mqtt"] = isMqtt ? 1 : 0,
+                        ["color"] = isMqtt ? "rgba(255,220,0,0.7)" : CssColor(new Mapsui.Styles.Color(color.R, color.G, color.B, 160)),
+                        ["radius"] = 6
+                    };
+                    if (segSnr.HasValue) midProps["snr"] = segSnr.Value;
+                    if (!isMqtt)
+                    {
+                        midProps["bearing"] = Math.Round(BearingDeg(fromPos.Lat, fromPos.Lon, toPos.Lat, toPos.Lon), 1);
+                        midProps["iconSize"] = 0.55;
+                    }
+                    features.Add(PointFeatureGeo((fromPos.Lon + toPos.Lon) / 2, (fromPos.Lat + toPos.Lat) / 2, midProps));
+                    lastKnown = toPos;
+                }
+                else if (hasFrom && !hasTo)
                 {
-                    ["click"] = 1,
-                    ["fromId"] = fromId,
-                    ["toId"] = toId,
-                    ["mqtt"] = isMqtt ? 1 : 0,
-                    ["color"] = isMqtt ? "rgba(255,220,0,0.7)" : CssColor(new Mapsui.Styles.Color(color.R, color.G, color.B, 160)),
-                    ["radius"] = 6
-                };
-                if (segSnr.HasValue) midProps["snr"] = segSnr.Value;
-                features.Add(PointFeatureGeo((fromPos.Lon + toPos.Lon) / 2, (fromPos.Lat + toPos.Lat) / 2, midProps));
+                    // Destination position unknown: "?" marker at the known end
+                    AddUnknownMarker(fromPos.Lon, fromPos.Lat);
+                    lastKnown = fromPos;
+                }
+                else if (!hasFrom && hasTo)
+                {
+                    // Bridge the unknown gap with a dashed line from the last known position
+                    if (lastKnown.HasValue) AddDashedBridge(lastKnown.Value, toPos);
+                    else AddUnknownMarker(toPos.Lon, toPos.Lat);
+                    lastKnown = toPos;
+                }
             }
 
             // Hop dots + labels
