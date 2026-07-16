@@ -24,8 +24,11 @@
   .em-popup td { padding: 1px 0; vertical-align: top; }
   .em-popup td.k { color: #666; padding-right: 10px; white-space: nowrap; }
   .maplibregl-popup-content { padding: 10px 12px; }
-  /* Node pins (HTML markers – full emoji support in labels) */
-  .node-pin { position: relative; width: 14px; height: 14px; cursor: pointer; }
+  /* Node pins (HTML markers – full emoji support in labels).
+     IMPORTANT: no position:relative here – MapLibre positions markers via
+     position:absolute + transform; overriding it makes pins stack in normal
+     flow and drift against the map when zooming. */
+  .node-pin { position: absolute; width: 14px; height: 14px; cursor: pointer; }
   .node-pin-dot {
     width: 14px; height: 14px; border-radius: 50%;
     border: 2px solid #ffffff; box-sizing: border-box;
@@ -38,7 +41,7 @@
     pointer-events: none;
   }
   /* Waypoint pins */
-  .wp-pin { position: relative; width: 13px; height: 13px; cursor: pointer; }
+  .wp-pin { position: absolute; width: 13px; height: 13px; cursor: pointer; }
   .wp-pin-dot {
     width: 13px; height: 13px; border-radius: 50%;
     background: rgba(255,165,0,0.86); border: 1.5px solid #fff; box-sizing: border-box;

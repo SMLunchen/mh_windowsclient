@@ -77,6 +77,44 @@ Der **Meshhessen Client** ist ein **kostenloser, nativer Windows-Client für Mes
 ### 🗺️ Karte
 
 * **Drei Kartentypen:** OSM Standard, OSM Dark Mode, OpenTopoMap (topografisch)
+* **NEU: Vektorkarten** (umschaltbar in den Einstellungen, Raster bleibt Standard):
+  * Gestochen scharf in jeder Zoomstufe (MapLibre GL), deutlich kleinere Offline-Daten, Kartenstil-Updates ohne Client-Update
+  * **🚒 Feuerwehr-/Rettungs-Layer** zuschaltbar – alle Objekttypen im Abschnitt „Feuerwehr-/Rettungs-Layer" direkt unter dieser Liste
+  * Layer-Auswahl in den Einstellungen und über den 🗂️-Button direkt auf der Karte; solange ein Layer aus ist, wird kein Byte dafür geladen
+  * **Automatischer Offline-Cache:** online betrachtete Gebiete sind ohne Internet weiter nutzbar; zusätzlich **Vektor-Offlinepaket-Downloader** (Bundesland/eigene Bounding-Box, Topo-Extras und Zusatz-Layer als Opt-in)
+  * Voller Funktionsumfang: Node-Pins, Traceroutes, Nachbar-Linien, Positionsverläufe und Rechtsklick-Menü auch auf der Vektorkarte
+  * Benötigt die Microsoft-WebView2-Runtime (auf Windows 11 vorinstalliert); ohne sie fällt der Client automatisch auf Raster zurück
+
+### 🚒 Feuerwehr-/Rettungs-Layer (Vektorkarte)
+
+Zuschaltbarer Fach-Layer für Feuerwehr, Rettungsdienst und Katastrophenschutz – gedacht als Unterstützung im Einsatz- und Übungsfall (z. B. „Wo ist der nächste Hydrant / Rettungspunkt?"). Die Daten kommen **live aus OpenStreetMap** (tägliche Updates auf dem Meshhessen-Server) – die Abdeckung hängt also vom lokalen Mapping-Stand ab. Farbkonvention wie im Feuerwehrplan: **rot** = Löschmittel/Meldung, **blau** = Löschwasser-Vorrat, **grün** = Rettung, **orange** = Katastrophenschutz.
+
+| Symbol | Objekttyp | sichtbar ab Zoom |
+|---|---|---|
+| 🔴 H (gefüllt = Überflur, Ring = **Unterflur**) | Hydrant | 15 |
+| 🔴 Flamme + Name | Feuerwache | 13 |
+| 🔴 Kreuz + Name | Rettungswache | 13 |
+| 🔴 Sirene | Sirene | 13 |
+| 🔴 Leiter | Anleiterstelle | 14 |
+| 🔴 E / F / M / C / K | Einspeisung / Feuerlöscher / Feuermelder / Löschschlauch / Feuerwehrschlüsseldepot (FSD) | 16 |
+| 🔵 S | Saugstelle | 14 |
+| 🔵 T | Löschwasserbehälter | 14 |
+| 🔵 L | Löschteich | 13 |
+| 🔵 N | Notrufsäule | 15 |
+| 🟢 Kreuz + **Nummer** | Rettungspunkt | 13 |
+| 🟢 Sammelplatz | Sammelplatz / Evakuierungspunkt | 13 |
+| 🟢 Herz (AED) | Defibrillator | 15 |
+| 🟢 Kreuz | Erste-Hilfe-Kasten | 16 |
+| 🟢 Rettungsring | Rettungsring / Wasserrettung | 14–16 |
+| 🟠 Kreuz | Katastrophenschutz-Anlaufstelle | 13 |
+| 🔴 Kreuz | Bergrettung | 13 |
+| Helipad | Hubschrauberlandeplatz | 13 |
+
+* **Klick auf ein Objekt** öffnet ein Detail-Popup mit allen in OSM gepflegten Attributen: Bauart (z. B. Unterflur/Überflur/Wandhydrant), Kupplungen, Durchfluss, Druck, Wasserquelle, Wasservolumen, Betreiber, Öffnungszeiten, Standortbeschreibung (bei Defis z. B. „Foyer, 1. OG") und Erfassungsdatum
+* Icons überlappen bewusst („im Einsatz will man jeden Punkt sehen") und verdrängen keine Kartenbeschriftung
+* **Offline nutzbar:** online betrachtete Gebiete landen automatisch im Cache; im Vektor-Offlinepaket-Downloader lässt sich der Layer gezielt für ein Gebiet mitladen
+* Solange der Layer ausgeschaltet ist, wird **kein einziges Byte** dafür übertragen
+* Die Architektur ist für weitere Fach-Layer vorbereitet (z. B. THW, Krankenhäuser)
 * **Vier Karten-Modi** (umschaltbar in Einstellungen):
   * **Offline** (Standard) – vorher heruntergeladene Tiles vom Meshhessen-Server, kein Internet, nur Deutschland
   * **Online – Meshhessen-Server** – Tiles werden on-demand von `tile.meshhessenclient.de` geladen und dauerhaft lokal gespeichert; alle drei Stile, nur Deutschland
@@ -200,6 +238,24 @@ Der Meshhessen Client ist ein Gemeinschaftsprojekt der Meshtastic-Community in H
 
 
 ## 📸 Screenshots
+
+Die neue Vektorkarte (MapLibre GL) – gestochen scharf in jeder Zoomstufe, mit Node-Pins:
+<img alt="Meshhessen Client – Vektorkarte (MapLibre GL) mit Meshtastic Node-Positionen unter Windows" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/vector_in_action.png" />
+
+Vergleich: klassische Rasterkarte – ohne zuschaltbare Fach-Layer:
+<img alt="Meshhessen Client – klassische Rasterkarte ohne Feuerwehr-Layer (Vergleichsbild)" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/raster_wo_hydrant.png" />
+
+Derselbe Ausschnitt als Vektorkarte mit aktivem 🚒 Feuerwehr-/Rettungs-Layer (Hydranten, Wachen, Rettungspunkte – Klick zeigt Details):
+<img alt="Meshhessen Client – Vektorkarte mit Feuerwehr-Layer: Hydranten, Wachen und Rettungspunkte auf der Meshtastic-Karte" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/vector_w_hydrant.png" />
+
+Klick auf einen Hydranten zeigt die Details – hier ein Unterflurhydrant (Ring-Symbol) mit Wasserquelle:
+<img alt="Meshhessen Client – Hydranten-Detail-Popup auf der Vektorkarte: Unterflurhydrant mit Bauart und Wasserquelle" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/hydrant_unterflur.png" />
+
+Direkte HF-Nachbarn mit SNR-Farbverlauf auf der Vektorkarte:
+<img alt="Meshhessen Client – Nachbar-Linien mit SNR-Farbverlauf auf der Vektorkarte (0-Hop HF)" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/vector_w_neighborlinks.png" />
+
+Kiosk-/Trainingsmodus – sperrbare Oberfläche für geteilte Stationen (Einstellungen):
+<img alt="Meshhessen Client – Kiosk- und Trainingsmodus: sperrbare Oberfläche mit Passwortschutz für geteilte Stationen" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/kiosk_settings.png" />
 
 Offline-Karte mit Node-Positionen und Entfernungsanzeige:
 <img width="1250" height="813" alt="Meshhessen Client – Windows-App für Meshtastic-Geräte: Offline-Karte mit Node-Positionen (OSM)" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/map.png" />
