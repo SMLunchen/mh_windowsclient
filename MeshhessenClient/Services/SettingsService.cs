@@ -36,7 +36,7 @@ public record AppSettings(
     int PositionHistoryHours,                // Hours of position history to show on map (0=unlimited, default 24)
     bool AutoTimeSyncOnConnect,              // Send time sync packet after connection init
     int TimeSyncDriftThresholdSeconds,       // Trigger time sync if rx_time drifts more than N seconds (default 300)
-    string MapMode,                          // Tile fetch mode: "offline", "online-own", "online-osm"
+    string MapMode,                          // Tile fetch mode: "offline", "online-own", "online-custom", "online-osm"
     bool EnableMessageDb,                    // Persist messages in SQLite DB
     int MessageDbRetentionDays,              // 0=unlimited, 30/90/365
     string LastConnectionType,              // "Serial", "Bluetooth", "Tcp"
@@ -47,7 +47,15 @@ public record AppSettings(
     bool VirtualNodeBlockAdmin,            // Block admin commands from Virtual Node clients
     Dictionary<uint, string> NodeStationNames, // NodeId -> per-node station name
     bool FancyNodeList,                    // Show tile view instead of table in Nodes tab
-    bool FancyNodeListColorful);           // Color tiles by signal quality (when no node color set)
+    bool FancyNodeListColorful,            // Color tiles by signal quality (when no node color set)
+    bool KioskModeEnabled,                 // Kiosk/training mode: lockable UI for shared stations
+    string KioskPasswordHash,              // PBKDF2 "salt:hash" (base64); empty = no password set
+    string KioskLockedFeatures,            // CSV of feature keys hidden while locked
+    string MapRenderMode,                  // Map rendering: "raster" (Mapsui, compatible) or "vector" (MapLibre/WebView2)
+    string VectorStyleOsmUrl,              // Vector style URL for OSM (online-custom mode)
+    string VectorStyleTopoUrl,             // Vector style URL for OpenTopo (online-custom mode)
+    string VectorStyleDarkUrl,             // Vector style URL for Dark (online-custom mode)
+    string MapOverlays);                   // CSV of active vector overlay keys (see MapOverlayRegistry)
 
 public static class SettingsService
 {
@@ -97,7 +105,15 @@ public static class SettingsService
             false,                          // VirtualNodeBlockAdmin default off
             new Dictionary<uint, string>(), // NodeStationNames default empty
             false,                          // FancyNodeList default off
-            true);                          // FancyNodeListColorful default on
+            true,                           // FancyNodeListColorful default on
+            false,                          // KioskModeEnabled default off
+            string.Empty,                   // KioskPasswordHash default empty
+            string.Empty,                   // KioskLockedFeatures default empty
+            "raster",                       // MapRenderMode default raster (backward compatible)
+            "https://vectortile.meshhessenclient.de/styles/osm.json",      // VectorStyleOsmUrl
+            "https://vectortile.meshhessenclient.de/styles/opentopo.json", // VectorStyleTopoUrl
+            "https://vectortile.meshhessenclient.de/styles/dark.json",     // VectorStyleDarkUrl
+            string.Empty);                  // MapOverlays default: none active
 
         try
         {
@@ -250,7 +266,15 @@ public static class SettingsService
                 VirtualNodeBlockAdmin: values.TryGetValue("VirtualNodeBlockAdmin", out var vnba) && bool.TryParse(vnba, out var vnbaBool) && vnbaBool,
                 NodeStationNames: nodeStationNames,
                 FancyNodeList: values.TryGetValue("FancyNodeList", out var fnl) && bool.TryParse(fnl, out var fnlBool) && fnlBool,
-                FancyNodeListColorful: !values.TryGetValue("FancyNodeListColorful", out var fnc) || !bool.TryParse(fnc, out var fncBool) || fncBool
+                FancyNodeListColorful: !values.TryGetValue("FancyNodeListColorful", out var fnc) || !bool.TryParse(fnc, out var fncBool) || fncBool,
+                KioskModeEnabled: values.TryGetValue("KioskModeEnabled", out var kme) && bool.TryParse(kme, out var kmeBool) && kmeBool,
+                KioskPasswordHash: values.TryGetValue("KioskPasswordHash", out var kph) ? kph : string.Empty,
+                KioskLockedFeatures: values.TryGetValue("KioskLockedFeatures", out var klf) ? klf : string.Empty,
+                MapRenderMode: values.TryGetValue("MapRenderMode", out var mrm) && !string.IsNullOrEmpty(mrm) ? mrm : defaults.MapRenderMode,
+                VectorStyleOsmUrl: values.TryGetValue("VectorStyleOsmUrl", out var vso) && !string.IsNullOrWhiteSpace(vso) ? vso : defaults.VectorStyleOsmUrl,
+                VectorStyleTopoUrl: values.TryGetValue("VectorStyleTopoUrl", out var vst) && !string.IsNullOrWhiteSpace(vst) ? vst : defaults.VectorStyleTopoUrl,
+                VectorStyleDarkUrl: values.TryGetValue("VectorStyleDarkUrl", out var vsd) && !string.IsNullOrWhiteSpace(vsd) ? vsd : defaults.VectorStyleDarkUrl,
+                MapOverlays: values.TryGetValue("MapOverlays", out var mov) ? mov : defaults.MapOverlays
             );
         }
         catch (Exception ex)
@@ -304,7 +328,15 @@ public static class SettingsService
                 $"VirtualNodePort={settings.VirtualNodePort}",
                 $"VirtualNodeBlockAdmin={settings.VirtualNodeBlockAdmin}",
                 $"FancyNodeList={settings.FancyNodeList}",
-                $"FancyNodeListColorful={settings.FancyNodeListColorful}"
+                $"FancyNodeListColorful={settings.FancyNodeListColorful}",
+                $"KioskModeEnabled={settings.KioskModeEnabled}",
+                $"KioskPasswordHash={settings.KioskPasswordHash}",
+                $"KioskLockedFeatures={settings.KioskLockedFeatures}",
+                $"MapRenderMode={settings.MapRenderMode}",
+                $"VectorStyleOsmUrl={settings.VectorStyleOsmUrl}",
+                $"VectorStyleTopoUrl={settings.VectorStyleTopoUrl}",
+                $"VectorStyleDarkUrl={settings.VectorStyleDarkUrl}",
+                $"MapOverlays={settings.MapOverlays}"
             };
 
             // Save node colors

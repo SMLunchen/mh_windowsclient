@@ -36,14 +36,17 @@ jobs:
           body: |
             ## Meshhessen Client ${{ github.ref_name }}
 
-            Windows-Client für Meshtastic-Geräte – entwickelt von der [Meshhessen Community](https://www.meshhessen.de).
+            Windows-Client for Meshtastic-devices – developed from [Meshhessen Community](https://www.meshhessen.de).
 
             ### Download
-            👇 Einfach `MeshhessenClient.exe` herunterladen und starten – keine Installation nötig!
+            👇 simply download and run  `MeshhessenClient.exe` - no install necessary!
 
-            ### Voraussetzungen
+            ### Prequisites
             - Windows 10/11 x64
-            - Meshtastic-Gerät mit USB-Anschluss
+            - Meshtastic-device with USB, BLE or wifi
+            - dotnet Download: https://dotnet.microsoft.com/en-us/download/dotnet/8.0
+
+            ### no cloud, no registration, all offline
           files: publish_output/MeshhessenClient.exe
           draft: false
           prerelease: ${{ contains(github.ref_name, 'beta') || contains(github.ref_name, 'alpha') }}

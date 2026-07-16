@@ -77,9 +77,48 @@ Der **Meshhessen Client** ist ein **kostenloser, nativer Windows-Client für Mes
 ### 🗺️ Karte
 
 * **Drei Kartentypen:** OSM Standard, OSM Dark Mode, OpenTopoMap (topografisch)
-* **Drei Karten-Modi** (umschaltbar in Einstellungen):
+* **NEU: Vektorkarten** (umschaltbar in den Einstellungen, Raster bleibt Standard):
+  * Gestochen scharf in jeder Zoomstufe (MapLibre GL), deutlich kleinere Offline-Daten, Kartenstil-Updates ohne Client-Update
+  * **🚒 Feuerwehr-/Rettungs-Layer** zuschaltbar – alle Objekttypen im Abschnitt „Feuerwehr-/Rettungs-Layer" direkt unter dieser Liste
+  * Layer-Auswahl in den Einstellungen und über den 🗂️-Button direkt auf der Karte; solange ein Layer aus ist, wird kein Byte dafür geladen
+  * **Automatischer Offline-Cache:** online betrachtete Gebiete sind ohne Internet weiter nutzbar; zusätzlich **Vektor-Offlinepaket-Downloader** (Bundesland/eigene Bounding-Box, Topo-Extras und Zusatz-Layer als Opt-in)
+  * Voller Funktionsumfang: Node-Pins, Traceroutes, Nachbar-Linien, Positionsverläufe und Rechtsklick-Menü auch auf der Vektorkarte
+  * Benötigt die Microsoft-WebView2-Runtime (auf Windows 11 vorinstalliert); ohne sie fällt der Client automatisch auf Raster zurück
+
+### 🚒 Feuerwehr-/Rettungs-Layer (Vektorkarte)
+
+Zuschaltbarer Fach-Layer für Feuerwehr, Rettungsdienst und Katastrophenschutz – gedacht als Unterstützung im Einsatz- und Übungsfall (z. B. „Wo ist der nächste Hydrant / Rettungspunkt?"). Die Daten kommen **live aus OpenStreetMap** (tägliche Updates auf dem Meshhessen-Server) – die Abdeckung hängt also vom lokalen Mapping-Stand ab. Farbkonvention wie im Feuerwehrplan: **rot** = Löschmittel/Meldung, **blau** = Löschwasser-Vorrat, **grün** = Rettung, **orange** = Katastrophenschutz.
+
+| Symbol | Objekttyp | sichtbar ab Zoom |
+|---|---|---|
+| 🔴 H (gefüllt = Überflur, Ring = **Unterflur**) | Hydrant | 15 |
+| 🔴 Flamme + Name | Feuerwache | 13 |
+| 🔴 Kreuz + Name | Rettungswache | 13 |
+| 🔴 Sirene | Sirene | 13 |
+| 🔴 Leiter | Anleiterstelle | 14 |
+| 🔴 E / F / M / C / K | Einspeisung / Feuerlöscher / Feuermelder / Löschschlauch / Feuerwehrschlüsseldepot (FSD) | 16 |
+| 🔵 S | Saugstelle | 14 |
+| 🔵 T | Löschwasserbehälter | 14 |
+| 🔵 L | Löschteich | 13 |
+| 🔵 N | Notrufsäule | 15 |
+| 🟢 Kreuz + **Nummer** | Rettungspunkt | 13 |
+| 🟢 Sammelplatz | Sammelplatz / Evakuierungspunkt | 13 |
+| 🟢 Herz (AED) | Defibrillator | 15 |
+| 🟢 Kreuz | Erste-Hilfe-Kasten | 16 |
+| 🟢 Rettungsring | Rettungsring / Wasserrettung | 14–16 |
+| 🟠 Kreuz | Katastrophenschutz-Anlaufstelle | 13 |
+| 🔴 Kreuz | Bergrettung | 13 |
+| Helipad | Hubschrauberlandeplatz | 13 |
+
+* **Klick auf ein Objekt** öffnet ein Detail-Popup mit allen in OSM gepflegten Attributen: Bauart (z. B. Unterflur/Überflur/Wandhydrant), Kupplungen, Durchfluss, Druck, Wasserquelle, Wasservolumen, Betreiber, Öffnungszeiten, Standortbeschreibung (bei Defis z. B. „Foyer, 1. OG") und Erfassungsdatum
+* Icons überlappen bewusst („im Einsatz will man jeden Punkt sehen") und verdrängen keine Kartenbeschriftung
+* **Offline nutzbar:** online betrachtete Gebiete landen automatisch im Cache; im Vektor-Offlinepaket-Downloader lässt sich der Layer gezielt für ein Gebiet mitladen
+* Solange der Layer ausgeschaltet ist, wird **kein einziges Byte** dafür übertragen
+* Die Architektur ist für weitere Fach-Layer vorbereitet (z. B. THW, Krankenhäuser)
+* **Vier Karten-Modi** (umschaltbar in Einstellungen):
   * **Offline** (Standard) – vorher heruntergeladene Tiles vom Meshhessen-Server, kein Internet, nur Deutschland
   * **Online – Meshhessen-Server** – Tiles werden on-demand von `tile.meshhessenclient.de` geladen und dauerhaft lokal gespeichert; alle drei Stile, nur Deutschland
+  * **Online – eigener Tile-Server** – wie oben, aber mit den selbst konfigurierten Tile-URLs aus den Einstellungen; öffentliche OSM-/OpenTopoMap-Server sind hier nicht zulässig (Tile-Usage-Policy)
   * **Online – OpenStreetMap** – weltweite Abdeckung über `tile.openstreetmap.org`; nur Standardkarte; OSM-Tile-Policy-konform (kein Bulk-Download, Tiles lokal gecacht)
 * **Node-Positionen** als farbige Pins auf der Karte
 * **Node-Pfade** – GPS-Positionsverläufe aufzeichnen und auf der Karte anzeigen
@@ -181,6 +220,12 @@ Der **Meshhessen Client** ist ein **kostenloser, nativer Windows-Client für Mes
 * **Automatisches Logging** aller Nachrichten (`logs/`)
 * **Debug-Tab** mit Live-Log fürs Troubleshooting
 * **Meshhessen-Schnellkonfiguration** – One-Click für Short Slow + EU868 + Meshhessen-Kanal
+* **Kiosk-/Trainingsmodus** – für geteilte Stationen (Vereinslokal, Schulung, Veranstaltung):
+  * In den Einstellungen aktivieren, Passwort setzen und wählen, was im gesperrten Zustand ausgeblendet wird: Tabs (Nodes, Kanäle, Einstellungen, Info, Tools, Debug), Node-Konfiguration, Fernverwaltung, Telemetrie-Dashboard, SOS-Button, Meshhessen-Schnellkonfiguration
+  * **🔒-Schloss in der Fußleiste** zum Sperren/Entsperren (erscheint nur, wenn ein Passwort gesetzt ist); Entsperren per Passwort, App startet im Kiosk-Modus immer gesperrt
+  * Bei aktiver Sperre werden zusätzlich **Admin-Befehle von Virtual-Node-Clients blockiert** (unabhängig von der VNode-Einstellung)
+  * ⚠️ **Versehens-Schutz, kein Angriffs-Schutz** – das Passwort wird als PBKDF2-Hash gespeichert, aber wer die INI-Datei bearbeiten kann, kann den Modus deaktivieren
+  * **Passwort vergessen?** Client beenden und in `meshhessen-client.ini` die Zeile `KioskModeEnabled=True` auf `False` setzen (oder die Zeile `KioskPasswordHash=…` leeren und neu setzen)
 
 
 ## 💬 Die Meshhessen Community
@@ -193,6 +238,24 @@ Der Meshhessen Client ist ein Gemeinschaftsprojekt der Meshtastic-Community in H
 
 
 ## 📸 Screenshots
+
+Die neue Vektorkarte (MapLibre GL) – gestochen scharf in jeder Zoomstufe, mit Node-Pins:
+<img alt="Meshhessen Client – Vektorkarte (MapLibre GL) mit Meshtastic Node-Positionen unter Windows" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/vector_in_action.png" />
+
+Vergleich: klassische Rasterkarte – ohne zuschaltbare Fach-Layer:
+<img alt="Meshhessen Client – klassische Rasterkarte ohne Feuerwehr-Layer (Vergleichsbild)" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/raster_wo_hydrant.png" />
+
+Derselbe Ausschnitt als Vektorkarte mit aktivem 🚒 Feuerwehr-/Rettungs-Layer (Hydranten, Wachen, Rettungspunkte – Klick zeigt Details):
+<img alt="Meshhessen Client – Vektorkarte mit Feuerwehr-Layer: Hydranten, Wachen und Rettungspunkte auf der Meshtastic-Karte" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/vector_w_hydrant.png" />
+
+Klick auf einen Hydranten zeigt die Details – hier ein Unterflurhydrant (Ring-Symbol) mit Wasserquelle:
+<img alt="Meshhessen Client – Hydranten-Detail-Popup auf der Vektorkarte: Unterflurhydrant mit Bauart und Wasserquelle" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/hydrant_unterflur.png" />
+
+Direkte HF-Nachbarn mit SNR-Farbverlauf auf der Vektorkarte:
+<img alt="Meshhessen Client – Nachbar-Linien mit SNR-Farbverlauf auf der Vektorkarte (0-Hop HF)" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/vector_w_neighborlinks.png" />
+
+Kiosk-/Trainingsmodus – sperrbare Oberfläche für geteilte Stationen (Einstellungen):
+<img alt="Meshhessen Client – Kiosk- und Trainingsmodus: sperrbare Oberfläche mit Passwortschutz für geteilte Stationen" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/kiosk_settings.png" />
 
 Offline-Karte mit Node-Positionen und Entfernungsanzeige:
 <img width="1250" height="813" alt="Meshhessen Client – Windows-App für Meshtastic-Geräte: Offline-Karte mit Node-Positionen (OSM)" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/map.png" />
@@ -463,9 +526,10 @@ Meshhessen Client · Windows-Client für Meshtastic-Geräte · Meshtastic Window
 ### 🗺️ Map
 
 * **Three map styles:** OSM Standard, OSM Dark Mode, OpenTopoMap (topographic)
-* **Three map modes** (switchable in settings):
+* **Four map modes** (switchable in settings):
   * **Offline** (default) – pre-downloaded tiles from the Meshhessen server, no internet required, Germany only
   * **Online – Meshhessen Server** – tiles fetched on demand from `tile.meshhessenclient.de` and stored permanently; all three styles, Germany only
+  * **Online – custom tile server** – same as above but using your own configured tile URLs from the settings; public OSM/OpenTopoMap servers are not allowed here (tile usage policy)
   * **Online – OpenStreetMap** – worldwide coverage via `tile.openstreetmap.org`; standard map only; OSM tile policy compliant (no bulk download, tiles cached locally)
 * **Node positions** as colored pins on the map
 * **Node paths** – record GPS position history and display tracks on the map
@@ -547,6 +611,12 @@ Meshhessen Client · Windows-Client für Meshtastic-Geräte · Meshtastic Window
 * **Automatic logging** of all messages (`logs/`)
 * **Debug tab** with live log for troubleshooting
 * **Meshhessen quick-config** – one-click Short Slow + EU868 + Meshhessen channel setup
+* **Kiosk / training mode** – for shared stations (club room, training, events):
+  * Enable in settings, set a password and choose what gets hidden while locked: tabs (Nodes, Channels, Settings, Info, Tools, Debug), node configuration, remote admin, telemetry dashboard, SOS button, Meshhessen quick-config
+  * **🔒 lock in the footer bar** to lock/unlock (only shown once a password is set); unlock via password, the app always starts locked in kiosk mode
+  * While locked, **admin commands from Virtual Node clients are additionally blocked** (regardless of the VNode setting)
+  * ⚠️ **Protects against accidents, not attacks** – the password is stored as a PBKDF2 hash, but anyone who can edit the INI file can disable the mode
+  * **Forgot the password?** Close the client and set `KioskModeEnabled=True` to `False` in `meshhessen-client.ini` (or clear the `KioskPasswordHash=…` line and set a new one)
 
 
 ## 💬 The Meshhessen Community

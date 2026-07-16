@@ -52,6 +52,11 @@ public static class TDeckTileService
         IProgress<TileProgress>? progress,
         CancellationToken ct)
     {
+        // Missing tiles get fetched from the server — reject public OSM/OpenTopo
+        // servers whose usage policy forbids bulk downloads. Checked here (UI thread)
+        // because the localized message is read from Application resources.
+        TileDownloaderService.EnsureBulkDownloadAllowed(source);
+
         // All file I/O (File.Exists, File.Copy, Directory.CreateDirectory) is
         // synchronous and would freeze the UI thread. Task.Run moves everything
         // to the thread-pool; the inner HttpClient await is fine there too.

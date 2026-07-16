@@ -53,6 +53,7 @@ public partial class MainWindow : Window
     private DirectMessagesWindow? _dmWindow = null;
     private uint _myNodeId = 0;
     private string _activeStationName = string.Empty;
+    private bool _kioskLocked = false;   // kiosk/training mode: true = features hidden
     private string? _nodeSortColumn = null;
 
     // Fancy tile view
@@ -79,6 +80,10 @@ public partial class MainWindow : Window
 
     // Karte
     private Mapsui.Map? _map;
+    // Vektor-Karte (MapLibre GL JS in WebView2)
+    private Services.VectorTileCacheService? _vectorTileCache;
+    private bool _vectorMapInitStarted = false;  // CoreWebView2 init/navigation kicked off
+    private bool _vectorMapReady = false;        // map.html loaded, JS API callable
     private MemoryLayer? _nodeLayer;
     private MemoryLayer? _myPosLayer;
     private readonly List<IFeature> _nodeFeatures = new();
@@ -128,7 +133,15 @@ public partial class MainWindow : Window
         false,         // VirtualNodeBlockAdmin
         new Dictionary<uint, string>(), // NodeStationNames
         false,         // FancyNodeList
-        true);         // FancyNodeListColorful
+        true,          // FancyNodeListColorful
+        false,         // KioskModeEnabled
+        string.Empty,  // KioskPasswordHash
+        string.Empty,  // KioskLockedFeatures
+        "raster",      // MapRenderMode
+        "https://vectortile.meshhessenclient.de/styles/osm.json",      // VectorStyleOsmUrl
+        "https://vectortile.meshhessenclient.de/styles/opentopo.json", // VectorStyleTopoUrl
+        "https://vectortile.meshhessenclient.de/styles/dark.json",     // VectorStyleDarkUrl
+        string.Empty); // MapOverlays
     private NodeInfo? _mapContextMenuNode;
     private uint? _alertNodeId;  // Stores the node ID for "Show on Map" button
 
@@ -261,6 +274,9 @@ public partial class MainWindow : Window
         // Checkbox für verschlüsselte Nachrichten
         ShowEncryptedMessagesCheckBox.Checked += (s, e) => _showEncryptedMessages = true;
         ShowEncryptedMessagesCheckBox.Unchecked += (s, e) => _showEncryptedMessages = false;
+
+        // Overlay-Checkboxen aus der Registry erzeugen (vor LoadSettings, das die Zustände setzt)
+        BuildOverlayPanels();
 
         // Einstellungen laden (VOR RefreshPorts, damit LastComPort bekannt ist)
         LoadSettings();
@@ -401,9 +417,24 @@ public partial class MainWindow : Window
             }
 
             // Load Map Mode
-            MapModeOfflineRadio.IsChecked   = settings.MapMode != "online-own" && settings.MapMode != "online-osm";
-            MapModeOnlineOwnRadio.IsChecked = settings.MapMode == "online-own";
-            MapModeOnlineOsmRadio.IsChecked = settings.MapMode == "online-osm";
+            MapModeOfflineRadio.IsChecked      = settings.MapMode is not ("online-own" or "online-osm" or "online-custom");
+            MapModeOnlineOwnRadio.IsChecked    = settings.MapMode == "online-own";
+            MapModeOnlineCustomRadio.IsChecked = settings.MapMode == "online-custom";
+            MapModeOnlineOsmRadio.IsChecked    = settings.MapMode == "online-osm";
+
+            // Load Map Render Mode (raster/vector)
+            MapRenderRasterRadio.IsChecked = settings.MapRenderMode != "vector";
+            MapRenderVectorRadio.IsChecked = settings.MapRenderMode == "vector";
+
+            // Load overlay states into both checkbox panels (settings + map popup)
+            SyncOverlayCheckboxes();
+            VectorStyleUrlTextBox.Text = settings.MapSource switch
+            {
+                "osmtopo" => settings.VectorStyleTopoUrl,
+                "osmdark" => settings.VectorStyleDarkUrl,
+                _ => settings.VectorStyleOsmUrl
+            };
+
             ApplyMapModeUi(settings.MapMode);
 
             if (settings.DarkMode)
@@ -449,6 +480,15 @@ public partial class MainWindow : Window
             if (FancyNodeListCheckBox != null)         FancyNodeListCheckBox.IsChecked         = settings.FancyNodeList;
             Models.NodeInfo.FancyColorful = settings.FancyNodeListColorful;
             ApplyFancyNodeListSetting(settings.FancyNodeList);
+
+            // Kiosk / Training mode
+            if (KioskEnableCheckBox != null) KioskEnableCheckBox.IsChecked = settings.KioskModeEnabled;
+            ApplyKioskCheckboxes(settings.KioskLockedFeatures);
+            // Kiosk stations always start locked (survives restart)
+            if (settings.KioskModeEnabled && !string.IsNullOrEmpty(settings.KioskPasswordHash))
+                ApplyKioskLock(true);
+            else
+                UpdateKioskLockButton();
 
             // Virtual Node
             if (VirtualNodeEnableCheckBox != null) VirtualNodeEnableCheckBox.IsChecked = settings.VirtualNodeEnabled;
@@ -500,6 +540,7 @@ public partial class MainWindow : Window
 
     #region Karte
 
+    // Custom mode: URLs as configured in the settings
     private string GetUrlForSource(string source) => source switch
     {
         "osm"     => _currentSettings.OSMTileUrl,
@@ -508,10 +549,35 @@ public partial class MainWindow : Window
         _         => _currentSettings.OSMTileUrl
     };
 
+    // Meshhessen mode: always the official servers, independent of the URL fields
+    private static string GetMeshhessenUrlForSource(string source) => source switch
+    {
+        "osmtopo" => "https://tile.meshhessenclient.de/opentopo/{z}/{x}/{y}.png",
+        "osmdark" => "https://tile.meshhessenclient.de/dark/{z}/{x}/{y}.png",
+        _         => "https://tile.meshhessenclient.de/osm/{z}/{x}/{y}.png"
+    };
+
+    // Vector rendering is available in all modes except online-osm (no public vector OSM server)
+    private bool UseVectorMap =>
+        _currentSettings.MapRenderMode == "vector" && _currentSettings.MapMode != "online-osm";
+
     private void InitializeMap()
     {
         try
         {
+            if (UseVectorMap)
+            {
+                InitializeVectorMap();
+                return;
+            }
+
+            MapControl.Visibility = Visibility.Visible;
+            VectorMapView.Visibility = Visibility.Collapsed;
+            MapCopyrightText.Visibility = Visibility.Visible;
+            MapOverlaySeparator.Visibility = Visibility.Collapsed;
+            MapLayersBtn.Visibility = Visibility.Collapsed;
+            PlaceMapLegendsForRenderMode();
+
             _map = new Mapsui.Map();
 
             var tileDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "maptiles");
@@ -525,6 +591,10 @@ public partial class MainWindow : Window
                     "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
                     useHttpCacheHeaders: true),
                 "online-own" => new Services.CachingHttpTileProvider(
+                    tileDir, sourceFolder,
+                    GetMeshhessenUrlForSource(sourceFolder),
+                    useHttpCacheHeaders: false),
+                "online-custom" => new Services.CachingHttpTileProvider(
                     tileDir, sourceFolder,
                     GetUrlForSource(sourceFolder),
                     useHttpCacheHeaders: false),
@@ -561,7 +631,7 @@ public partial class MainWindow : Window
 
             UpdateMyPositionPin();
 
-            if (_currentSettings.MapMode is "online-own" or "online-osm")
+            if (_currentSettings.MapMode is "online-own" or "online-osm" or "online-custom")
             {
                 MapStatusText.Text = "";
             }
@@ -591,8 +661,589 @@ public partial class MainWindow : Window
         };
     }
 
+    // ── Vektor-Karte (MapLibre GL JS in WebView2) ────────────────────────────
+
+    private string GetVectorStyleUrl()
+    {
+        // online-own always uses the official server; custom + offline use the configured style URLs
+        if (_currentSettings.MapMode == "online-own")
+        {
+            var host = Services.VectorTileCacheService.DefaultVectorHost;
+            return _currentSettings.MapSource switch
+            {
+                "osmtopo" => $"https://{host}/styles/opentopo.json",
+                "osmdark" => $"https://{host}/styles/dark.json",
+                _ => $"https://{host}/styles/osm.json"
+            };
+        }
+        return _currentSettings.MapSource switch
+        {
+            "osmtopo" => _currentSettings.VectorStyleTopoUrl,
+            "osmdark" => _currentSettings.VectorStyleDarkUrl,
+            _ => _currentSettings.VectorStyleOsmUrl
+        };
+    }
+
+    private async void InitializeVectorMap()
+    {
+        try
+        {
+            MapControl.Visibility = Visibility.Collapsed;
+            VectorMapView.Visibility = Visibility.Visible;
+            // Attribution (© OpenMapTiles © OSM) is rendered inside the map page –
+            // WPF cannot draw on top of the WebView2 HWND (airspace)
+            MapCopyrightText.Visibility = Visibility.Collapsed;
+            MapOverlaySeparator.Visibility = Visibility.Visible;
+            MapLayersBtn.Visibility = Visibility.Visible;
+            PlaceMapLegendsForRenderMode();
+
+            var baseDir = AppDomain.CurrentDomain.BaseDirectory;
+            var cacheDir = Path.Combine(baseDir, "vectortiles");
+            _vectorTileCache ??= new Services.VectorTileCacheService(cacheDir);
+            _vectorTileCache.OfflineMode = _currentSettings.MapMode == "offline";
+            _vectorTileCache.RegisterStyleUrls(new[]
+            {
+                _currentSettings.VectorStyleOsmUrl,
+                _currentSettings.VectorStyleTopoUrl,
+                _currentSettings.VectorStyleDarkUrl
+            });
+
+            if (_vectorMapReady)
+            {
+                // Map page already running – just switch the style
+                await VectorMapView.CoreWebView2.ExecuteScriptAsync(
+                    $"setStyle({JsonSerializer.Serialize(GetVectorStyleUrl())})");
+                // Re-sync everything (covers raster->vector switches where pushes were skipped)
+                PushMyPositionToVectorMap();
+                PushNodePinsToVectorMap();
+                PushWaypointsToVectorMap();
+                PushNeighborLinesToVectorMap();
+                foreach (var (key, json) in _vectorLineJson.ToList())
+                    ExecVectorScript($"setLines({JsonSerializer.Serialize(key)}, {json})");
+            }
+            else if (!_vectorMapInitStarted)
+            {
+                _vectorMapInitStarted = true;
+                var assetsDir = Services.VectorTileCacheService.ExtractAssets(cacheDir);
+
+                var env = await Microsoft.Web.WebView2.Core.CoreWebView2Environment.CreateAsync(
+                    userDataFolder: Path.Combine(baseDir, "webview2-data"));
+                await VectorMapView.EnsureCoreWebView2Async(env);
+
+                var core = VectorMapView.CoreWebView2;
+                var version = System.Reflection.Assembly.GetExecutingAssembly()
+                                  .GetName().Version?.ToString(3) ?? "1.0.0";
+                // Server ACL requires MeshhessenClient/* UA – all requests go through
+                // our interceptor (own HttpClient), this covers anything that slips past
+                core.Settings.UserAgent =
+                    $"MeshhessenClient/{version} (+https://meshhessenclient.de; contact: admin@meshhessenclient.de)";
+                core.Settings.AreDefaultContextMenusEnabled = false;
+                core.Settings.AreDevToolsEnabled = false;
+                core.Settings.IsStatusBarEnabled = false;
+                core.Settings.IsZoomControlEnabled = false;
+
+                core.SetVirtualHostNameToFolderMapping("meshmap.local", assetsDir,
+                    Microsoft.Web.WebView2.Core.CoreWebView2HostResourceAccessKind.Allow);
+                core.AddWebResourceRequestedFilter("*",
+                    Microsoft.Web.WebView2.Core.CoreWebView2WebResourceContext.All);
+                core.WebResourceRequested += VectorMap_WebResourceRequested;
+                core.WebMessageReceived += VectorMap_WebMessageReceived;
+                core.NavigationCompleted += VectorMap_NavigationCompleted;
+
+                core.Navigate("https://meshmap.local/map.html");
+                // NavigationCompleted starts the map with the current settings
+            }
+
+            UpdateMapTileStatus();
+        }
+        catch (Microsoft.Web.WebView2.Core.WebView2RuntimeNotFoundException)
+        {
+            Services.Logger.WriteLine("WebView2 runtime not found - falling back to raster map");
+            FallbackToRasterMap(showMessage: true);
+        }
+        catch (Exception ex)
+        {
+            Services.Logger.WriteLine($"ERROR initializing vector map: {ex.Message}");
+            FallbackToRasterMap(showMessage: false);
+        }
+    }
+
+    private void FallbackToRasterMap(bool showMessage)
+    {
+        _vectorMapInitStarted = false;
+        _currentSettings = _currentSettings with { MapRenderMode = "raster" };
+        Services.SettingsService.Save(_currentSettings);
+        if (MapRenderRasterRadio != null)
+            MapRenderRasterRadio.IsChecked = true;   // handler sees no change, no re-init loop
+        ApplyMapModeUi(_currentSettings.MapMode);
+        InitializeMap();
+        if (showMessage)
+            MessageBox.Show(Loc("StrVectorNoWebView2"), Loc("StrMapRenderVector"),
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+    }
+
+    private async void VectorMap_NavigationCompleted(object? sender,
+        Microsoft.Web.WebView2.Core.CoreWebView2NavigationCompletedEventArgs e)
+    {
+        if (!e.IsSuccess)
+        {
+            Services.Logger.WriteLine($"[VectorMap] Navigation failed: {e.WebErrorStatus}");
+            return;
+        }
+        _vectorMapReady = true;
+        try
+        {
+            var ci = System.Globalization.CultureInfo.InvariantCulture;
+            var styleUrl = JsonSerializer.Serialize(GetVectorStyleUrl());
+            var attribution = JsonSerializer.Serialize(Services.VectorTileCacheService.Attribution);
+            var lang = JsonSerializer.Serialize(_currentSettings.Language);
+            // Zoom 8 matches the raster map's home resolution (~611)
+            await VectorMapView.CoreWebView2.ExecuteScriptAsync(
+                $"initMap({styleUrl}, {_currentSettings.MyLongitude.ToString(ci)}, {_currentSettings.MyLatitude.ToString(ci)}, 8, {attribution}, {lang})");
+            PushMyPositionToVectorMap();
+            PushOverlaysToVectorMap();
+            PushNodePinsToVectorMap();
+            PushWaypointsToVectorMap();
+            PushNeighborLinesToVectorMap();
+            // Restore cached line overlays (traceroutes, paths) e.g. after raster->vector switch
+            foreach (var (key, json) in _vectorLineJson.ToList())
+                ExecVectorScript($"setLines({JsonSerializer.Serialize(key)}, {json})");
+        }
+        catch (Exception ex)
+        {
+            Services.Logger.WriteLine($"[VectorMap] init script error: {ex.Message}");
+        }
+    }
+
+    private async void PushMyPositionToVectorMap()
+    {
+        if (!_vectorMapReady) return;
+        try
+        {
+            var ci = System.Globalization.CultureInfo.InvariantCulture;
+            var label = JsonSerializer.Serialize(
+                string.IsNullOrEmpty(_activeStationName) ? "Ich" : _activeStationName);
+            await VectorMapView.CoreWebView2.ExecuteScriptAsync(
+                $"setMyPosition({_currentSettings.MyLongitude.ToString(ci)}, {_currentSettings.MyLatitude.ToString(ci)}, {label})");
+        }
+        catch (Exception ex)
+        {
+            Services.Logger.WriteLine($"[VectorMap] setMyPosition error: {ex.Message}");
+        }
+    }
+
+    // Toggle handler for all overlay checkboxes (overlay key in Tag) – instances
+    // live in the settings panel AND the map toolbar popup, kept in sync below
+    private void MapOverlayCheck_Changed(object sender, RoutedEventArgs e)
+    {
+        if (_currentSettings is null) return;
+        if (sender is not System.Windows.Controls.CheckBox box || box.Tag is not string key) return;
+
+        var active = Services.MapOverlayRegistry.ParseActive(_currentSettings.MapOverlays);
+        if (box.IsChecked == true) active.Add(key); else active.Remove(key);
+        var csv = string.Join(",", active.OrderBy(k => k));
+        if (csv == _currentSettings.MapOverlays) return;
+
+        _currentSettings = _currentSettings with { MapOverlays = csv };
+        Services.SettingsService.Save(_currentSettings);
+        Services.Logger.WriteLine($"Map overlays changed: [{csv}]");
+        PushOverlaysToVectorMap();
+        SyncOverlayCheckboxes();
+    }
+
+    /// <summary>Creates one checkbox per registered overlay in the settings panel
+    /// and in the map toolbar popup. Adding an overlay = one MapOverlayRegistry entry.</summary>
+    private void BuildOverlayPanels()
+    {
+        foreach (var panel in new[] { VectorOverlaysPanel, MapLayersPopupPanel })
+        {
+            if (panel == null) continue;
+            panel.Children.Clear();
+            foreach (var overlay in Services.MapOverlayRegistry.All)
+            {
+                var text = new TextBlock { FontSize = 12 };
+                text.SetResourceReference(TextBlock.TextProperty, overlay.NameResourceKey);
+                var cb = new CheckBox { Tag = overlay.Key, Margin = new Thickness(0, 0, 0, 4), Content = text };
+                cb.SetResourceReference(FrameworkElement.ToolTipProperty, overlay.NameResourceKey + "Tooltip");
+                cb.Checked += MapOverlayCheck_Changed;
+                cb.Unchecked += MapOverlayCheck_Changed;
+                panel.Children.Add(cb);
+            }
+        }
+    }
+
+    private void SyncOverlayCheckboxes()
+    {
+        var active = Services.MapOverlayRegistry.ParseActive(_currentSettings?.MapOverlays);
+        foreach (var panel in new[] { VectorOverlaysPanel, MapLayersPopupPanel })
+        {
+            if (panel == null) continue;
+            foreach (var cb in panel.Children.OfType<System.Windows.Controls.CheckBox>())
+                if (cb.Tag is string key)
+                    cb.IsChecked = active.Contains(key);   // no-op change -> handler early-returns
+        }
+    }
+
+    private void MapLayersBtn_Click(object sender, RoutedEventArgs e)
+    {
+        MapLayersPopup.PlacementTarget = MapLayersBtn;
+        MapLayersPopup.IsOpen = !MapLayersPopup.IsOpen;
+    }
+
+    private void MapLegendBtn_Click(object sender, RoutedEventArgs e)
+    {
+        MapLegendBorder.Visibility = Visibility.Visible;   // re-show after ✕ inside the popup
+        MapLegendPopup.PlacementTarget = MapLegendBtn;
+        MapLegendPopup.IsOpen = !MapLegendPopup.IsOpen;
+    }
+
+    /// <summary>
+    /// The legend and the traceroute list are WPF overlays inside the map grid.
+    /// Over the WebView2 HWND they are invisible (airspace), so in vector mode
+    /// they are reparented into the legend button popup and back for raster.
+    /// </summary>
+    private void PlaceMapLegendsForRenderMode()
+    {
+        if (MapLegendBorder == null || VectorLegendHost == null) return;
+
+        if (UseVectorMap)
+        {
+            if (MapLegendBorder.Parent == MapAreaGrid)
+            {
+                MapAreaGrid.Children.Remove(MapLegendBorder);
+                VectorLegendHost.Children.Add(MapLegendBorder);
+            }
+            if (TracerouteLegend.Parent == MapAreaGrid)
+            {
+                MapAreaGrid.Children.Remove(TracerouteLegend);
+                VectorLegendHost.Children.Add(TracerouteLegend);
+            }
+            MapLegendBorder.Visibility = Visibility.Visible;   // may have been closed via ✕ on the raster map
+            MapLegendBtn.Visibility = Visibility.Visible;
+        }
+        else
+        {
+            MapLegendPopup.IsOpen = false;
+            if (VectorLegendHost.Children.Contains(MapLegendBorder))
+            {
+                VectorLegendHost.Children.Remove(MapLegendBorder);
+                MapAreaGrid.Children.Add(MapLegendBorder);
+            }
+            if (VectorLegendHost.Children.Contains(TracerouteLegend))
+            {
+                VectorLegendHost.Children.Remove(TracerouteLegend);
+                MapAreaGrid.Children.Add(TracerouteLegend);
+            }
+            MapLegendBtn.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    private async void PushOverlaysToVectorMap()
+    {
+        if (!_vectorMapReady) return;
+        try
+        {
+            var active = Services.MapOverlayRegistry.ParseActive(_currentSettings.MapOverlays);
+            foreach (var overlay in Services.MapOverlayRegistry.All)
+            {
+                var on = active.Contains(overlay.Key) ? "true" : "false";
+                await VectorMapView.CoreWebView2.ExecuteScriptAsync(
+                    $"setOverlay({JsonSerializer.Serialize(overlay.LayerPrefix)}, {on})");
+            }
+        }
+        catch (Exception ex)
+        {
+            Services.Logger.WriteLine($"[VectorMap] setOverlay error: {ex.Message}");
+        }
+    }
+
+    private void VectorMap_WebResourceRequested(object? sender,
+        Microsoft.Web.WebView2.Core.CoreWebView2WebResourceRequestedEventArgs e)
+    {
+        try
+        {
+            if (_vectorTileCache == null) return;
+            if (!Uri.TryCreate(e.Request.Uri, UriKind.Absolute, out var uri)) return;
+            if (!_vectorTileCache.IsHandledHost(uri)) return; // meshmap.local assets -> default handling
+
+            var deferral = e.GetDeferral();
+            _ = ServeVectorResourceAsync(e, deferral);
+        }
+        catch (Exception ex)
+        {
+            Services.Logger.WriteLine($"[VectorMap] Request handler error: {ex.Message}");
+        }
+    }
+
+    private async Task ServeVectorResourceAsync(
+        Microsoft.Web.WebView2.Core.CoreWebView2WebResourceRequestedEventArgs e,
+        Microsoft.Web.WebView2.Core.CoreWebView2Deferral deferral)
+    {
+        try
+        {
+            var result = await _vectorTileCache!.GetResponseAsync(e.Request.Uri);
+            e.Response = VectorMapView.CoreWebView2.Environment.CreateWebResourceResponse(
+                result.Body != null ? new MemoryStream(result.Body) : null,
+                result.StatusCode, result.ReasonPhrase, result.Headers);
+        }
+        catch (Exception ex)
+        {
+            Services.Logger.WriteLine($"[VectorMap] Serve error {e.Request.Uri}: {ex.Message}");
+            try
+            {
+                e.Response = VectorMapView.CoreWebView2.Environment.CreateWebResourceResponse(
+                    null, 500, "Internal Error", "");
+            }
+            catch { }
+        }
+        finally
+        {
+            deferral.Complete();
+        }
+    }
+
+    private void VectorMap_WebMessageReceived(object? sender,
+        Microsoft.Web.WebView2.Core.CoreWebView2WebMessageReceivedEventArgs e)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(e.WebMessageAsJson);
+            var root = doc.RootElement;
+            var type = root.TryGetProperty("type", out var t) ? t.GetString() : null;
+            switch (type)
+            {
+                case "ready":
+                    Services.Logger.WriteLine("[VectorMap] Style loaded");
+                    MapStatusText.Text = "";
+                    break;
+
+                case "maperror":
+                    var msg = root.TryGetProperty("message", out var m) ? m.GetString() : "unknown";
+                    Services.Logger.WriteLine($"[VectorMap] Map error: {msg}");
+                    break;
+
+                case "nodeclick":
+                {
+                    var node = FindNodeFromMessage(root);
+                    if (node?.Latitude != null && node.Longitude != null)
+                    {
+                        var km = HaversineKm(_currentSettings.MyLatitude, _currentSettings.MyLongitude,
+                                             node.Latitude.Value, node.Longitude.Value);
+                        MapStatusText.Text = string.Format(Loc("StrNodeDistanceStatus"), node.ShortName, node.Id, km, node.LastSeen);
+                    }
+                    break;
+                }
+
+                case "nodecontext":
+                {
+                    var node = FindNodeFromMessage(root);
+                    if (node != null)
+                        ShowMapContextMenu(node, null,
+                            node.Latitude ?? 0, node.Longitude ?? 0, VectorMapView);
+                    break;
+                }
+
+                case "waypointcontext":
+                {
+                    if (root.TryGetProperty("id", out var wid) && wid.TryGetUInt32(out var waypointId))
+                    {
+                        var wp = _waypoints.FirstOrDefault(w => w.Id == waypointId);
+                        if (wp != null)
+                            ShowMapContextMenu(null, wp, wp.Latitude, wp.Longitude, VectorMapView);
+                    }
+                    break;
+                }
+
+                case "mapcontext":
+                {
+                    if (root.TryGetProperty("lat", out var latEl) && root.TryGetProperty("lon", out var lonEl))
+                        ShowMapContextMenu(null, null, latEl.GetDouble(), lonEl.GetDouble(), VectorMapView);
+                    break;
+                }
+
+                case "lineclick":
+                {
+                    if (!root.TryGetProperty("props", out var props)) break;
+                    if (!props.TryGetProperty("fromId", out var fEl) || !fEl.TryGetUInt32(out var fromId)) break;
+                    if (!props.TryGetProperty("toId", out var tEl2) || !tEl2.TryGetUInt32(out var toId)) break;
+                    float? snr = props.TryGetProperty("snr", out var sEl) && sEl.ValueKind == JsonValueKind.Number
+                        ? (float)sEl.GetDouble() : null;
+                    bool isMqtt = props.TryGetProperty("mqtt", out var mEl) && mEl.ValueKind == JsonValueKind.Number && mEl.GetInt32() == 1;
+                    ShowTracerouteSegmentPopup(new SegmentHitTarget(new MPoint(0, 0), fromId, toId, snr, isMqtt));
+                    break;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Services.Logger.WriteLine($"[VectorMap] WebMessage error: {ex.Message}");
+        }
+    }
+
+    private NodeInfo? FindNodeFromMessage(JsonElement root) =>
+        root.TryGetProperty("id", out var idEl) && idEl.TryGetUInt32(out var nodeId)
+            ? _allNodes.FirstOrDefault(n => n.NodeId == nodeId)
+            : null;
+
+    // ── Bridge: pins, waypoints, lines auf die Vektorkarte pushen ────────────
+
+    // Line overlays keyed like the Mapsui layers ("neighbors", traceroute layerKey, "path_<id>").
+    // Cached so a raster→vector switch or map reload can restore everything.
+    private readonly Dictionary<string, string> _vectorLineJson = new();
+    private System.Windows.Threading.DispatcherTimer? _vectorNodePushTimer;
+
+    private async void ExecVectorScript(string script)
+    {
+        if (!_vectorMapReady) return;
+        try { await VectorMapView.CoreWebView2.ExecuteScriptAsync(script); }
+        catch (Exception ex) { Services.Logger.WriteLine($"[VectorMap] script error: {ex.Message}"); }
+    }
+
+    private static string CssColor(Mapsui.Styles.Color c) =>
+        $"rgba({c.R},{c.G},{c.B},{(c.A / 255.0).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)})";
+
+    // Node colors from settings are "#RRGGBB"; normalize "#AARRGGBB" for CSS
+    private static string CssColorFromHex(string? hex, string fallback)
+    {
+        if (string.IsNullOrEmpty(hex)) return fallback;
+        return hex.Length == 9 ? "#" + hex.Substring(3) : hex;
+    }
+
+    /// <summary>Debounced full push of all node pins (positions arrive in bursts).</summary>
+    private void ScheduleNodePinPushToVectorMap()
+    {
+        if (!UseVectorMap) return;
+        if (_vectorNodePushTimer == null)
+        {
+            _vectorNodePushTimer = new System.Windows.Threading.DispatcherTimer
+            {
+                Interval = TimeSpan.FromMilliseconds(500)
+            };
+            _vectorNodePushTimer.Tick += (_, _) =>
+            {
+                _vectorNodePushTimer!.Stop();
+                PushNodePinsToVectorMap();
+            };
+        }
+        _vectorNodePushTimer.Stop();
+        _vectorNodePushTimer.Start();
+    }
+
+    private void PushNodePinsToVectorMap()
+    {
+        if (!_vectorMapReady || !UseVectorMap) return;
+        var nodes = _allNodes
+            .Where(n => n.Latitude.HasValue && n.Longitude.HasValue)
+            .Select(n => new
+            {
+                id = n.NodeId,
+                lon = n.Longitude!.Value,
+                lat = n.Latitude!.Value,
+                color = CssColorFromHex(n.ColorHex, "#e53935"),
+                label = (string.IsNullOrEmpty(n.ShortName) ? n.Id : n.ShortName)
+                      + (string.IsNullOrEmpty(n.Note) ? "" : $" ({n.Note})")
+            })
+            .ToList();
+        ExecVectorScript($"setNodes({JsonSerializer.Serialize(nodes)})");
+    }
+
+    private void PushWaypointsToVectorMap()
+    {
+        if (!_vectorMapReady || !UseVectorMap) return;
+        var wps = _waypoints.Select(wp => new
+        {
+            id = wp.Id,
+            lon = wp.Longitude,
+            lat = wp.Latitude,
+            label = $"{(wp.Icon > 0 ? char.ConvertFromUtf32((int)wp.Icon) : "📍")} {wp.Name}"
+        }).ToList();
+        ExecVectorScript($"setWaypoints({JsonSerializer.Serialize(wps)})");
+    }
+
+    private void PushVectorLines(string key, object featureCollection)
+    {
+        var json = JsonSerializer.Serialize(featureCollection);
+        _vectorLineJson[key] = json;
+        if (_vectorMapReady && UseVectorMap)
+            ExecVectorScript($"setLines({JsonSerializer.Serialize(key)}, {json})");
+    }
+
+    private void RemoveVectorLines(string key)
+    {
+        _vectorLineJson.Remove(key);
+        if (_vectorMapReady)
+            ExecVectorScript($"removeLines({JsonSerializer.Serialize(key)})");
+    }
+
+    private static object LineFeature(double lon1, double lat1, double lon2, double lat2, object props) => new
+    {
+        type = "Feature",
+        geometry = new { type = "LineString", coordinates = new[] { new[] { lon1, lat1 }, new[] { lon2, lat2 } } },
+        properties = props
+    };
+
+    private static object LineFeatureCoords(IEnumerable<double[]> lonLatCoords, object props) => new
+    {
+        type = "Feature",
+        geometry = new { type = "LineString", coordinates = lonLatCoords.ToArray() },
+        properties = props
+    };
+
+    private static object PointFeatureGeo(double lon, double lat, object props) => new
+    {
+        type = "Feature",
+        geometry = new { type = "Point", coordinates = new[] { lon, lat } },
+        properties = props
+    };
+
+    private static object FeatureCollection(List<object> features) =>
+        new { type = "FeatureCollection", features };
+
+    /// <summary>Mirrors DrawNeighborLines() onto the vector map.</summary>
+    private void PushNeighborLinesToVectorMap()
+    {
+        var features = new List<object>();
+        if (_showNeighborLines && _myNodeId != 0)
+        {
+            var myNode = _allNodes.FirstOrDefault(n => n.NodeId == _myNodeId);
+            double myLat = myNode?.Latitude ?? _currentSettings.MyLatitude;
+            double myLon = myNode?.Longitude ?? _currentSettings.MyLongitude;
+
+            if (myLat != 0 || myLon != 0)
+            {
+                var cutoff = _neighborPermanent ? DateTime.MinValue : DateTime.Now.AddHours(-24);
+                var outlineCss = CssColor(Mapsui.Styles.Color.FromArgb(200, 20, 20, 20));
+
+                foreach (var node in _allNodes)
+                {
+                    if (node.NodeId == _myNodeId) continue;
+                    if (!node.DirectNeighborAt.HasValue || node.DirectNeighborAt < cutoff) continue;
+                    if (!node.Latitude.HasValue || !node.Longitude.HasValue) continue;
+
+                    Mapsui.Styles.Color color;
+                    if (_neighborColorByAge)
+                        color = NeighborColorByAge(node.DirectNeighborAt);
+                    else
+                    {
+                        if (!node.DirectNeighborSnr.HasValue) continue;
+                        color = NeighborColorBySnr(node.DirectNeighborSnr);
+                    }
+
+                    features.Add(LineFeature(myLon, myLat, node.Longitude.Value, node.Latitude.Value,
+                        new { outline = 1, color = outlineCss, width = 4.5 }));
+                    features.Add(LineFeature(myLon, myLat, node.Longitude.Value, node.Latitude.Value,
+                        new { color = CssColor(color), width = 2.5 }));
+                }
+            }
+        }
+
+        if (features.Count == 0) RemoveVectorLines("neighbors");
+        else PushVectorLines("neighbors", FeatureCollection(features));
+    }
+
     private void UpdateMyPositionPin()
     {
+        PushMyPositionToVectorMap();
         _myPosFeatures.Clear();
         var pos = SphericalMercator.FromLonLat(_currentSettings.MyLongitude, _currentSettings.MyLatitude);
         var label = string.IsNullOrEmpty(_activeStationName) ? "Ich" : _activeStationName;
@@ -684,9 +1335,12 @@ public partial class MainWindow : Window
         {
             _nodeLayer.Features = _nodeFeatures;
             _nodeLayer.DataHasChanged();
-            if (_showNeighborLines) DrawNeighborLines();
             MapControl.Refresh();
         }
+        // Outside the layer guard: in vector-only mode _nodeLayer is null,
+        // but neighbor lines still need refreshing (DrawNeighborLines pushes to the vector map)
+        if (_showNeighborLines) DrawNeighborLines();
+        ScheduleNodePinPushToVectorMap();
     }
 
     private void MapControl_RightClick(object sender, MouseButtonEventArgs e)
@@ -726,6 +1380,24 @@ public partial class MainWindow : Window
                 }
             }
 
+            var lonLatClick = SphericalMercator.ToLonLat(worldPos.X, worldPos.Y);
+            ShowMapContextMenu(hitNode, hitWaypoint, lonLatClick.lat, lonLatClick.lon, MapControl);
+            e.Handled = true;
+        }
+        catch (Exception ex)
+        {
+            Services.Logger.WriteLine($"ERROR map right-click: {ex.Message}");
+        }
+    }
+
+    /// <summary>Shared map context menu – used by the raster right-click handler
+    /// and the vector map bridge (nodecontext/waypointcontext/mapcontext).</summary>
+    private void ShowMapContextMenu(NodeInfo? hitNode,
+        TelemetryDatabaseService.WaypointEntry? hitWaypoint,
+        double clickLat, double clickLon, UIElement placementTarget)
+    {
+        try
+        {
             var menu = new ContextMenu();
 
             if (hitNode != null)
@@ -808,12 +1480,7 @@ public partial class MainWindow : Window
                     var hidePathItem = new MenuItem { Header = Loc("StrHidePath") };
                     hidePathItem.Click += (s, ev) =>
                     {
-                        if (_mapContextMenuNode != null && _pathLayers.TryGetValue(_mapContextMenuNode.NodeId, out var layer))
-                        {
-                            _map?.Layers.Remove(layer);
-                            _pathLayers.Remove(_mapContextMenuNode.NodeId);
-                            MapControl.Refresh();
-                        }
+                        if (_mapContextMenuNode != null) HidePathForNode(_mapContextMenuNode);
                     };
                     menu.Items.Add(hidePathItem);
                 }
@@ -884,10 +1551,6 @@ public partial class MainWindow : Window
             }
             else
             {
-                var lonLat = SphericalMercator.ToLonLat(worldPos.X, worldPos.Y);
-                var clickLat = lonLat.lat;
-                var clickLon = lonLat.lon;
-
                 var setPosItem = new MenuItem { Header = string.Format(Loc("StrSetMyPosition"), $"{clickLat:F4}", $"{clickLon:F4}") };
                 setPosItem.Click += (s, ev) => SetMyPosition(clickLat, clickLon);
                 menu.Items.Add(setPosItem);
@@ -898,13 +1561,13 @@ public partial class MainWindow : Window
                 menu.Items.Add(wpItem);
             }
 
-            menu.PlacementTarget = MapControl;
+            menu.PlacementTarget = placementTarget;
+            menu.Placement = System.Windows.Controls.Primitives.PlacementMode.MousePoint;
             menu.IsOpen = true;
-            e.Handled = true;
         }
         catch (Exception ex)
         {
-            Services.Logger.WriteLine($"ERROR map right-click: {ex.Message}");
+            Services.Logger.WriteLine($"ERROR map context menu: {ex.Message}");
         }
     }
 
@@ -1137,11 +1800,28 @@ public partial class MainWindow : Window
         UpdateMapTileStatus();
     }
 
+    private void DownloadVectorTiles_Click(object sender, RoutedEventArgs e)
+    {
+        var win = new VectorTileDownloaderWindow(_currentSettings) { Owner = this };
+        win.ShowDialog();
+        UpdateMapTileStatus();
+    }
+
     private void UpdateMapTileStatus()
     {
-        if (_currentSettings.MapMode is "online-own" or "online-osm")
+        if (_currentSettings.MapMode is "online-own" or "online-osm" or "online-custom")
         {
             MapStatusText.Text = "";
+            return;
+        }
+
+        if (UseVectorMap)
+        {
+            // Offline vector: usable once something was cached (lazy cache or future downloader)
+            var vectorDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "vectortiles");
+            var hasData = Directory.Exists(vectorDir) && Directory.EnumerateDirectories(vectorDir)
+                .Any(d => !Path.GetFileName(d).StartsWith("_"));
+            MapStatusText.Text = hasData ? "" : Loc("StrNoVectorTiles");
             return;
         }
 
@@ -1160,13 +1840,19 @@ public partial class MainWindow : Window
         if (newSource == _currentSettings.MapSource)
             return;  // Keine Änderung
 
-        // Update URL TextBox to show the URL for the selected map source
+        // Update URL TextBoxes to show the URLs for the selected map source
         TileServerUrlTextBox.Text = newSource switch
         {
             "osm" => _currentSettings.OSMTileUrl,
             "osmtopo" => _currentSettings.OSMTopoTileUrl,
             "osmdark" => _currentSettings.OSMDarkTileUrl,
             _ => _currentSettings.OSMTileUrl
+        };
+        VectorStyleUrlTextBox.Text = newSource switch
+        {
+            "osmtopo" => _currentSettings.VectorStyleTopoUrl,
+            "osmdark" => _currentSettings.VectorStyleDarkUrl,
+            _ => _currentSettings.VectorStyleOsmUrl
         };
 
         // Settings aktualisieren
@@ -1184,11 +1870,28 @@ public partial class MainWindow : Window
         // Guard: RadioButton fires Checked during initial binding before _currentSettings is fully populated
         if (_currentSettings is null) return;
 
-        var mode = MapModeOnlineOsmRadio?.IsChecked == true ? "online-osm"
-                 : MapModeOnlineOwnRadio?.IsChecked  == true ? "online-own"
+        var mode = MapModeOnlineOsmRadio?.IsChecked    == true ? "online-osm"
+                 : MapModeOnlineOwnRadio?.IsChecked    == true ? "online-own"
+                 : MapModeOnlineCustomRadio?.IsChecked == true ? "online-custom"
                  : "offline";
 
         if (mode == _currentSettings.MapMode) return;
+
+        // Custom mode must not point at public OSM/OpenTopo servers (tile usage policy)
+        if (mode == "online-custom" &&
+            (Services.TileDownloaderService.IsPublicTileServer(_currentSettings.OSMTileUrl) ||
+             Services.TileDownloaderService.IsPublicTileServer(_currentSettings.OSMTopoTileUrl) ||
+             Services.TileDownloaderService.IsPublicTileServer(_currentSettings.OSMDarkTileUrl)))
+        {
+            MessageBox.Show(Loc("StrCustomTileServerPublicBlocked"), Loc("StrMapModeOnlineCustom"),
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+            // Revert the radio selection to the previous mode
+            MapModeOfflineRadio.IsChecked      = _currentSettings.MapMode is not ("online-own" or "online-osm");
+            MapModeOnlineOwnRadio.IsChecked    = _currentSettings.MapMode == "online-own";
+            MapModeOnlineOsmRadio.IsChecked    = _currentSettings.MapMode == "online-osm";
+            MapModeOnlineCustomRadio.IsChecked = false;
+            return;
+        }
 
         // OSM mode forces standard map
         var newSource = (mode == "online-osm") ? "osm" : _currentSettings.MapSource;
@@ -1218,13 +1921,39 @@ public partial class MainWindow : Window
         if (OsmWarnBorder is null) return; // Called before XAML is loaded
 
         var isOsm     = mode == "online-osm";
-        var isOffline = mode != "online-own" && mode != "online-osm";
+        var isOffline = mode is not ("online-own" or "online-osm" or "online-custom");
+        var isVector  = _currentSettings?.MapRenderMode == "vector";
 
         OsmWarnBorder.Visibility        = isOsm     ? Visibility.Visible   : Visibility.Collapsed;
-        MapSourceLockedHint.Visibility  = isOsm     ? Visibility.Visible   : Visibility.Collapsed;
-        TileServerPanel.Visibility      = isOsm     ? Visibility.Collapsed : Visibility.Visible;
-        TileDownloadPanel.Visibility    = isOffline ? Visibility.Visible   : Visibility.Collapsed;
+        MapSourceLockedHint.Visibility  = isOsm && !isVector ? Visibility.Visible : Visibility.Collapsed;
+        TileServerPanel.Visibility      = !isOsm && !isVector ? Visibility.Visible : Visibility.Collapsed;
+        VectorStylePanel.Visibility     = isVector && mode == "online-custom" ? Visibility.Visible : Visibility.Collapsed;
+        // Vector offline packages get their own downloader in a later step
+        TileDownloadPanel.Visibility    = isOffline && !isVector ? Visibility.Visible : Visibility.Collapsed;
+        VectorPreviewHintBorder.Visibility = isVector ? Visibility.Visible : Visibility.Collapsed;
+        VectorOsmFallbackHint.Visibility   = isVector && isOsm ? Visibility.Visible : Visibility.Collapsed;
+        VectorOverlaysTitle.Visibility  = isVector ? Visibility.Visible : Visibility.Collapsed;
+        VectorOverlaysHint.Visibility   = isVector ? Visibility.Visible : Visibility.Collapsed;
+        VectorOverlaysPanel.Visibility  = isVector ? Visibility.Visible : Visibility.Collapsed;
+        VectorDownloadPanel.Visibility  = isVector && !isOsm ? Visibility.Visible : Visibility.Collapsed;
         MapSourceComboBox.IsEnabled     = !isOsm;
+    }
+
+    private void MapRenderModeRadio_Changed(object sender, RoutedEventArgs e)
+    {
+        // Guard: RadioButton fires Checked during initial binding before settings are loaded
+        if (_currentSettings is null) return;
+
+        var mode = MapRenderVectorRadio?.IsChecked == true ? "vector" : "raster";
+        if (mode == _currentSettings.MapRenderMode) return;
+
+        _currentSettings = _currentSettings with { MapRenderMode = mode };
+        Services.SettingsService.Save(_currentSettings);
+        Services.Logger.WriteLine($"Map render mode changed to: {mode}");
+
+        ApplyMapModeUi(_currentSettings.MapMode);
+        InitializeMap();
+        UpdateMapTileStatus();
     }
 
     private async void ImportTilesFromZip_Click(object sender, RoutedEventArgs e)
@@ -1263,6 +1992,7 @@ public partial class MainWindow : Window
 
     private void MapZoomIn_Click(object sender, RoutedEventArgs e)
     {
+        if (UseVectorMap) { ExecVectorScript("zoomIn()"); return; }
         if (_map != null)
         {
             var res = _map.Navigator.Viewport.Resolution;
@@ -1273,6 +2003,7 @@ public partial class MainWindow : Window
 
     private void MapZoomOut_Click(object sender, RoutedEventArgs e)
     {
+        if (UseVectorMap) { ExecVectorScript("zoomOut()"); return; }
         if (_map != null)
         {
             var res = _map.Navigator.Viewport.Resolution;
@@ -2107,6 +2838,21 @@ public partial class MainWindow : Window
                     break;
             }
 
+            // Vector style URL for the current map source (custom vector server)
+            var vectorOsmUrl = _currentSettings.VectorStyleOsmUrl;
+            var vectorTopoUrl = _currentSettings.VectorStyleTopoUrl;
+            var vectorDarkUrl = _currentSettings.VectorStyleDarkUrl;
+            if (!string.IsNullOrWhiteSpace(VectorStyleUrlTextBox.Text))
+            {
+                var styleUrl = VectorStyleUrlTextBox.Text.Trim();
+                switch (_currentSettings.MapSource)
+                {
+                    case "osmtopo": vectorTopoUrl = styleUrl; break;
+                    case "osmdark": vectorDarkUrl = styleUrl; break;
+                    default: vectorOsmUrl = styleUrl; break;
+                }
+            }
+
             var settings = new AppSettings(
                 DarkMode: DarkModeCheckBox.IsChecked == true,
                 StationName: StationNameTextBox.Text,
@@ -2151,7 +2897,15 @@ public partial class MainWindow : Window
                 VirtualNodeBlockAdmin: VirtualNodeBlockAdminCheckBox?.IsChecked == true,
                 NodeStationNames: _currentSettings.NodeStationNames,
                 FancyNodeList: FancyNodeListCheckBox?.IsChecked == true,
-                FancyNodeListColorful: Models.NodeInfo.FancyColorful
+                FancyNodeListColorful: Models.NodeInfo.FancyColorful,
+                KioskModeEnabled: KioskEnableCheckBox?.IsChecked == true,
+                KioskPasswordHash: _currentSettings.KioskPasswordHash,  // only changed via "Set password" button
+                KioskLockedFeatures: CollectKioskLockedFeatures(),
+                MapRenderMode: _currentSettings.MapRenderMode,          // applied immediately via MapRenderModeRadio_Changed
+                VectorStyleOsmUrl: vectorOsmUrl,
+                VectorStyleTopoUrl: vectorTopoUrl,
+                VectorStyleDarkUrl: vectorDarkUrl,
+                MapOverlays: _currentSettings.MapOverlays               // applied immediately via MapOverlayCheck_Changed
             );
             _currentSettings = settings;
             SettingsService.Save(settings);
@@ -2183,6 +2937,7 @@ public partial class MainWindow : Window
             _protocolService.SetDebugSerial(settings.DebugSerial);
             _protocolService.SetDebugDevice(settings.DebugDevice);
             BluetoothConnectionService.SetDebugEnabled(settings.DebugBluetooth);
+            UpdateKioskLockButton();
             MessageBox.Show(Loc("StrSettingsSaved"), Loc("StrSettingsSavedTitle"), MessageBoxButton.OK, MessageBoxImage.Information);
         }
         catch (Exception ex)
@@ -2823,7 +3578,8 @@ public partial class MainWindow : Window
         _virtualNodeService = new Services.VirtualNodeService(_connectionService!)
         {
             Port = _currentSettings.VirtualNodePort,
-            BlockAdminCommands = _currentSettings.VirtualNodeBlockAdmin
+            // Kiosk lock enforces admin blocking regardless of the VNode setting
+            BlockAdminCommands = _currentSettings.VirtualNodeBlockAdmin || _kioskLocked
         };
         _virtualNodeService.ClientCountChanged += (_, _) => Dispatcher.BeginInvoke(RefreshVirtualNodeStatus);
         _virtualNodeService.LogMessage += (_, msg) => Services.Logger.WriteLine($"[VN] {msg}");
@@ -2953,6 +3709,7 @@ public partial class MainWindow : Window
 
     private void DrawNeighborLines()
     {
+        PushNeighborLinesToVectorMap();
         if (_neighborLinesLayer == null) return;
 
         _neighborLineFeatures.Clear();
@@ -3140,6 +3897,8 @@ public partial class MainWindow : Window
                     item.Header = n.IsFavorite ? Loc("StrUnfavorite") : Loc("StrFavorite");
                 else if (h == Loc("StrPin") || h == Loc("StrUnpin"))
                     item.Header = n.IsPinned ? Loc("StrUnpin") : Loc("StrPin");
+                else if (h == Loc("StrRemoteAdmin"))
+                    item.Visibility = IsKioskFeatureLocked("RemoteAdmin") ? Visibility.Collapsed : Visibility.Visible;
             }
         }
     }
@@ -3208,6 +3967,193 @@ public partial class MainWindow : Window
         _nodeFilterHideMqtt      = HideMqttNodesCheckBox.IsChecked == true;
         _nodeFilterOnlyFavorites = OnlyFavoritesFilterCheckBox.IsChecked == true;
         ApplyNodeSortAndFilterCore();
+    }
+
+    // ── Kiosk / Training mode ─────────────────────────────────────────────────
+    // Accident protection for shared stations, not a security boundary:
+    // anyone who can edit meshhessen-client.ini can disable it (documented).
+
+    private static string KioskHashPassword(string password)
+    {
+        byte[] salt = System.Security.Cryptography.RandomNumberGenerator.GetBytes(16);
+        byte[] hash = System.Security.Cryptography.Rfc2898DeriveBytes.Pbkdf2(
+            password, salt, 100_000, System.Security.Cryptography.HashAlgorithmName.SHA256, 32);
+        return $"{Convert.ToBase64String(salt)}:{Convert.ToBase64String(hash)}";
+    }
+
+    private static bool KioskVerifyPassword(string password, string stored)
+    {
+        try
+        {
+            var parts = stored.Split(':');
+            if (parts.Length != 2) return false;
+            byte[] salt     = Convert.FromBase64String(parts[0]);
+            byte[] expected = Convert.FromBase64String(parts[1]);
+            byte[] actual   = System.Security.Cryptography.Rfc2898DeriveBytes.Pbkdf2(
+                password, salt, 100_000, System.Security.Cryptography.HashAlgorithmName.SHA256, 32);
+            return System.Security.Cryptography.CryptographicOperations.FixedTimeEquals(expected, actual);
+        }
+        catch { return false; }
+    }
+
+    private string CollectKioskLockedFeatures()
+    {
+        var f = new List<string>();
+        if (KioskLockTabNodesCheckBox?.IsChecked == true)    f.Add("TabNodes");
+        if (KioskLockTabChannelsCheckBox?.IsChecked == true) f.Add("TabChannels");
+        if (KioskLockTabSettingsCheckBox?.IsChecked == true) f.Add("TabSettings");
+        if (KioskLockTabInfoCheckBox?.IsChecked == true)     f.Add("TabInfo");
+        if (KioskLockTabToolsCheckBox?.IsChecked == true)    f.Add("TabTools");
+        if (KioskLockTabDebugCheckBox?.IsChecked == true)    f.Add("TabDebug");
+        if (KioskLockNodeConfigCheckBox?.IsChecked == true)  f.Add("NodeConfig");
+        if (KioskLockRemoteAdminCheckBox?.IsChecked == true) f.Add("RemoteAdmin");
+        if (KioskLockDashboardCheckBox?.IsChecked == true)   f.Add("Dashboard");
+        if (KioskLockSosCheckBox?.IsChecked == true)         f.Add("Sos");
+        if (KioskLockMeshHessenCheckBox?.IsChecked == true)  f.Add("MeshHessen");
+        return string.Join(",", f);
+    }
+
+    private void ApplyKioskCheckboxes(string csv)
+    {
+        var set = new HashSet<string>(csv.Split(',', StringSplitOptions.RemoveEmptyEntries));
+        if (KioskLockTabNodesCheckBox    != null) KioskLockTabNodesCheckBox.IsChecked    = set.Contains("TabNodes");
+        if (KioskLockTabChannelsCheckBox != null) KioskLockTabChannelsCheckBox.IsChecked = set.Contains("TabChannels");
+        if (KioskLockTabSettingsCheckBox != null) KioskLockTabSettingsCheckBox.IsChecked = set.Contains("TabSettings");
+        if (KioskLockTabInfoCheckBox     != null) KioskLockTabInfoCheckBox.IsChecked     = set.Contains("TabInfo");
+        if (KioskLockTabToolsCheckBox    != null) KioskLockTabToolsCheckBox.IsChecked    = set.Contains("TabTools");
+        if (KioskLockTabDebugCheckBox    != null) KioskLockTabDebugCheckBox.IsChecked    = set.Contains("TabDebug");
+        if (KioskLockNodeConfigCheckBox  != null) KioskLockNodeConfigCheckBox.IsChecked  = set.Contains("NodeConfig");
+        if (KioskLockRemoteAdminCheckBox != null) KioskLockRemoteAdminCheckBox.IsChecked = set.Contains("RemoteAdmin");
+        if (KioskLockDashboardCheckBox   != null) KioskLockDashboardCheckBox.IsChecked   = set.Contains("Dashboard");
+        if (KioskLockSosCheckBox         != null) KioskLockSosCheckBox.IsChecked         = set.Contains("Sos");
+        if (KioskLockMeshHessenCheckBox  != null) KioskLockMeshHessenCheckBox.IsChecked  = set.Contains("MeshHessen");
+    }
+
+    private bool IsKioskFeatureLocked(string feature) =>
+        _kioskLocked &&
+        _currentSettings.KioskLockedFeatures.Split(',', StringSplitOptions.RemoveEmptyEntries).Contains(feature);
+
+    private void ApplyKioskLock(bool locked)
+    {
+        _kioskLocked = locked;
+        var vis = (string feature) =>
+            locked && _currentSettings.KioskLockedFeatures
+                .Split(',', StringSplitOptions.RemoveEmptyEntries).Contains(feature)
+                ? Visibility.Collapsed : Visibility.Visible;
+
+        // Tabs (Messages + Map are never lockable so the app can't be emptied out)
+        TabItemNodes.Visibility    = vis("TabNodes");
+        TabItemChannels.Visibility = vis("TabChannels");
+        TabItemSettings.Visibility = vis("TabSettings");
+        TabItemInfo.Visibility     = vis("TabInfo");
+        TabItemTools.Visibility    = vis("TabTools");
+        TabItemDebug.Visibility    = vis("TabDebug");
+
+        // If the currently selected tab is now hidden, jump to Messages (index 0)
+        if (locked && MainTabs.SelectedItem is TabItem sel && sel.Visibility == Visibility.Collapsed)
+            MainTabs.SelectedIndex = 0;
+
+        // Buttons / functions
+        NodeConfigButton.Visibility    = vis("NodeConfig");
+        RemoteAdminButton.Visibility   = vis("RemoteAdmin");
+        OpenDashboardButton.Visibility = vis("Dashboard");
+        AlertBellButton.Visibility     = vis("Sos");
+        MeshHessenButton.Visibility    = vis("MeshHessen");
+
+        // Enforce VNode admin blocking while locked (revert to setting when unlocked)
+        if (_virtualNodeService != null)
+            _virtualNodeService.BlockAdminCommands = locked || _currentSettings.VirtualNodeBlockAdmin;
+
+        UpdateKioskLockButton();
+        UpdateStatusBar(Loc(locked ? "StrKioskLockedStatus" : "StrKioskUnlockedStatus"));
+    }
+
+    private void UpdateKioskLockButton()
+    {
+        bool available = _currentSettings.KioskModeEnabled &&
+                         !string.IsNullOrEmpty(_currentSettings.KioskPasswordHash);
+        KioskLockButton.Visibility = available ? Visibility.Visible : Visibility.Collapsed;
+        KioskLockButton.Content = _kioskLocked ? "🔒" : "🔓";
+        KioskLockButton.ToolTip = Loc(_kioskLocked ? "StrKioskLockedTooltip" : "StrKioskUnlockedTooltip");
+    }
+
+    private void KioskLock_Click(object sender, RoutedEventArgs e)
+    {
+        if (_kioskLocked)
+        {
+            // Unlock: ask for password
+            var pw = ShowPasswordDialog(Loc("StrKioskUnlockPrompt"), Loc("StrKioskUnlockTitle"));
+            if (pw == null) return; // cancelled
+            if (!KioskVerifyPassword(pw, _currentSettings.KioskPasswordHash))
+            {
+                MessageBox.Show(Loc("StrKioskWrongPassword"), Loc("StrKioskUnlockTitle"),
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            ApplyKioskLock(false);
+        }
+        else
+        {
+            // Re-lock: take over the current checkbox selection and persist it,
+            // so the lock state and feature list survive a restart
+            _currentSettings = _currentSettings with { KioskLockedFeatures = CollectKioskLockedFeatures() };
+            SettingsService.Save(_currentSettings);
+            ApplyKioskLock(true);
+        }
+    }
+
+    private void KioskEnable_Changed(object sender, RoutedEventArgs e)
+    {
+        if (KioskEnableCheckBox == null) return;
+        if (KioskEnableCheckBox.IsChecked == true &&
+            string.IsNullOrEmpty(_currentSettings.KioskPasswordHash))
+        {
+            UpdateStatusBar(Loc("StrKioskNoPasswordWarning"));
+        }
+    }
+
+    private void KioskSetPassword_Click(object sender, RoutedEventArgs e)
+    {
+        var pw = KioskPasswordBox.Password;
+        if (string.IsNullOrEmpty(pw))
+        {
+            MessageBox.Show(Loc("StrKioskPasswordEmpty"), Loc("StrKioskSection"),
+                MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+        _currentSettings = _currentSettings with { KioskPasswordHash = KioskHashPassword(pw) };
+        SettingsService.Save(_currentSettings);
+        KioskPasswordBox.Clear();
+        UpdateKioskLockButton();
+        UpdateStatusBar(Loc("StrKioskPasswordSet"));
+    }
+
+    private string? ShowPasswordDialog(string prompt, string title)
+    {
+        var dialog = new System.Windows.Window
+        {
+            Title = title,
+            Width = 340,
+            SizeToContent = SizeToContent.Height,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            Owner = this,
+            ResizeMode = ResizeMode.NoResize,
+            ShowInTaskbar = false
+        };
+        var panel = new StackPanel { Margin = new Thickness(12) };
+        panel.Children.Add(new TextBlock { Text = prompt, Margin = new Thickness(0, 0, 0, 8) });
+        var pwBox = new PasswordBox { Margin = new Thickness(0, 0, 0, 10) };
+        panel.Children.Add(pwBox);
+        var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
+        var ok = new Button { Content = "OK", Width = 80, Margin = new Thickness(0, 0, 8, 0), IsDefault = true };
+        var cancel = new Button { Content = Loc("StrCancel"), Width = 80, IsCancel = true };
+        ok.Click += (_, _) => { dialog.DialogResult = true; };
+        buttons.Children.Add(ok);
+        buttons.Children.Add(cancel);
+        panel.Children.Add(buttons);
+        dialog.Content = panel;
+        pwBox.Focus();
+        return dialog.ShowDialog() == true ? pwBox.Password : null;
     }
 
     private void RefreshActiveStationName()
@@ -4734,6 +5680,8 @@ public partial class MainWindow : Window
             "online-osm" => new Services.CachingHttpTileProvider(tileDir, "osm_online",
                 "https://tile.openstreetmap.org/{z}/{x}/{y}.png", useHttpCacheHeaders: true),
             "online-own" => new Services.CachingHttpTileProvider(tileDir, sourceFolder,
+                GetMeshhessenUrlForSource(sourceFolder), useHttpCacheHeaders: false),
+            "online-custom" => new Services.CachingHttpTileProvider(tileDir, sourceFolder,
                 GetUrlForSource(sourceFolder), useHttpCacheHeaders: false),
             _ => new Services.LocalFileTileProvider(tileDir, sourceFolder)
         };
@@ -4944,6 +5892,34 @@ public partial class MainWindow : Window
             _pathLayers[node.NodeId] = pathLayer;
             _map?.Layers.Add(pathLayer);
 
+            // Vector map: gradient path segments (oldest transparent -> newest opaque) + direction arrows
+            var vecFeatures = new List<object>();
+            for (int i = 0; i < n - 1; i++)
+            {
+                double t = n > 2 ? (double)i / (n - 2) : 1.0;
+                int alpha = (int)(80 + t * 175);
+                var segColor = new Mapsui.Styles.Color(baseColor.R, baseColor.G, baseColor.B, alpha);
+                vecFeatures.Add(LineFeature(points[i].Lon, points[i].Lat, points[i + 1].Lon, points[i + 1].Lat,
+                    new { color = CssColor(segColor), width = 3 }));
+            }
+            foreach (int i in arrowIndices)
+            {
+                var pt = points[i];
+                double t = n > 1 ? (double)i / (n - 1) : 1.0;
+                int alpha = (int)(80 + t * 175);
+                double rotation = 0;
+                if (pt.Track.HasValue) rotation = pt.Track.Value;
+                else if (i < n - 1) rotation = BearingDeg(pt.Lat, pt.Lon, points[i + 1].Lat, points[i + 1].Lon);
+                else if (i > 0) rotation = BearingDeg(points[i - 1].Lat, points[i - 1].Lon, pt.Lat, pt.Lon);
+                vecFeatures.Add(PointFeatureGeo(pt.Lon, pt.Lat, new
+                {
+                    bearing = Math.Round(rotation, 1),
+                    iconSize = 0.6,
+                    color = CssColor(new Mapsui.Styles.Color(baseColor.R, baseColor.G, baseColor.B, alpha))
+                }));
+            }
+            PushVectorLines($"path_{node.NodeId:x8}", FeatureCollection(vecFeatures));
+
             // Zoom to fit
             MainTabs.SelectedIndex = 3;
             var minX = coords.Min(c => c.X); var maxX = coords.Max(c => c.X);
@@ -4952,6 +5928,14 @@ public partial class MainWindow : Window
             _map?.Navigator.CenterOnAndZoomTo(new MPoint((minX + maxX) / 2, (minY + maxY) / 2),
                 Math.Max(paddedSize / 800.0, 10.0));
             MapControl.Refresh();
+
+            if (UseVectorMap)
+            {
+                var ci = System.Globalization.CultureInfo.InvariantCulture;
+                double w = points.Min(p => p.Lon), e2 = points.Max(p => p.Lon);
+                double s2 = points.Min(p => p.Lat), n2 = points.Max(p => p.Lat);
+                ExecVectorScript($"fitBounds({w.ToString(ci)}, {s2.ToString(ci)}, {e2.ToString(ci)}, {n2.ToString(ci)})");
+            }
 
             HidePathMenuItem.Visibility = Visibility.Visible;
             Services.Logger.WriteLine($"Path layer for {node.Name}: {n} points (source: {(dbEntries.Count >= 2 ? "DB" : "CSV")})");
@@ -5010,6 +5994,7 @@ public partial class MainWindow : Window
 
     private void HidePathForNode(NodeInfo node)
     {
+        RemoveVectorLines($"path_{node.NodeId:x8}");
         if (_pathLayers.TryGetValue(node.NodeId, out var layer))
         {
             _map?.Layers.Remove(layer);
@@ -5380,10 +6365,138 @@ public partial class MainWindow : Window
             else if (allPts.Count == 1)
                 _map?.Navigator.CenterOnAndZoomTo(allPts[0], 10.0);
 
+            // Vector map: fit to the route's lon/lat bounds
+            if (UseVectorMap)
+            {
+                var geo = orderedIds.Where(id => positions.ContainsKey(id)).Select(id => positions[id]).ToList();
+                if (geo.Count >= 1)
+                {
+                    var ci = System.Globalization.CultureInfo.InvariantCulture;
+                    double w = geo.Min(p => p.Lon), e = geo.Max(p => p.Lon);
+                    double s = geo.Min(p => p.Lat), n = geo.Max(p => p.Lat);
+                    ExecVectorScript($"fitBounds({w.ToString(ci)}, {s.ToString(ci)}, {e.ToString(ci)}, {n.ToString(ci)})");
+                }
+            }
+
             Services.Logger.WriteLine($"Traceroute plotted [{layerKey}] for {displayName}: {allPts.Count} known positions");
         }
 
         MapControl.Refresh();
+        PushTracerouteToVectorMap(result, positions, nodeNames, color, layerKey);
+    }
+
+    /// <summary>Mirrors DrawTracerouteLayer() onto the vector map: colored segments with
+    /// direction arrows, MQTT zigzag ("Blitz"), dashed unknown-route bridges with "?"
+    /// markers, clickable midpoint dots and labeled hop dots.</summary>
+    private void PushTracerouteToVectorMap(
+        TracerouteResult result,
+        Dictionary<uint, (double Lat, double Lon)> positions,
+        Dictionary<uint, string> nodeNames,
+        Mapsui.Styles.Color color,
+        string layerKey)
+    {
+        try
+        {
+            var orderedIds = new List<uint> { result.SourceNodeId == 0 ? _myNodeId : result.SourceNodeId };
+            orderedIds.AddRange(result.RouteForward);
+            orderedIds.Add(result.DestinationNodeId);
+
+            const int MqttSentinelRaw = -128;
+            var features = new List<object>();
+            var colorCss = CssColor(color);
+            (double Lat, double Lon)? lastKnown = null;
+
+            void AddUnknownMarker(double lon, double lat) =>
+                features.Add(PointFeatureGeo(lon, lat, new { label = "?", radius = 4, color = "rgba(120,120,120,0.85)" }));
+
+            void AddDashedBridge((double Lat, double Lon) from, (double Lat, double Lon) to)
+            {
+                features.Add(LineFeature(from.Lon, from.Lat, to.Lon, to.Lat,
+                    new { dash = 1, color = colorCss, width = 2.0 }));
+                AddUnknownMarker(to.Lon, to.Lat);
+            }
+
+            for (int i = 0; i < orderedIds.Count - 1; i++)
+            {
+                uint fromId = orderedIds[i];
+                uint toId = orderedIds[i + 1];
+                bool hasFrom = positions.TryGetValue(fromId, out var fromPos);
+                bool hasTo = positions.TryGetValue(toId, out var toPos);
+
+                bool isMqtt = result.IsViaMqtt
+                            || (result.SnrTowards.Count > i && result.SnrTowards[i] == MqttSentinelRaw);
+                float? segSnr = (!isMqtt && result.SnrTowards.Count > i) ? result.SnrTowards[i] / 4f : null;
+
+                if (hasFrom && hasTo)
+                {
+                    if (isMqtt)
+                    {
+                        // Zigzag "Blitz" polyline like the raster map (built in Mercator, converted back)
+                        var mFrom = SphericalMercator.FromLonLat(fromPos.Lon, fromPos.Lat);
+                        var mTo = SphericalMercator.FromLonLat(toPos.Lon, toPos.Lat);
+                        var zig = BuildMqttZigzag(new MPoint(mFrom.x, mFrom.y), new MPoint(mTo.x, mTo.y))
+                            .Select(c => { var ll = SphericalMercator.ToLonLat(c.X, c.Y); return new[] { ll.lon, ll.lat }; })
+                            .ToList();
+                        features.Add(LineFeatureCoords(zig, new { outline = 1, color = "rgba(0,0,0,0.85)", width = 4.5 }));
+                        features.Add(LineFeatureCoords(zig, new { color = "#ffdc00", width = 2.5 }));
+                    }
+                    else
+                    {
+                        features.Add(LineFeature(fromPos.Lon, fromPos.Lat, toPos.Lon, toPos.Lat,
+                            new { color = colorCss, width = 2.5 }));
+                    }
+
+                    // Clickable midpoint dot -> SNR popup; direction arrow on RF segments
+                    var midProps = new Dictionary<string, object?>
+                    {
+                        ["click"] = 1,
+                        ["fromId"] = fromId,
+                        ["toId"] = toId,
+                        ["mqtt"] = isMqtt ? 1 : 0,
+                        ["color"] = isMqtt ? "rgba(255,220,0,0.7)" : CssColor(new Mapsui.Styles.Color(color.R, color.G, color.B, 160)),
+                        ["radius"] = 6
+                    };
+                    if (segSnr.HasValue) midProps["snr"] = segSnr.Value;
+                    if (!isMqtt)
+                    {
+                        midProps["bearing"] = Math.Round(BearingDeg(fromPos.Lat, fromPos.Lon, toPos.Lat, toPos.Lon), 1);
+                        midProps["iconSize"] = 0.55;
+                    }
+                    features.Add(PointFeatureGeo((fromPos.Lon + toPos.Lon) / 2, (fromPos.Lat + toPos.Lat) / 2, midProps));
+                    lastKnown = toPos;
+                }
+                else if (hasFrom && !hasTo)
+                {
+                    // Destination position unknown: "?" marker at the known end
+                    AddUnknownMarker(fromPos.Lon, fromPos.Lat);
+                    lastKnown = fromPos;
+                }
+                else if (!hasFrom && hasTo)
+                {
+                    // Bridge the unknown gap with a dashed line from the last known position
+                    if (lastKnown.HasValue) AddDashedBridge(lastKnown.Value, toPos);
+                    else AddUnknownMarker(toPos.Lon, toPos.Lat);
+                    lastKnown = toPos;
+                }
+            }
+
+            // Hop dots + labels
+            var dotCss = CssColor(new Mapsui.Styles.Color(color.R, color.G, color.B, 200));
+            foreach (var nodeId in orderedIds.Distinct())
+            {
+                if (!positions.TryGetValue(nodeId, out var pos)) continue;
+                string label = nodeId == _myNodeId ? Loc("StrMe") : $"!{nodeId:x4}";
+                if (nodeNames.TryGetValue(nodeId, out var nm)) label = nm;
+                features.Add(PointFeatureGeo(pos.Lon, pos.Lat, new { color = dotCss, radius = 4, label }));
+            }
+
+            if (features.Count == 0) RemoveVectorLines(layerKey);
+            else PushVectorLines(layerKey, FeatureCollection(features));
+        }
+        catch (Exception ex)
+        {
+            Services.Logger.WriteLine($"[VectorMap] traceroute push error: {ex.Message}");
+        }
     }
 
     private void SaveTracerouteToFile(
@@ -5572,6 +6685,7 @@ public partial class MainWindow : Window
 
     private void ClearTracerouteFromMap(string layerKey)
     {
+        RemoveVectorLines(layerKey);
         if (_tracerouteLayers.TryGetValue(layerKey, out var layer))
         {
             _map?.Layers.Remove(layer);
@@ -5746,6 +6860,7 @@ public partial class MainWindow : Window
 
     private void RefreshWaypointLayer()
     {
+        PushWaypointsToVectorMap();
         if (_map == null) return;
 
         if (_waypointLayer != null)

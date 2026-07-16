@@ -7,6 +7,26 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
 
+## [1.5.14] - 2026-07-15
+
+### ✨ Hinzugefügt
+
+#### 🗺️ Vektorkarten (Vorschau)
+- **Neue Kartendarstellung „Vektor"** in den Einstellungen umschaltbar – Raster bleibt Standard und wird voll weiter unterstützt; Beschreibung der Vor-/Nachteile direkt in den Einstellungen
+- **Rendering mit MapLibre GL JS** im eingebetteten WebView2: gestochen scharf in jeder Zoomstufe, alle drei Kartenstile (OSM, OpenTopo mit Höhenlinien+Relief, Dark) vom Meshhessen-Vektorserver; Stil-Updates kommen ohne Client-Update an
+- **Alle vier Karten-Modi** wie bei Raster: Offline / Meshhessen-Server / eigener Server (Style-URL konfigurierbar) – im OSM-Online-Modus wird automatisch die Rasterkarte verwendet (kein öffentlicher Vektorserver)
+- **Automatischer Offline-Cache:** online betrachtete Gebiete werden unter `vectortiles/` gespeichert (Tiles, Styles, Schriften, Symbole, Relief) und sind ohne Internet weiter nutzbar; deutlich kleinere Datenmengen als Raster
+- **🚒 Feuerwehr-/Rettungs-Layer** per Checkbox in der Karten-Toolbar zuschaltbar: Hydranten (ab Zoom 15, Überflur/Unterflur unterscheidbar), Wachen, Sirenen, Löschteiche, Saugstellen, Rettungspunkte, Defibrillatoren u. v. m. (ab Zoom 13). Solange ausgeschaltet, wird **kein Byte** dafür geladen. Architektur vorbereitet für weitere Fach-Layer (z. B. THW, Krankenhäuser)
+- **Klick auf ein Feuerwehr-Objekt** öffnet ein Detail-Popup: Bauart, Kupplungen, Durchfluss, Druck, Wasserquelle, Betreiber, Standort, Erfassungsdatum u. a. (zweisprachig DE/EN)
+- **Voller Karten-Funktionsumfang auch im Vektor-Modus:** Node-Pins (Farben, Notizen, Emoji-Labels), eigener Standort, Waypoints, Traceroutes mit allen Linientypen (Richtungspfeile, MQTT-Blitz-Zickzack, unbekannte Route gestrichelt mit „?", klickbare Segment-Punkte mit SNR-Popup), Nachbar-Linien mit SNR-/Alter-Farbverlauf, Positionsverläufe mit Richtungspfeilen sowie das komplette Rechtsklick-Kontextmenü (Position setzen, Waypoint anlegen, DM/Info/Farbe/Traceroute/Telemetrie je Node)
+- **🧭 Legende auf der Vektorkarte:** eigener Legende-Button in der Karten-Toolbar öffnet die bekannte Legende inkl. Nachbar-Linien-Schalter und Traceroute-Liste (WPF-Overlays sind über der Vektorkarte technisch unsichtbar – daher als Popup)
+- **Layer-Auswahl:** Zusatz-Layer in den Einstellungen an-/abwählbar und zusätzlich über den 🗂️-Button direkt auf der Karte (Auswahl-Popup); Registry vorbereitet für weitere abonnierbare Layer
+- **Vektor-Offlinepaket-Downloader:** Bundesland-Presets oder eigene Bounding-Box, wählbarer Detail-Zoom (12–17), OpenTopo-Extras (Höhenlinien + Relief) und Zusatz-Layer als Opt-in; lädt Styles, Schriften und Symbole automatisch mit; bereits vorhandene Kacheln werden übersprungen (Wiederaufnahme möglich); Abbruch stoppt sauber ohne die Oberfläche zu blockieren
+- **Automatischer Rückfall auf Raster** mit Hinweis, falls die WebView2-Runtime fehlt
+- **Pflicht-Attribution** „© OpenMapTiles © OpenStreetMap contributors" in der Vektorkarte; neue Lizenz-Einträge im Info-Tab: OpenMapTiles (CC-BY/ODbL), MapLibre GL JS (BSD-3-Clause), Noto Sans (SIL Open Font License 1.1)
+
+---
+
 ## [1.5.13] - 2026-06-11
 
 ### ✨ Hinzugefügt
@@ -40,6 +60,14 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 #### 💬 Signalwerte in Nachrichten
 - **SNR + RSSI direkt in der Nachrichten-Bubble** bei Direktempfang (0 Hops, kein MQTT) – farbig gemäß Signalqualitäts-Gradient (rot → gelb → grün)
 
+#### 🔒 Kiosk-/Trainingsmodus
+- **Für geteilte Stationen** (Vereinslokal, Schulung, Veranstaltung): sperrbare UI als Versehens-Schutz
+- **Aktivierung in den Einstellungen** mit Passwort (PBKDF2-Hash, kein Klartext in der INI)
+- **Konfigurierbar, was im gesperrten Zustand ausgeblendet wird:** Tabs (Nodes, Kanäle, Einstellungen, Info, Tools, Debug), Node-Konfiguration, Fernverwaltung, Telemetrie-Dashboard, SOS-Button, Meshhessen-Schnellkonfiguration – Nachrichten- und Karten-Tab bleiben immer sichtbar
+- **🔒-Schloss in der Fußleiste** zum Sperren/Entsperren; nur sichtbar wenn ein Passwort gesetzt ist; App startet im Kiosk-Modus immer gesperrt
+- **VNode-Härtung:** bei aktiver Sperre werden Admin-Befehle von Virtual-Node-Clients erzwungen blockiert
+- **Passwort vergessen:** `KioskModeEnabled=False` in `meshhessen-client.ini` setzen (dokumentiert in der README)
+
 ### 🐛 Behoben
 
 #### 🧩 Protobuf-Definitionen mit Original abgeglichen
@@ -57,6 +85,8 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 - LED-Tooltip „Wetter-Effekt": literaler `\n` durch echten Zeilenumbruch ersetzt
 - Karten-Legende „Dauerhaft" jetzt mehrsprachig; Alter-Gradient-Grau kollidiert nicht mehr mit dem Lora-Hop-Grau
 - Map-Topbar aufgeräumt (Trenner + deskriptive Button-Namen); PKI-Schlüssel-Spalte verbreitert; Startfenster breiter
+- **Tile-Downloader:** Rate-Limit (2 Anfragen/s) für eigene/benutzerdefinierte Tile-Server entfernt; Massen-Downloads von öffentlichen OSM-/OpenTopoMap-Servern werden stattdessen mit klarer Fehlermeldung abgelehnt (Tile-Usage-Policy) – gilt für Tile-Downloader und T-Deck-Assistent
+- **Neuer vierter Karten-Modus „Online – eigener Tile-Server":** lädt Kacheln on-demand von den selbst konfigurierten Tile-URLs (mit dauerhaftem lokalem Cache); der Meshhessen-Modus nutzt jetzt immer fest die offiziellen Server. Öffentliche OSM-/OpenTopoMap-URLs werden im Custom-Modus abgelehnt
 - **Nachrichten:** Scrollbar überdeckt die Chat-Bubbles nicht mehr (Innenabstand rechts)
 - **Kachelmodus:** „Farbe setzen"-Kontextmenü zeigte zwei leere Einträge (fehlende Resource-Keys) → Farbliste an Tabellen-Menü angeglichen (Braun/Pink/Cyan + „Farbe entfernen")
 - Einstellungen: Kachelansicht-Option deskriptiver benannt + Performance-Hinweis ergänzt

@@ -172,10 +172,49 @@
 <div class="section active" id="de">
 <main>
 
-  <!-- ── v1.5.13 ── -->
+  <!-- ── v1.5.14 ── -->
   <div class="version-entry current">
     <div class="version-header">
-      <span class="version-tag tag-latest">v1.5.13</span>
+      <span class="version-tag tag-latest">v1.5.14</span>
+      <span class="version-date">2026-07-15</span>
+      Vektorkarten (Vorschau) &amp; Feuerwehr-Layer
+    </div>
+    <p class="version-desc">Neue umschaltbare Vektorkarten-Darstellung (MapLibre GL JS im WebView2) mit automatischem Offline-Cache und zuschaltbarem 🚒 Feuerwehr-/Rettungs-Layer inkl. Detail-Popup per Klick. Die Rasterkarte bleibt Standard und voll unterstützt.</p>
+
+    <div class="cl-section added">
+      <h3>✨ Hinzugefügt</h3>
+
+      <div class="cl-group">
+        <div class="cl-group-title">🗺️ Vektorkarten (Vorschau)</div>
+        <ul class="cl-list">
+          <li>Neue Kartendarstellung <strong>„Vektor"</strong> in den Einstellungen – gestochen scharf in jeder Zoomstufe, alle drei Kartenstile (OSM, OpenTopo mit Höhenlinien+Relief, Dark) vom Meshhessen-Vektorserver</li>
+          <li>Alle vier Karten-Modi wie bei Raster: Offline / Meshhessen-Server / eigener Server (Style-URL) – im OSM-Online-Modus automatisch Rasterkarte</li>
+          <li><strong>Automatischer Offline-Cache:</strong> online betrachtete Gebiete werden unter <code>vectortiles/</code> gespeichert und sind ohne Internet nutzbar; deutlich kleinere Datenmengen als Raster</li>
+          <li>Kartenstil-Updates kommen vom Server – ohne Client-Update</li>
+          <li><strong>Voller Funktionsumfang:</strong> Node-Pins (Farben, Notizen, Emoji), Waypoints, Traceroutes mit klickbaren SNR-Punkten, Nachbar-Linien (SNR-/Alter-Farbverlauf), Positionsverläufe und komplettes Rechtsklick-Menü auch auf der Vektorkarte</li>
+          <li><strong>Offlinepaket-Downloader:</strong> Bundesland oder eigene Bounding-Box, Detail-Zoom 12–17, OpenTopo-Extras und Zusatz-Layer als Opt-in; Styles/Schriften/Symbole inklusive; Wiederaufnahme lädt nur Fehlendes</li>
+          <li>Automatischer Rückfall auf Raster (mit Hinweis), falls die WebView2-Runtime fehlt</li>
+          <li>Neue Lizenz-Einträge im Info-Tab: OpenMapTiles, MapLibre GL JS, Noto Sans (SIL OFL 1.1)</li>
+        </ul>
+      </div>
+
+      <div class="cl-group">
+        <div class="cl-group-title">🚒 Feuerwehr-/Rettungs-Layer</div>
+        <ul class="cl-list">
+          <li>An-/abwählbar in den Einstellungen und über den 🗂️-Layer-Button direkt auf der Karte (nur Vektor-Modus)</li>
+          <li>Hydranten – Überflur/Unterflur unterscheidbar (ab Zoom 15), Wachen, Sirenen, Löschteiche, Saugstellen, Rettungspunkte mit Nummer, Sammelplätze, Defibrillatoren u. v. m. (ab Zoom 13)</li>
+          <li><strong>Klick auf ein Objekt</strong> zeigt Details: Bauart, Kupplungen, Durchfluss, Wasserquelle, Betreiber, Standort u. a.</li>
+          <li>Solange ausgeschaltet, wird kein Byte dafür geladen; im Offlinepaket-Downloader als Opt-in wählbar</li>
+          <li>Layer-Registry vorbereitet für weitere Fach-Layer (z. B. THW, Krankenhäuser)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── v1.5.13 ── -->
+  <div class="version-entry">
+    <div class="version-header">
+      <span class="version-tag tag-release">v1.5.13</span>
       <span class="version-date">2026-06-11</span>
       Node-Kachelansicht, Nachbar-Linien &amp; Protobuf-Abgleich
     </div>
@@ -224,6 +263,16 @@
         <div class="cl-group-title">💬 Signalwerte in Nachrichten</div>
         <ul class="cl-list">
           <li>SNR + RSSI direkt in der Nachrichten-Bubble bei Direktempfang (0 Hops, kein MQTT) – farbig gemäß Signal-Gradient</li>
+        </ul>
+      </div>
+
+      <div class="cl-group">
+        <div class="cl-group-title">🔒 Kiosk-/Trainingsmodus</div>
+        <ul class="cl-list">
+          <li>Sperrbare UI für geteilte Stationen (Vereinslokal, Schulung, Veranstaltung) – Versehens-Schutz, kein Angriffs-Schutz</li>
+          <li>Passwortgeschützt (PBKDF2-Hash); konfigurierbar, welche Tabs und Funktionen im gesperrten Zustand ausgeblendet werden</li>
+          <li>🔒-Schloss in der Fußleiste zum Sperren/Entsperren; App startet im Kiosk-Modus immer gesperrt</li>
+          <li>Bei aktiver Sperre werden Admin-Befehle von Virtual-Node-Clients erzwungen blockiert</li>
         </ul>
       </div>
     </div>
@@ -840,10 +889,49 @@
 <div class="section" id="en">
 <main>
 
-  <!-- ── v1.5.13 ── -->
+  <!-- ── v1.5.14 ── -->
   <div class="version-entry current">
     <div class="version-header">
-      <span class="version-tag tag-latest">v1.5.13</span>
+      <span class="version-tag tag-latest">v1.5.14</span>
+      <span class="version-date">2026-07-15</span>
+      Vector maps (preview) &amp; fire service layer
+    </div>
+    <p class="version-desc">New switchable vector map rendering (MapLibre GL JS in WebView2) with automatic offline caching and a switchable 🚒 fire service / rescue layer including click-for-details popups. The raster map stays the default and remains fully supported.</p>
+
+    <div class="cl-section added">
+      <h3>✨ Added</h3>
+
+      <div class="cl-group">
+        <div class="cl-group-title">🗺️ Vector maps (preview)</div>
+        <ul class="cl-list">
+          <li>New <strong>"Vector"</strong> map rendering in the settings – razor-sharp at any zoom level, all three map styles (OSM, OpenTopo with contour lines + hillshade, Dark) from the Meshhessen vector server</li>
+          <li>All four map modes as with raster: offline / Meshhessen server / custom server (style URL) – OSM online mode automatically uses the raster map</li>
+          <li><strong>Automatic offline cache:</strong> areas viewed online are stored under <code>vectortiles/</code> and remain usable without internet; much smaller data volumes than raster</li>
+          <li>Map style updates arrive from the server – no client update needed</li>
+          <li><strong>Full feature set:</strong> node pins (colors, notes, emoji), waypoints, traceroutes with clickable SNR dots, neighbor lines (SNR/age gradient), position history paths and the complete right-click menu also on the vector map</li>
+          <li><strong>Offline package downloader:</strong> federal state presets or custom bounding box, detail zoom 12–17, OpenTopo extras and overlay layers as opt-in; styles/fonts/sprites included; re-running only fetches what is missing</li>
+          <li>Automatic fallback to raster (with a notice) if the WebView2 runtime is missing</li>
+          <li>New license entries in the info tab: OpenMapTiles, MapLibre GL JS, Noto Sans (SIL OFL 1.1)</li>
+        </ul>
+      </div>
+
+      <div class="cl-group">
+        <div class="cl-group-title">🚒 Fire service / rescue layer</div>
+        <ul class="cl-list">
+          <li>Toggle in the settings and via the 🗂️ layers button directly on the map (vector mode only)</li>
+          <li>Hydrants – pillar/underground distinguishable (from zoom 15), stations, sirens, fire ponds, suction points, numbered rescue points, assembly points, defibrillators and more (from zoom 13)</li>
+          <li><strong>Click on an object</strong> shows details: type, couplings, flow rate, water source, operator, location and more</li>
+          <li>While switched off, not a single byte is loaded for it; selectable as opt-in in the offline package downloader</li>
+          <li>Layer registry prepared for further specialist layers (e.g. THW, hospitals)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── v1.5.13 ── -->
+  <div class="version-entry">
+    <div class="version-header">
+      <span class="version-tag tag-release">v1.5.13</span>
       <span class="version-date">2026-06-11</span>
       Node tile view, neighbor lines &amp; protobuf alignment
     </div>
@@ -892,6 +980,16 @@
         <div class="cl-group-title">💬 Signal values in messages</div>
         <ul class="cl-list">
           <li>SNR + RSSI right in the message bubble for direct reception (0 hops, no MQTT) – colored by the signal gradient</li>
+        </ul>
+      </div>
+
+      <div class="cl-group">
+        <div class="cl-group-title">🔒 Kiosk / training mode</div>
+        <ul class="cl-list">
+          <li>Lockable UI for shared stations (club room, training, events) – protects against accidents, not attacks</li>
+          <li>Password-protected (PBKDF2 hash); configurable which tabs and functions are hidden while locked</li>
+          <li>🔒 lock in the footer bar to lock/unlock; the app always starts locked in kiosk mode</li>
+          <li>While locked, admin commands from Virtual Node clients are force-blocked</li>
         </ul>
       </div>
     </div>

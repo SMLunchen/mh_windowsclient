@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ui="http://schemas.modernwpf.com/2019"
         xmlns:mapsui="clr-namespace:Mapsui.UI.Wpf;assembly=Mapsui.UI.Wpf"
+        xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:converters="clr-namespace:MeshhessenClient.Converters"
@@ -1050,7 +1051,7 @@
             </TabItem>
 
             <!-- Nodes Tab -->
-            <TabItem Header="{DynamicResource StrTabNodes}">
+            <TabItem x:Name="TabItemNodes" Header="{DynamicResource StrTabNodes}">
                 <Grid Margin="10">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -1460,7 +1461,7 @@
             </TabItem>
 
             <!-- Channels Tab -->
-            <TabItem Header="{DynamicResource StrTabChannels}">
+            <TabItem x:Name="TabItemChannels" Header="{DynamicResource StrTabChannels}">
                 <Grid Margin="10">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*"/>
@@ -1558,11 +1559,48 @@
                             <Button Content="{DynamicResource StrRemoveAllTraceroutes}" Height="28" Padding="8,2" Margin="0,0,0,0"
                                     Click="ClearAllTraceroutes_Click"
                                     ToolTip="{DynamicResource StrRemoveAllTooltip}"/>
+
+                            <Border x:Name="MapOverlaySeparator" Width="1" Background="#40808080" Margin="14,3,14,3"
+                                    Visibility="Collapsed"/>
+
+                            <!-- Zusatz-Layer (nur Vektor-Modus): Button öffnet Auswahl-Popup -->
+                            <Button x:Name="MapLayersBtn" Height="28" Padding="8,2"
+                                    Visibility="Collapsed" Click="MapLayersBtn_Click"
+                                    Content="{DynamicResource StrMapLayersBtn}"
+                                    ToolTip="{DynamicResource StrMapLayersBtnTooltip}"/>
+                            <Popup x:Name="MapLayersPopup" StaysOpen="False" Placement="Bottom"
+                                   AllowsTransparency="True">
+                                <Border Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                                        BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}"
+                                        BorderThickness="1" CornerRadius="4" Padding="12,10">
+                                    <StackPanel>
+                                        <TextBlock Text="{DynamicResource StrVectorOverlaysTitle}"
+                                                   FontWeight="SemiBold" FontSize="12" Margin="0,0,0,8"/>
+                                        <StackPanel x:Name="MapLayersPopupPanel"/>
+                                    </StackPanel>
+                                </Border>
+                            </Popup>
+
+                            <!-- Legende (nur Vektor-Modus: WPF-Overlays sind über dem WebView
+                                 unsichtbar, daher wandert die Legende hier in ein Popup) -->
+                            <Button x:Name="MapLegendBtn" Height="28" Padding="8,2" Margin="6,0,0,0"
+                                    Visibility="Collapsed" Click="MapLegendBtn_Click"
+                                    Content="{DynamicResource StrMapLegendBtn}"
+                                    ToolTip="{DynamicResource StrMapLegendBtnTooltip}"/>
+                            <Popup x:Name="MapLegendPopup" StaysOpen="False" Placement="Bottom"
+                                   AllowsTransparency="True">
+                                <StackPanel x:Name="VectorLegendHost"/>
+                            </Popup>
                         </StackPanel>
                         <TextBlock x:Name="MapStatusText" Grid.Column="1" VerticalAlignment="Center" Foreground="Gray" FontStyle="Italic"/>
                     </Grid>
-                    <Grid Grid.Row="1">
+                    <Grid Grid.Row="1" x:Name="MapAreaGrid">
                         <mapsui:MapControl x:Name="MapControl"/>
+
+                        <!-- Vector map (MapLibre GL JS in WebView2). HWND-based: WPF overlays
+                             (legend, copyright) cannot render above it – attribution and
+                             controls live inside the map page instead. -->
+                        <wv2:WebView2 x:Name="VectorMapView" Visibility="Collapsed"/>
 
                         <!-- Traceroute Legend (top-left overlay) -->
                         <Border x:Name="TracerouteLegend"
@@ -1698,7 +1736,7 @@
             </TabItem>
 
             <!-- Settings Tab -->
-            <TabItem Header="{DynamicResource StrTabSettings}">
+            <TabItem x:Name="TabItemSettings" Header="{DynamicResource StrTabSettings}">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
@@ -1753,6 +1791,7 @@
                                 </StackPanel>
                             </GroupBox>
 
+                            <!-- Kiosk / Training mode -->
                             <!-- c) Alert Bell -->
                             <GroupBox Header="{DynamicResource StrNotifications}" Margin="0,0,0,16">
                                 <StackPanel Margin="10">
@@ -1767,6 +1806,46 @@
                             <!-- d) Karte / Tiles -->
                             <GroupBox Header="{DynamicResource StrMapGroup}" Margin="0,0,0,16">
                                 <StackPanel Margin="10">
+
+                                    <!-- Kartendarstellung: Raster / Vektor -->
+                                    <TextBlock Text="{DynamicResource StrMapRenderMode}" Margin="0,0,0,6" FontWeight="SemiBold"/>
+
+                                    <RadioButton x:Name="MapRenderRasterRadio" GroupName="MapRenderMode"
+                                                Content="{DynamicResource StrMapRenderRaster}"
+                                                Margin="0,0,0,2" Checked="MapRenderModeRadio_Changed"/>
+                                    <TextBlock Text="{DynamicResource StrMapRenderRasterDesc}"
+                                              FontSize="11" Foreground="Gray" FontStyle="Italic"
+                                              TextWrapping="Wrap" Margin="20,0,0,8"/>
+
+                                    <RadioButton x:Name="MapRenderVectorRadio" GroupName="MapRenderMode"
+                                                Content="{DynamicResource StrMapRenderVector}"
+                                                Margin="0,0,0,2" Checked="MapRenderModeRadio_Changed"/>
+                                    <TextBlock Text="{DynamicResource StrMapRenderVectorDesc}"
+                                              FontSize="11" Foreground="Gray" FontStyle="Italic"
+                                              TextWrapping="Wrap" Margin="20,0,0,4"/>
+                                    <Border x:Name="VectorPreviewHintBorder"
+                                           Margin="20,2,0,8" Padding="8,6"
+                                           Background="#E3F2FD" BorderBrush="#1E6AB8" BorderThickness="1"
+                                           CornerRadius="3" Visibility="Collapsed">
+                                        <TextBlock Text="{DynamicResource StrMapRenderVectorPreviewHint}"
+                                                  FontSize="11" TextWrapping="Wrap" Foreground="#0D3C61"/>
+                                    </Border>
+                                    <TextBlock x:Name="VectorOsmFallbackHint"
+                                              Text="{DynamicResource StrVectorOsmRasterFallback}"
+                                              FontSize="11" FontStyle="Italic" Foreground="#B26500"
+                                              TextWrapping="Wrap" Margin="20,0,0,8" Visibility="Collapsed"/>
+
+                                    <!-- Zusatz-Layer-Auswahl (nur Vektor-Modus) -->
+                                    <TextBlock x:Name="VectorOverlaysTitle"
+                                              Text="{DynamicResource StrVectorOverlaysTitle}"
+                                              FontWeight="SemiBold" Margin="0,4,0,4" Visibility="Collapsed"/>
+                                    <TextBlock x:Name="VectorOverlaysHint"
+                                              Text="{DynamicResource StrVectorOverlaysHint}"
+                                              FontSize="11" Foreground="Gray" FontStyle="Italic"
+                                              TextWrapping="Wrap" Margin="0,0,0,4" Visibility="Collapsed"/>
+                                    <StackPanel x:Name="VectorOverlaysPanel" Margin="0,0,0,8" Visibility="Collapsed"/>
+
+                                    <Separator Margin="0,4,0,10"/>
 
                                     <!-- Kartenstil -->
                                     <TextBlock Text="{DynamicResource StrMapSource}" Margin="0,0,0,4"/>
@@ -1801,6 +1880,14 @@
                                               FontSize="11" Foreground="Gray" FontStyle="Italic"
                                               TextWrapping="Wrap" Margin="20,0,0,8"/>
 
+                                    <!-- Online custom tile server -->
+                                    <RadioButton x:Name="MapModeOnlineCustomRadio" GroupName="MapMode"
+                                                Content="{DynamicResource StrMapModeOnlineCustom}"
+                                                Margin="0,0,0,2" Checked="MapModeRadio_Changed"/>
+                                    <TextBlock Text="{DynamicResource StrMapModeOnlineCustomDesc}"
+                                              FontSize="11" Foreground="Gray" FontStyle="Italic"
+                                              TextWrapping="Wrap" Margin="20,0,0,8"/>
+
                                     <!-- Online OSM -->
                                     <RadioButton x:Name="MapModeOnlineOsmRadio" GroupName="MapMode"
                                                 Content="{DynamicResource StrMapModeOnlineOsm}"
@@ -1813,7 +1900,7 @@
                                                   FontSize="11" TextWrapping="Wrap" Foreground="#7B4700"/>
                                     </Border>
 
-                                    <!-- Tile-Server URL (ausgeblendet im OSM-Online-Modus) -->
+                                    <!-- Tile-Server URL (ausgeblendet im OSM-Online-Modus und im Vektor-Modus) -->
                                     <StackPanel x:Name="TileServerPanel">
                                         <TextBlock Text="{DynamicResource StrTileServerUrl}" Margin="0,4,0,4"/>
                                         <TextBox x:Name="TileServerUrlTextBox" HorizontalAlignment="Stretch" Margin="0,0,0,4"/>
@@ -1821,12 +1908,28 @@
                                                   FontStyle="Italic" Foreground="Gray" FontSize="11" Margin="0,0,0,10"/>
                                     </StackPanel>
 
-                                    <!-- Download/Import (nur im Offline-Modus) -->
+                                    <!-- Vector-Style URL (nur im Vektor-Modus mit eigenem Server) -->
+                                    <StackPanel x:Name="VectorStylePanel" Visibility="Collapsed">
+                                        <TextBlock Text="{DynamicResource StrVectorStyleUrl}" Margin="0,4,0,4"/>
+                                        <TextBox x:Name="VectorStyleUrlTextBox" HorizontalAlignment="Stretch" Margin="0,0,0,4"/>
+                                        <TextBlock Text="{DynamicResource StrVectorStyleUrlHint}"
+                                                  FontStyle="Italic" Foreground="Gray" FontSize="11" Margin="0,0,0,10"/>
+                                    </StackPanel>
+
+                                    <!-- Download/Import (nur im Offline-Modus, Raster) -->
                                     <StackPanel x:Name="TileDownloadPanel">
                                         <Button Content="{DynamicResource StrDownloadTiles}" Width="200" HorizontalAlignment="Left"
                                                Margin="0,0,0,6" Click="DownloadTiles_Click"/>
                                         <Button Content="{DynamicResource StrImportTilesZip}" Width="200" HorizontalAlignment="Left"
                                                Click="ImportTilesFromZip_Click"/>
+                                    </StackPanel>
+
+                                    <!-- Vektor-Offlinepaket (nur Vektor-Modus) -->
+                                    <StackPanel x:Name="VectorDownloadPanel" Visibility="Collapsed">
+                                        <Button Content="{DynamicResource StrDownloadVectorTiles}" MinWidth="240" HorizontalAlignment="Left"
+                                               Margin="0,0,0,4" Click="DownloadVectorTiles_Click"/>
+                                        <TextBlock Text="{DynamicResource StrDownloadVectorTilesHint}"
+                                                  FontStyle="Italic" Foreground="Gray" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,6"/>
                                     </StackPanel>
 
                                 </StackPanel>
@@ -1998,6 +2101,43 @@
                             </GroupBox>
 
                             <!-- g) Debug -->
+                            <!-- Kiosk / Training mode -->
+                            <GroupBox x:Name="KioskGroupBox" Header="{DynamicResource StrKioskSection}" Margin="0,0,0,16">
+                                <StackPanel Margin="10">
+                                    <TextBlock Text="{DynamicResource StrKioskHint}"
+                                              FontStyle="Italic" Foreground="Gray" FontSize="11"
+                                              TextWrapping="Wrap" Margin="0,0,0,8"/>
+                                    <CheckBox x:Name="KioskEnableCheckBox"
+                                              Content="{DynamicResource StrKioskEnable}"
+                                              Checked="KioskEnable_Changed"
+                                              Unchecked="KioskEnable_Changed"
+                                              Margin="0,0,0,8"/>
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                        <TextBlock Text="{DynamicResource StrKioskPassword}" Width="80" VerticalAlignment="Center"/>
+                                        <PasswordBox x:Name="KioskPasswordBox" Width="160" Margin="0,0,8,0"/>
+                                        <Button Content="{DynamicResource StrKioskSetPassword}" Padding="8,2"
+                                                Click="KioskSetPassword_Click"/>
+                                    </StackPanel>
+                                    <TextBlock Text="{DynamicResource StrKioskWhatToLock}" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                    <WrapPanel>
+                                        <CheckBox x:Name="KioskLockTabNodesCheckBox"    Content="{DynamicResource StrKioskLockTabNodes}"    Margin="0,0,14,4"/>
+                                        <CheckBox x:Name="KioskLockTabChannelsCheckBox" Content="{DynamicResource StrKioskLockTabChannels}" Margin="0,0,14,4"/>
+                                        <CheckBox x:Name="KioskLockTabSettingsCheckBox" Content="{DynamicResource StrKioskLockTabSettings}" Margin="0,0,14,4"/>
+                                        <CheckBox x:Name="KioskLockTabInfoCheckBox"     Content="{DynamicResource StrKioskLockTabInfo}"     Margin="0,0,14,4"/>
+                                        <CheckBox x:Name="KioskLockTabToolsCheckBox"    Content="{DynamicResource StrKioskLockTabTools}"    Margin="0,0,14,4"/>
+                                        <CheckBox x:Name="KioskLockTabDebugCheckBox"    Content="{DynamicResource StrKioskLockTabDebug}"    Margin="0,0,14,4"/>
+                                        <CheckBox x:Name="KioskLockNodeConfigCheckBox"  Content="{DynamicResource StrKioskLockNodeConfig}"  Margin="0,0,14,4"/>
+                                        <CheckBox x:Name="KioskLockRemoteAdminCheckBox" Content="{DynamicResource StrKioskLockRemoteAdmin}" Margin="0,0,14,4"/>
+                                        <CheckBox x:Name="KioskLockDashboardCheckBox"   Content="{DynamicResource StrKioskLockDashboard}"   Margin="0,0,14,4"/>
+                                        <CheckBox x:Name="KioskLockSosCheckBox"         Content="{DynamicResource StrKioskLockSos}"         Margin="0,0,14,4"/>
+                                        <CheckBox x:Name="KioskLockMeshHessenCheckBox"  Content="{DynamicResource StrKioskLockMeshHessen}"  Margin="0,0,14,4"/>
+                                    </WrapPanel>
+                                    <TextBlock Text="{DynamicResource StrKioskForgotHint}"
+                                              FontStyle="Italic" Foreground="Gray" FontSize="11"
+                                              TextWrapping="Wrap" Margin="0,8,0,0"/>
+                                </StackPanel>
+                            </GroupBox>
+
                             <GroupBox Header="Debug" Margin="0,0,0,16">
                                 <StackPanel Margin="10">
                                     <CheckBox x:Name="DebugMessagesCheckBox"
@@ -2079,7 +2219,7 @@
             </TabItem>
 
             <!-- Info Tab -->
-            <TabItem Header="{DynamicResource StrTabInfo}">
+            <TabItem x:Name="TabItemInfo" Header="{DynamicResource StrTabInfo}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="20">
                         <TextBlock Text="Meshhessen Client" FontSize="24" FontWeight="Bold" Margin="0,0,0,4"/>
@@ -2179,6 +2319,51 @@
                             </StackPanel>
                         </Border>
 
+                        <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}" BorderThickness="0,0,0,1" Padding="0,0,0,10" Margin="0,0,0,10">
+                            <StackPanel>
+                                <TextBlock Text="OpenMapTiles" FontWeight="Bold"/>
+                                <TextBlock Text="{DynamicResource StrOpenMapTilesDesc}" TextWrapping="Wrap"/>
+                                <TextBlock Foreground="Gray" FontSize="11">
+                                    <Run Text="{DynamicResource StrLicense}"/><Run Text=": CC-BY 4.0 / ODbL"/>
+                                </TextBlock>
+                                <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray">
+                                    <Hyperlink NavigateUri="https://openmaptiles.org/" RequestNavigate="Hyperlink_RequestNavigate">
+                                        <Run Text="openmaptiles.org"/>
+                                    </Hyperlink>
+                                </TextBlock>
+                            </StackPanel>
+                        </Border>
+
+                        <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}" BorderThickness="0,0,0,1" Padding="0,0,0,10" Margin="0,0,0,10">
+                            <StackPanel>
+                                <TextBlock Text="MapLibre GL JS" FontWeight="Bold"/>
+                                <TextBlock Text="{DynamicResource StrMapLibreDesc}" TextWrapping="Wrap"/>
+                                <TextBlock Foreground="Gray" FontSize="11">
+                                    <Run Text="{DynamicResource StrLicense}"/><Run Text=": BSD-3-Clause"/>
+                                </TextBlock>
+                                <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray">
+                                    <Hyperlink NavigateUri="https://maplibre.org/" RequestNavigate="Hyperlink_RequestNavigate">
+                                        <Run Text="maplibre.org"/>
+                                    </Hyperlink>
+                                </TextBlock>
+                            </StackPanel>
+                        </Border>
+
+                        <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}" BorderThickness="0,0,0,1" Padding="0,0,0,10" Margin="0,0,0,10">
+                            <StackPanel>
+                                <TextBlock Text="Noto Sans" FontWeight="Bold"/>
+                                <TextBlock Text="{DynamicResource StrNotoSansDesc}" TextWrapping="Wrap"/>
+                                <TextBlock Foreground="Gray" FontSize="11">
+                                    <Run Text="{DynamicResource StrLicense}"/><Run Text=": SIL Open Font License 1.1"/>
+                                </TextBlock>
+                                <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="Gray">
+                                    <Hyperlink NavigateUri="https://openfontlicense.org/" RequestNavigate="Hyperlink_RequestNavigate">
+                                        <Run Text="openfontlicense.org"/>
+                                    </Hyperlink>
+                                </TextBlock>
+                            </StackPanel>
+                        </Border>
+
                         <Border Padding="0,10,0,0">
                             <StackPanel>
                                 <TextBlock Text="{DynamicResource StrProjectTitle}" FontSize="18" FontWeight="Bold" Margin="0,0,0,8"/>
@@ -2194,7 +2379,7 @@
             </TabItem>
 
             <!-- Tools Tab -->
-            <TabItem Header="{DynamicResource StrTabTools}">
+            <TabItem x:Name="TabItemTools" Header="{DynamicResource StrTabTools}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="24">
 
@@ -2279,7 +2464,7 @@
             </TabItem>
 
             <!-- Debug Tab -->
-            <TabItem Header="🐛 Debug">
+            <TabItem x:Name="TabItemDebug" Header="🐛 Debug">
                 <Grid Margin="10">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -2338,6 +2523,12 @@
                 </StackPanel>
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                    <!-- Kiosk mode lock (visible only when kiosk mode enabled AND a password is set) -->
+                    <Button x:Name="KioskLockButton"
+                            Content="🔒" FontSize="13" Padding="4,0"
+                            Background="Transparent" BorderThickness="0"
+                            Visibility="Collapsed" Margin="0,0,12,0"
+                            Click="KioskLock_Click"/>
                     <!-- Update hint: shown when a newer release is detected -->
                     <Border x:Name="UpdateBanner" Visibility="Collapsed"
                             Background="#33FF8800" CornerRadius="3" Padding="6,2" Margin="0,0,12,0">

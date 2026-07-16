@@ -41,7 +41,7 @@
     "url": "https://smlunchen.github.io/mh_windowsclient/",
     "downloadUrl": "https://github.com/SMLunchen/mh_windowsclient/releases/latest",
     "author": { "@type": "Organization", "name": "Meshhessen Community", "url": "https://www.meshhessen.de" },
-    "softwareVersion": "1.5.13",
+    "softwareVersion": "1.5.14",
     "screenshot": "https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map.png",
     "keywords": "Meshtastic, Windows, LoRa, Mesh, Telemetrie, Traceroute, Offline-Karte, PKI"
   }
@@ -312,8 +312,8 @@
 <main>
 
   <div class="whats-new">
-    <span class="vbadge">v1.5.13</span>
-    <span class="summary">🚀 Neu: Node-Kachelansicht (Fancy View), direkte HF-Nachbar-Linien auf der Karte (Farbverlauf nach SNR/Alter), „Informationen anfordern" wie in der Android-App, erweiterte Node-Filter – plus abgeglichene Protobuf-Definitionen.</span>
+    <span class="vbadge">v1.5.14</span>
+    <span class="summary">🚀 Neu: Vektorkarten (Vorschau) – gestochen scharf in jeder Zoomstufe, automatischer Offline-Cache und zuschaltbarer 🚒 Feuerwehr-/Rettungs-Layer (Hydranten, Wachen, Sirenen, Defibrillatoren u. v. m.).</span>
     <a href="changelog.html">Changelog ansehen →</a>
   </div>
 
@@ -332,15 +332,16 @@
       </ul>
     </div>
     <div class="card" style="--card-accent:#3fb950">
+      <span class="badge-new">NEU</span>
       <h3>🗺️ Karte</h3>
       <ul>
         <li>OSM Standard, OSM Dark, OpenTopoMap</li>
-        <li><strong>Offline</strong> (vorheruntergeladen, Deutschland)</li>
-        <li><strong>Online Meshhessen</strong> (lazy download, Deutschland)</li>
-        <li><strong>Online OSM</strong> (weltweit, Policy-konform)</li>
-        <li>Node-Pins, GPS-Tracks, Wegpunkte</li>
-        <li><strong>Direkte Nachbar-Linien</strong> (0-Hop HF, Farbverlauf nach SNR/Alter)</li>
-        <li>HTTP/3, ETag-Cache, tile.meshhessenclient.de</li>
+        <li><strong>NEU: Vektorkarten (Vorschau)</strong> – gestochen scharf, kleinere Offline-Daten, Stil-Updates ohne Client-Update</li>
+        <li><strong>NEU: 🚒 Feuerwehr-/Rettungs-Layer</strong> zuschaltbar – Hydranten, Wachen, Sirenen, Löschteiche, Defibrillatoren u. v. m.</li>
+        <li><strong>Offline</strong> (vorheruntergeladen; Vektor: besuchte Gebiete werden automatisch gespeichert)</li>
+        <li><strong>Online Meshhessen</strong> (lazy download, Deutschland) / <strong>Online OSM</strong> (weltweit, nur Raster)</li>
+        <li>Node-Pins, GPS-Tracks, Wegpunkte, <strong>direkte Nachbar-Linien</strong> (0-Hop HF)</li>
+        <li>HTTP/3, ETag-Cache, tile.meshhessenclient.de + vectortile.meshhessenclient.de</li>
       </ul>
     </div>
     <div class="card" style="--card-accent:#e3b341">
@@ -419,6 +420,17 @@
         <li><strong>Favoriten</strong> – Stern-Symbol, sync mit Gerät via <code>set_favorite_node</code></li>
         <li><strong>Vollständige Node-Konfiguration</strong> + <strong>Fernverwaltung</strong> (inkl. Sicherheits-Reiter, Lazy Loading)</li>
         <li>Bluetooth-PIN direkt ändern; Meshhessen-Schnellkonfiguration</li>
+      </ul>
+    </div>
+    <div class="card" style="--card-accent:#8b949e">
+      <h3>🔒 Kiosk-/Trainingsmodus</h3>
+      <ul>
+        <li><strong>Sperrbare Oberfläche</strong> für geteilte Stationen (Vereinsheim, Schulung, Ausstellung)</li>
+        <li>Passwortschutz mit PBKDF2-Hash – kein Klartext in der Konfiguration</li>
+        <li>Konfigurierbar, was gesperrt wird: Tabs, Node-Konfiguration, Fernverwaltung, SOS-Button u. a.</li>
+        <li>Nachrichten- und Karten-Tab bleiben immer sichtbar</li>
+        <li>🔒-Schloss in der Fußleiste zum Sperren/Entsperren; App startet gesperrt</li>
+        <li>Bei aktiver Sperre werden Admin-Befehle von Virtual-Node-Clients blockiert</li>
       </ul>
     </div>
   </div>
@@ -606,6 +618,48 @@
   <h2>📸 Screenshots <small style="font-size:0.75rem; color:#8b949e;">(klicken zum Vergrößern)</small></h2>
   <div class="screenshots">
     <div class="screenshot-item">
+      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/vector_in_action.png" target="_blank" rel="noopener">
+        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/vector_in_action.png"
+             alt="Meshhessen Client – Vektorkarte (MapLibre GL) mit Meshtastic Node-Positionen unter Windows" loading="lazy" />
+      </a>
+      <span class="caption">NEU: Vektorkarte – scharf in jeder Zoomstufe</span>
+    </div>
+    <div class="screenshot-item">
+      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/vector_w_hydrant.png" target="_blank" rel="noopener">
+        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/vector_w_hydrant.png"
+             alt="Meshhessen Client – Vektorkarte mit Feuerwehr-Layer: Hydranten, Wachen und Rettungspunkte" loading="lazy" />
+      </a>
+      <span class="caption">NEU: 🚒 Feuerwehr-Layer – Hydranten, Wachen, Rettungspunkte</span>
+    </div>
+    <div class="screenshot-item">
+      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/hydrant_unterflur.png" target="_blank" rel="noopener">
+        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/hydrant_unterflur.png"
+             alt="Meshhessen Client – Hydranten-Detail-Popup: Unterflurhydrant mit Bauart und Wasserquelle" loading="lazy" />
+      </a>
+      <span class="caption">Klick auf Hydrant → Details (hier: Unterflur)</span>
+    </div>
+    <div class="screenshot-item">
+      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/raster_wo_hydrant.png" target="_blank" rel="noopener">
+        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/raster_wo_hydrant.png"
+             alt="Meshhessen Client – klassische Rasterkarte ohne Feuerwehr-Layer (Vergleichsbild)" loading="lazy" />
+      </a>
+      <span class="caption">Zum Vergleich: derselbe Ausschnitt als Rasterkarte</span>
+    </div>
+    <div class="screenshot-item">
+      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/vector_w_neighborlinks.png" target="_blank" rel="noopener">
+        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/vector_w_neighborlinks.png"
+             alt="Meshhessen Client – Nachbar-Linien mit SNR-Farbverlauf auf der Vektorkarte (0-Hop HF)" loading="lazy" />
+      </a>
+      <span class="caption">Nachbar-Linien (SNR-Farbverlauf) auf der Vektorkarte</span>
+    </div>
+    <div class="screenshot-item">
+      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/kiosk_settings.png" target="_blank" rel="noopener">
+        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/kiosk_settings.png"
+             alt="Meshhessen Client – Kiosk- und Trainingsmodus: sperrbare Oberfläche mit Passwortschutz" loading="lazy" />
+      </a>
+      <span class="caption">Kiosk-/Trainingsmodus – Einstellungen</span>
+    </div>
+    <div class="screenshot-item">
       <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map.png" target="_blank" rel="noopener">
         <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map.png"
              alt="Meshhessen Client – Offline-Karte mit Meshtastic Node-Positionen unter Windows" loading="lazy" />
@@ -719,8 +773,8 @@
 <main>
 
   <div class="whats-new">
-    <span class="vbadge">v1.5.13</span>
-    <span class="summary">🚀 New: node tile view (Fancy View), direct RF neighbor lines on the map (gradient by SNR/age), "Request information" like the Android app, advanced node filters – plus aligned protobuf definitions.</span>
+    <span class="vbadge">v1.5.14</span>
+    <span class="summary">🚀 New: vector maps (preview) – razor-sharp at any zoom, automatic offline cache and a switchable 🚒 fire service / rescue layer (hydrants, stations, sirens, defibrillators and more).</span>
     <a href="changelog.html">View changelog →</a>
   </div>
 
@@ -739,15 +793,16 @@
       </ul>
     </div>
     <div class="card" style="--card-accent:#3fb950">
+      <span class="badge-new">NEW</span>
       <h3>🗺️ Map</h3>
       <ul>
         <li>OSM Standard, OSM Dark, OpenTopoMap</li>
-        <li><strong>Offline</strong> (pre-downloaded, Germany)</li>
-        <li><strong>Online Meshhessen</strong> (lazy download, Germany)</li>
-        <li><strong>Online OSM</strong> (worldwide, policy-compliant)</li>
-        <li>Node pins, GPS tracks, waypoints</li>
-        <li><strong>Direct neighbor lines</strong> (0-hop RF, gradient by SNR/age)</li>
-        <li>HTTP/3, ETag cache, tile.meshhessenclient.de</li>
+        <li><strong>NEW: vector maps (preview)</strong> – razor-sharp, smaller offline data, style updates without a client update</li>
+        <li><strong>NEW: 🚒 fire service / rescue layer</strong> – hydrants, stations, sirens, fire ponds, defibrillators and more</li>
+        <li><strong>Offline</strong> (pre-downloaded; vector: visited areas cached automatically)</li>
+        <li><strong>Online Meshhessen</strong> (lazy download, Germany) / <strong>Online OSM</strong> (worldwide, raster only)</li>
+        <li>Node pins, GPS tracks, waypoints, <strong>direct neighbor lines</strong> (0-hop RF)</li>
+        <li>HTTP/3, ETag cache, tile.meshhessenclient.de + vectortile.meshhessenclient.de</li>
       </ul>
     </div>
     <div class="card" style="--card-accent:#e3b341">
@@ -825,6 +880,17 @@
         <li><strong>Favorites</strong> – star icon, synced with device via <code>set_favorite_node</code></li>
         <li><strong>Full node configuration</strong> + <strong>Remote Admin</strong> (incl. security tab, lazy loading)</li>
         <li>Change Bluetooth PIN; Meshhessen quick-config</li>
+      </ul>
+    </div>
+    <div class="card" style="--card-accent:#8b949e">
+      <h3>🔒 Kiosk / Training Mode</h3>
+      <ul>
+        <li><strong>Lockable UI</strong> for shared stations (club house, training, exhibition)</li>
+        <li>Password protection with PBKDF2 hash – no plaintext in the config</li>
+        <li>Configurable what gets locked: tabs, node configuration, remote admin, SOS button and more</li>
+        <li>Messages and map tab always stay visible</li>
+        <li>🔒 lock in the footer bar to lock/unlock; app starts locked</li>
+        <li>Admin commands from Virtual Node clients are blocked while locked</li>
       </ul>
     </div>
   </div>
@@ -1008,6 +1074,48 @@
   <!-- ── Screenshots ── -->
   <h2>📸 Screenshots <small style="font-size:0.75rem; color:#8b949e;">(click to enlarge)</small></h2>
   <div class="screenshots">
+    <div class="screenshot-item">
+      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/vector_in_action.png" target="_blank" rel="noopener">
+        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/vector_in_action.png"
+             alt="Meshhessen Client – vector map (MapLibre GL) with Meshtastic node positions on Windows" loading="lazy" />
+      </a>
+      <span class="caption">NEW: vector map – razor-sharp at any zoom</span>
+    </div>
+    <div class="screenshot-item">
+      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/vector_w_hydrant.png" target="_blank" rel="noopener">
+        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/vector_w_hydrant.png"
+             alt="Meshhessen Client – vector map with fire service layer: hydrants, stations and rescue points" loading="lazy" />
+      </a>
+      <span class="caption">NEW: 🚒 fire service layer – hydrants, stations, rescue points</span>
+    </div>
+    <div class="screenshot-item">
+      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/hydrant_unterflur.png" target="_blank" rel="noopener">
+        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/hydrant_unterflur.png"
+             alt="Meshhessen Client – hydrant detail popup: underground hydrant with type and water source" loading="lazy" />
+      </a>
+      <span class="caption">Click a hydrant → details (here: underground)</span>
+    </div>
+    <div class="screenshot-item">
+      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/raster_wo_hydrant.png" target="_blank" rel="noopener">
+        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/raster_wo_hydrant.png"
+             alt="Meshhessen Client – classic raster map without fire service layer (comparison)" loading="lazy" />
+      </a>
+      <span class="caption">For comparison: the same area as raster map</span>
+    </div>
+    <div class="screenshot-item">
+      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/vector_w_neighborlinks.png" target="_blank" rel="noopener">
+        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/vector_w_neighborlinks.png"
+             alt="Meshhessen Client – neighbor lines with SNR gradient on the vector map (0-hop RF)" loading="lazy" />
+      </a>
+      <span class="caption">Neighbor lines (SNR gradient) on the vector map</span>
+    </div>
+    <div class="screenshot-item">
+      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/kiosk_settings.png" target="_blank" rel="noopener">
+        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/kiosk_settings.png"
+             alt="Meshhessen Client – kiosk / training mode: lockable UI with password protection" loading="lazy" />
+      </a>
+      <span class="caption">Kiosk / training mode – settings</span>
+    </div>
     <div class="screenshot-item">
       <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map.png" target="_blank" rel="noopener">
         <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map.png"
