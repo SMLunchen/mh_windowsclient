@@ -81,7 +81,8 @@ public class SerialConnectionService : IConnectionService
                 _serialPort.DiscardOutBuffer();
 
                 IsConnected = true;
-                Logger.WriteLine($"[SERIAL] Connected to {serialParams.PortName}");
+                Logger.WriteLine($"[SERIAL] Connected to {serialParams.PortName} " +
+                    $"(baud={serialParams.BaudRate}, 8N1, DTR=on, RTS=on, handshake=none)");
 
                 // Starte Reader-Thread
                 _wantExit = false;

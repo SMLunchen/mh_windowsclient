@@ -12,6 +12,12 @@ public class MeshtasticProtocolService
 {
     private readonly IConnectionService _connectionService;
     private readonly List<byte> _receiveBuffer = new();
+
+    // RX diagnostics (reset on init) — always counted, independent of debug flags,
+    // so a "device stays silent" report can be diagnosed from the default log.
+    private long _statBytesReceived;
+    private int  _statFramesParsed;
+    private long _statTextBytes;
     private uint _myNodeId;
     private DeviceInfo? _myDeviceInfo;
     private readonly Dictionary<uint, ModelNodeInfo> _knownNodes = new();
@@ -152,12 +158,15 @@ public class MeshtasticProtocolService
             Logger.WriteLine("Cleared all data from previous session");
         }
 
-        // Clear receive buffer
+        // Clear receive buffer + RX diagnostics
         lock (_receiveBuffer)
         {
             _receiveBuffer.Clear();
             Logger.WriteLine("Cleared receive buffer");
         }
+        System.Threading.Interlocked.Exchange(ref _statBytesReceived, 0);
+        System.Threading.Interlocked.Exchange(ref _statFramesParsed, 0);
+        System.Threading.Interlocked.Exchange(ref _statTextBytes, 0);
 
         await Task.Delay(1000);
 
@@ -216,6 +225,22 @@ public class MeshtasticProtocolService
         if (!configReceivedInTime)
         {
             Logger.WriteLine("WARNING: config_complete NOT received within 15 seconds!");
+
+            long rxBytes  = System.Threading.Interlocked.Read(ref _statBytesReceived);
+            int  frames   = _statFramesParsed;
+            long txtBytes = System.Threading.Interlocked.Read(ref _statTextBytes);
+            Logger.WriteLine($"[DIAG] RX since connect: {rxBytes} bytes total, {frames} protobuf frames, {txtBytes} text/log bytes");
+            if (rxBytes == 0)
+                Logger.WriteLine("[DIAG] Device sent NOTHING. Likely causes: wrong COM port, another app holding the port, " +
+                                 "device rebooting on connect (DTR/RTS auto-reset), or a driver issue. " +
+                                 "Check whether the device screen/LED shows a reboot when clicking Connect.");
+            else if (frames == 0)
+                Logger.WriteLine("[DIAG] Data received but ZERO valid protobuf frames. Likely causes: device still booting " +
+                                 "(text/log output only), wrong baud rate, or firmware serial console mode. " +
+                                 "Enable serial debug (Settings → Debug) and retry for a hex dump.");
+            else
+                Logger.WriteLine("[DIAG] Protobuf frames received but no config_complete — protocol-level issue. " +
+                                 "Please attach the full log with serial debug enabled to the bug report.");
         }
 
         // Dynamisch warten: Warte bis 3 Sekunden lang keine neuen Nodes mehr kommen
@@ -444,6 +469,8 @@ public class MeshtasticProtocolService
                 return;
             }
 
+            System.Threading.Interlocked.Add(ref _statBytesReceived, data.Length);
+
             if (_debugSerial && data.Length > 0)
             {
                 Logger.WriteLine($"[SERIAL RX] {data.Length} bytes:\n    {ToHexString(data)}");
@@ -580,6 +607,7 @@ public class MeshtasticProtocolService
 
                 // Paket komplett - Timer zurücksetzen
                 _bufferWaitingSince = DateTime.MinValue;
+                System.Threading.Interlocked.Increment(ref _statFramesParsed);
 
                 byte[] packet = _receiveBuffer.GetRange(4, packetLength).ToArray();
                 _receiveBuffer.RemoveRange(0, 4 + packetLength);
@@ -629,6 +657,7 @@ public class MeshtasticProtocolService
     private void ExtractAndLogAsciiText(int count)
     {
         if (count <= 0) return;
+        System.Threading.Interlocked.Add(ref _statTextBytes, count);
 
         // Prüfe ob die Bytes überwiegend druckbares ASCII sind
         // 0x1B = ESC (ANSI color codes vom Device-Debug-Output)
@@ -999,9 +1028,24 @@ public class MeshtasticProtocolService
                 HandleTextMessage(packet, data);
                 break;
 
-            case 5: // ROUTING_APP — ACK response
+            case 5: // ROUTING_APP — ACK/NAK response
                 if (data.RequestId != 0)
                     _db?.MarkAckReceived(data.RequestId);
+                try
+                {
+                    var routing = Routing.Parser.ParseFrom(data.Payload);
+                    if (routing.VariantCase == Routing.VariantOneofCase.ErrorReason)
+                    {
+                        if (routing.ErrorReason == Routing.Types.Error.None)
+                            Logger.WriteLine($"[Routing] ACK from !{packet.From:x8} for request {data.RequestId:x8}");
+                        else
+                            Logger.WriteLine($"[Routing] *** NAK from !{packet.From:x8} for request {data.RequestId:x8}: {routing.ErrorReason} ***");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.WriteLine($"[Routing] Failed to parse routing payload: {ex.Message}");
+                }
                 break;
 
             case 4: // NODEINFO_APP
@@ -1911,6 +1955,7 @@ public class MeshtasticProtocolService
             adminMsg.SessionPasskey = ByteString.CopyFrom(_sessionPasskey);
         }
 
+        var adminPayload = adminMsg.ToByteString();
         var meshPacket = new MeshPacket
         {
             From = _myNodeId,
@@ -1918,7 +1963,7 @@ public class MeshtasticProtocolService
             Decoded = new Data
             {
                 Portnum = 6, // ADMIN_APP
-                Payload = adminMsg.ToByteString(),
+                Payload = adminPayload,
                 WantResponse = true
             },
             Id = (uint)Random.Shared.Next()
@@ -1926,6 +1971,9 @@ public class MeshtasticProtocolService
 
         var toRadio = new ToRadio { Packet = meshPacket };
         await SendToRadioAsync(toRadio);
+        Logger.WriteLine($"[Admin] Sent {adminMsg.PayloadVariantCase} (local) " +
+            $"pktId={meshPacket.Id:x8} passkey={(_sessionPasskey.Length > 0 ? "yes" : "NONE")} " +
+            $"payload[{adminPayload.Length}]={Convert.ToHexString(adminPayload.ToByteArray()).ToLowerInvariant()}");
     }
 
     private async Task SendToRadioAsync(ToRadio toRadio)
@@ -2323,15 +2371,18 @@ public class MeshtasticProtocolService
             if (_remoteSessionKeys.TryGetValue(destNodeId, out var key) && key.Length > 0)
                 adminMsg.SessionPasskey = ByteString.CopyFrom(key);
         }
+        var reqPayload = adminMsg.ToByteString();
         var meshPacket = new MeshPacket
         {
             From = _myNodeId,
             To = destNodeId,
-            Decoded = new Data { Portnum = 6, Payload = adminMsg.ToByteString(), WantResponse = true },
+            Decoded = new Data { Portnum = 6, Payload = reqPayload, WantResponse = true },
             Id = (uint)Random.Shared.Next()
         };
         await SendToRadioAsync(new ToRadio { Packet = meshPacket });
-        Logger.WriteLine($"[RemoteAdmin] Request {adminMsg.PayloadVariantCase} → !{destNodeId:x8} (timeout {timeoutMs}ms)");
+        Logger.WriteLine($"[RemoteAdmin] Request {adminMsg.PayloadVariantCase} → !{destNodeId:x8} " +
+            $"pktId={meshPacket.Id:x8} passkey={(adminMsg.SessionPasskey is { Length: > 0 } ? "yes" : "NONE")} " +
+            $"payload[{reqPayload.Length}]={Convert.ToHexString(reqPayload.ToByteArray()).ToLowerInvariant()} (timeout {timeoutMs}ms)");
 
         var completed = await Task.WhenAny(tcs.Task, Task.Delay(timeoutMs));
         lock (_dataLock) { _pendingRemoteRequests.Remove(destNodeId); }
@@ -2344,6 +2395,42 @@ public class MeshtasticProtocolService
         return tcs.Task.Result;
     }
 
+    /// <summary>
+    /// Injects a node into the remote node's NodeDB via AdminMessage.add_contact
+    /// (firmware 2.6+; older firmware silently ignores the unknown field).
+    /// Used before set_favorite_node so the target actually knows the node.
+    /// </summary>
+    public async Task SendRemoteAddContactAsync(uint destNodeId, uint contactNodeId)
+    {
+        ModelNodeInfo? info;
+        lock (_dataLock) { _knownNodes.TryGetValue(contactNodeId, out info); }
+
+        var user = new User
+        {
+            Id        = $"!{contactNodeId:x8}",
+            LongName  = !string.IsNullOrEmpty(info?.LongName) ? info!.LongName
+                      : !string.IsNullOrEmpty(info?.Name)     ? info!.Name
+                      : $"Node-{contactNodeId:x4}",
+            ShortName = !string.IsNullOrEmpty(info?.ShortName) ? info!.ShortName : $"{contactNodeId & 0xFFFF:x4}",
+        };
+        if (info?.HardwareModel is { Length: > 0 } hw &&
+            Enum.TryParse<HardwareModel>(hw, ignoreCase: true, out var hwEnum))
+            user.HwModel = hwEnum;
+        if (_nodeKeyService?.GetPublicKey(contactNodeId) is { } pkB64)
+        {
+            try { user.PublicKey = ByteString.CopyFrom(Convert.FromBase64String(pkB64)); }
+            catch { /* malformed CSV entry — send without key */ }
+        }
+
+        var adminMsg = new AdminMessage
+        {
+            AddContact = new SharedContact { NodeNum = contactNodeId, User = user }
+        };
+        await SendRemoteAdminWriteAsync(destNodeId, adminMsg);
+        Logger.WriteLine($"[RemoteAdmin] add_contact !{contactNodeId:x8} ({user.ShortName}) → !{destNodeId:x8} " +
+            $"pubkey={(user.PublicKey.Length > 0 ? "yes" : "no")}");
+    }
+
     /// <summary>Sends an admin write to a remote node (fire-and-forget after obtaining session key).</summary>
     public async Task SendRemoteAdminWriteAsync(uint destNodeId, AdminMessage adminMsg)
     {
@@ -2352,15 +2439,18 @@ public class MeshtasticProtocolService
         if (key != null && key.Length > 0)
             adminMsg.SessionPasskey = ByteString.CopyFrom(key);
 
+        var payload = adminMsg.ToByteString();
         var meshPacket = new MeshPacket
         {
             From = _myNodeId,
             To = destNodeId,
-            Decoded = new Data { Portnum = 6, Payload = adminMsg.ToByteString(), WantResponse = false },
+            Decoded = new Data { Portnum = 6, Payload = payload, WantResponse = false },
             Id = (uint)Random.Shared.Next()
         };
         await SendToRadioAsync(new ToRadio { Packet = meshPacket });
-        Logger.WriteLine($"[RemoteAdmin] Write {adminMsg.PayloadVariantCase} → !{destNodeId:x8}");
+        Logger.WriteLine($"[RemoteAdmin] Write {adminMsg.PayloadVariantCase} → !{destNodeId:x8} " +
+            $"pktId={meshPacket.Id:x8} passkey={(key is { Length: > 0 } ? "yes" : "NONE")} " +
+            $"payload[{payload.Length}]={Convert.ToHexString(payload.ToByteArray()).ToLowerInvariant()}");
     }
 
     public void ClearRemoteSessionKey(uint destNodeId)

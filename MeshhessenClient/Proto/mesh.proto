@@ -44,9 +44,30 @@ message Data {
 }
 
 message Routing {
+  enum Error {
+    NONE = 0;
+    NO_ROUTE = 1;
+    GOT_NAK = 2;
+    TIMEOUT = 3;
+    NO_INTERFACE = 4;
+    MAX_RETRANSMIT = 5;
+    NO_CHANNEL = 6;
+    TOO_LARGE = 7;
+    NO_RESPONSE = 8;
+    DUTY_CYCLE_LIMIT = 9;
+    BAD_REQUEST = 32;
+    NOT_AUTHORIZED = 33;
+    PKI_FAILED = 34;
+    PKI_UNKNOWN_PUBKEY = 35;
+    ADMIN_BAD_SESSION_KEY = 36;
+    ADMIN_PUBLIC_KEY_UNAUTHORIZED = 37;
+    RATE_LIMIT_EXCEEDED = 38;
+    PKI_SEND_FAIL_PUBLIC_KEY = 39;
+  }
   oneof variant {
     RouteDiscovery route_request = 1;
     RouteDiscovery route_reply = 2;
+    Error error_reason = 3;
   }
 }
 

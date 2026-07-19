@@ -47,5 +47,14 @@ message AdminMessage {
     bool remove_position = 89;
     uint32 set_favorite_node = 39;
     uint32 remove_favorite_node = 40;
+    SharedContact add_contact = 66;
   }
+}
+
+// Shared contact for injecting a node into a (remote) node's NodeDB (firmware 2.6+)
+message SharedContact {
+  uint32 node_num = 1;
+  User user = 2;
+  bool should_ignore = 3;
+  bool manually_verified = 4;
 }

@@ -830,6 +830,10 @@ public partial class RemoteAdminWindow : Window
     private async void AddFavoriteNode_Click(object sender, RoutedEventArgs e)
     {
         if (FavoriteNodeCombo.SelectedItem is not ComboBoxItem item || item.Tag is not uint nodeId) return;
+        // Inject the node into the target's NodeDB first (add_contact, fw 2.6+):
+        // the firmware silently ignores set_favorite_node for unknown nodes.
+        await _svc.SendRemoteAddContactAsync(_targetNode.NodeId, nodeId);
+        await System.Threading.Tasks.Task.Delay(750); // give the target time to store the contact
         await _svc.SendRemoteAdminWriteAsync(_targetNode.NodeId,
             new AdminMessage { SetFavoriteNode = nodeId }); // field 39
         MessageBox.Show(
