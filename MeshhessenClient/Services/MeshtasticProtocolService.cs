@@ -18,6 +18,9 @@ public class MeshtasticProtocolService
     private long _statBytesReceived;
     private int  _statFramesParsed;
     private long _statTextBytes;
+    // Rolling capture of the most recent device text lines (always, even without
+    // debug) so the DIAG timeout dump shows what the device actually said.
+    private readonly Queue<string> _recentDeviceLines = new();
     private uint _myNodeId;
     private DeviceInfo? _myDeviceInfo;
     private readonly Dictionary<uint, ModelNodeInfo> _knownNodes = new();
@@ -167,6 +170,7 @@ public class MeshtasticProtocolService
         System.Threading.Interlocked.Exchange(ref _statBytesReceived, 0);
         System.Threading.Interlocked.Exchange(ref _statFramesParsed, 0);
         System.Threading.Interlocked.Exchange(ref _statTextBytes, 0);
+        lock (_recentDeviceLines) { _recentDeviceLines.Clear(); }
 
         await Task.Delay(1000);
 
@@ -235,9 +239,22 @@ public class MeshtasticProtocolService
                                  "device rebooting on connect (DTR/RTS auto-reset), or a driver issue. " +
                                  "Check whether the device screen/LED shows a reboot when clicking Connect.");
             else if (frames == 0)
-                Logger.WriteLine("[DIAG] Data received but ZERO valid protobuf frames. Likely causes: device still booting " +
-                                 "(text/log output only), wrong baud rate, or firmware serial console mode. " +
-                                 "Enable serial debug (Settings → Debug) and retry for a hex dump.");
+            {
+                Logger.WriteLine("[DIAG] Data received but ZERO valid protobuf frames. The device is sending text/log " +
+                                 "output instead of the protobuf API stream — typically the USB serial is on the debug " +
+                                 "console, the device is stuck booting/rebooting, or the wrong baud rate is used.");
+                string[] lines;
+                lock (_recentDeviceLines) { lines = _recentDeviceLines.ToArray(); }
+                if (lines.Length > 0)
+                {
+                    Logger.WriteLine($"[DIAG] Last {lines.Length} device text line(s) received:");
+                    foreach (var l in lines) Logger.WriteLine($"[DIAG]   > {l}");
+                }
+                else
+                {
+                    Logger.WriteLine("[DIAG] (device text could not be captured — enable serial debug for a raw hex dump)");
+                }
+            }
             else
                 Logger.WriteLine("[DIAG] Protobuf frames received but no config_complete — protocol-level issue. " +
                                  "Please attach the full log with serial debug enabled to the bug report.");
@@ -712,6 +729,13 @@ public class MeshtasticProtocolService
                     {
                         // Kritische Fehler IMMER loggen, auch wenn DebugDevice aus
                         CheckForCriticalErrors(clean);
+
+                        // Rolling capture (last 15 lines) for the DIAG dump, regardless of debug flags
+                        lock (_recentDeviceLines)
+                        {
+                            _recentDeviceLines.Enqueue(clean);
+                            while (_recentDeviceLines.Count > 15) _recentDeviceLines.Dequeue();
+                        }
 
                         if (_debugDevice)
                         {

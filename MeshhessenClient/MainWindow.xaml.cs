@@ -2350,6 +2350,11 @@ public partial class MainWindow : Window
                 if (_db != null) _protocolService.SetDatabase(_db);
                 if (_nodeKeyService != null) _protocolService.SetNodeKeyService(_nodeKeyService);
                 _protocolService.SetPskMismatchAction(_currentSettings.NodeKeyMismatchAction);
+                // Re-apply debug flags: a fresh service instance defaults them to off,
+                // so serial/device debug would otherwise never take effect on the
+                // connection that actually matters.
+                _protocolService.SetDebugSerial(_currentSettings.DebugSerial);
+                _protocolService.SetDebugDevice(_currentSettings.DebugDevice);
                 _dmWindow?.UpdateProtocolService(_protocolService);
                 PrepareVirtualNode();
 
@@ -3058,6 +3063,8 @@ public partial class MainWindow : Window
                 if (_db != null) _protocolService.SetDatabase(_db);
                 if (_nodeKeyService != null) _protocolService.SetNodeKeyService(_nodeKeyService);
                 _protocolService.SetPskMismatchAction(_currentSettings.NodeKeyMismatchAction);
+                _protocolService.SetDebugSerial(_currentSettings.DebugSerial);
+                _protocolService.SetDebugDevice(_currentSettings.DebugDevice);
                 PrepareVirtualNode();
 
                 // Recreate proxy with new protocol service
