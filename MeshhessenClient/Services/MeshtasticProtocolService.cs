@@ -17,10 +17,13 @@ public class MeshtasticProtocolService
     // so a "device stays silent" report can be diagnosed from the default log.
     private long _statBytesReceived;
     private int  _statFramesParsed;
-    private long _statTextBytes;
+    private long _statTextBytes;    // bytes that were actually printable ASCII
+    private long _statBinaryBytes;  // non-protobuf, non-ASCII bytes (garbage / wrong baud)
     // Rolling capture of the most recent device text lines (always, even without
     // debug) so the DIAG timeout dump shows what the device actually said.
     private readonly Queue<string> _recentDeviceLines = new();
+    // First chunk of unrecognised bytes, kept for the DIAG hex dump
+    private byte[]? _firstUnknownBytes;
     private uint _myNodeId;
     private DeviceInfo? _myDeviceInfo;
     private readonly Dictionary<uint, ModelNodeInfo> _knownNodes = new();
@@ -170,6 +173,8 @@ public class MeshtasticProtocolService
         System.Threading.Interlocked.Exchange(ref _statBytesReceived, 0);
         System.Threading.Interlocked.Exchange(ref _statFramesParsed, 0);
         System.Threading.Interlocked.Exchange(ref _statTextBytes, 0);
+        System.Threading.Interlocked.Exchange(ref _statBinaryBytes, 0);
+        _firstUnknownBytes = null;
         lock (_recentDeviceLines) { _recentDeviceLines.Clear(); }
 
         await Task.Delay(1000);
@@ -233,16 +238,25 @@ public class MeshtasticProtocolService
             long rxBytes  = System.Threading.Interlocked.Read(ref _statBytesReceived);
             int  frames   = _statFramesParsed;
             long txtBytes = System.Threading.Interlocked.Read(ref _statTextBytes);
-            Logger.WriteLine($"[DIAG] RX since connect: {rxBytes} bytes total, {frames} protobuf frames, {txtBytes} text/log bytes");
+            long binBytes = System.Threading.Interlocked.Read(ref _statBinaryBytes);
+            Logger.WriteLine($"[DIAG] RX since connect: {rxBytes} bytes total, {frames} protobuf frames, " +
+                             $"{txtBytes} ASCII text bytes, {binBytes} unrecognised binary bytes");
+
             if (rxBytes == 0)
+            {
                 Logger.WriteLine("[DIAG] Device sent NOTHING. Likely causes: wrong COM port, another app holding the port, " +
                                  "device rebooting on connect (DTR/RTS auto-reset), or a driver issue. " +
                                  "Check whether the device screen/LED shows a reboot when clicking Connect.");
+            }
             else if (frames == 0)
             {
-                Logger.WriteLine("[DIAG] Data received but ZERO valid protobuf frames. The device is sending text/log " +
-                                 "output instead of the protobuf API stream — typically the USB serial is on the debug " +
-                                 "console, the device is stuck booting/rebooting, or the wrong baud rate is used.");
+                if (binBytes > txtBytes)
+                    Logger.WriteLine("[DIAG] Data received, but it is neither protobuf frames nor readable text. " +
+                                     "This usually means a BAUD RATE MISMATCH or a non-Meshtastic device on this port.");
+                else
+                    Logger.WriteLine("[DIAG] Data received but ZERO valid protobuf frames — the device is sending text/log " +
+                                     "output instead of the protobuf API stream (serial console mode or stuck booting).");
+
                 string[] lines;
                 lock (_recentDeviceLines) { lines = _recentDeviceLines.ToArray(); }
                 if (lines.Length > 0)
@@ -250,14 +264,22 @@ public class MeshtasticProtocolService
                     Logger.WriteLine($"[DIAG] Last {lines.Length} device text line(s) received:");
                     foreach (var l in lines) Logger.WriteLine($"[DIAG]   > {l}");
                 }
-                else
+
+                // Raw sample of what actually arrived — the decisive evidence
+                var sample = _firstUnknownBytes;
+                if (sample is { Length: > 0 })
                 {
-                    Logger.WriteLine("[DIAG] (device text could not be captured — enable serial debug for a raw hex dump)");
+                    var hex = Convert.ToHexString(sample).ToLowerInvariant();
+                    var ascii = new string(sample.Select(b => b >= 0x20 && b <= 0x7E ? (char)b : '.').ToArray());
+                    Logger.WriteLine($"[DIAG] First {sample.Length} unrecognised bytes (hex): {hex}");
+                    Logger.WriteLine($"[DIAG] Same bytes as ASCII: {ascii}");
                 }
             }
             else
+            {
                 Logger.WriteLine("[DIAG] Protobuf frames received but no config_complete — protocol-level issue. " +
                                  "Please attach the full log with serial debug enabled to the bug report.");
+            }
         }
 
         // Dynamisch warten: Warte bis 3 Sekunden lang keine neuen Nodes mehr kommen
@@ -674,7 +696,12 @@ public class MeshtasticProtocolService
     private void ExtractAndLogAsciiText(int count)
     {
         if (count <= 0) return;
-        System.Threading.Interlocked.Add(ref _statTextBytes, count);
+
+        // Keep the very first unrecognised bytes for the DIAG hex dump (always,
+        // independent of debug flags) — this is what identifies a wrong baud rate
+        // or a non-protobuf stream without asking the user to re-run with debug on.
+        if (_firstUnknownBytes == null)
+            _firstUnknownBytes = _receiveBuffer.GetRange(0, Math.Min(count, 64)).ToArray();
 
         // Prüfe ob die Bytes überwiegend druckbares ASCII sind
         // 0x1B = ESC (ANSI color codes vom Device-Debug-Output)
@@ -692,12 +719,15 @@ public class MeshtasticProtocolService
         if (printableCount < count * 0.8)
         {
             // Nicht-druckbare Bytes - normaler Datenmüll, nur bei Debug loggen
+            System.Threading.Interlocked.Add(ref _statBinaryBytes, count);
             if (_debugSerial)
             {
                 Logger.WriteLine($"[SERIAL] Discarding {count} non-protobuf bytes");
             }
             return;
         }
+
+        System.Threading.Interlocked.Add(ref _statTextBytes, count);
 
         // ASCII-Text extrahieren und loggen
         byte[] textBytes = _receiveBuffer.GetRange(0, count).ToArray();
