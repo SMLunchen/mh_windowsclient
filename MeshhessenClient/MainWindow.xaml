@@ -2159,9 +2159,17 @@
                             BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}"
                             BorderThickness="0,1,0,0"
                             Padding="20,10">
-                        <Button Content="{DynamicResource StrSaveSettings}"
-                               Width="200" HorizontalAlignment="Left"
-                               Click="SaveSettings_Click"/>
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <Button x:Name="SaveSettingsButton"
+                                   Content="{DynamicResource StrSaveSettings}"
+                                   Width="200" HorizontalAlignment="Left"
+                                   Click="SaveSettings_Click"/>
+                            <TextBlock x:Name="SettingsUnsavedIndicator"
+                                       Text="{DynamicResource StrSettingsUnsaved}"
+                                       Foreground="#E67E00" FontWeight="SemiBold"
+                                       VerticalAlignment="Center" Margin="14,0,0,0"
+                                       Visibility="Collapsed"/>
+                        </StackPanel>
                     </Border>
                     </Grid>
 

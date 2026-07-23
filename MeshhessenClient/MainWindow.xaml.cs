@@ -54,6 +54,8 @@ public partial class MainWindow : Window
     private uint _myNodeId = 0;
     private string _activeStationName = string.Empty;
     private bool _kioskLocked = false;   // kiosk/training mode: true = features hidden
+    private bool _settingsDirty = false;         // unsaved changes in the Settings tab
+    private bool _suppressDirtyTracking = false;  // true while programmatically loading settings
     private string? _nodeSortColumn = null;
 
     // Fancy tile view
@@ -281,6 +283,22 @@ public partial class MainWindow : Window
         // Einstellungen laden (VOR RefreshPorts, damit LastComPort bekannt ist)
         LoadSettings();
 
+        // Dirty-Tracking der Einstellungen verdrahten, sobald der Settings-Tab-Content
+        // im Visual Tree ist (TabControl realisiert Tab-Inhalte erst bei Auswahl).
+        bool dirtyWired = false;
+        MainTabs.SelectionChanged += (_, _) =>
+        {
+            if (!dirtyWired && ReferenceEquals(MainTabs.SelectedItem, TabItemSettings))
+            {
+                Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    WireSettingsDirtyTracking();
+                    SetSettingsDirty(false);
+                }), System.Windows.Threading.DispatcherPriority.Loaded);
+                dirtyWired = true;
+            }
+        };
+
         // Telemetry DB initialisieren
         try
         {
@@ -350,6 +368,7 @@ public partial class MainWindow : Window
 
     private void LoadSettings()
     {
+        _suppressDirtyTracking = true;
         try
         {
             var settings = SettingsService.Load();
@@ -536,6 +555,75 @@ public partial class MainWindow : Window
             Services.Logger.WriteLine($"ERROR loading settings: {ex.Message}");
             _showEncryptedMessages = false;
         }
+        finally
+        {
+            _suppressDirtyTracking = false;
+            SetSettingsDirty(false);
+        }
+    }
+
+    // ── Settings "unsaved changes" tracking ────────────────────────────────────
+
+    // Controls that persist themselves immediately (language, map mode) must not
+    // trigger the "unsaved changes" indicator.
+    private static readonly HashSet<string> _dirtyExemptControls = new()
+    {
+        "LanguageComboBox", "MapModeOfflineRadio", "MapModeOnlineOwnRadio",
+        "MapModeOnlineCustomRadio", "MapModeOnlineOsmRadio"
+    };
+
+    /// <summary>Attaches change handlers to every input control in the Settings tab.</summary>
+    private void WireSettingsDirtyTracking()
+    {
+        if (TabItemSettings?.Content is not DependencyObject root) return;
+        foreach (var ctrl in EnumerateVisualTree(root))
+        {
+            switch (ctrl)
+            {
+                case System.Windows.Controls.Primitives.ToggleButton tb   // CheckBox + RadioButton
+                    when !_dirtyExemptControls.Contains(tb.Name):
+                    tb.Checked   += (_, _) => MarkSettingsDirty();
+                    tb.Unchecked += (_, _) => MarkSettingsDirty();
+                    break;
+                case System.Windows.Controls.TextBox txt:
+                    txt.TextChanged += (_, _) => MarkSettingsDirty();
+                    break;
+                case System.Windows.Controls.PasswordBox pw:
+                    pw.PasswordChanged += (_, _) => MarkSettingsDirty();
+                    break;
+                case System.Windows.Controls.ComboBox cb
+                    when !_dirtyExemptControls.Contains(cb.Name):
+                    cb.SelectionChanged += (_, _) => MarkSettingsDirty();
+                    break;
+            }
+        }
+    }
+
+    private static IEnumerable<DependencyObject> EnumerateVisualTree(DependencyObject root)
+    {
+        int count = System.Windows.Media.VisualTreeHelper.GetChildrenCount(root);
+        for (int i = 0; i < count; i++)
+        {
+            var child = System.Windows.Media.VisualTreeHelper.GetChild(root, i);
+            yield return child;
+            foreach (var descendant in EnumerateVisualTree(child))
+                yield return descendant;
+        }
+    }
+
+    private void MarkSettingsDirty()
+    {
+        if (_suppressDirtyTracking) return;
+        SetSettingsDirty(true);
+    }
+
+    private void SetSettingsDirty(bool dirty)
+    {
+        _settingsDirty = dirty;
+        if (SettingsUnsavedIndicator != null)
+            SettingsUnsavedIndicator.Visibility = dirty ? Visibility.Visible : Visibility.Collapsed;
+        if (SaveSettingsButton != null)
+            SaveSettingsButton.FontWeight = dirty ? FontWeights.Bold : FontWeights.Normal;
     }
 
     #region Karte
@@ -2943,6 +3031,7 @@ public partial class MainWindow : Window
             _protocolService.SetDebugDevice(settings.DebugDevice);
             BluetoothConnectionService.SetDebugEnabled(settings.DebugBluetooth);
             UpdateKioskLockButton();
+            SetSettingsDirty(false);
             MessageBox.Show(Loc("StrSettingsSaved"), Loc("StrSettingsSavedTitle"), MessageBoxButton.OK, MessageBoxImage.Information);
         }
         catch (Exception ex)
