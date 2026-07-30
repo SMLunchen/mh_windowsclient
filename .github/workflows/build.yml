@@ -2,16 +2,46 @@ name: Build & Release
 
 on:
   push:
+    branches: [ '**' ]      # Tests auf jedem Branch-Push, nicht nur master
     tags:
       - 'v*'
+  pull_request:
   workflow_dispatch:
-  
+
+# Bei schnellen Folge-Pushes auf denselben Branch den älteren Lauf abbrechen (spart Runner-Minuten)
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: write
-  
+
 jobs:
+  # Runs on every push to master and every PR. Release build depends on this,
+  # so a red test suite blocks the release.
+  test:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore
+        run: dotnet restore MeshhessenClient.sln
+
+      - name: Test
+        run: dotnet test MeshhessenClient.sln -c Release --no-restore --verbosity normal
+
   build:
     runs-on: windows-latest
+    needs: test
+    # Only publish/release on a version tag or a manual run – not on every branch push
+    if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
 
     steps:
       - name: Checkout
