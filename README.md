@@ -4,7 +4,7 @@ Der **Meshhessen Client** ist ein **kostenloser, nativer Windows-Client für Mes
 
 ![Windows](https://img.shields.io/badge/Windows-10%2F11-blue)
 ![.NET](https://img.shields.io/badge/.NET-8.0-purple)
-![Status](https://img.shields.io/badge/Status-v1.5.14-yellow)
+![Status](https://img.shields.io/badge/Status-v1.6.0-yellow)
 ![License](https://img.shields.io/github/license/SMLunchen/mh_windowsclient)
 ![Stars](https://img.shields.io/github/stars/SMLunchen/mh_windowsclient)
 
@@ -458,7 +458,7 @@ Meshhessen Client · Windows-Client für Meshtastic-Geräte · Meshtastic Window
 
  ![Windows](https://img.shields.io/badge/Windows-10%2F11-blue)
  ![.NET](https://img.shields.io/badge/.NET-8.0-purple)
- ![Status](https://img.shields.io/badge/Status-v1.5.13-yellow)
+ ![Status](https://img.shields.io/badge/Status-v1.6.0-yellow)
  ![License](https://img.shields.io/github/license/SMLunchen/mh_windowsclient)
  ![Stars](https://img.shields.io/github/stars/SMLunchen/mh_windowsclient)
 

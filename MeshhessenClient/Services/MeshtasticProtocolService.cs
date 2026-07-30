@@ -94,7 +94,7 @@ public class MeshtasticProtocolService
 
             var packet = fr.Packet;
             // Skip outgoing traceroute requests — the response will arrive via the normal physical path
-            if (packet.Decoded != null && packet.Decoded.WantResponse && packet.Decoded.Portnum == 70)
+            if (packet.Decoded != null && packet.Decoded.WantResponse && (int)packet.Decoded.Portnum == 70)
                 return;
 
             // If the sender didn't fill in 'from', attribute the packet to our own node
@@ -322,7 +322,7 @@ public class MeshtasticProtocolService
             try
             {
                 await Task.Delay(500); // kurz warten bis Gerät bereit
-                var secReq = new AdminMessage { GetConfigRequest = (uint)AdminMessage.Types.ConfigType.SecurityConfig };
+                var secReq = new AdminMessage { GetConfigRequest = (global::Meshtastic.Protobufs.AdminMessage.Types.ConfigType)(uint)AdminMessage.Types.ConfigType.SecurityConfig };
                 await SendAdminMessageAsync(secReq);
                 Logger.WriteLine("SecurityConfig requested for PKI decryption");
 
@@ -1076,7 +1076,7 @@ public class MeshtasticProtocolService
 
     private void RouteDecodedData(MeshPacket packet, Data data)
     {
-        switch (data.Portnum)
+        switch ((int)data.Portnum)
         {
             case 1: // TEXT_MESSAGE_APP
                 HandleTextMessage(packet, data);
@@ -1288,7 +1288,7 @@ public class MeshtasticProtocolService
                 Channel = 0,
                 Decoded = new Data
                 {
-                    Portnum = 70, // TRACEROUTE_APP
+                    Portnum = (PortNum)70, // TRACEROUTE_APP
                     Payload = routeDiscovery.ToByteString(),
                     WantResponse = true,
                 },
@@ -1320,7 +1320,7 @@ public class MeshtasticProtocolService
                 Channel = channel,
                 Decoded = new Data
                 {
-                    Portnum = 1, // TEXT_MESSAGE_APP
+                    Portnum = (PortNum)1, // TEXT_MESSAGE_APP
                     Payload = ByteString.CopyFromUtf8(emoji), // emoji string in payload
                     ReplyId = replyId,
                     Emoji = 1, // fixed32 indicator flag: marks this as a tap-back reaction
@@ -1403,7 +1403,7 @@ public class MeshtasticProtocolService
                 Channel = 0,
                 Decoded = new Data
                 {
-                    Portnum = portnum,
+                    Portnum = (PortNum)portnum,
                     Payload = payload,
                     WantResponse = true,
                     Dest = destinationId,
@@ -1853,7 +1853,7 @@ public class MeshtasticProtocolService
                 Channel = channel,
                 Decoded = new Data
                 {
-                    Portnum = 1, // TEXT_MESSAGE_APP
+                    Portnum = (PortNum)1, // TEXT_MESSAGE_APP
                     Payload = ByteString.CopyFromUtf8(text),
                     ReplyId = replyId
                 },
@@ -1884,7 +1884,7 @@ public class MeshtasticProtocolService
 
         // Request session key via SESSIONKEY_CONFIG (value 8)
         Logger.WriteLine("Requesting session key...");
-        var adminMsg = new AdminMessage { GetConfigRequest = 8 };
+        var adminMsg = new AdminMessage { GetConfigRequest = (global::Meshtastic.Protobufs.AdminMessage.Types.ConfigType)8 };
         await SendAdminMessageAsync(adminMsg);
 
         // Wait for session key response
@@ -2016,7 +2016,7 @@ public class MeshtasticProtocolService
             To = _myNodeId,
             Decoded = new Data
             {
-                Portnum = 6, // ADMIN_APP
+                Portnum = (PortNum)6, // ADMIN_APP
                 Payload = adminPayload,
                 WantResponse = true
             },
@@ -2092,7 +2092,7 @@ public class MeshtasticProtocolService
             To = _myNodeId, // Send to self for local requests
             Decoded = new Data
             {
-                Portnum = 6, // ADMIN_APP
+                Portnum = (PortNum)6, // ADMIN_APP
                 Payload = adminMsg.ToByteString(),
                 WantResponse = true
             },
@@ -2124,13 +2124,13 @@ public class MeshtasticProtocolService
 
     public async Task RequestPositionConfigAsync()
     {
-        var adminMsg = new AdminMessage { GetConfigRequest = 1 }; // POSITION = 1
+        var adminMsg = new AdminMessage { GetConfigRequest = (global::Meshtastic.Protobufs.AdminMessage.Types.ConfigType)1 }; // POSITION = 1
         await SendAdminMessageAsync(adminMsg);
     }
 
     public async Task RequestLoRaConfigAsync()
     {
-        var adminMsg = new AdminMessage { GetConfigRequest = 5 }; // LORA = 5
+        var adminMsg = new AdminMessage { GetConfigRequest = (global::Meshtastic.Protobufs.AdminMessage.Types.ConfigType)5 }; // LORA = 5
         await SendAdminMessageAsync(adminMsg);
     }
 
@@ -2142,67 +2142,67 @@ public class MeshtasticProtocolService
 
     public async Task RequestTelemetryConfigAsync()
     {
-        var adminMsg = new AdminMessage { GetModuleConfigRequest = 5 }; // TELEMETRY = 5
+        var adminMsg = new AdminMessage { GetModuleConfigRequest = (global::Meshtastic.Protobufs.AdminMessage.Types.ModuleConfigType)5 }; // TELEMETRY = 5
         await SendAdminMessageAsync(adminMsg);
     }
 
     public async Task RequestBluetoothConfigAsync()
     {
-        var adminMsg = new AdminMessage { GetConfigRequest = 6 }; // BLUETOOTH = 6
+        var adminMsg = new AdminMessage { GetConfigRequest = (global::Meshtastic.Protobufs.AdminMessage.Types.ConfigType)6 }; // BLUETOOTH = 6
         await SendAdminMessageAsync(adminMsg);
     }
 
     public async Task RequestPowerConfigAsync()
     {
-        var adminMsg = new AdminMessage { GetConfigRequest = 2 }; // POWER = 2
+        var adminMsg = new AdminMessage { GetConfigRequest = (global::Meshtastic.Protobufs.AdminMessage.Types.ConfigType)2 }; // POWER = 2
         await SendAdminMessageAsync(adminMsg);
     }
 
     public async Task RequestNetworkConfigAsync()
     {
-        var adminMsg = new AdminMessage { GetConfigRequest = 3 }; // NETWORK = 3
+        var adminMsg = new AdminMessage { GetConfigRequest = (global::Meshtastic.Protobufs.AdminMessage.Types.ConfigType)3 }; // NETWORK = 3
         await SendAdminMessageAsync(adminMsg);
     }
 
     public async Task RequestDisplayConfigAsync()
     {
-        var adminMsg = new AdminMessage { GetConfigRequest = 4 }; // DISPLAY = 4
+        var adminMsg = new AdminMessage { GetConfigRequest = (global::Meshtastic.Protobufs.AdminMessage.Types.ConfigType)4 }; // DISPLAY = 4
         await SendAdminMessageAsync(adminMsg);
     }
 
     public async Task RequestSerialConfigAsync()
     {
-        var adminMsg = new AdminMessage { GetModuleConfigRequest = 1 }; // SERIAL = 1
+        var adminMsg = new AdminMessage { GetModuleConfigRequest = (global::Meshtastic.Protobufs.AdminMessage.Types.ModuleConfigType)1 }; // SERIAL = 1
         await SendAdminMessageAsync(adminMsg);
     }
 
     public async Task RequestExternalNotificationConfigAsync()
     {
-        var adminMsg = new AdminMessage { GetModuleConfigRequest = 2 }; // EXT_NOTIF = 2
+        var adminMsg = new AdminMessage { GetModuleConfigRequest = (global::Meshtastic.Protobufs.AdminMessage.Types.ModuleConfigType)2 }; // EXT_NOTIF = 2
         await SendAdminMessageAsync(adminMsg);
     }
 
     public async Task RequestStoreForwardConfigAsync()
     {
-        var adminMsg = new AdminMessage { GetModuleConfigRequest = 3 }; // STORE_FORWARD = 3
+        var adminMsg = new AdminMessage { GetModuleConfigRequest = (global::Meshtastic.Protobufs.AdminMessage.Types.ModuleConfigType)3 }; // STORE_FORWARD = 3
         await SendAdminMessageAsync(adminMsg);
     }
 
     public async Task RequestRangeTestConfigAsync()
     {
-        var adminMsg = new AdminMessage { GetModuleConfigRequest = 4 }; // RANGE_TEST = 4
+        var adminMsg = new AdminMessage { GetModuleConfigRequest = (global::Meshtastic.Protobufs.AdminMessage.Types.ModuleConfigType)4 }; // RANGE_TEST = 4
         await SendAdminMessageAsync(adminMsg);
     }
 
     public async Task RequestCannedMessageConfigAsync()
     {
-        var adminMsg = new AdminMessage { GetModuleConfigRequest = 6 }; // CANNED_MSG = 6
+        var adminMsg = new AdminMessage { GetModuleConfigRequest = (global::Meshtastic.Protobufs.AdminMessage.Types.ModuleConfigType)6 }; // CANNED_MSG = 6
         await SendAdminMessageAsync(adminMsg);
     }
 
     public async Task RequestNeighborInfoConfigAsync()
     {
-        var adminMsg = new AdminMessage { GetModuleConfigRequest = 9 }; // NEIGHBOR_INFO = 9
+        var adminMsg = new AdminMessage { GetModuleConfigRequest = (global::Meshtastic.Protobufs.AdminMessage.Types.ModuleConfigType)9 }; // NEIGHBOR_INFO = 9
         await SendAdminMessageAsync(adminMsg);
     }
 
@@ -2239,7 +2239,7 @@ public class MeshtasticProtocolService
             Altitude   = altitudeM,
             Time       = (uint)DateTimeOffset.UtcNow.ToUnixTimeSeconds()
         };
-        var adminMsg = new AdminMessage { SetPosition = position };
+        var adminMsg = new AdminMessage { SetFixedPosition = position };
         await SendAdminMessageAsync(adminMsg);
     }
 
@@ -2294,7 +2294,7 @@ public class MeshtasticProtocolService
 
     public async Task RequestSecurityConfigAsync()
     {
-        var adminMsg = new AdminMessage { GetConfigRequest = (uint)AdminMessage.Types.ConfigType.SecurityConfig };
+        var adminMsg = new AdminMessage { GetConfigRequest = (global::Meshtastic.Protobufs.AdminMessage.Types.ConfigType)(uint)AdminMessage.Types.ConfigType.SecurityConfig };
         await SendAdminMessageAsync(adminMsg);
     }
 
@@ -2430,7 +2430,7 @@ public class MeshtasticProtocolService
         {
             From = _myNodeId,
             To = destNodeId,
-            Decoded = new Data { Portnum = 6, Payload = reqPayload, WantResponse = true },
+            Decoded = new Data { Portnum = (PortNum)6, Payload = reqPayload, WantResponse = true },
             Id = (uint)Random.Shared.Next()
         };
         await SendToRadioAsync(new ToRadio { Packet = meshPacket });
@@ -2498,7 +2498,7 @@ public class MeshtasticProtocolService
         {
             From = _myNodeId,
             To = destNodeId,
-            Decoded = new Data { Portnum = 6, Payload = payload, WantResponse = false },
+            Decoded = new Data { Portnum = (PortNum)6, Payload = payload, WantResponse = false },
             Id = (uint)Random.Shared.Next()
         };
         await SendToRadioAsync(new ToRadio { Packet = meshPacket });
@@ -2946,7 +2946,7 @@ public class MeshtasticProtocolService
                 To   = 0xFFFFFFFF, // broadcast
                 Decoded = new Data
                 {
-                    Portnum = 8, // WAYPOINT_APP
+                    Portnum = (PortNum)8, // WAYPOINT_APP
                     Payload = waypointProto.ToByteString(),
                 },
                 Id       = (uint)Random.Shared.Next(),
@@ -2982,7 +2982,7 @@ public class MeshtasticProtocolService
                 To   = _myNodeId,
                 Decoded = new Data
                 {
-                    Portnum = 3, // POSITION_APP
+                    Portnum = (PortNum)3, // POSITION_APP
                     Payload = position.ToByteString(),
                 },
                 Id = (uint)Random.Shared.Next(),

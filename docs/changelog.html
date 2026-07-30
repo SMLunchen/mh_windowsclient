@@ -172,10 +172,47 @@
 <div class="section active" id="de">
 <main>
 
-  <!-- ── v1.5.14 ── -->
+  <!-- ── v1.6.0 ── -->
   <div class="version-entry current">
     <div class="version-header">
-      <span class="version-tag tag-latest">v1.5.14</span>
+      <span class="version-tag tag-latest">v1.6.0</span>
+      <span class="version-date">2026-07-30</span>
+      Offizielle Meshtastic-Protobufs, Tests &amp; CI
+    </div>
+    <p class="version-desc">Umstieg von den selbstgebauten auf die offiziellen Meshtastic-Protokolldefinitionen (als git-Submodule eingebunden) – beseitigt an der Wurzel die wiederkehrende Fehlerklasse falscher Feldnummern und hält den Client im Gleichschritt mit der Firmware. Dazu ein neues automatisiertes Testprojekt und CI, die jeden Push prüfen.</p>
+
+    <div class="cl-section added">
+      <h3>🔧 Geändert (intern)</h3>
+
+      <div class="cl-group">
+        <div class="cl-group-title">📦 Offizielle Meshtastic-Protobufs</div>
+        <ul class="cl-list">
+          <li>Offizielle Protokolldefinitionen als git-Submodule (auf Version gepinnt); <code>portnum</code> ist jetzt korrekt ein Enum, Config-Typen wie im Original verschachtelt</li>
+          <li>Empfangs-Decoding nachweislich unverändert (identische Feldnummern), abgesichert durch neue Decode- und Config-Write-Tests</li>
+        </ul>
+      </div>
+
+      <div class="cl-group">
+        <div class="cl-group-title">🧪 Tests &amp; CI</div>
+        <ul class="cl-list">
+          <li>Neues Testprojekt (35 Tests): Protokoll-Decode, Gerätekonfig-Write über den Draht, Settings-Round-Trip, Tile-Mathematik, Overlay-/Cache-Logik</li>
+          <li>CI führt die Tests bei jedem Push/PR aus; ein Release wird nur bei grünen Tests gebaut</li>
+        </ul>
+      </div>
+
+      <div class="cl-group">
+        <div class="cl-group-title">🧱 Aufräumen</div>
+        <ul class="cl-list">
+          <li><code>MainWindow</code> in Teildateien aufgeteilt; <code>AppSettings</code> auf init-Properties umgestellt (behebt einen latenten Bug beim Speichern der Sprache)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── v1.5.14 ── -->
+  <div class="version-entry">
+    <div class="version-header">
+      <span class="version-tag tag-release">v1.5.14</span>
       <span class="version-date">2026-07-15</span>
       Vektorkarten (Vorschau) &amp; Feuerwehr-Layer
     </div>
@@ -889,10 +926,47 @@
 <div class="section" id="en">
 <main>
 
-  <!-- ── v1.5.14 ── -->
+  <!-- ── v1.6.0 ── -->
   <div class="version-entry current">
     <div class="version-header">
-      <span class="version-tag tag-latest">v1.5.14</span>
+      <span class="version-tag tag-latest">v1.6.0</span>
+      <span class="version-date">2026-07-30</span>
+      Official Meshtastic protobufs, tests &amp; CI
+    </div>
+    <p class="version-desc">Switched from the hand-rolled to the official Meshtastic protocol definitions (added as a git submodule) – removes the recurring class of wrong-field-number bugs at the root and keeps the client in lockstep with the firmware. Plus a new automated test project and CI that checks every push.</p>
+
+    <div class="cl-section added">
+      <h3>🔧 Changed (internal)</h3>
+
+      <div class="cl-group">
+        <div class="cl-group-title">📦 Official Meshtastic protobufs</div>
+        <ul class="cl-list">
+          <li>Official protocol definitions as a version-pinned git submodule; <code>portnum</code> is now correctly an enum, config types nested as in the original</li>
+          <li>Receive decoding provably unchanged (identical field numbers), guarded by new decode and config-write tests</li>
+        </ul>
+      </div>
+
+      <div class="cl-group">
+        <div class="cl-group-title">🧪 Tests &amp; CI</div>
+        <ul class="cl-list">
+          <li>New test project (35 tests): protocol decode, device-config write on the wire, settings round-trip, tile math, overlay/cache logic</li>
+          <li>CI runs the tests on every push/PR; a release is only built when tests are green</li>
+        </ul>
+      </div>
+
+      <div class="cl-group">
+        <div class="cl-group-title">🧱 Cleanup</div>
+        <ul class="cl-list">
+          <li><code>MainWindow</code> split into partial files; <code>AppSettings</code> moved to init properties (fixes a latent bug when saving the language)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── v1.5.14 ── -->
+  <div class="version-entry">
+    <div class="version-header">
+      <span class="version-tag tag-release">v1.5.14</span>
       <span class="version-date">2026-07-15</span>
       Vector maps (preview) &amp; fire service layer
     </div>

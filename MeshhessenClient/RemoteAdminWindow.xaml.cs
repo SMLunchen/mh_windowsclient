@@ -1,4 +1,4 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using Google.Protobuf;
@@ -130,7 +130,7 @@ public partial class RemoteAdminWindow : Window
         // Step 2: Get session key
         await _svc.SendRemoteAdminRequestAsync(
             _targetNode.NodeId,
-            new AdminMessage { GetConfigRequest = 8 }, // 8 = SESSIONKEY_CONFIG
+            new AdminMessage { GetConfigRequest = (global::Meshtastic.Protobufs.AdminMessage.Types.ConfigType)8 }, // 8 = SESSIONKEY_CONFIG
             _timeoutMs);
 
         // Enable tabs so user can navigate
@@ -299,7 +299,7 @@ public partial class RemoteAdminWindow : Window
     private async Task LoadPositionSectionAsync()
     {
         var resp = await _svc.SendRemoteAdminRequestAsync(
-            _targetNode.NodeId, new AdminMessage { GetConfigRequest = 1 }, _timeoutMs);
+            _targetNode.NodeId, new AdminMessage { GetConfigRequest = (global::Meshtastic.Protobufs.AdminMessage.Types.ConfigType)1 }, _timeoutMs);
         if (resp?.PayloadVariantCase == AdminMessage.PayloadVariantOneofCase.GetConfigResponse &&
             resp.GetConfigResponse.PayloadVariantCase == Config.PayloadVariantOneofCase.Position)
         {
@@ -311,7 +311,7 @@ public partial class RemoteAdminWindow : Window
     private async Task LoadLoraSectionAsync()
     {
         var resp = await _svc.SendRemoteAdminRequestAsync(
-            _targetNode.NodeId, new AdminMessage { GetConfigRequest = 5 }, _timeoutMs);
+            _targetNode.NodeId, new AdminMessage { GetConfigRequest = (global::Meshtastic.Protobufs.AdminMessage.Types.ConfigType)5 }, _timeoutMs);
         if (resp?.PayloadVariantCase == AdminMessage.PayloadVariantOneofCase.GetConfigResponse &&
             resp.GetConfigResponse.PayloadVariantCase == Config.PayloadVariantOneofCase.Lora)
         {
@@ -323,7 +323,7 @@ public partial class RemoteAdminWindow : Window
     private async Task LoadBluetoothSectionAsync()
     {
         var resp = await _svc.SendRemoteAdminRequestAsync(
-            _targetNode.NodeId, new AdminMessage { GetConfigRequest = 6 }, _timeoutMs);
+            _targetNode.NodeId, new AdminMessage { GetConfigRequest = (global::Meshtastic.Protobufs.AdminMessage.Types.ConfigType)6 }, _timeoutMs);
         if (resp?.PayloadVariantCase == AdminMessage.PayloadVariantOneofCase.GetConfigResponse &&
             resp.GetConfigResponse.PayloadVariantCase == Config.PayloadVariantOneofCase.Bluetooth)
         {
@@ -335,7 +335,7 @@ public partial class RemoteAdminWindow : Window
     private async Task LoadNetworkSectionAsync()
     {
         var resp = await _svc.SendRemoteAdminRequestAsync(
-            _targetNode.NodeId, new AdminMessage { GetConfigRequest = 3 }, _timeoutMs);
+            _targetNode.NodeId, new AdminMessage { GetConfigRequest = (global::Meshtastic.Protobufs.AdminMessage.Types.ConfigType)3 }, _timeoutMs);
         if (resp?.PayloadVariantCase == AdminMessage.PayloadVariantOneofCase.GetConfigResponse &&
             resp.GetConfigResponse.PayloadVariantCase == Config.PayloadVariantOneofCase.Network)
         {
@@ -347,7 +347,7 @@ public partial class RemoteAdminWindow : Window
     private async Task LoadDisplaySectionAsync()
     {
         var resp = await _svc.SendRemoteAdminRequestAsync(
-            _targetNode.NodeId, new AdminMessage { GetConfigRequest = 4 }, _timeoutMs);
+            _targetNode.NodeId, new AdminMessage { GetConfigRequest = (global::Meshtastic.Protobufs.AdminMessage.Types.ConfigType)4 }, _timeoutMs);
         if (resp?.PayloadVariantCase == AdminMessage.PayloadVariantOneofCase.GetConfigResponse &&
             resp.GetConfigResponse.PayloadVariantCase == Config.PayloadVariantOneofCase.Display)
         {
@@ -360,7 +360,7 @@ public partial class RemoteAdminWindow : Window
     {
         var resp = await _svc.SendRemoteAdminRequestAsync(
             _targetNode.NodeId,
-            new AdminMessage { GetConfigRequest = (uint)AdminMessage.Types.ConfigType.SecurityConfig },
+            new AdminMessage { GetConfigRequest = (global::Meshtastic.Protobufs.AdminMessage.Types.ConfigType)(uint)AdminMessage.Types.ConfigType.SecurityConfig },
             _timeoutMs);
         if (resp?.PayloadVariantCase == AdminMessage.PayloadVariantOneofCase.GetConfigResponse &&
             resp.GetConfigResponse.PayloadVariantCase == Config.PayloadVariantOneofCase.Security)
@@ -646,7 +646,7 @@ public partial class RemoteAdminWindow : Window
                     int.TryParse(PosFixedAlt.Text, out var alt))
                 {
                     await _svc.SendRemoteAdminWriteAsync(_targetNode.NodeId,
-                        new AdminMessage { SetPosition = new Position
+                        new AdminMessage { SetFixedPosition = new Position
                         {
                             LatitudeI  = (int)(lat * 1e7),
                             LongitudeI = (int)(lon * 1e7),
@@ -675,7 +675,7 @@ public partial class RemoteAdminWindow : Window
             {
                 var b = _loadedBt.Clone();
                 b.Enabled = BtEnabled.IsChecked == true;
-                b.Mode    = (uint)(GetComboTag(BtModeCombo) ?? 0);
+                b.Mode    = (global::Meshtastic.Protobufs.Config.Types.BluetoothConfig.Types.PairingMode)(uint)(GetComboTag(BtModeCombo) ?? 0);
                 if (uint.TryParse(BtPin.Text, out var pin)) b.FixedPin = pin;
                 await _svc.SendRemoteAdminWriteAsync(_targetNode.NodeId,
                     new AdminMessage { SetConfig = new Config { Bluetooth = b } });
@@ -702,8 +702,8 @@ public partial class RemoteAdminWindow : Window
                 var d = _loadedDisplay.Clone();
                 if (uint.TryParse(DisplayTimeout.Text, out var dto)) d.ScreenOnSecs = dto;
                 d.FlipScreen = DisplayFlipScreen.IsChecked == true;
-                d.Units    = (uint)(GetComboTag(DisplayUnitsCombo) ?? 0);
-                d.Oled     = (uint)(GetComboTag(OledTypeCombo) ?? 0);
+                d.Units    = (global::Meshtastic.Protobufs.Config.Types.DisplayConfig.Types.DisplayUnits)(uint)(GetComboTag(DisplayUnitsCombo) ?? 0);
+                d.Oled     = (global::Meshtastic.Protobufs.Config.Types.DisplayConfig.Types.OledType)(uint)(GetComboTag(OledTypeCombo) ?? 0);
                 await _svc.SendRemoteAdminWriteAsync(_targetNode.NodeId,
                     new AdminMessage { SetConfig = new Config { Display = d } });
                 await Task.Delay(200);

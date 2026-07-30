@@ -1,4 +1,4 @@
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using Google.Protobuf;
@@ -527,7 +527,7 @@ public partial class NodeConfigWindow : Window
             BtEnabledCheckBox.IsChecked = config.Enabled;
             SelectComboBoxByTag(BtModeComboBox, (int)config.Mode);
             BtFixedPinTextBox.Text      = config.FixedPin > 0 ? config.FixedPin.ToString() : string.Empty;
-            BtFixedPinTextBox.IsEnabled = config.Mode == 1;
+            BtFixedPinTextBox.IsEnabled = (int)config.Mode == 1;
             MarkReceived("bluetooth");
         });
     }
@@ -987,9 +987,9 @@ public partial class NodeConfigWindow : Window
             if (_loadedLora != null)
             {
                 var newLora = _loadedLora.Clone();
-                newLora.Region              = (Meshtastic.Protobufs.Region)GetComboBoxTag(LoraRegionComboBox);
+                newLora.Region              = (Region)GetComboBoxTag(LoraRegionComboBox);
                 newLora.UsePreset           = LoraUsePresetCheckBox.IsChecked == true;
-                newLora.ModemPreset         = (Meshtastic.Protobufs.ModemPreset)GetComboBoxTag(LoraPresetComboBox);
+                newLora.ModemPreset         = (ModemPreset)GetComboBoxTag(LoraPresetComboBox);
                 newLora.HopLimit            = uint.TryParse(HopLimitTextBox.Text, out var hl) ? hl : 3;
                 newLora.TxEnabled           = TxEnabledCheckBox.IsChecked == true;
                 newLora.TxPower             = int.TryParse(TxPowerTextBox.Text, out var tp) ? tp : 0;
@@ -1062,7 +1062,7 @@ public partial class NodeConfigWindow : Window
                 newNetwork.WifiPsk      = WifiPskBox.Text.Trim();
                 newNetwork.NtpServer    = NtpServerTextBox.Text.Trim();
                 newNetwork.EthEnabled   = EthEnabledCheckBox.IsChecked == true;
-                newNetwork.AddressMode  = (uint)GetComboBoxTag(AddressModeComboBox);
+                newNetwork.AddressMode  = (global::Meshtastic.Protobufs.Config.Types.NetworkConfig.Types.AddressMode)(uint)GetComboBoxTag(AddressModeComboBox);
                 newNetwork.RsyslogServer = RsyslogServerTextBox.Text.Trim();
                 await _protocolService.SetNetworkConfigAsync(newNetwork);
                 await Delay();
@@ -1079,10 +1079,10 @@ public partial class NodeConfigWindow : Window
                 newDisplay.HeadingBold            = HeadingBoldCheckBox.IsChecked == true;
                 newDisplay.WakeOnTapOrMotion      = WakeOnTapCheckBox.IsChecked == true;
                 newDisplay.Use12HClock            = Use12hClockCheckBox.IsChecked == true;
-                newDisplay.Units                  = (uint)GetComboBoxTag(DisplayUnitsComboBox);
-                newDisplay.Displaymode            = (uint)GetComboBoxTag(DisplayModeComboBox);
-                newDisplay.Oled                   = (uint)GetComboBoxTag(OledTypeComboBox);
-                newDisplay.CompassOrientation     = (uint)GetComboBoxTag(CompassOrientationComboBox);
+                newDisplay.Units                  = (global::Meshtastic.Protobufs.Config.Types.DisplayConfig.Types.DisplayUnits)(uint)GetComboBoxTag(DisplayUnitsComboBox);
+                newDisplay.Displaymode            = (global::Meshtastic.Protobufs.Config.Types.DisplayConfig.Types.DisplayMode)(uint)GetComboBoxTag(DisplayModeComboBox);
+                newDisplay.Oled                   = (global::Meshtastic.Protobufs.Config.Types.DisplayConfig.Types.OledType)(uint)GetComboBoxTag(OledTypeComboBox);
+                newDisplay.CompassOrientation     = (global::Meshtastic.Protobufs.Config.Types.DisplayConfig.Types.CompassOrientation)(uint)GetComboBoxTag(CompassOrientationComboBox);
                 await _protocolService.SetDisplayConfigAsync(newDisplay);
                 await Delay();
             }
@@ -1092,7 +1092,7 @@ public partial class NodeConfigWindow : Window
             {
                 var newBluetooth = _loadedBluetooth.Clone();
                 newBluetooth.Enabled  = BtEnabledCheckBox.IsChecked == true;
-                newBluetooth.Mode     = (uint)GetComboBoxTag(BtModeComboBox);
+                newBluetooth.Mode     = (global::Meshtastic.Protobufs.Config.Types.BluetoothConfig.Types.PairingMode)(uint)GetComboBoxTag(BtModeComboBox);
                 newBluetooth.FixedPin = uint.TryParse(BtFixedPinTextBox.Text.Trim(), out var pin) ? pin : 0;
                 await _protocolService.SetBluetoothConfigAsync(newBluetooth);
                 await Delay();
@@ -1201,9 +1201,9 @@ public partial class NodeConfigWindow : Window
                 newSer.Echo     = SerEchoCheckBox.IsChecked == true;
                 newSer.Rxd      = uint.TryParse(SerRxdTextBox.Text, out var srx) ? srx : 0;
                 newSer.Txd      = uint.TryParse(SerTxdTextBox.Text, out var stx) ? stx : 0;
-                newSer.Baud     = (uint)GetComboBoxTag(SerBaudComboBox);
+                newSer.Baud     = (global::Meshtastic.Protobufs.ModuleConfig.Types.SerialConfig.Types.Serial_Baud)(uint)GetComboBoxTag(SerBaudComboBox);
                 newSer.Timeout  = uint.TryParse(SerTimeoutTextBox.Text, out var sto) ? sto : 0;
-                newSer.Mode     = (uint)GetComboBoxTag(SerModeComboBox);
+                newSer.Mode     = (global::Meshtastic.Protobufs.ModuleConfig.Types.SerialConfig.Types.Serial_Mode)(uint)GetComboBoxTag(SerModeComboBox);
                 await _protocolService.SetSerialConfigAsync(newSer);
                 await Delay();
             }

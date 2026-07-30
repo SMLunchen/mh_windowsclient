@@ -20,8 +20,6 @@ using BruTile;
 using BruTile.Predefined;
 using NetTopologySuite.Geometries;
 using Mapsui.Nts;
-using LoRaConfig = Meshtastic.Protobufs.LoRaConfig;
-using MQTTConfig = Meshtastic.Protobufs.MQTTConfig;
 
 namespace MeshhessenClient;
 
@@ -78,7 +76,7 @@ public partial class MainWindow : Window
     private bool _nodeFilterHideMqtt        = false;
     private bool _nodeFilterOnlyFavorites   = false;
     private bool _nodeSortAscending = true;
-    private Meshtastic.Protobufs.LoRaConfig? _currentLoRaConfig;
+    private LoRaConfig? _currentLoRaConfig;
 
     // Karte
     private Mapsui.Map? _map;
@@ -1287,7 +1285,7 @@ public partial class MainWindow : Window
             // LoRa-Check: Mesh-Hessen benötigt SHORT_SLOW, EU_868, Hop 7
             if (_currentLoRaConfig != null)
             {
-                bool needsPreset = _currentLoRaConfig.ModemPreset != Meshtastic.Protobufs.ModemPreset.ShortSlow;
+                bool needsPreset = _currentLoRaConfig.ModemPreset != ModemPreset.ShortSlow;
                 bool needsRegion = (int)_currentLoRaConfig.Region == 0; // Unset = enum value 0
                 bool needsHop   = _currentLoRaConfig.HopLimit != 7;
 
@@ -1312,8 +1310,8 @@ public partial class MainWindow : Window
                     if (result == MessageBoxResult.Yes)
                     {
                         var newLora = _currentLoRaConfig.Clone();
-                        if (needsPreset) { newLora.ModemPreset = Meshtastic.Protobufs.ModemPreset.ShortSlow; newLora.UsePreset = true; }
-                        if (needsRegion) { newLora.Region = Meshtastic.Protobufs.Region.Eu868; }
+                        if (needsPreset) { newLora.ModemPreset = ModemPreset.ShortSlow; newLora.UsePreset = true; }
+                        if (needsRegion) { newLora.Region = Region.Eu868; }
                         if (needsHop)    { newLora.HopLimit = 7; }
                         await _protocolService.SetLoRaConfigAsync(newLora);
                         Services.Logger.WriteLine("LoRa config updated for Mesh-Hessen (preset/region/hop)");

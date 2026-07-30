@@ -23,8 +23,6 @@ using BruTile;
 using BruTile.Predefined;
 using NetTopologySuite.Geometries;
 using Mapsui.Nts;
-using LoRaConfig = Meshtastic.Protobufs.LoRaConfig;
-using MQTTConfig = Meshtastic.Protobufs.MQTTConfig;
 
 namespace MeshhessenClient;
 

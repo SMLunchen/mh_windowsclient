@@ -51,7 +51,7 @@ public class ProtocolDecodeTests
             RxSnr = snr,
             Decoded = new Data
             {
-                Portnum = (uint)PortNum.TextMessageApp,   // app proto types portnum as uint, not the PortNum enum
+                Portnum = PortNum.TextMessageApp,   // official proto: portnum is the PortNum enum
                 Payload = ByteString.CopyFromUtf8(text),
             }
         }
@@ -107,7 +107,7 @@ public class ProtocolDecodeTests
                 Id = 0x99,
                 Decoded = new Data
                 {
-                    Portnum = (uint)PortNum.TextMessageApp,   // app proto types portnum as uint, not the PortNum enum
+                    Portnum = PortNum.TextMessageApp,   // official proto: portnum is the PortNum enum
                     Emoji = 1,                 // reaction flag
                     ReplyId = 0x0000CAFE,
                     Payload = ByteString.CopyFromUtf8("👍"),

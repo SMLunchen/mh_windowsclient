@@ -7,6 +7,24 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
 
+## [1.6.0] - 2026-07-30
+
+### 🔧 Geändert (intern)
+
+#### 📦 Offizielle Meshtastic-Protobufs statt selbstgebauter
+- **Umstieg von den handgeschriebenen Proto-Dateien auf die offiziellen Meshtastic-Protobufs**, eingebunden als **git-Submodule** (`protobufs/`, gepinnt auf `v2.7.26-140-g6ceceae`). Beseitigt die wiederkehrende Fehlerklasse falscher Feldnummern/Typen an der Wurzel und hält uns im Gleichschritt mit der Firmware; Version wird über den Submodule-Commit festgehalten und bewusst gebumpt.
+- `Data.portnum` ist jetzt korrekt das `PortNum`-Enum (war `uint32`); Config-/ModuleConfig-Untertypen sind wie im Original verschachtelt (`Config.Types.LoRaConfig` usw.). Aufrufseiten bleiben über globale Alias-Usings (`GlobalUsings.cs`) weitgehend unverändert.
+- Absicherung durch die neuen Protokoll-Decode-Tests (Text/Reaktion/NodeInfo/Framing) + CI, die jetzt gegen die offiziellen Protos laufen.
+
+#### 🧪 Tests & CI
+- **Neues Testprojekt `MeshhessenClient.Tests`** (xUnit, 35 Tests): Protokoll-Decode über einen Fake-Transport, **Gerätekonfig-Write über den Draht** (LoRa-Config serialisieren → entframen → zurückparsen, prüft die Enum-Werte), Settings-Round-Trip, Tile-Mathematik, Overlay-Registry, Vektor-Cache-Pfade, AppSettings-Defaults.
+- **CI führt Tests bei jedem Push/PR aus**; Release-Build hängt per `needs: test` daran (kein Release ohne grüne Tests).
+
+#### 🧱 Aufräumen
+- `MainWindow` in partial classes aufgeteilt (Karte, Kiosk, NodeList, NodeCommands); `AppSettings` auf init-Properties umgestellt (behebt u. a. einen latenten „Speichern während des Ladens"-Bug bei der Sprache).
+
+---
+
 ## [1.5.14] - 2026-07-15
 
 ### ✨ Hinzugefügt
