@@ -2123,7 +2123,9 @@ public partial class MainWindow : Window
         // (safe no-op if already unsubscribed)
         try { _protocolService.RawFrameReceived -= OnVnRawFrame; } catch { }
 
-        _virtualNodeService = new Services.VirtualNodeService(_connectionService!)
+        _virtualNodeService = new Services.VirtualNodeService(
+            _connectionService!,
+            () => _protocolService?.GetVirtualNodeSnapshot())
         {
             Port = _currentSettings.VirtualNodePort,
             // Kiosk lock enforces admin blocking regardless of the VNode setting
@@ -2152,7 +2154,16 @@ public partial class MainWindow : Window
             try
             {
                 await _virtualNodeService!.StartAsync();
-                Dispatcher.BeginInvoke(RefreshVirtualNodeStatus);
+                Dispatcher.BeginInvoke(() =>
+                {
+                    RefreshVirtualNodeStatus();
+                    // If the device config snapshot isn't captured yet, a connecting
+                    // app would receive an empty node list. Say so plainly and point
+                    // at the remedy (reconnect once the device has initialised).
+                    var snap = _protocolService?.GetVirtualNodeSnapshot();
+                    if (snap is not { IsReady: true })
+                        UpdateStatusBar(Loc("StrVnSnapshotMissing"));
+                });
             }
             catch (Exception ex)
             {

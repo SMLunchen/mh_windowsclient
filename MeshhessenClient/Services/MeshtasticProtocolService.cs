@@ -30,6 +30,21 @@ public class MeshtasticProtocolService
     private readonly List<Channel> _tempChannels = new();
     private bool _configComplete = false;
     private LoRaConfig? _currentLoRaConfig;
+
+    // --- Virtual Node config snapshot -------------------------------------
+    // Transport-agnostic: recorded for EVERY parsed FromRadio (serial, BLE and
+    // TCP), during init AND on later live updates, then retained for the whole
+    // connection. The Virtual Node replays this to a TCP client that connects at
+    // ANY time — including long after init, or when the VN is enabled late —
+    // instead of depending on catching the one-time init frame stream live.
+    private readonly object _snapLock = new();
+    private byte[]? _snapMyInfo;
+    private byte[]? _snapMetadata;
+    private readonly Dictionary<int, byte[]> _snapChannels = new();       // channel index → framed FromRadio
+    private readonly Dictionary<int, byte[]> _snapConfigs = new();        // Config.PayloadVariantCase → frame
+    private readonly Dictionary<int, byte[]> _snapModuleConfigs = new();  // ModuleConfig.PayloadVariantCase → frame
+    private readonly Dictionary<uint, byte[]> _snapNodes = new();         // nodeNum → frame
+    private bool _snapConfigComplete;
     private bool _isInitializing = false;
     private bool _isDisconnecting = false; // Flag für sauberes Beenden
     private readonly object _dataLock = new(); // Lock für Thread-Safety
@@ -162,6 +177,18 @@ public class MeshtasticProtocolService
             _sessionPasskey = Array.Empty<byte>();
             _pkiDecrypt.ClearPrivateKey();
             Logger.WriteLine("Cleared all data from previous session");
+        }
+
+        // Reset the Virtual Node snapshot for the new device/session
+        lock (_snapLock)
+        {
+            _snapMyInfo = null;
+            _snapMetadata = null;
+            _snapChannels.Clear();
+            _snapConfigs.Clear();
+            _snapModuleConfigs.Clear();
+            _snapNodes.Clear();
+            _snapConfigComplete = false;
         }
 
         // Clear receive buffer + RX diagnostics
@@ -521,6 +548,12 @@ public class MeshtasticProtocolService
                 if (data.Length > 0)
                 {
                     ProcessPacket(data);
+
+                    // BLE has no framing layer, so serial/TCP's RawFrameReceived
+                    // never fired here — frame the raw packet and fire it too, so
+                    // the Virtual Node's live-broadcast path works over BLE as well.
+                    if (RawFrameReceived != null)
+                        RawFrameReceived.Invoke(this, FrameFromRadioPayload(data));
                 }
             }
             else
@@ -867,11 +900,150 @@ public class MeshtasticProtocolService
             _lastPacketTime = DateTime.Now;
             PacketCountChanged?.Invoke(this, _packetCount);
 
+            // Record into the transport-agnostic Virtual Node snapshot before
+            // handling, so BLE/serial/TCP all populate it identically.
+            RecordVirtualNodeSnapshot(fromRadio, packet);
+
             HandleFromRadio(fromRadio);
         }
         catch (Exception ex)
         {
             Logger.WriteLine($"Error parsing FromRadio: {ex.Message}");
+        }
+    }
+
+    // Frame a raw FromRadio payload with the 0x94 0xC3 + length header used on
+    // the wire (serial/TCP framing), so the Virtual Node can replay it verbatim.
+    private static byte[] FrameFromRadioPayload(byte[] payload)
+    {
+        var frame = new byte[4 + payload.Length];
+        frame[0] = PACKET_START_BYTE_1;
+        frame[1] = PACKET_START_BYTE_2;
+        frame[2] = (byte)(payload.Length >> 8);
+        frame[3] = (byte)(payload.Length & 0xFF);
+        Array.Copy(payload, 0, frame, 4, payload.Length);
+        return frame;
+    }
+
+    // Record a parsed FromRadio into the Virtual Node snapshot. Called for every
+    // FromRadio regardless of transport; keeps the last frame per config category
+    // and per node so a late-connecting VN client still gets the full state.
+    private void RecordVirtualNodeSnapshot(FromRadio fr, byte[] payload)
+    {
+        lock (_snapLock)
+        {
+            switch (fr.PayloadVariantCase)
+            {
+                case FromRadio.PayloadVariantOneofCase.MyInfo:
+                    _snapMyInfo = FrameFromRadioPayload(payload);
+                    break;
+                case FromRadio.PayloadVariantOneofCase.Metadata:
+                    _snapMetadata = FrameFromRadioPayload(payload);
+                    break;
+                case FromRadio.PayloadVariantOneofCase.Channel:
+                    _snapChannels[fr.Channel.Index] = FrameFromRadioPayload(payload);
+                    break;
+                case FromRadio.PayloadVariantOneofCase.Config:
+                    _snapConfigs[(int)fr.Config.PayloadVariantCase] = FrameFromRadioPayload(payload);
+                    break;
+                case FromRadio.PayloadVariantOneofCase.ModuleConfig:
+                    _snapModuleConfigs[(int)fr.ModuleConfig.PayloadVariantCase] = FrameFromRadioPayload(payload);
+                    break;
+                case FromRadio.PayloadVariantOneofCase.NodeInfo:
+                    _snapNodes[fr.NodeInfo.Num] = FrameFromRadioPayload(payload);
+                    break;
+                case FromRadio.PayloadVariantOneofCase.ConfigCompleteId:
+                    _snapConfigComplete = true;
+                    break;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Snapshot of the physical device's config/node set, framed and ready for
+    /// Virtual Node replay. Transport-agnostic (serial/BLE/TCP) and retained for
+    /// the whole connection, so a Virtual Node client connecting at any time gets
+    /// the complete state. Pieces never received are null/empty; <c>IsReady</c> is
+    /// true once the device has signalled config-complete at least once.
+    /// </summary>
+    public VirtualNodeSnapshot GetVirtualNodeSnapshot()
+    {
+        byte[]? myInfo, metadata;
+        List<byte[]> configs, moduleConfigs, channels, nodes;
+        bool ready, hasOwnNode;
+        uint ownNum;
+
+        lock (_snapLock)
+        {
+            myInfo        = _snapMyInfo;
+            metadata      = _snapMetadata;
+            configs       = _snapConfigs.Values.ToList();
+            moduleConfigs = _snapModuleConfigs.Values.ToList();
+            channels      = _snapChannels.OrderBy(kv => kv.Key).Select(kv => kv.Value).ToList();
+            nodes         = _snapNodes.Values.ToList();
+            ready         = _snapConfigComplete;
+            ownNum        = _myNodeId;
+            hasOwnNode    = ownNum != 0 && _snapNodes.ContainsKey(ownNum);
+        }
+
+        // Defensive: if the device never sent a NodeInfo for its OWN node, synthesize
+        // a minimal one from my_info + our device info. Some firmwares / stream
+        // orderings omit it, and a Meshtastic client (Android in particular) needs its
+        // own node present in the DB to show the node list and enable sending. Harmless
+        // when present — this only adds the node when it is genuinely missing, and it
+        // self-heals once the real NodeInfo arrives.
+        if (ownNum != 0 && !hasOwnNode)
+        {
+            var frame = BuildOwnNodeFrame(ownNum);
+            if (frame != null) nodes.Add(frame);
+        }
+
+        return new VirtualNodeSnapshot
+        {
+            MyInfo        = myInfo,
+            Metadata      = metadata,
+            Configs       = configs,
+            ModuleConfigs = moduleConfigs,
+            Channels      = channels,
+            Nodes         = nodes,
+            IsReady       = ready
+        };
+    }
+
+    // Build a framed NodeInfo for our own node from my_info + whatever device info
+    // we already learned. Used only as a fallback when the device didn't include its
+    // own node in the config stream.
+    private byte[]? BuildOwnNodeFrame(uint num)
+    {
+        try
+        {
+            string longName, shortName;
+            lock (_dataLock)
+            {
+                longName  = _myDeviceInfo?.LongName ?? "";
+                shortName = _myDeviceInfo?.ShortName ?? "";
+            }
+
+            string idHex = $"!{num:x8}";
+            if (string.IsNullOrEmpty(longName)) longName = idHex;
+            if (string.IsNullOrEmpty(shortName)) shortName = idHex.Length >= 4 ? idHex[^4..] : idHex;
+
+            var ni = new ProtoNodeInfo
+            {
+                Num = num,
+                User = new User
+                {
+                    Id        = idHex,
+                    LongName  = longName,
+                    ShortName = shortName
+                }
+            };
+            return FrameFromRadioPayload(new FromRadio { NodeInfo = ni }.ToByteArray());
+        }
+        catch (Exception ex)
+        {
+            Logger.WriteLine($"[VN] Could not synthesize own-node frame: {ex.Message}");
+            return null;
         }
     }
 

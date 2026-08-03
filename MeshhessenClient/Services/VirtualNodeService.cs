@@ -21,21 +21,16 @@ public class VirtualNodeService : IDisposable
     private readonly Dictionary<string, VnClient> _clients = new();
     private readonly object _clientsLock = new();
 
-    // Config cache: stores the last known framed bytes for each config category
-    private byte[]? _frameMyInfo;
-    private byte[]? _frameMetadata;
-    private readonly Dictionary<int, byte[]> _frameChannels = new();      // channel index → frame
-    private readonly Dictionary<int, byte[]> _frameConfigs = new();       // Config.PayloadVariantCase → frame
-    private readonly Dictionary<int, byte[]> _frameModuleConfigs = new(); // ModuleConfig.PayloadVariantCase → frame
-    private readonly Dictionary<uint, byte[]> _frameNodes = new();        // nodeNum → frame
-    private uint _configCompleteId;
-    private bool _configCacheReady;
+    // Config replay comes from the ProtocolService's transport-agnostic snapshot
+    // (see _snapshotProvider), NOT from frames cached live here — that way replay
+    // works for serial/BLE/TCP and for clients that connect long after init.
 
     // Queue for sending to physical node (max 100, drops oldest on overflow)
     private readonly SysChannelT _toPhysicalQueue = SysChannel.CreateBounded<byte[]>(
         new SysChannelOptions(100) { FullMode = SysChannelFullMode.DropOldest });
 
     private readonly IConnectionService _physicalConnection;
+    private readonly Func<VirtualNodeSnapshot?>? _snapshotProvider;
     private Task? _sendTask;
 
     public int Port { get; set; } = 4404;
@@ -47,9 +42,10 @@ public class VirtualNodeService : IDisposable
     // Fires with FromRadio bytes when a VN client sends a MeshPacket, so the main app can display it
     public event EventHandler<byte[]>? ClientPacketReceived;
 
-    public VirtualNodeService(IConnectionService physicalConnection)
+    public VirtualNodeService(IConnectionService physicalConnection, Func<VirtualNodeSnapshot?>? snapshotProvider = null)
     {
         _physicalConnection = physicalConnection;
+        _snapshotProvider = snapshotProvider;
     }
 
     public async Task StartAsync()
@@ -93,7 +89,9 @@ public class VirtualNodeService : IDisposable
         Log("Stopped");
     }
 
-    // Called by MeshtasticProtocolService with each complete raw frame from the physical node
+    // Called by MeshtasticProtocolService with each complete raw frame from the
+    // physical node. Used only for LIVE broadcast to already-connected clients;
+    // config replay to newly-connecting clients comes from the snapshot provider.
     public void OnRawFrameFromPhysical(byte[] frame)
     {
         try
@@ -101,7 +99,6 @@ public class VirtualNodeService : IDisposable
             var payload = new byte[frame.Length - 4];
             Array.Copy(frame, 4, payload, 0, payload.Length);
             var fromRadio = FromRadio.Parser.ParseFrom(payload);
-            UpdateConfigCache(fromRadio, frame);
 
             // Don't forward ConfigComplete — we send our own during replay
             if (fromRadio.PayloadVariantCase == FromRadio.PayloadVariantOneofCase.ConfigCompleteId)
@@ -110,35 +107,6 @@ public class VirtualNodeService : IDisposable
         catch { /* ignore parse errors, still broadcast raw bytes */ }
 
         BroadcastToClients(frame);
-    }
-
-    private void UpdateConfigCache(FromRadio fr, byte[] rawFrame)
-    {
-        switch (fr.PayloadVariantCase)
-        {
-            case FromRadio.PayloadVariantOneofCase.MyInfo:
-                _frameMyInfo = rawFrame;
-                break;
-            case FromRadio.PayloadVariantOneofCase.Metadata:
-                _frameMetadata = rawFrame;
-                break;
-            case FromRadio.PayloadVariantOneofCase.Channel:
-                _frameChannels[fr.Channel.Index] = rawFrame;
-                break;
-            case FromRadio.PayloadVariantOneofCase.Config:
-                _frameConfigs[(int)fr.Config.PayloadVariantCase] = rawFrame;
-                break;
-            case FromRadio.PayloadVariantOneofCase.ModuleConfig:
-                _frameModuleConfigs[(int)fr.ModuleConfig.PayloadVariantCase] = rawFrame;
-                break;
-            case FromRadio.PayloadVariantOneofCase.NodeInfo:
-                _frameNodes[fr.NodeInfo.Num] = rawFrame;
-                break;
-            case FromRadio.PayloadVariantOneofCase.ConfigCompleteId:
-                _configCompleteId = fr.ConfigCompleteId;
-                _configCacheReady = true;
-                break;
-        }
     }
 
     private async Task AcceptClientsAsync(CancellationToken ct)
@@ -282,6 +250,11 @@ public class VirtualNodeService : IDisposable
     {
         try
         {
+            // Pull the full device state from the ProtocolService snapshot at the
+            // moment the client asks — transport-agnostic and independent of when
+            // the Virtual Node was started.
+            var snap = _snapshotProvider?.Invoke();
+
             async Task Send(byte[]? frame)
             {
                 if (frame == null) return;
@@ -289,23 +262,28 @@ public class VirtualNodeService : IDisposable
                 await Task.Delay(10, ct);
             }
 
-            await Send(_frameMyInfo);
-            await Send(_frameMetadata);
-
-            foreach (var ch in _frameChannels.OrderBy(kv => kv.Key).Select(kv => kv.Value))
-                await Send(ch);
-            foreach (var cfg in _frameConfigs.Values)
-                await Send(cfg);
-            foreach (var mod in _frameModuleConfigs.Values)
-                await Send(mod);
-            foreach (var ni in _frameNodes.Values)
-                await Send(ni);
+            if (snap != null)
+            {
+                // Order mirrors a real device's want_config response:
+                // my_info, metadata, configs, module configs, channels, nodes.
+                await Send(snap.MyInfo);
+                await Send(snap.Metadata);
+                foreach (var cfg in snap.Configs) await Send(cfg);
+                foreach (var mod in snap.ModuleConfigs) await Send(mod);
+                foreach (var ch in snap.Channels) await Send(ch);
+                foreach (var ni in snap.Nodes) await Send(ni);
+            }
 
             // Always echo the client's own wantConfigId — the physical node's ID is irrelevant here
             var cc = new FromRadio { ConfigCompleteId = wantConfigId };
             await client.SendAsync(BuildFrame(cc.ToByteArray()), ct);
 
-            Log($"Client {client.Id}: config replay done ({_frameChannels.Count} ch, {_frameNodes.Count} nodes)");
+            int chCount = snap?.Channels.Count ?? 0;
+            int nodeCount = snap?.Nodes.Count ?? 0;
+            Log($"Client {client.Id}: config replay done ({chCount} ch, {nodeCount} nodes)");
+            if (snap is not { IsReady: true })
+                Log($"Client {client.Id}: WARNING device config snapshot not ready — replayed {chCount} ch / {nodeCount} nodes. " +
+                    "Reconnect the physical device so the Virtual Node can capture its full config.");
         }
         catch (OperationCanceledException) { }
         catch (Exception ex)
@@ -447,4 +425,22 @@ public class VirtualNodeService : IDisposable
             try { TcpClient.Close(); } catch { }
         }
     }
+}
+
+/// <summary>
+/// Immutable snapshot of a physical device's config/node set, framed (0x94 0xC3 +
+/// length) and ready for Virtual Node replay. Produced by MeshtasticProtocolService
+/// (transport-agnostic: serial, BLE and TCP) and consumed by VirtualNodeService, so
+/// a client connecting at any time — including long after init or when the Virtual
+/// Node is enabled late — receives the complete state.
+/// </summary>
+public sealed class VirtualNodeSnapshot
+{
+    public byte[]? MyInfo { get; init; }
+    public byte[]? Metadata { get; init; }
+    public IReadOnlyList<byte[]> Configs { get; init; } = System.Array.Empty<byte[]>();
+    public IReadOnlyList<byte[]> ModuleConfigs { get; init; } = System.Array.Empty<byte[]>();
+    public IReadOnlyList<byte[]> Channels { get; init; } = System.Array.Empty<byte[]>();
+    public IReadOnlyList<byte[]> Nodes { get; init; } = System.Array.Empty<byte[]>();
+    public bool IsReady { get; init; }
 }

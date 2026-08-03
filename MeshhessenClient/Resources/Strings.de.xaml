@@ -1242,6 +1242,7 @@ Grün ≤15% | Gelb 15–25% | Rot &gt;25% | Grau = keine Airtime-Daten</sys:Str
     <sys:String x:Key="StrVirtualNodeClients">Verbundene Clients:</sys:String>
     <sys:String x:Key="StrVirtualNodeNoClients">(keine)</sys:String>
     <sys:String x:Key="StrVirtualNodeNotConnected">Kein physischer Node verbunden.</sys:String>
+    <sys:String x:Key="StrVnSnapshotMissing">Virtuelle Node aktiv, aber es liegen noch keine vollständigen Gerätedaten vor. Verbundene Apps sehen die Node-Liste erst nach abgeschlossener Geräte-Initialisierung – ggf. bitte neu verbinden.</sys:String>
 
     <!-- TDeck Wizard: common -->
     <sys:String x:Key="StrTDeckTitle">T-Deck Karten-Assistent</sys:String>
