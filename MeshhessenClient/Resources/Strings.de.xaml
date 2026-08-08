@@ -92,6 +92,12 @@
     <sys:String x:Key="StrFilterChannel">Kanal filtern:</sys:String>
     <sys:String x:Key="StrChannelLabel">Kanal:</sys:String>
     <sys:String x:Key="StrMessagePlaceholder">Nachricht eingeben...</sys:String>
+    <sys:String x:Key="StrFormatBold">Fett (**Text**)</sys:String>
+    <sys:String x:Key="StrFormatItalic">Kursiv (*Text*)</sys:String>
+    <sys:String x:Key="StrFormatStrike">Durchgestrichen (~~Text~~)</sys:String>
+    <sys:String x:Key="StrFormatMono">Monospace (`Text`)</sys:String>
+    <sys:String x:Key="StrFormatLink">Link ([Text](https://…))</sys:String>
+    <sys:String x:Key="StrFormatLinkLabel">Text</sys:String>
     <sys:String x:Key="StrColTime">Zeit</sys:String>
     <sys:String x:Key="StrColFrom">Von</sys:String>
     <sys:String x:Key="StrColShort">Kurz</sys:String>

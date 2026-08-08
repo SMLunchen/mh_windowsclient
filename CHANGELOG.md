@@ -7,6 +7,17 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
 
+## [1.6.1.0] - 2026-08-08
+
+### ✨ Hinzugefügt
+
+#### 📝 Text-Formatierung in Nachrichten (Meshtastic-Markup)
+- Nachrichten unterstützen jetzt das Meshtastic-Formatierungs-Subset — **im Rendering** für Kanal-Chat *und* DMs (empfangene wie eigene Nachrichten): `**fett**`, `*kursiv*`, `~~durchgestrichen~~`, `` `monospace` `` und `[Linktext](https://…)`. Die Marker-Zeichen sind Teil des gesendeten Textes und zählen weiter zum Längenlimit — nur die Darstellung ändert sich.
+- **Format-Leiste am Eingabefeld** (Kanal + DM): Buttons **B** / *I* / ~~S~~ / `</>` / 🔗 umschließen den markierten Text mit den passenden Markern (oder fügen sie am Cursor ein). Respektiert `MaxLength` (kein Überschreiten des Zeichenlimits).
+- Parser verschachtelt Formatierungen (z. B. fett + kursiv) und lässt Marker in Monospace-Spannen wörtlich; nackte http(s)-URLs bleiben klickbar.
+
+---
+
 ## [1.6.0.1] - 2026-07-31
 
 ### 🐛 Behoben

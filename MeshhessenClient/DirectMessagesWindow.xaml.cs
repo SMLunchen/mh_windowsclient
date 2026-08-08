@@ -421,6 +421,11 @@ public partial class DirectMessagesWindow : Window
         Grid.SetColumn(sendButton, 2);
         sendGrid.Children.Add(sendButton);
 
+        // Text formatting toolbar (wraps the selection in the input box)
+        var formatBar = Helpers.TextFormattingHelper.CreateFormatBar(textBox, Loc);
+        formatBar.Margin = new Thickness(10, 4, 10, 0);
+        sendPanel.Children.Add(formatBar);
+
         sendPanel.Children.Add(sendGrid);
 
         // "Clear conversation" button (only visible when DB is active)

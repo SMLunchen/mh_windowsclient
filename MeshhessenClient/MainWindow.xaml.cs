@@ -1000,6 +1000,13 @@ public partial class MainWindow : Window
         await SendMessage();
     }
 
+    // Text formatting toolbar (channel input) — wraps the selection in Meshtastic markers.
+    private void FormatBold_Click(object sender, RoutedEventArgs e)   => Helpers.TextFormattingHelper.Wrap(MessageTextBox, "**", "**");
+    private void FormatItalic_Click(object sender, RoutedEventArgs e) => Helpers.TextFormattingHelper.Wrap(MessageTextBox, "*", "*");
+    private void FormatStrike_Click(object sender, RoutedEventArgs e) => Helpers.TextFormattingHelper.Wrap(MessageTextBox, "~~", "~~");
+    private void FormatMono_Click(object sender, RoutedEventArgs e)   => Helpers.TextFormattingHelper.Wrap(MessageTextBox, "`", "`");
+    private void FormatLink_Click(object sender, RoutedEventArgs e)   => Helpers.TextFormattingHelper.InsertLink(MessageTextBox, Loc("StrFormatLinkLabel"));
+
     private async void AlertBell_Click(object sender, RoutedEventArgs e)
     {
         if (!_connectionService.IsConnected)

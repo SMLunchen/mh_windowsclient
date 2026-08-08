@@ -1001,6 +1001,31 @@
                                         FontSize="11"/>
                             </Grid>
                         </Border>
+
+                    <!-- Text formatting toolbar (wraps the selection in the message box) -->
+                    <StackPanel Orientation="Horizontal" Margin="10,4,10,0">
+                        <Button Width="30" Height="26" Padding="0" Margin="0,0,4,0"
+                                ToolTip="{DynamicResource StrFormatBold}" Click="FormatBold_Click">
+                            <TextBlock Text="B" FontWeight="Bold"/>
+                        </Button>
+                        <Button Width="30" Height="26" Padding="0" Margin="0,0,4,0"
+                                ToolTip="{DynamicResource StrFormatItalic}" Click="FormatItalic_Click">
+                            <TextBlock Text="I" FontStyle="Italic"/>
+                        </Button>
+                        <Button Width="30" Height="26" Padding="0" Margin="0,0,4,0"
+                                ToolTip="{DynamicResource StrFormatStrike}" Click="FormatStrike_Click">
+                            <TextBlock Text="S" TextDecorations="Strikethrough"/>
+                        </Button>
+                        <Button Width="30" Height="26" Padding="0" Margin="0,0,4,0"
+                                ToolTip="{DynamicResource StrFormatMono}" Click="FormatMono_Click">
+                            <TextBlock Text="&lt;/&gt;" FontFamily="Consolas" FontSize="11"/>
+                        </Button>
+                        <Button Width="30" Height="26" Padding="0" Margin="0,0,4,0"
+                                ToolTip="{DynamicResource StrFormatLink}" Click="FormatLink_Click">
+                            <TextBlock Text="🔗" FontFamily="Segoe UI Emoji"/>
+                        </Button>
+                    </StackPanel>
+
                     <Grid Margin="10">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
