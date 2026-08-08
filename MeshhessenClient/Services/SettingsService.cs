@@ -5,57 +5,62 @@ namespace MeshhessenClient.Services;
 
 public enum PskMismatchAction { Warn = 0, Overwrite = 1, Ask = 2 }
 
-public record AppSettings(
-    bool DarkMode,
-    string StationName,
-    bool ShowEncryptedMessages,
-    double MyLatitude,
-    double MyLongitude,
-    string LastComPort,
-    string LastTcpHost,                      // Last TCP/WiFi hostname or IP
-    int LastTcpPort,                         // Last TCP/WiFi port
-    string MapSource,                        // Map tile source: "osm", "osmtopo", "osmdark"
-    string OSMTileUrl,                       // Tile URL for OSM (including http:// or https://)
-    string OSMTopoTileUrl,                   // Tile URL for OpenTopoMap (including http:// or https://)
-    string OSMDarkTileUrl,                   // Tile URL for OSM Dark (including http:// or https://)
-    Dictionary<uint, string> NodeColors,     // NodeId -> Color (hex)
-    Dictionary<uint, string> NodeNotes,      // NodeId -> Note text
-    bool DebugMessages,                      // Enable message debug logging
-    bool DebugSerial,                        // Enable serial data hex dump
-    bool DebugDevice,                        // Enable device serial debug output logging
-    bool DebugBluetooth,                     // Enable BLE debug logging
-    bool AlertBellSound,                     // Play sound on alert bell character
-    string Language,                         // UI language: "de" or "en"
-    bool EnableLocationLogging,              // Log GPS positions to locationlogs/
-    Dictionary<uint, bool> PinnedNodes,      // NodeId -> pinned
-    Dictionary<uint, bool> FavoriteNodes,    // NodeId -> favorite (synced with device)
-    int TelemetryRetentionDays,              // 0=unlimited, 30/90/365
-    PskMismatchAction NodeKeyMismatchAction, // Warn / Overwrite / Ask
-    int SignalWeatherWindowHours,            // Short analysis window for weather detection (default 6h)
-    int SignalAntennaWindowDays,             // Long analysis window for antenna trend (default 7d)
-    int PositionHistoryHours,                // Hours of position history to show on map (0=unlimited, default 24)
-    bool AutoTimeSyncOnConnect,              // Send time sync packet after connection init
-    int TimeSyncDriftThresholdSeconds,       // Trigger time sync if rx_time drifts more than N seconds (default 300)
-    string MapMode,                          // Tile fetch mode: "offline", "online-own", "online-custom", "online-osm"
-    bool EnableMessageDb,                    // Persist messages in SQLite DB
-    int MessageDbRetentionDays,              // 0=unlimited, 30/90/365
-    string LastConnectionType,              // "Serial", "Bluetooth", "Tcp"
-    string LastBtDevice,                   // Last used Bluetooth device name
-    int RemoteAdminTimeoutSeconds,         // Timeout for remote admin requests in seconds (default 30)
-    bool VirtualNodeEnabled,               // Enable Virtual Node TCP proxy server
-    int VirtualNodePort,                   // TCP port for Virtual Node (default 4404)
-    bool VirtualNodeBlockAdmin,            // Block admin commands from Virtual Node clients
-    Dictionary<uint, string> NodeStationNames, // NodeId -> per-node station name
-    bool FancyNodeList,                    // Show tile view instead of table in Nodes tab
-    bool FancyNodeListColorful,            // Color tiles by signal quality (when no node color set)
-    bool KioskModeEnabled,                 // Kiosk/training mode: lockable UI for shared stations
-    string KioskPasswordHash,              // PBKDF2 "salt:hash" (base64); empty = no password set
-    string KioskLockedFeatures,            // CSV of feature keys hidden while locked
-    string MapRenderMode,                  // Map rendering: "raster" (Mapsui, compatible) or "vector" (MapLibre/WebView2)
-    string VectorStyleOsmUrl,              // Vector style URL for OSM (online-custom mode)
-    string VectorStyleTopoUrl,             // Vector style URL for OpenTopo (online-custom mode)
-    string VectorStyleDarkUrl,             // Vector style URL for Dark (online-custom mode)
-    string MapOverlays);                   // CSV of active vector overlay keys (see MapOverlayRegistry)
+// Init-only properties with defaults instead of a 44-parameter positional record:
+// construction via object initializer (named, order-independent), `with` still works,
+// and the defaults live here once – no duplicated default block at the call sites.
+public record AppSettings
+{
+    public bool DarkMode { get; init; } = false;
+    public string StationName { get; init; } = string.Empty;
+    public bool ShowEncryptedMessages { get; init; } = false;
+    public double MyLatitude { get; init; } = 50.9;
+    public double MyLongitude { get; init; } = 9.5;
+    public string LastComPort { get; init; } = string.Empty;
+    public string LastTcpHost { get; init; } = "192.168.1.1";   // Last TCP/WiFi hostname or IP
+    public int LastTcpPort { get; init; } = 4403;               // Last TCP/WiFi port
+    public string MapSource { get; init; } = "osm";             // "osm", "osmtopo", "osmdark"
+    public string OSMTileUrl { get; init; } = "https://tile.meshhessenclient.de/osm/{z}/{x}/{y}.png";
+    public string OSMTopoTileUrl { get; init; } = "https://tile.meshhessenclient.de/opentopo/{z}/{x}/{y}.png";
+    public string OSMDarkTileUrl { get; init; } = "https://tile.meshhessenclient.de/dark/{z}/{x}/{y}.png";
+    public Dictionary<uint, string> NodeColors { get; init; } = new();   // NodeId -> Color (hex)
+    public Dictionary<uint, string> NodeNotes { get; init; } = new();    // NodeId -> Note text
+    public bool DebugMessages { get; init; } = false;
+    public bool DebugSerial { get; init; } = false;
+    public bool DebugDevice { get; init; } = false;
+    public bool DebugBluetooth { get; init; } = false;
+    public bool AlertBellSound { get; init; } = true;           // Play sound on alert bell character
+    public string Language { get; init; } = "de";              // UI language: "de" or "en"
+    public bool EnableLocationLogging { get; init; } = false;   // Log GPS positions to locationlogs/
+    public Dictionary<uint, bool> PinnedNodes { get; init; } = new();     // NodeId -> pinned
+    public Dictionary<uint, bool> FavoriteNodes { get; init; } = new();   // NodeId -> favorite (synced with device)
+    public int TelemetryRetentionDays { get; init; } = 90;      // 0=unlimited, 30/90/365
+    public PskMismatchAction NodeKeyMismatchAction { get; init; } = PskMismatchAction.Overwrite;
+    public int SignalWeatherWindowHours { get; init; } = 6;     // Short analysis window for weather detection
+    public int SignalAntennaWindowDays { get; init; } = 7;      // Long analysis window for antenna trend
+    public int PositionHistoryHours { get; init; } = 24;        // Position history on map (0=unlimited)
+    public bool AutoTimeSyncOnConnect { get; init; } = true;    // Send time sync packet after connection init
+    public int TimeSyncDriftThresholdSeconds { get; init; } = 300;  // Trigger time sync above N seconds drift
+    public string MapMode { get; init; } = "offline";          // "offline", "online-own", "online-custom", "online-osm"
+    public bool EnableMessageDb { get; init; } = true;         // Persist messages in SQLite DB
+    public int MessageDbRetentionDays { get; init; } = 90;     // 0=unlimited, 30/90/365
+    public string LastConnectionType { get; init; } = "Serial"; // "Serial", "Bluetooth", "Tcp"
+    public string LastBtDevice { get; init; } = string.Empty;  // Last used Bluetooth device name
+    public int RemoteAdminTimeoutSeconds { get; init; } = 30;  // Remote admin request timeout (seconds)
+    public bool VirtualNodeEnabled { get; init; } = false;     // Enable Virtual Node TCP proxy server
+    public int VirtualNodePort { get; init; } = 4404;          // TCP port for Virtual Node
+    public bool VirtualNodeBlockAdmin { get; init; } = false;  // Block admin commands from Virtual Node clients
+    public Dictionary<uint, string> NodeStationNames { get; init; } = new();  // NodeId -> per-node station name
+    public bool FancyNodeList { get; init; } = false;          // Tile view instead of table in Nodes tab
+    public bool FancyNodeListColorful { get; init; } = true;   // Color tiles by signal quality
+    public bool KioskModeEnabled { get; init; } = false;       // Kiosk/training mode: lockable UI
+    public string KioskPasswordHash { get; init; } = string.Empty;  // PBKDF2 "salt:hash" (base64); empty = none
+    public string KioskLockedFeatures { get; init; } = string.Empty; // CSV of feature keys hidden while locked
+    public string MapRenderMode { get; init; } = "raster";     // "raster" (Mapsui) or "vector" (MapLibre/WebView2)
+    public string VectorStyleOsmUrl { get; init; } = "https://vectortile.meshhessenclient.de/styles/osm.json";
+    public string VectorStyleTopoUrl { get; init; } = "https://vectortile.meshhessenclient.de/styles/opentopo.json";
+    public string VectorStyleDarkUrl { get; init; } = "https://vectortile.meshhessenclient.de/styles/dark.json";
+    public string MapOverlays { get; init; } = string.Empty;   // CSV of active vector overlay keys (MapOverlayRegistry)
+}
 
 public static class SettingsService
 {
@@ -63,57 +68,7 @@ public static class SettingsService
 
     public static AppSettings Load()
     {
-        var defaults = new AppSettings(
-            false,
-            string.Empty,
-            false,
-            50.9,
-            9.5,
-            string.Empty,
-            "192.168.1.1",
-            4403,
-            "osm",
-            "https://tile.meshhessenclient.de/osm/{z}/{x}/{y}.png",        // OSM
-            "https://tile.meshhessenclient.de/opentopo/{z}/{x}/{y}.png",   // OSM Topo
-            "https://tile.meshhessenclient.de/dark/{z}/{x}/{y}.png",       // OSM Dark
-            new Dictionary<uint, string>(),
-            new Dictionary<uint, string>(),
-            false,
-            false,
-            false,
-            false,
-            true,   // AlertBellSound default enabled
-            "de",   // Language default German
-            false,  // EnableLocationLogging default off
-            new Dictionary<uint, bool>(),   // PinnedNodes
-            new Dictionary<uint, bool>(),   // FavoriteNodes
-            90,                             // TelemetryRetentionDays default 90
-            PskMismatchAction.Overwrite,    // NodeKeyMismatchAction default Overwrite
-            6,                              // SignalWeatherWindowHours default 6h
-            7,                              // SignalAntennaWindowDays default 7d
-            24,                             // PositionHistoryHours default 24h
-            true,                           // AutoTimeSyncOnConnect default on
-            300,                            // TimeSyncDriftThresholdSeconds default 5min
-            "offline",                      // MapMode default offline
-            true,                           // EnableMessageDb default on
-            90,                             // MessageDbRetentionDays default 90
-            "Serial",                       // LastConnectionType default Serial
-            string.Empty,                   // LastBtDevice default empty
-            30,                             // RemoteAdminTimeoutSeconds default 30s
-            false,                          // VirtualNodeEnabled default off
-            4404,                           // VirtualNodePort default 4404
-            false,                          // VirtualNodeBlockAdmin default off
-            new Dictionary<uint, string>(), // NodeStationNames default empty
-            false,                          // FancyNodeList default off
-            true,                           // FancyNodeListColorful default on
-            false,                          // KioskModeEnabled default off
-            string.Empty,                   // KioskPasswordHash default empty
-            string.Empty,                   // KioskLockedFeatures default empty
-            "raster",                       // MapRenderMode default raster (backward compatible)
-            "https://vectortile.meshhessenclient.de/styles/osm.json",      // VectorStyleOsmUrl
-            "https://vectortile.meshhessenclient.de/styles/opentopo.json", // VectorStyleTopoUrl
-            "https://vectortile.meshhessenclient.de/styles/dark.json",     // VectorStyleDarkUrl
-            string.Empty);                  // MapOverlays default: none active
+        var defaults = new AppSettings();  // all defaults defined on the record
 
         try
         {
@@ -224,58 +179,59 @@ public static class SettingsService
             if (values.TryGetValue("OSMDarkTileUrl", out var osmDarkUrlValue) && !string.IsNullOrWhiteSpace(osmDarkUrlValue))
                 osmDarkUrl = osmDarkUrlValue;
 
-            return new AppSettings(
-                DarkMode: values.TryGetValue("DarkMode", out var dm) && bool.TryParse(dm, out var dmBool) ? dmBool : defaults.DarkMode,
-                StationName: values.TryGetValue("StationName", out var sn) ? sn : defaults.StationName,
-                ShowEncryptedMessages: values.TryGetValue("ShowEncryptedMessages", out var se) && bool.TryParse(se, out var seBool) && seBool,
-                MyLatitude: values.TryGetValue("MyLatitude", out var lat) && double.TryParse(lat, NumberStyles.Float, CultureInfo.InvariantCulture, out var latVal) ? latVal : defaults.MyLatitude,
-                MyLongitude: values.TryGetValue("MyLongitude", out var lon) && double.TryParse(lon, NumberStyles.Float, CultureInfo.InvariantCulture, out var lonVal) ? lonVal : defaults.MyLongitude,
-                LastComPort: lastComPort,
-                LastTcpHost: values.TryGetValue("LastTcpHost", out var tcpHost) ? tcpHost : defaults.LastTcpHost,
-                LastTcpPort: values.TryGetValue("LastTcpPort", out var tcpPort) && int.TryParse(tcpPort, out var tcpPortInt) ? tcpPortInt : defaults.LastTcpPort,
-                MapSource: values.TryGetValue("MapSource", out var mapSrc) ? mapSrc : defaults.MapSource,
-                OSMTileUrl: osmUrl,
-                OSMTopoTileUrl: osmTopoUrl,
-                OSMDarkTileUrl: osmDarkUrl,
-                NodeColors: nodeColors,
-                NodeNotes: nodeNotes,
-                DebugMessages: values.TryGetValue("DebugMessages", out var dbg) && bool.TryParse(dbg, out var dbgBool) && dbgBool,
-                DebugSerial: values.TryGetValue("DebugSerial", out var dbs) && bool.TryParse(dbs, out var dbsBool) && dbsBool,
-                DebugDevice: values.TryGetValue("DebugDevice", out var dbd) && bool.TryParse(dbd, out var dbdBool) && dbdBool,
-                DebugBluetooth: values.TryGetValue("DebugBluetooth", out var dbb) && bool.TryParse(dbb, out var dbbBool) && dbbBool,
-                AlertBellSound: !values.TryGetValue("AlertBellSound", out var abs) || !bool.TryParse(abs, out var absBool) || absBool,
-                Language: values.TryGetValue("Language", out var lang) && !string.IsNullOrEmpty(lang) ? lang : defaults.Language,
-                EnableLocationLogging: values.TryGetValue("EnableLocationLogging", out var ell) && bool.TryParse(ell, out var ellBool) && ellBool,
-                PinnedNodes: pinnedNodes,
-                FavoriteNodes: favoriteNodes,
-                TelemetryRetentionDays: values.TryGetValue("TelemetryRetentionDays", out var trd) && int.TryParse(trd, out var trdInt) ? trdInt : defaults.TelemetryRetentionDays,
-                NodeKeyMismatchAction: values.TryGetValue("NodeKeyMismatchAction", out var pkm) && Enum.TryParse(pkm, out PskMismatchAction pkmVal) ? pkmVal : defaults.NodeKeyMismatchAction,
-                SignalWeatherWindowHours: values.TryGetValue("SignalWeatherWindowHours", out var swh) && int.TryParse(swh, out var swhInt) ? swhInt : defaults.SignalWeatherWindowHours,
-                SignalAntennaWindowDays: values.TryGetValue("SignalAntennaWindowDays", out var sad) && int.TryParse(sad, out var sadInt) ? sadInt : defaults.SignalAntennaWindowDays,
-                PositionHistoryHours: values.TryGetValue("PositionHistoryHours", out var phh) && int.TryParse(phh, out var phhInt) ? phhInt : defaults.PositionHistoryHours,
-                AutoTimeSyncOnConnect: !values.TryGetValue("AutoTimeSyncOnConnect", out var ats) || !bool.TryParse(ats, out var atsBool) || atsBool,
-                TimeSyncDriftThresholdSeconds: values.TryGetValue("TimeSyncDriftThresholdSeconds", out var tsd) && int.TryParse(tsd, out var tsdInt) ? tsdInt : defaults.TimeSyncDriftThresholdSeconds,
-                MapMode: values.TryGetValue("MapMode", out var mapMode) && !string.IsNullOrEmpty(mapMode) ? mapMode : defaults.MapMode,
-                EnableMessageDb: values.TryGetValue("EnableMessageDb", out var emdb) && bool.TryParse(emdb, out var emdbBool) ? emdbBool : defaults.EnableMessageDb,
-                MessageDbRetentionDays: values.TryGetValue("MessageDbRetentionDays", out var mdr) && int.TryParse(mdr, out var mdrInt) ? mdrInt : defaults.MessageDbRetentionDays,
-                LastConnectionType: values.TryGetValue("LastConnectionType", out var lct) && !string.IsNullOrEmpty(lct) ? lct : defaults.LastConnectionType,
-                LastBtDevice: values.TryGetValue("LastBtDevice", out var lbd) ? lbd : defaults.LastBtDevice,
-                RemoteAdminTimeoutSeconds: values.TryGetValue("RemoteAdminTimeoutSeconds", out var rats) && int.TryParse(rats, out var ratsInt) ? ratsInt : defaults.RemoteAdminTimeoutSeconds,
-                VirtualNodeEnabled: values.TryGetValue("VirtualNodeEnabled", out var vne) && bool.TryParse(vne, out var vneBool) && vneBool,
-                VirtualNodePort: values.TryGetValue("VirtualNodePort", out var vnp) && int.TryParse(vnp, out var vnpInt) ? vnpInt : defaults.VirtualNodePort,
-                VirtualNodeBlockAdmin: values.TryGetValue("VirtualNodeBlockAdmin", out var vnba) && bool.TryParse(vnba, out var vnbaBool) && vnbaBool,
-                NodeStationNames: nodeStationNames,
-                FancyNodeList: values.TryGetValue("FancyNodeList", out var fnl) && bool.TryParse(fnl, out var fnlBool) && fnlBool,
-                FancyNodeListColorful: !values.TryGetValue("FancyNodeListColorful", out var fnc) || !bool.TryParse(fnc, out var fncBool) || fncBool,
-                KioskModeEnabled: values.TryGetValue("KioskModeEnabled", out var kme) && bool.TryParse(kme, out var kmeBool) && kmeBool,
-                KioskPasswordHash: values.TryGetValue("KioskPasswordHash", out var kph) ? kph : string.Empty,
-                KioskLockedFeatures: values.TryGetValue("KioskLockedFeatures", out var klf) ? klf : string.Empty,
-                MapRenderMode: values.TryGetValue("MapRenderMode", out var mrm) && !string.IsNullOrEmpty(mrm) ? mrm : defaults.MapRenderMode,
-                VectorStyleOsmUrl: values.TryGetValue("VectorStyleOsmUrl", out var vso) && !string.IsNullOrWhiteSpace(vso) ? vso : defaults.VectorStyleOsmUrl,
-                VectorStyleTopoUrl: values.TryGetValue("VectorStyleTopoUrl", out var vst) && !string.IsNullOrWhiteSpace(vst) ? vst : defaults.VectorStyleTopoUrl,
-                VectorStyleDarkUrl: values.TryGetValue("VectorStyleDarkUrl", out var vsd) && !string.IsNullOrWhiteSpace(vsd) ? vsd : defaults.VectorStyleDarkUrl,
-                MapOverlays: values.TryGetValue("MapOverlays", out var mov) ? mov : defaults.MapOverlays
-            );
+            return new AppSettings
+            {
+                DarkMode = values.TryGetValue("DarkMode", out var dm) && bool.TryParse(dm, out var dmBool) ? dmBool : defaults.DarkMode,
+                StationName = values.TryGetValue("StationName", out var sn) ? sn : defaults.StationName,
+                ShowEncryptedMessages = values.TryGetValue("ShowEncryptedMessages", out var se) && bool.TryParse(se, out var seBool) && seBool,
+                MyLatitude = values.TryGetValue("MyLatitude", out var lat) && double.TryParse(lat, NumberStyles.Float, CultureInfo.InvariantCulture, out var latVal) ? latVal : defaults.MyLatitude,
+                MyLongitude = values.TryGetValue("MyLongitude", out var lon) && double.TryParse(lon, NumberStyles.Float, CultureInfo.InvariantCulture, out var lonVal) ? lonVal : defaults.MyLongitude,
+                LastComPort = lastComPort,
+                LastTcpHost = values.TryGetValue("LastTcpHost", out var tcpHost) ? tcpHost : defaults.LastTcpHost,
+                LastTcpPort = values.TryGetValue("LastTcpPort", out var tcpPort) && int.TryParse(tcpPort, out var tcpPortInt) ? tcpPortInt : defaults.LastTcpPort,
+                MapSource = values.TryGetValue("MapSource", out var mapSrc) ? mapSrc : defaults.MapSource,
+                OSMTileUrl = osmUrl,
+                OSMTopoTileUrl = osmTopoUrl,
+                OSMDarkTileUrl = osmDarkUrl,
+                NodeColors = nodeColors,
+                NodeNotes = nodeNotes,
+                DebugMessages = values.TryGetValue("DebugMessages", out var dbg) && bool.TryParse(dbg, out var dbgBool) && dbgBool,
+                DebugSerial = values.TryGetValue("DebugSerial", out var dbs) && bool.TryParse(dbs, out var dbsBool) && dbsBool,
+                DebugDevice = values.TryGetValue("DebugDevice", out var dbd) && bool.TryParse(dbd, out var dbdBool) && dbdBool,
+                DebugBluetooth = values.TryGetValue("DebugBluetooth", out var dbb) && bool.TryParse(dbb, out var dbbBool) && dbbBool,
+                AlertBellSound = !values.TryGetValue("AlertBellSound", out var abs) || !bool.TryParse(abs, out var absBool) || absBool,
+                Language = values.TryGetValue("Language", out var lang) && !string.IsNullOrEmpty(lang) ? lang : defaults.Language,
+                EnableLocationLogging = values.TryGetValue("EnableLocationLogging", out var ell) && bool.TryParse(ell, out var ellBool) && ellBool,
+                PinnedNodes = pinnedNodes,
+                FavoriteNodes = favoriteNodes,
+                TelemetryRetentionDays = values.TryGetValue("TelemetryRetentionDays", out var trd) && int.TryParse(trd, out var trdInt) ? trdInt : defaults.TelemetryRetentionDays,
+                NodeKeyMismatchAction = values.TryGetValue("NodeKeyMismatchAction", out var pkm) && Enum.TryParse(pkm, out PskMismatchAction pkmVal) ? pkmVal : defaults.NodeKeyMismatchAction,
+                SignalWeatherWindowHours = values.TryGetValue("SignalWeatherWindowHours", out var swh) && int.TryParse(swh, out var swhInt) ? swhInt : defaults.SignalWeatherWindowHours,
+                SignalAntennaWindowDays = values.TryGetValue("SignalAntennaWindowDays", out var sad) && int.TryParse(sad, out var sadInt) ? sadInt : defaults.SignalAntennaWindowDays,
+                PositionHistoryHours = values.TryGetValue("PositionHistoryHours", out var phh) && int.TryParse(phh, out var phhInt) ? phhInt : defaults.PositionHistoryHours,
+                AutoTimeSyncOnConnect = !values.TryGetValue("AutoTimeSyncOnConnect", out var ats) || !bool.TryParse(ats, out var atsBool) || atsBool,
+                TimeSyncDriftThresholdSeconds = values.TryGetValue("TimeSyncDriftThresholdSeconds", out var tsd) && int.TryParse(tsd, out var tsdInt) ? tsdInt : defaults.TimeSyncDriftThresholdSeconds,
+                MapMode = values.TryGetValue("MapMode", out var mapMode) && !string.IsNullOrEmpty(mapMode) ? mapMode : defaults.MapMode,
+                EnableMessageDb = values.TryGetValue("EnableMessageDb", out var emdb) && bool.TryParse(emdb, out var emdbBool) ? emdbBool : defaults.EnableMessageDb,
+                MessageDbRetentionDays = values.TryGetValue("MessageDbRetentionDays", out var mdr) && int.TryParse(mdr, out var mdrInt) ? mdrInt : defaults.MessageDbRetentionDays,
+                LastConnectionType = values.TryGetValue("LastConnectionType", out var lct) && !string.IsNullOrEmpty(lct) ? lct : defaults.LastConnectionType,
+                LastBtDevice = values.TryGetValue("LastBtDevice", out var lbd) ? lbd : defaults.LastBtDevice,
+                RemoteAdminTimeoutSeconds = values.TryGetValue("RemoteAdminTimeoutSeconds", out var rats) && int.TryParse(rats, out var ratsInt) ? ratsInt : defaults.RemoteAdminTimeoutSeconds,
+                VirtualNodeEnabled = values.TryGetValue("VirtualNodeEnabled", out var vne) && bool.TryParse(vne, out var vneBool) && vneBool,
+                VirtualNodePort = values.TryGetValue("VirtualNodePort", out var vnp) && int.TryParse(vnp, out var vnpInt) ? vnpInt : defaults.VirtualNodePort,
+                VirtualNodeBlockAdmin = values.TryGetValue("VirtualNodeBlockAdmin", out var vnba) && bool.TryParse(vnba, out var vnbaBool) && vnbaBool,
+                NodeStationNames = nodeStationNames,
+                FancyNodeList = values.TryGetValue("FancyNodeList", out var fnl) && bool.TryParse(fnl, out var fnlBool) && fnlBool,
+                FancyNodeListColorful = !values.TryGetValue("FancyNodeListColorful", out var fnc) || !bool.TryParse(fnc, out var fncBool) || fncBool,
+                KioskModeEnabled = values.TryGetValue("KioskModeEnabled", out var kme) && bool.TryParse(kme, out var kmeBool) && kmeBool,
+                KioskPasswordHash = values.TryGetValue("KioskPasswordHash", out var kph) ? kph : string.Empty,
+                KioskLockedFeatures = values.TryGetValue("KioskLockedFeatures", out var klf) ? klf : string.Empty,
+                MapRenderMode = values.TryGetValue("MapRenderMode", out var mrm) && !string.IsNullOrEmpty(mrm) ? mrm : defaults.MapRenderMode,
+                VectorStyleOsmUrl = values.TryGetValue("VectorStyleOsmUrl", out var vso) && !string.IsNullOrWhiteSpace(vso) ? vso : defaults.VectorStyleOsmUrl,
+                VectorStyleTopoUrl = values.TryGetValue("VectorStyleTopoUrl", out var vst) && !string.IsNullOrWhiteSpace(vst) ? vst : defaults.VectorStyleTopoUrl,
+                VectorStyleDarkUrl = values.TryGetValue("VectorStyleDarkUrl", out var vsd) && !string.IsNullOrWhiteSpace(vsd) ? vsd : defaults.VectorStyleDarkUrl,
+                MapOverlays = values.TryGetValue("MapOverlays", out var mov) ? mov : defaults.MapOverlays
+            };
         }
         catch (Exception ex)
         {

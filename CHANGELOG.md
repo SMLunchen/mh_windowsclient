@@ -7,6 +7,49 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
 
+## [1.6.1.0] - 2026-08-08
+
+### ✨ Hinzugefügt
+
+#### 📝 Text-Formatierung in Nachrichten (Meshtastic-Markup)
+- Nachrichten unterstützen jetzt das Meshtastic-Formatierungs-Subset — **im Rendering** für Kanal-Chat *und* DMs (empfangene wie eigene Nachrichten): `**fett**`, `*kursiv*`, `~~durchgestrichen~~`, `` `monospace` `` und `[Linktext](https://…)`. Die Marker-Zeichen sind Teil des gesendeten Textes und zählen weiter zum Längenlimit — nur die Darstellung ändert sich.
+- **Format-Leiste am Eingabefeld** (Kanal + DM): Buttons **B** / *I* / ~~S~~ / `</>` / 🔗 umschließen den markierten Text mit den passenden Markern (oder fügen sie am Cursor ein). Respektiert `MaxLength` (kein Überschreiten des Zeichenlimits).
+- Parser verschachtelt Formatierungen (z. B. fett + kursiv) und lässt Marker in Monospace-Spannen wörtlich; nackte http(s)-URLs bleiben klickbar.
+
+---
+
+## [1.6.0.1] - 2026-07-31
+
+### 🐛 Behoben
+
+#### 🔀 Virtuelle Node: Node-/Kanalliste erreicht verbundene Apps zuverlässig
+- **BLE lieferte an die vNode dauerhaft 0 Kanäle / 0 Nodes.** Der Replay-Cache wurde nur aus live mitlaufenden, *gerahmten* Rohframes befüllt — und diese wurden ausschließlich auf Serial/TCP gefeuert, nie auf BLE. Über BLE blieb der Cache damit für immer leer.
+- **Auch auf Serial füllte sich der Cache erst verspätet** (erster Client `0/0`, vollständige `8/80` erst nach einem Watchdog-Recovery-Reconnect): der einmalige Init-Config-Strom wurde verpasst, wenn die vNode nicht exakt währenddessen schon lauschte.
+- **Fix:** Der `MeshtasticProtocolService` führt jetzt einen **transportunabhängigen Snapshot** (my_info, metadata, configs, module configs, channels, nodes) über *jedes* geparste `FromRadio` — Serial, BLE **und** TCP, im Init wie bei späteren Live-Updates — und hält ihn für die gesamte Verbindung vor. Die virtuelle Node replayt beim Client-Connect diesen Snapshot, unabhängig davon, **wann** sie aktiviert wurde. Späteres Einschalten funktioniert damit; ist noch kein vollständiger Gerätestand erfasst, kommt ein klarer Hinweis (ggf. neu verbinden).
+- BLE feuert nun ebenfalls `RawFrameReceived`, sodass auch der Live-Broadcast (Nachrichten nach dem Connect) an verbundene Apps über BLE funktioniert.
+- **Eigener Node im Replay abgesichert:** Liefert das Gerät keinen `NodeInfo`-Eintrag für sich selbst, synthetisiert der Snapshot ihn aus `my_info` + bekannten Geräteinfos. Android braucht den eigenen Node in der DB, um Node-Liste und Senden freizuschalten — greift nur, wenn er tatsächlich fehlt, und wird durch den echten Eintrag ersetzt, sobald er eintrifft (mögliche Ursache für „Nodes (0)/kein Senden" trotz vollem Replay).
+- Abgesichert durch 6 neue Tests (Snapshot-Befüllung Serial/TCP **und** BLE, BLE-Frame-Fire, Node-Dedup, Eigen-Node-Synthese vorhanden/fehlend).
+
+---
+
+## [1.6.0] - 2026-07-30
+
+### 🔧 Geändert (intern)
+
+#### 📦 Offizielle Meshtastic-Protobufs statt selbstgebauter
+- **Umstieg von den handgeschriebenen Proto-Dateien auf die offiziellen Meshtastic-Protobufs**, eingebunden als **git-Submodule** (`protobufs/`, gepinnt auf `v2.7.26-140-g6ceceae`). Beseitigt die wiederkehrende Fehlerklasse falscher Feldnummern/Typen an der Wurzel und hält uns im Gleichschritt mit der Firmware; Version wird über den Submodule-Commit festgehalten und bewusst gebumpt.
+- `Data.portnum` ist jetzt korrekt das `PortNum`-Enum (war `uint32`); Config-/ModuleConfig-Untertypen sind wie im Original verschachtelt (`Config.Types.LoRaConfig` usw.). Aufrufseiten bleiben über globale Alias-Usings (`GlobalUsings.cs`) weitgehend unverändert.
+- Absicherung durch die neuen Protokoll-Decode-Tests (Text/Reaktion/NodeInfo/Framing) + CI, die jetzt gegen die offiziellen Protos laufen.
+
+#### 🧪 Tests & CI
+- **Neues Testprojekt `MeshhessenClient.Tests`** (xUnit, 35 Tests): Protokoll-Decode über einen Fake-Transport, **Gerätekonfig-Write über den Draht** (LoRa-Config serialisieren → entframen → zurückparsen, prüft die Enum-Werte), Settings-Round-Trip, Tile-Mathematik, Overlay-Registry, Vektor-Cache-Pfade, AppSettings-Defaults.
+- **CI führt Tests bei jedem Push/PR aus**; Release-Build hängt per `needs: test` daran (kein Release ohne grüne Tests).
+
+#### 🧱 Aufräumen
+- `MainWindow` in partial classes aufgeteilt (Karte, Kiosk, NodeList, NodeCommands); `AppSettings` auf init-Properties umgestellt (behebt u. a. einen latenten „Speichern während des Ladens"-Bug bei der Sprache).
+
+---
+
 ## [1.5.14] - 2026-07-15
 
 ### ✨ Hinzugefügt

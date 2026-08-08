@@ -92,6 +92,12 @@
     <sys:String x:Key="StrFilterChannel">Kanal filtern:</sys:String>
     <sys:String x:Key="StrChannelLabel">Kanal:</sys:String>
     <sys:String x:Key="StrMessagePlaceholder">Nachricht eingeben...</sys:String>
+    <sys:String x:Key="StrFormatBold">Fett (**Text**)</sys:String>
+    <sys:String x:Key="StrFormatItalic">Kursiv (*Text*)</sys:String>
+    <sys:String x:Key="StrFormatStrike">Durchgestrichen (~~Text~~)</sys:String>
+    <sys:String x:Key="StrFormatMono">Monospace (`Text`)</sys:String>
+    <sys:String x:Key="StrFormatLink">Link ([Text](https://…))</sys:String>
+    <sys:String x:Key="StrFormatLinkLabel">Text</sys:String>
     <sys:String x:Key="StrColTime">Zeit</sys:String>
     <sys:String x:Key="StrColFrom">Von</sys:String>
     <sys:String x:Key="StrColShort">Kurz</sys:String>
@@ -202,6 +208,7 @@
     <sys:String x:Key="StrDebugDevice">Device-Log (serielle Debug-Ausgabe)</sys:String>
     <sys:String x:Key="StrDebugBluetooth">Bluetooth-Debug (BLE-Kommunikation)</sys:String>
     <sys:String x:Key="StrSaveSettings">Einstellungen speichern</sys:String>
+    <sys:String x:Key="StrSettingsUnsaved">● Ungespeicherte Änderungen</sys:String>
     <sys:String x:Key="StrNodeConfigGroup">Node-Konfiguration</sys:String>
     <sys:String x:Key="StrNodeConfigHint">Erweiterte Gerätekonfiguration (LoRa, Position, MQTT, Telemetrie u.a.)</sys:String>
     <sys:String x:Key="StrDeviceInfoGroup">Geräteinfo</sys:String>
@@ -1241,6 +1248,7 @@ Grün ≤15% | Gelb 15–25% | Rot &gt;25% | Grau = keine Airtime-Daten</sys:Str
     <sys:String x:Key="StrVirtualNodeClients">Verbundene Clients:</sys:String>
     <sys:String x:Key="StrVirtualNodeNoClients">(keine)</sys:String>
     <sys:String x:Key="StrVirtualNodeNotConnected">Kein physischer Node verbunden.</sys:String>
+    <sys:String x:Key="StrVnSnapshotMissing">Virtuelle Node aktiv, aber es liegen noch keine vollständigen Gerätedaten vor. Verbundene Apps sehen die Node-Liste erst nach abgeschlossener Geräte-Initialisierung – ggf. bitte neu verbinden.</sys:String>
 
     <!-- TDeck Wizard: common -->
     <sys:String x:Key="StrTDeckTitle">T-Deck Karten-Assistent</sys:String>

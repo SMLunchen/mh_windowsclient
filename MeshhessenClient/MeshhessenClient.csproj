@@ -18,9 +18,9 @@
     <PublishDir>..\public\</PublishDir>
 
     <AssemblyName>MeshhessenClient</AssemblyName>
-    <Version>1.5.14.0</Version>
-    <AssemblyVersion>1.5.14.0</AssemblyVersion>
-    <FileVersion>1.5.14.0</FileVersion>
+    <Version>1.6.1.0</Version>
+    <AssemblyVersion>1.6.1.0</AssemblyVersion>
+    <FileVersion>1.6.1.0</FileVersion>
     <Company>Meshtastic Community</Company>
     <Product>Meshhessen Client</Product>
     <Description>Offline-fähiger Windows Client für Meshtastic Geräte</Description>
@@ -60,7 +60,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Protobuf Include="Proto\**\*.proto" GrpcServices="None" ProtoRoot="Proto" />
+    <!-- Official Meshtastic protobufs via the ../protobufs git submodule (pinned commit).
+         Update: cd protobufs && git checkout <tag> && cd .. && git add protobufs.
+         ProtoRoot=../protobufs so imports "meshtastic/x.proto" and "nanopb.proto" resolve. -->
+    <Protobuf Include="..\protobufs\meshtastic\**\*.proto;..\protobufs\nanopb.proto"
+              GrpcServices="None" ProtoRoot="..\protobufs" />
   </ItemGroup>
 
   <ItemGroup>

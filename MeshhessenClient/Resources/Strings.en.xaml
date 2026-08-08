@@ -92,6 +92,12 @@
     <sys:String x:Key="StrFilterChannel">Filter channel:</sys:String>
     <sys:String x:Key="StrChannelLabel">Channel:</sys:String>
     <sys:String x:Key="StrMessagePlaceholder">Enter message...</sys:String>
+    <sys:String x:Key="StrFormatBold">Bold (**text**)</sys:String>
+    <sys:String x:Key="StrFormatItalic">Italic (*text*)</sys:String>
+    <sys:String x:Key="StrFormatStrike">Strikethrough (~~text~~)</sys:String>
+    <sys:String x:Key="StrFormatMono">Monospace (`text`)</sys:String>
+    <sys:String x:Key="StrFormatLink">Link ([text](https://…))</sys:String>
+    <sys:String x:Key="StrFormatLinkLabel">text</sys:String>
     <sys:String x:Key="StrColTime">Time</sys:String>
     <sys:String x:Key="StrColFrom">From</sys:String>
     <sys:String x:Key="StrColShort">Short</sys:String>
@@ -202,6 +208,7 @@
     <sys:String x:Key="StrDebugDevice">Device log (serial debug output)</sys:String>
     <sys:String x:Key="StrDebugBluetooth">Bluetooth debug (BLE communication)</sys:String>
     <sys:String x:Key="StrSaveSettings">Save settings</sys:String>
+    <sys:String x:Key="StrSettingsUnsaved">● Unsaved changes</sys:String>
     <sys:String x:Key="StrNodeConfigGroup">Node Configuration</sys:String>
     <sys:String x:Key="StrNodeConfigHint">Advanced device configuration (LoRa, position, MQTT, telemetry, etc.)</sys:String>
     <sys:String x:Key="StrDeviceInfoGroup">Device Info</sys:String>
@@ -1241,6 +1248,7 @@ Green ≤15% | Yellow 15–25% | Red &gt;25% | Gray = no airtime data</sys:Strin
     <sys:String x:Key="StrVirtualNodeClients">Connected clients:</sys:String>
     <sys:String x:Key="StrVirtualNodeNoClients">(none)</sys:String>
     <sys:String x:Key="StrVirtualNodeNotConnected">No physical node connected.</sys:String>
+    <sys:String x:Key="StrVnSnapshotMissing">Virtual Node is active, but no complete device data is available yet. Connected apps will only see the node list once device initialisation has finished — reconnect if needed.</sys:String>
 
     <!-- TDeck Wizard: common -->
     <sys:String x:Key="StrTDeckTitle">T-Deck Map Assistant</sys:String>
