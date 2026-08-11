@@ -98,6 +98,9 @@
     <sys:String x:Key="StrFormatMono">Monospace (`Text`)</sys:String>
     <sys:String x:Key="StrFormatLink">Link ([Text](https://…))</sys:String>
     <sys:String x:Key="StrFormatLinkLabel">Text</sys:String>
+    <sys:String x:Key="StrRequestKeyTooltip">Schlüssel des Absenders anfordern und Nachricht entschlüsseln</sys:String>
+    <sys:String x:Key="StrRequestingKey">🔑 Schlüssel von {0} angefordert…</sys:String>
+    <sys:String x:Key="StrNoCipherToDecrypt">Für diese Nachricht liegt kein Ciphertext vor (keine PKI-DM).</sys:String>
     <sys:String x:Key="StrColTime">Zeit</sys:String>
     <sys:String x:Key="StrColFrom">Von</sys:String>
     <sys:String x:Key="StrColShort">Kurz</sys:String>

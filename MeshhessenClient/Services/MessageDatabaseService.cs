@@ -47,12 +47,23 @@ CREATE TABLE IF NOT EXISTS messages (
     reply_preview   TEXT    NOT NULL DEFAULT '',
     sender_color    TEXT    NOT NULL DEFAULT '',
     sender_note     TEXT    NOT NULL DEFAULT '',
-    partner_id      INTEGER NOT NULL DEFAULT 0
+    partner_id      INTEGER NOT NULL DEFAULT 0,
+    cipher          BLOB
 );
 CREATE INDEX IF NOT EXISTS idx_msg_timestamp ON messages(timestamp);
 CREATE INDEX IF NOT EXISTS idx_msg_partner   ON messages(partner_id, timestamp);
 ";
         cmd.ExecuteNonQuery();
+
+        // Migrate older DBs that predate the cipher column (ADD COLUMN has no
+        // IF NOT EXISTS — a duplicate throws and is ignored).
+        try
+        {
+            using var mig = con.CreateCommand();
+            mig.CommandText = "ALTER TABLE messages ADD COLUMN cipher BLOB";
+            mig.ExecuteNonQuery();
+        }
+        catch { /* column already exists */ }
     }
 
     private SqliteConnection Open()
@@ -74,11 +85,11 @@ CREATE INDEX IF NOT EXISTS idx_msg_partner   ON messages(partner_id, timestamp);
 INSERT INTO messages
     (timestamp, from_name, from_id, to_id, packet_id, message,
      channel_index, channel_name, is_encrypted, is_via_mqtt,
-     reply_id, reply_from_name, reply_preview, sender_color, sender_note, partner_id)
+     reply_id, reply_from_name, reply_preview, sender_color, sender_note, partner_id, cipher)
 VALUES
     ($ts, $fn, $fi, $ti, $pi, $msg,
      $ci, $cn, $enc, $mqtt,
-     $rid, $rfn, $rp, $sc, $sn, $pid)";
+     $rid, $rfn, $rp, $sc, $sn, $pid, $cipher)";
 
             cmd.Parameters.AddWithValue("$ts",   DateTimeOffset.UtcNow.ToUnixTimeSeconds());
             cmd.Parameters.AddWithValue("$fn",   msg.From ?? string.Empty);
@@ -96,6 +107,7 @@ VALUES
             cmd.Parameters.AddWithValue("$sc",   msg.SenderColorHex ?? string.Empty);
             cmd.Parameters.AddWithValue("$sn",   msg.SenderNote ?? string.Empty);
             cmd.Parameters.AddWithValue("$pid",  (long)partnerId);
+            cmd.Parameters.AddWithValue("$cipher", (object?)msg.PkiCipher ?? DBNull.Value);
             cmd.ExecuteNonQuery();
         }
     }
@@ -109,7 +121,7 @@ VALUES
         {
             using var con = Open();
             using var cmd = con.CreateCommand();
-            cmd.CommandText = "UPDATE messages SET message = $msg, is_encrypted = 0 WHERE packet_id = $pi";
+            cmd.CommandText = "UPDATE messages SET message = $msg, is_encrypted = 0, cipher = NULL WHERE packet_id = $pi";
             cmd.Parameters.AddWithValue("$msg", message ?? string.Empty);
             cmd.Parameters.AddWithValue("$pi", (long)packetId);
             cmd.ExecuteNonQuery();
@@ -235,7 +247,8 @@ SELECT * FROM (
                 ReplyPreview:   r.GetString(r.GetOrdinal("reply_preview")),
                 SenderColorHex: r.GetString(r.GetOrdinal("sender_color")),
                 SenderNote:     r.GetString(r.GetOrdinal("sender_note")),
-                PartnerId:      (uint)r.GetInt64(r.GetOrdinal("partner_id"))
+                PartnerId:      (uint)r.GetInt64(r.GetOrdinal("partner_id")),
+                Cipher:         r.IsDBNull(r.GetOrdinal("cipher")) ? null : (byte[])r.GetValue(r.GetOrdinal("cipher"))
             ));
         }
         return list;

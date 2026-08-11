@@ -7,6 +7,65 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
 
+## [1.6.2] - 2026-08-11
+
+### 🐛 Behoben
+
+#### 🔐 PKC-Entschlüsselung korrekt implementiert (AES-CCM statt CTR)
+- **Wurzelursache gefunden:** Unser `PkiDecryptionService` nutzte **AES-CTR** mit fester Null-Nonce und behandelte das ganze Paket als Ciphertext. Meshtastics echte Public-Key-Crypto ist aber **AES-CCM** (L=2, 8-Byte-Auth-Tag, kein AAD) mit einem **übertragenen 4-Byte-`extraNonce`** am Paketende. Damit konnte client-seitige PKI-Entschlüsselung **reale Firmware-Pakete nie** entschlüsseln (Ergebnis war Müll → „parse failed").
+- Jetzt exakt nach Firmware (`CryptoEngine::decryptCurve25519` + `aes-ccm`) umgesetzt: `key = SHA256(X25519(privat, öffentlich))`, Blob = `[ciphertext][tag 8B][extraNonce 4B]`, 13-Byte-CCM-Nonce = `[packetId low32][extraNonce][fromNode]`. Ein Treffer ist **tag-verifiziert** — kein Müll/Fehlparsen mehr, nur garantiert korrekter Klartext.
+- Betrifft die nachträgliche DM-Entschlüsselung (auch MQTT-relayte PKI-DMs).
+
+#### 🔓 Verschlüsselte MQTT-Direktnachrichten erkennen
+- Eine **über MQTT relayte** verschlüsselte DM an uns trägt oft **kein** `pki_encrypted`-Flag — dadurch griff die nachträgliche Entschlüsselung nicht. Jetzt wird **jede verschlüsselte DM an den eigenen Node** als PKI-Kandidat behandelt (Ciphertext puffern + NodeInfo anfordern); Nicht-PKI-Ciphertext scheitert bei der Tag-Prüfung → sicher. Broadcasts bleiben ausgeschlossen. Plus Diagnose-Zeile beim Empfang.
+
+### ✨ Hinzugefügt
+
+#### 🪪 Unbekannte Node in Chat → NodeInfo still anfordern
+- Erscheint ein Absender im Chat als „Unknown", fordert der Client dessen NodeInfo jetzt **automatisch und still** an (löst Name auf und – bei PKI – den öffentlichen Schlüssel). DM an uns: sofort. Channel/Broadcast: mit globalem Burst-Schutz (min. 8 s Abstand) plus Rate-Limit pro Node, damit ein voller Channel das Mesh nicht flutet.
+- **Nachträgliche Namensauflösung:** Sobald die NodeInfo eintrifft, werden bereits angezeigte „Unknown"-Nachrichten (Kanal **und** DM) **in place** auf den echten Absendernamen aktualisiert – inkl. Kurzname/Farbe und DM-Titel.
+- **Auf dem richtigen Kanal (gültiger Index, kein Hash):** Die NodeInfo-Anfrage geht auf dem Kanal raus, auf dem wir den Node zuletzt **entschlüsselt** gehört haben (Index 0–7). Ein nicht entschlüsselbares Paket trägt nur den Kanal-**Hash** (z. B. 117) — den als Index zu senden ließ das eigene Gerät mit `NAK NoChannel` ablehnen. Jetzt wird ein Hash (>7) durch den letzten gültigen Kanal-Index des Nodes ersetzt (sonst Primär 0). So erreicht die Anfrage auch nur über **MQTT** gehörte Nodes.
+- **Eigener Public Key wird mitgesendet:** Die Anfrage enthält unsere NodeInfo inkl. Public Key (aus SecurityConfig, sonst aus dem Private Key abgeleitet), damit der Zielnode uns direkt PKI-verschlüsselte DMs schicken kann.
+- **Nachvollziehbarkeit:** NodeInfo-Anfragen werden geloggt (`[NodeInfoReq] sent → !… (ch=…, reason: …)`); übersprungene/aufgeschobene Anfragen (Rate-Limit, Burst-Schutz) erscheinen im Debug-Log (`DebugDevice`). Retroaktive Auflösung: `[Chat] Resolved N message(s) from !… → "Name"`.
+
+#### 😀 Reaction-Tooltip zeigt Absender
+- Der Tooltip auf einer Reaction listet jetzt **wer** womit reagiert hat (z. B. „👍  Anna, Max") statt nur das Emoji zu wiederholen.
+
+### 🐛 Behoben
+
+#### 🕒 Chat-Sortierung beim Verbinden/History-Laden
+- Beim Connect mischten sich Live-Nachrichten und nachgeladene History durcheinander (neue oben, alte drunter). `MessageItem` hat jetzt einen echten `SortTime`; Kanal **und** DM werden konsequent **chronologisch** einsortiert (neueste unten) — egal in welcher Reihenfolge live/History eintreffen.
+
+---
+
+## [1.6.1.3] - 2026-08-11
+
+### ✨ Hinzugefügt
+
+#### 📍 Positionen unbekannter Nodes puffern statt verwerfen
+- Kommt eine Position von einem Node, zu dem wir noch keine NodeInfo haben, wird sie jetzt **zwischengespeichert** (statt „position discarded") — inkl. Persistenz in der Positions-DB. Sobald die NodeInfo eintrifft, wird die gepufferte Position automatisch übernommen und der Node erscheint sofort mit Standort auf der Karte (TTL 6 h, Limit 500 Nodes).
+
+### 🐛 Behoben / 🔍 Diagnose
+
+#### 🔑 „Schlüssel anfordern"-Button klarer
+- Der Button erscheint jetzt **nur noch**, wenn wirklich ein Ciphertext zum Entschlüsseln vorliegt (`CanRetryDecrypt`) — bei channel-verschlüsselten oder alt-importierten Nachrichten ohne gespeicherten Ciphertext taucht er nicht mehr auf (er hätte dort ohnehin nichts tun können).
+- **Explizites Logging**: Klick schreibt jetzt immer eine `[PKI] Manual key request clicked …`-Zeile (inkl. `hasCipher`), und ein Skip am Guard wird als `[PKI] Retry skipped …` protokolliert — so ist sofort sichtbar, ob der Klick ankam und warum ggf. nichts passiert. Zusätzlich kurze Status-Rückmeldung im DM-Fenster.
+
+---
+
+## [1.6.1.2] - 2026-08-11
+
+### ✨ Hinzugefügt / 🐛 Behoben
+
+#### 🔓 Nachträgliche DM-Entschlüsselung: robuster (Persistenz + manueller Anstoß)
+- **Übersteht jetzt Neustarts:** Der Ciphertext einer unentschlüsselbaren PKI-DM wird mit der Nachricht **persistiert** (neue `cipher`-Spalte in der Nachrichten-DB, automatische Migration). Beim nächsten Öffnen des DM-Fensters werden solche Nachrichten automatisch erneut angestoßen — entschlüsselt, sobald der Schlüssel bekannt ist, sonst wird die NodeInfo erneut angefragt.
+- **Manueller Anstoß:** Verschlüsselte DM-Sprechblasen haben jetzt einen 🔑-Button, der den Schlüssel des Absenders **sofort** anfordert (ohne Rate-Limit) und die Nachricht bei Erfolg direkt entschlüsselt.
+- **Ordering-Robustheit:** Kommt der Schlüssel des Absenders **vor** unserem eigenen Private Key an, wird nach dem Laden des Private Keys automatisch ein Nachzieh-Durchlauf für alle gepufferten DMs mit bereits bekanntem Schlüssel gemacht.
+- **Fix:** Der verschlüsselte Platzhalter setzte bisher keine Paket-`Id` — dadurch wäre die PKI-Nonce beim Nachentschlüsseln falsch gewesen; jetzt korrekt gesetzt (wichtig auch für Dedup/Persistenz).
+- Abgesichert durch zwei zusätzliche Tests (Sofort-Entschlüsselung bei bekanntem Schlüssel; Schlüssel-Anforderung bei unbekanntem Schlüssel).
+
+---
+
 ## [1.6.1.1] - 2026-08-11
 
 ### ✨ Hinzugefügt

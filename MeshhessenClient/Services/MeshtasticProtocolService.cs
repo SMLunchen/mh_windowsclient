@@ -141,14 +141,17 @@ public class MeshtasticProtocolService
     // Channels/broadcasts are excluded — PKI is 1:1, so this only applies to DMs.
     private sealed class PendingPkiDm
     {
-        public MeshhessenClient.Models.MessageItem Item = null!;
-        public byte[] Ciphertext = Array.Empty<byte>();
-        public uint FromId;
-        public uint PacketId;
+        public MeshhessenClient.Models.MessageItem Item = null!;  // carries the ciphertext in Item.PkiCipher
         public DateTime AddedAt;
     }
     private readonly Dictionary<uint, List<PendingPkiDm>> _pendingPki = new();
     private readonly Dictionary<uint, DateTime> _lastNodeInfoRequest = new();
+    // Last VALID channel index (0–7) we decoded a packet from a node on. Used to
+    // send NodeInfo requests on a reachable channel — an undecryptable packet only
+    // carries the channel *hash* (e.g. 117), which is not a valid channel index.
+    private readonly Dictionary<uint, uint> _lastGoodChannel = new();
+    private DateTime _lastAutoNodeInfoAt = DateTime.MinValue; // global burst-guard for channel auto-requests
+    private static readonly TimeSpan MinAutoRequestGap = TimeSpan.FromSeconds(8);
     private readonly object _pendingPkiLock = new();
     private static readonly TimeSpan NodeInfoRequestInterval = TimeSpan.FromMinutes(2);
     private static readonly TimeSpan PendingPkiTtl = TimeSpan.FromMinutes(30);
@@ -157,6 +160,22 @@ public class MeshtasticProtocolService
     /// <summary>Fired when a previously-encrypted DM was decrypted after its
     /// sender's key arrived; the UI updates the existing message in place.</summary>
     public event EventHandler<PkiLateDecryptedEventArgs>? PkiMessageDecrypted;
+
+    // --- Buffered positions for not-yet-known nodes -----------------------
+    // A Position from a node we have no NodeInfo for yet is kept here (instead of
+    // being discarded) and applied to the node once it becomes known.
+    private sealed class PendingPosition
+    {
+        public double Latitude, Longitude;
+        public int Altitude;
+        public float? GroundSpeed, GroundTrack;
+        public int Rssi;
+        public float Snr;
+        public DateTime AddedAt;
+    }
+    private readonly Dictionary<uint, PendingPosition> _pendingPositions = new(); // guarded by _dataLock
+    private static readonly TimeSpan PendingPositionTtl = TimeSpan.FromHours(6);
+    private const int MaxPendingPositions = 500;
 
     private const byte PACKET_START_BYTE_1 = 0x94;
     private const byte PACKET_START_BYTE_2 = 0xC3;
@@ -194,6 +213,7 @@ public class MeshtasticProtocolService
             // Clear all data from previous device
             _tempChannels.Clear();
             _knownNodes.Clear();
+            _pendingPositions.Clear();
             _myNodeId = 0;
             _myDeviceInfo = null;
             _currentLoRaConfig = null;
@@ -210,6 +230,7 @@ public class MeshtasticProtocolService
         {
             _pendingPki.Clear();
             _lastNodeInfoRequest.Clear();
+            _lastGoodChannel.Clear();
         }
 
         // Reset the Virtual Node snapshot for the new device/session
@@ -1153,6 +1174,13 @@ public class MeshtasticProtocolService
         {
             var data = packet.Decoded;
 
+            // Remember the valid channel index this node was decoded on (0–7), so a
+            // NodeInfo request can be sent on a channel that actually reaches them.
+            if (packet.From != 0 && packet.From != _myNodeId && packet.Channel <= 7)
+            {
+                lock (_pendingPkiLock) { _lastGoodChannel[packet.From] = packet.Channel; }
+            }
+
             // Record every decoded packet for telemetry analysis + track direct-neighbor status
             if (packet.From != 0 && !_isInitializing)
             {
@@ -1267,6 +1295,7 @@ public class MeshtasticProtocolService
                 From = fromName,
                 FromId = packet.From,
                 ToId = packet.To,
+                Id = packet.Id,   // needed for the PKI nonce on retro-decrypt + dedup/persistence
                 Message = System.Windows.Application.Current?.Resources["StrEncryptedMessage"] as string ?? "[Encrypted message – PSK required]",
                 Channel = FormatChannelDisplay(packet.Channel),
                 IsEncrypted = true,
@@ -1276,21 +1305,38 @@ public class MeshtasticProtocolService
                 RxRssi = encHops == 0 && !packet.ViaMqtt && packet.RxRssi != 0  ? packet.RxRssi : null,
             };
 
-            // PKI DM to us that we couldn't decrypt: buffer the ciphertext and
-            // actively request the sender's NodeInfo, so we can decrypt it
-            // retroactively once the key arrives. DM-only (PKI is 1:1).
-            if (packet.PkiEncrypted && _myNodeId != 0 && packet.To == _myNodeId && _pkiDecrypt.HasPrivateKey)
+            // Encrypted DM addressed to us that we couldn't decrypt: keep the
+            // ciphertext (also persisted with the message) and actively request the
+            // sender's NodeInfo, so we can decrypt it retroactively once the key
+            // arrives. We treat ANY encrypted DM to us as a PKI candidate — not only
+            // when pki_encrypted is set — because MQTT-relayed PKI DMs can arrive
+            // without that flag; a non-PKI ciphertext simply never parses on retry,
+            // so this is safe. Broadcasts (To != us) are excluded (PKI is 1:1).
+            bool isDmToUs = _myNodeId != 0 && packet.To == _myNodeId;
+            if (isDmToUs)
             {
-                BufferPendingPkiDm(messageItem, packet.Encrypted.ToByteArray(), packet.From, packet.Id);
-                _ = RequestNodeInfoAsync(packet.From);
+                Logger.WriteLine($"[PKI] Encrypted DM to us from !{packet.From:x8}: pki={packet.PkiEncrypted} " +
+                    $"viaMqtt={packet.ViaMqtt} — capturing ciphertext ({packet.Encrypted.Length} bytes) for retry");
+                messageItem.PkiCipher = packet.Encrypted.ToByteArray();
+                messageItem.ChannelIndex = packet.Channel;
+                BufferPendingPkiDm(messageItem);
+                _ = RequestNodeInfoAsync(packet.From, reason: "encrypted DM to us (PKI)", channel: packet.Channel);
+
+                // Diagnostic: is this a channel-PSK DM (channel = hash) on a channel we
+                // actually hold? If pki=false and the hash isn't one of ours, the device
+                // couldn't decrypt it and neither can we — it's a channel we don't have.
+                if (!packet.PkiEncrypted)
+                    Logger.WriteLine($"[ChanDec] undecryptable DM from !{packet.From:x8}: cipher={packet.Encrypted.Length}B, " +
+                        $"packet channel-hash={packet.Channel}; our channels (idx(name)=hash): [{DescribeOurChannelHashes()}]");
             }
 
             MessageReceived?.Invoke(this, messageItem);
         }
     }
 
-    private void BufferPendingPkiDm(MeshhessenClient.Models.MessageItem item, byte[] ciphertext, uint fromId, uint packetId)
+    private void BufferPendingPkiDm(MeshhessenClient.Models.MessageItem item)
     {
+        if (item.PkiCipher is not { Length: > 0 }) return;
         lock (_pendingPkiLock)
         {
             // Drop expired entries across all senders
@@ -1301,28 +1347,112 @@ public class MeshtasticProtocolService
                 if (_pendingPki[key].Count == 0) _pendingPki.Remove(key);
             }
 
-            if (!_pendingPki.TryGetValue(fromId, out var list))
+            if (!_pendingPki.TryGetValue(item.FromId, out var list))
             {
                 list = new List<PendingPkiDm>();
-                _pendingPki[fromId] = list;
+                _pendingPki[item.FromId] = list;
             }
+            if (item.Id != 0 && list.Any(p => p.Item.Id == item.Id)) return; // dedup by packet id
             if (list.Count >= MaxPendingPerNode) list.RemoveAt(0);
-            list.Add(new PendingPkiDm { Item = item, Ciphertext = ciphertext, FromId = fromId, PacketId = packetId, AddedAt = DateTime.UtcNow });
+            list.Add(new PendingPkiDm { Item = item, AddedAt = DateTime.UtcNow });
         }
-        Logger.WriteLine($"[PKI] Buffered undecryptable DM from !{fromId:x8} (pktId={packetId:x8}) — requesting NodeInfo");
+        Logger.WriteLine($"[PKI] Buffered undecryptable DM from !{item.FromId:x8} (pktId={item.Id:x8})");
+    }
+
+    /// <summary>
+    /// Decrypt a known-encrypted DM now if we have the sender's key, otherwise
+    /// buffer it and request the sender's NodeInfo. Used for restored history and
+    /// the manual "request key" action (<paramref name="force"/> bypasses the
+    /// per-node request rate-limit).
+    /// </summary>
+    public void RetryOrRequestPendingDm(MeshhessenClient.Models.MessageItem item, bool force = false)
+    {
+        if (item?.PkiCipher is not { Length: > 0 } || item.FromId == 0)
+        {
+            Logger.WriteLine($"[PKI] Retry skipped: from=!{item?.FromId:x8} hasCipher={item?.PkiCipher is { Length: > 0 }} — " +
+                "not a PKI DM with stored ciphertext (channel-encrypted, or received before ciphertext persistence)");
+            return;
+        }
+        Logger.WriteLine($"[PKI] Retry/request for DM from !{item.FromId:x8} (pkt=!{item.Id:x8}, force={force})");
+
+        if (_pkiDecrypt.HasPrivateKey && _nodeKeyService?.GetPublicKey(item.FromId) is { } b64)
+        {
+            try { if (TryLateDecrypt(item, Convert.FromBase64String(b64))) return; }
+            catch { /* malformed key — fall through to request */ }
+        }
+
+        BufferPendingPkiDm(item);
+        _ = RequestNodeInfoAsync(item.FromId, force, reason: "retry/decrypt DM", channel: item.ChannelIndex);
+    }
+
+    // Try to decrypt a single buffered DM with the given sender key; on success
+    // raise PkiMessageDecrypted so the UI updates the message in place.
+    private bool TryLateDecrypt(MeshhessenClient.Models.MessageItem item, byte[] senderPublicKey)
+    {
+        if (item.PkiCipher is not { Length: > 0 } || !_pkiDecrypt.HasPrivateKey) return false;
+        var plaintext = _pkiDecrypt.TryDecrypt(item.PkiCipher, senderPublicKey, item.FromId, item.Id);
+        if (plaintext == null) return false;
+        try
+        {
+            var data = Data.Parser.ParseFrom(plaintext);
+            if ((int)data.Portnum != 1) return false; // only text DMs
+            var text = data.Payload.ToStringUtf8();
+            Logger.WriteLine($"[PKI] Late-decrypted DM from !{item.FromId:x8} (pktId={item.Id:x8})");
+            PkiMessageDecrypted?.Invoke(this, new PkiLateDecryptedEventArgs
+            {
+                Item = item, Text = text, FromId = item.FromId, PacketId = item.Id
+            });
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Logger.WriteLine($"[PKI] Late decrypt parse failed for !{item.FromId:x8}: {ex.Message}");
+            return false;
+        }
+    }
+
+    // After our own private key loads, sweep all buffered DMs whose sender key we
+    // already know (covers key-arrives-before-private-key ordering).
+    private void RetryAllPendingWithKnownKeys()
+    {
+        if (!_pkiDecrypt.HasPrivateKey) return;
+        List<uint> nodes;
+        lock (_pendingPkiLock) nodes = _pendingPki.Keys.ToList();
+        foreach (var n in nodes)
+        {
+            if (_nodeKeyService?.GetPublicKey(n) is not { } b64) continue;
+            try { RetryPendingPkiForNode(n, Convert.FromBase64String(b64)); } catch { }
+        }
     }
 
     /// <summary>Actively request a node's NodeInfo (NODEINFO_APP with want_response)
-    /// so it replies with its User incl. public key. Rate-limited per node.</summary>
-    public async Task RequestNodeInfoAsync(uint destNodeId)
+    /// so it replies with its User incl. public key. Rate-limited per node unless forced.
+    /// <paramref name="channel"/> is the channel index the triggering message arrived on —
+    /// the request is sent on that same channel so a NodeInfo can reach a node we only
+    /// hear via MQTT (that channel has the MQTT up/downlink). <paramref name="reason"/> is logged.</summary>
+    public async Task RequestNodeInfoAsync(uint destNodeId, bool force = false, string reason = "unknown node", uint channel = 0)
     {
         if (destNodeId == 0 || destNodeId == _myNodeId) return;
 
+        // Channel indices are 0–7. A value >7 is a channel *hash* from an
+        // undecryptable packet, not a valid index — replace it with the last
+        // channel we actually decoded a packet from this node on (else primary 0),
+        // otherwise the device NAKs the request with "NoChannel".
+        if (channel > 7)
+        {
+            lock (_pendingPkiLock)
+                channel = _lastGoodChannel.TryGetValue(destNodeId, out var good) ? good : 0;
+        }
+
         lock (_pendingPkiLock)
         {
-            if (_lastNodeInfoRequest.TryGetValue(destNodeId, out var last) &&
+            if (!force && _lastNodeInfoRequest.TryGetValue(destNodeId, out var last) &&
                 DateTime.UtcNow - last < NodeInfoRequestInterval)
+            {
+                if (_debugDevice)
+                    Logger.WriteLine($"[NodeInfoReq] skip !{destNodeId:x8} — rate-limited ({(int)(DateTime.UtcNow - last).TotalSeconds}s ago, reason: {reason})");
                 return;
+            }
             _lastNodeInfoRequest[destNodeId] = DateTime.UtcNow;
         }
 
@@ -1332,6 +1462,7 @@ public class MeshtasticProtocolService
             {
                 From = _myNodeId,
                 To = destNodeId,
+                Channel = channel,   // reply on the same channel (may carry MQTT up/downlink)
                 Decoded = new Data
                 {
                     Portnum = (PortNum)4, // NODEINFO_APP
@@ -1341,12 +1472,82 @@ public class MeshtasticProtocolService
                 Id = (uint)Random.Shared.Next()
             };
             await SendToRadioAsync(new ToRadio { Packet = meshPacket });
-            Logger.WriteLine($"[PKI] Requested NodeInfo from !{destNodeId:x8} (want_response) to obtain public key");
+            Logger.WriteLine($"[NodeInfoReq] sent → !{destNodeId:x8} (want_response, ch={channel}, force={force}, reason: {reason})");
         }
         catch (Exception ex)
         {
-            Logger.WriteLine($"[PKI] NodeInfo request to !{destNodeId:x8} failed: {ex.Message}");
+            Logger.WriteLine($"[NodeInfoReq] FAILED → !{destNodeId:x8}: {ex.Message}");
         }
+    }
+
+    // Auto-request NodeInfo for an unknown node seen on a channel. Per-node limited
+    // (inside RequestNodeInfoAsync) plus a global gap so a busy channel with many
+    // unknown nodes doesn't fire a burst of requests into the mesh at once.
+    private void RequestUnknownNodeInfoThrottled(uint from, uint channel)
+    {
+        lock (_pendingPkiLock)
+        {
+            if (_lastNodeInfoRequest.TryGetValue(from, out var last) &&
+                DateTime.UtcNow - last < NodeInfoRequestInterval)
+            {
+                if (_debugDevice)
+                    Logger.WriteLine($"[NodeInfoReq] skip !{from:x8} — rate-limited (channel auto)");
+                return; // this node was requested recently
+            }
+            if (DateTime.UtcNow - _lastAutoNodeInfoAt < MinAutoRequestGap)
+            {
+                if (_debugDevice)
+                    Logger.WriteLine($"[NodeInfoReq] defer !{from:x8} — burst-guard (channel auto)");
+                return; // global burst-guard
+            }
+            _lastAutoNodeInfoAt = DateTime.UtcNow;
+        }
+        // Send on the channel the message arrived on, so it can reach MQTT-only nodes.
+        _ = RequestNodeInfoAsync(from, reason: "unknown channel sender", channel: channel);
+    }
+
+    // The well-known Meshtastic default PSK (alias index 1), from firmware Channels.h.
+    private static readonly byte[] DefaultPsk =
+        { 0xd4, 0xf1, 0xbb, 0x3a, 0x20, 0x29, 0x07, 0x59, 0xf0, 0xbc, 0xff, 0xab, 0xcf, 0x4e, 0x69, 0x01 };
+
+    // Expand a channel PSK to the actual key (firmware Channels::getKey): a 1-byte
+    // alias maps to the default PSK with its last byte bumped; 16/32-byte keys are
+    // used as-is; 0 bytes / alias 0 means no encryption.
+    private static byte[]? ExpandChannelKey(Channel ch)
+    {
+        var psk = ch.Settings?.Psk?.ToByteArray() ?? Array.Empty<byte>();
+        if (psk.Length == 0) return null;
+        if (psk.Length == 1)
+        {
+            if (psk[0] == 0) return null;
+            var key = (byte[])DefaultPsk.Clone();
+            key[^1] = (byte)(key[^1] + psk[0] - 1);
+            return key;
+        }
+        return psk; // 16 or 32 bytes
+    }
+
+    // Channel hash = xor(name bytes) xor xor(key bytes) — firmware Channels::generateHash.
+    private static int ChannelHash(Channel ch, byte[] key)
+    {
+        byte h = 0;
+        foreach (var b in Encoding.UTF8.GetBytes(ch.Settings?.Name ?? "")) h ^= b;
+        foreach (var b in key) h ^= b;
+        return h;
+    }
+
+    // Diagnostic: does the channel hash of an undecryptable packet match any channel
+    // we actually hold the key for? If not, the device couldn't decrypt it either and
+    // it's on a channel we don't have — client-side channel decryption can't help.
+    private string DescribeOurChannelHashes()
+    {
+        List<Channel> chans;
+        lock (_dataLock) { chans = new List<Channel>(_tempChannels); }
+        return string.Join(", ", chans.Select(c =>
+        {
+            var k = ExpandChannelKey(c);
+            return $"{c.Index}({c.Settings?.Name})={(k != null ? ChannelHash(c, k) : -1)}";
+        }));
     }
 
     private User BuildOwnUser()
@@ -1386,27 +1587,8 @@ public class MeshtasticProtocolService
 
         var stillPending = new List<PendingPkiDm>();
         foreach (var p in list)
-        {
-            var plaintext = _pkiDecrypt.TryDecrypt(p.Ciphertext, senderPublicKey, p.FromId, p.PacketId);
-            if (plaintext == null) { stillPending.Add(p); continue; }
-
-            try
-            {
-                var data = Data.Parser.ParseFrom(plaintext);
-                // Only text DMs get shown as text; other portnums keep the placeholder.
-                if ((int)data.Portnum != 1) continue;
-                string text = data.Payload.ToStringUtf8();
-                Logger.WriteLine($"[PKI] Late-decrypted DM from !{p.FromId:x8} (pktId={p.PacketId:x8}) after NodeInfo arrived");
-                PkiMessageDecrypted?.Invoke(this, new PkiLateDecryptedEventArgs
-                {
-                    Item = p.Item, Text = text, FromId = p.FromId, PacketId = p.PacketId
-                });
-            }
-            catch (Exception ex)
-            {
-                Logger.WriteLine($"[PKI] Late decrypt parse failed for !{p.FromId:x8}: {ex.Message}");
-            }
-        }
+            if (!TryLateDecrypt(p.Item, senderPublicKey))
+                stillPending.Add(p);
 
         if (stillPending.Count > 0)
         {
@@ -1514,12 +1696,26 @@ public class MeshtasticProtocolService
             }
 
             string fromName = "Unknown";
+            bool senderKnown = false;
             lock (_dataLock)
             {
                 if (_knownNodes.TryGetValue(packet.From, out var node))
                 {
                     fromName = node.Name;
+                    senderKnown = true;
                 }
+            }
+
+            // Unknown sender in chat: silently request their NodeInfo so the name
+            // (and, for PKI, their public key) resolves. A DM to us is requested
+            // immediately (low volume, high value); a channel/broadcast sender goes
+            // through a global burst-guard so a busy channel doesn't flood the mesh.
+            if (!senderKnown && _myNodeId != 0 && packet.From != _myNodeId)
+            {
+                if (packet.To == _myNodeId)
+                    _ = RequestNodeInfoAsync(packet.From, reason: "unknown DM sender", channel: packet.Channel);
+                else
+                    RequestUnknownNodeInfoThrottled(packet.From, packet.Channel);
             }
 
             int hops = (packet.HopStart == 0 || packet.HopLimit > packet.HopStart)
@@ -1857,6 +2053,7 @@ public class MeshtasticProtocolService
             lock (_dataLock)
             {
                 _knownNodes[protoNodeInfo.Num] = nodeInfo;
+                ApplyPendingPosition_NoLock(nodeInfo);
                 shouldFireEvent = !_isInitializing;
             }
 
@@ -1929,6 +2126,7 @@ public class MeshtasticProtocolService
             lock (_dataLock)
             {
                 _knownNodes[packet.From] = nodeInfo;
+                ApplyPendingPosition_NoLock(nodeInfo);
                 shouldFireEvent = !_isInitializing;
             }
 
@@ -1949,6 +2147,25 @@ public class MeshtasticProtocolService
         }
     }
 
+    // Apply a buffered position to a node that just became known. Must be called
+    // while holding _dataLock. Applied before the NodeInfoReceived event fires so
+    // the position rides along and the node shows on the map immediately.
+    private void ApplyPendingPosition_NoLock(ModelNodeInfo node)
+    {
+        if (!_pendingPositions.TryGetValue(node.NodeId, out var p)) return;
+        _pendingPositions.Remove(node.NodeId);
+        if (DateTime.Now - p.AddedAt > PendingPositionTtl) return; // too stale
+
+        node.Latitude    = p.Latitude;
+        node.Longitude   = p.Longitude;
+        node.Altitude    = p.Altitude;
+        node.GroundSpeed = p.GroundSpeed;
+        node.GroundTrack = p.GroundTrack;
+        if (p.Rssi != 0) node.Rssi = p.Rssi.ToString();
+        if (p.Snr != 0f) { node.Snr = p.Snr.ToString("F1"); node.SnrValue = p.Snr; }
+        Logger.WriteLine($"  Applied buffered position to now-known node !{node.NodeId:x8}: lat={p.Latitude:F6}, lon={p.Longitude:F6}");
+    }
+
     private void HandlePositionPacket(MeshPacket packet, Data data)
     {
         try
@@ -1957,6 +2174,7 @@ public class MeshtasticProtocolService
 
             ModelNodeInfo? nodeToFire = null;
             bool shouldFireEvent;
+            bool bufferedUnknownPos = false;
             bool hasGpsFix = position.LatitudeI != 0 || position.LongitudeI != 0;
 
             // Decode ground_track: proto stores degrees * 100000, convert to 0–360°
@@ -1991,7 +2209,32 @@ public class MeshtasticProtocolService
                 }
                 else
                 {
-                    Logger.WriteLine($"  Node !{packet.From:x8} unknown, position discarded");
+                    if (hasGpsFix)
+                    {
+                        // Buffer the position until we learn who this node is.
+                        if (_pendingPositions.Count >= MaxPendingPositions && !_pendingPositions.ContainsKey(packet.From))
+                        {
+                            var oldest = _pendingPositions.OrderBy(kv => kv.Value.AddedAt).First().Key;
+                            _pendingPositions.Remove(oldest);
+                        }
+                        _pendingPositions[packet.From] = new PendingPosition
+                        {
+                            Latitude    = position.LatitudeI / 1e7,
+                            Longitude   = position.LongitudeI / 1e7,
+                            Altitude    = position.Altitude,
+                            GroundSpeed = groundSpeed,
+                            GroundTrack = groundTrack,
+                            Rssi        = packet.RxRssi,
+                            Snr         = packet.RxSnr,
+                            AddedAt     = DateTime.Now
+                        };
+                        bufferedUnknownPos = true;
+                        Logger.WriteLine($"  Node !{packet.From:x8} unknown — position buffered until NodeInfo arrives ({_pendingPositions.Count} pending)");
+                    }
+                    else
+                    {
+                        Logger.WriteLine($"  Node !{packet.From:x8} unknown, position ignored (no GPS fix)");
+                    }
                     shouldFireEvent = false;
                 }
             }
@@ -2004,6 +2247,18 @@ public class MeshtasticProtocolService
                     nodeToFire.Latitude!.Value,
                     nodeToFire.Longitude!.Value,
                     nodeToFire.Altitude,
+                    groundSpeed,
+                    groundTrack,
+                    DateTimeOffset.UtcNow.ToUnixTimeSeconds());
+            }
+            else if (bufferedUnknownPos)
+            {
+                // Persist the unknown node's position too, so its track isn't lost.
+                _db?.InsertNodePosition(
+                    packet.From,
+                    position.LatitudeI / 1e7,
+                    position.LongitudeI / 1e7,
+                    position.Altitude,
                     groundSpeed,
                     groundTrack,
                     DateTimeOffset.UtcNow.ToUnixTimeSeconds());
@@ -3017,6 +3272,7 @@ public class MeshtasticProtocolService
                             {
                                 _pkiDecrypt.SetPrivateKey(sec.PrivateKey.ToByteArray());
                                 Logger.WriteLine("PKI private key loaded — client-side decryption active");
+                                RetryAllPendingWithKnownKeys();
                             }
                             else
                             {
@@ -3024,6 +3280,9 @@ public class MeshtasticProtocolService
                             }
                             if (sec.PublicKey != null && sec.PublicKey.Length == 32)
                                 _myPublicKey = sec.PublicKey.ToByteArray();
+                            else
+                                _myPublicKey = _pkiDecrypt.GetOwnPublicKey(); // derive if device didn't send it
+                            Logger.WriteLine($"[PKI] Own public key {(_myPublicKey is { Length: 32 } ? "available" : "MISSING")} for NodeInfo advertisement");
                             SecurityConfigReceived?.Invoke(this, sec);
                             break;
                     }

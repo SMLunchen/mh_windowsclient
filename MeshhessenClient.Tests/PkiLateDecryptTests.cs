@@ -50,12 +50,13 @@ public class PkiLateDecryptTests
         return frame;
     }
 
-    // Produce PKI ciphertext of a plaintext addressed to us (Alice) from Bob.
+    // Produce a real PKC blob (AES-CCM + tag + extra nonce) of a plaintext
+    // addressed to us (Alice), sent from Bob.
     private static byte[] Encrypt(byte[] plaintext)
     {
         var enc = new PkiDecryptionService();
         enc.SetPrivateKey(BobPriv);               // sender's private key
-        return enc.TryDecrypt(plaintext, AlicePub, SenderNode, PacketId)!; // shared = Bob×Alice
+        return enc.Encrypt(plaintext, AlicePub, SenderNode, PacketId, extraNonce: 0x11223344)!;
     }
 
     [Fact]
@@ -138,6 +139,75 @@ public class PkiLateDecryptTests
         Assert.Equal(SenderNode, decrypted.FromId);
         Assert.Equal(PacketId, decrypted.PacketId);
         Assert.Same(shown, decrypted.Item);   // updates the same message in place
+    }
+
+    // Build a service with our identity + private key already loaded.
+    private static (MeshtasticProtocolService svc, FakeConnectionService fake) NewServiceWithOurKey()
+    {
+        var fake = new FakeConnectionService(ConnectionType.Tcp);
+        var svc  = new MeshtasticProtocolService(fake);
+        svc.SetNodeKeyService(new NodeKeyService(Path.Combine(Path.GetTempPath(), $"nk_{System.Guid.NewGuid():N}.csv")));
+        fake.Receive(Frame(new FromRadio { MyInfo = new MyNodeInfo { MyNodeNum = OurNode } }));
+        var secResp = new AdminMessage
+        {
+            GetConfigResponse = new Config
+            {
+                Security = new Config.Types.SecurityConfig
+                {
+                    PrivateKey = ByteString.CopyFrom(AlicePriv),
+                    PublicKey  = ByteString.CopyFrom(AlicePub)
+                }
+            }
+        };
+        fake.Receive(Frame(new FromRadio
+        {
+            Packet = new MeshPacket { From = OurNode, To = OurNode, Decoded = new Data { Portnum = (PortNum)6, Payload = secResp.ToByteString() } }
+        }));
+        return (svc, fake);
+    }
+
+    private static ModelMessageItem EncryptedItem(string text) => new()
+    {
+        FromId = SenderNode,
+        Id = PacketId,
+        IsEncrypted = true,
+        PkiCipher = Encrypt(new Data { Portnum = PortNum.TextMessageApp, Payload = ByteString.CopyFromUtf8(text) }.ToByteArray())
+    };
+
+    [Fact]
+    public void RetryOrRequestPendingDm_DecryptsImmediately_WhenSenderKeyKnown()
+    {
+        var (svc, fake) = NewServiceWithOurKey();
+        // Sender's key is already known (a NodeInfo was seen earlier).
+        fake.Receive(Frame(new FromRadio
+        {
+            NodeInfo = new NodeInfo { Num = SenderNode, User = new User { Id = $"!{SenderNode:x8}", PublicKey = ByteString.CopyFrom(BobPub) } }
+        }));
+
+        PkiLateDecryptedEventArgs? dec = null;
+        svc.PkiMessageDecrypted += (_, e) => dec = e;
+
+        var item = EncryptedItem("später");
+        svc.RetryOrRequestPendingDm(item);
+
+        Assert.NotNull(dec);
+        Assert.Equal("später", dec!.Text);
+        Assert.Same(item, dec.Item);
+    }
+
+    [Fact]
+    public void RetryOrRequestPendingDm_RequestsKey_WhenSenderKeyUnknown()
+    {
+        var (svc, fake) = NewServiceWithOurKey();
+        fake.Written.Clear();
+
+        PkiLateDecryptedEventArgs? dec = null;
+        svc.PkiMessageDecrypted += (_, e) => dec = e;
+
+        svc.RetryOrRequestPendingDm(EncryptedItem("später"), force: true);
+
+        Assert.Null(dec);   // no key yet → not decrypted
+        Assert.Contains(fake.Written, w => IsNodeInfoRequestTo(w, SenderNode));
     }
 
     private static bool IsNodeInfoRequestTo(byte[] framed, uint dest)

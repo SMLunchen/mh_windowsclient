@@ -1124,7 +1124,7 @@ public partial class MainWindow : Window
             };
             _allMessages.Add(sentMessage);
             if (sentId != 0) _messageById[sentId] = sentMessage;
-            _messages.Add(sentMessage);
+            MessageItem.InsertByTime(_messages, sentMessage);
             MessageListView.ScrollIntoView(sentMessage);
 
             // Persistiere gesendete Nachricht in DB
@@ -1865,7 +1865,7 @@ public partial class MainWindow : Window
                 // Füge zu sichtbarer Liste hinzu wenn Filter passt
                 if (passesFilter)
                 {
-                    _messages.Add(message);
+                    MessageItem.InsertByTime(_messages, message);
                     MessageListView.ScrollIntoView(message);
                 }
             }
@@ -1904,6 +1904,10 @@ public partial class MainWindow : Window
                 {
                     node.Note = note;
                 }
+
+                // Retroactively resolve any "Unknown"/placeholder chat messages from
+                // this node now that we know its name.
+                UpdateMessagesForNode(node);
 
                 // Apply pinned and favorite state (local settings take precedence; proto value also accepted)
                 node.IsPinned    = _currentSettings.PinnedNodes.ContainsKey(node.NodeId);
@@ -4372,6 +4376,32 @@ public partial class MainWindow : Window
     //  REACTIONS / TAP-BACKS
     // -----------------------------------------------------------------------
 
+    // Resolve a node id to a display name for chat/reactions (falls back to hex id).
+    private string ResolveNodeName(uint nodeId)
+    {
+        if (_myNodeId != 0 && nodeId == _myNodeId) return Loc("StrMe");
+        var n = _allNodes.FirstOrDefault(x => x.NodeId == nodeId);
+        return !string.IsNullOrEmpty(n?.Name) ? n!.Name : $"!{nodeId:x8}";
+    }
+
+    // Update already-displayed chat messages from a node once its NodeInfo arrives,
+    // so an "Unknown" sender resolves to the real name in place.
+    private void UpdateMessagesForNode(Models.NodeInfo node)
+    {
+        string name = !string.IsNullOrEmpty(node.Name) ? node.Name : $"!{node.NodeId:x8}";
+        int updated = 0;
+        foreach (var m in _allMessages)
+        {
+            if (m.FromId != node.NodeId || m.IsOwnMessage) continue;
+            if (m.From != name) { m.From = name; updated++; }
+            if (!string.IsNullOrEmpty(node.ShortName)) m.SenderShortName = node.ShortName;
+            if (!string.IsNullOrEmpty(node.ColorHex)) m.SenderColorHex = node.ColorHex;
+        }
+        if (updated > 0)
+            Services.Logger.WriteLine($"[Chat] Resolved {updated} message(s) from !{node.NodeId:x8} → \"{name}\" (viaMqtt={node.IsViaMqtt})");
+        _dmWindow?.UpdateSenderInfo(node.NodeId, name, node.ShortName ?? string.Empty, node.ColorHex ?? string.Empty);
+    }
+
     private void OnReactionReceived(object? sender, (uint ReplyId, string Emoji, uint FromId) reaction)
     {
         Dispatcher.BeginInvoke(() =>
@@ -4379,7 +4409,7 @@ public partial class MainWindow : Window
             // Try to find the message by ID in _messageById
             if (_messageById.TryGetValue(reaction.ReplyId, out var msg))
             {
-                msg.AddReaction(reaction.Emoji, reaction.FromId);
+                msg.AddReaction(reaction.Emoji, reaction.FromId, ResolveNodeName(reaction.FromId));
                 Services.Logger.WriteLine($"Reaction '{reaction.Emoji}' from !{reaction.FromId:x8} added to msg {reaction.ReplyId}");
             }
             else
@@ -4445,7 +4475,7 @@ public partial class MainWindow : Window
                 {
                     await _protocolService.SendReactionAsync(emoji, message.Id, destinationId, channel);
                     // Show our own reaction immediately
-                    message.AddReaction(emoji, _myNodeId);
+                    message.AddReaction(emoji, _myNodeId, Loc("StrMe"));
                     if (message.Id != 0) _messageById[message.Id] = message;
                 }
                 catch (Exception ex)

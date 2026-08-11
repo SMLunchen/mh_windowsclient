@@ -826,7 +826,7 @@
                                                     <!-- Right: reactions · hops · time · channel -->
                                                     <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
                                                         <emoji:TextBlock Text="{Binding ReactionsDisplay}" FontSize="12"
-                                                                         ToolTip="{Binding ReactionsDisplay}"
+                                                                         ToolTip="{Binding ReactionsTooltip}"
                                                                          VerticalAlignment="Center" Margin="0,0,8,0">
                                                             <emoji:TextBlock.Style>
                                                                 <Style TargetType="emoji:TextBlock">
