@@ -7,6 +7,19 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
 
+## [1.6.1.1] - 2026-08-11
+
+### ✨ Hinzugefügt
+
+#### 🔓 Verschlüsselte Direktnachrichten nachträglich entschlüsseln
+- Eine per PKI verschlüsselte **Direktnachricht**, für die uns noch der öffentliche Schlüssel des Absenders fehlt (oder er rotiert wurde), wird jetzt erkannt und **gepuffert** statt nur als „[Encrypted message]" abgelegt.
+- Der Client **fordert aktiv die NodeInfo des Absenders an** (`NODEINFO_APP` mit `want_response`, rate-limitiert pro Node), um dessen Public Key zu bekommen.
+- Sobald der Schlüssel eintrifft, wird die Nachricht **nachträglich entschlüsselt** und die bereits angezeigte Sprechblase **in place** auf den Klartext aktualisiert (`MessageItem.Message`/`IsEncrypted` sind jetzt beobachtbar); der gespeicherte DB-Eintrag wird per `UpdateDmMessage(packetId, …)` korrigiert.
+- **Nur für Direktnachrichten** (`packet.To == eigener Node`, `PkiEncrypted`). Kanal-/Broadcast-Nachrichten sind bewusst ausgenommen — PKI ist 1:1.
+- Absicherung durch einen End-to-End-Test mit echtem X25519-Roundtrip (RFC-7748-Testvektoren): unentschlüsselbare DM → NodeInfo-Anforderung geprüft → nach Schlüsselempfang entschlüsselt und Event ausgelöst.
+
+---
+
 ## [1.6.1.0] - 2026-08-08
 
 ### ✨ Hinzugefügt

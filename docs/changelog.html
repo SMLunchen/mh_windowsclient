@@ -172,10 +172,72 @@
 <div class="section active" id="de">
 <main>
 
-  <!-- ── v1.6.0 ── -->
+  <!-- ── v1.6.1.1 ── -->
   <div class="version-entry current">
     <div class="version-header">
-      <span class="version-tag tag-latest">v1.6.0</span>
+      <span class="version-tag tag-latest">v1.6.1.1</span>
+      <span class="version-date">2026-08-11</span>
+      Verschlüsselte DMs nachträglich entschlüsseln
+    </div>
+    <p class="version-desc">Eine per PKI verschlüsselte Direktnachricht, für die uns noch der öffentliche Schlüssel des Absenders fehlt, wird jetzt erkannt: Der Client fordert aktiv dessen NodeInfo an und entschlüsselt die Nachricht nachträglich, sobald der Schlüssel eintrifft – die Sprechblase wechselt automatisch vom Platzhalter zum Klartext. Nur für Direktnachrichten (Kanäle sind hiervon nicht betroffen).</p>
+
+    <div class="cl-section added">
+      <h3>🔓 Nachrichten</h3>
+      <div class="cl-group">
+        <ul class="cl-list">
+          <li>Nicht entschlüsselbare PKI-Direktnachricht wird gepuffert; die NodeInfo des Absenders wird aktiv angefordert (rate-limitiert, nur bei DMs)</li>
+          <li>Nach Schlüsselempfang wird die Nachricht entschlüsselt und die bereits angezeigte Sprechblase in place aktualisiert – auch der gespeicherte Datenbank-Eintrag</li>
+          <li>Abgesichert durch einen End-to-End-Test (echter X25519-Roundtrip nach RFC 7748)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── v1.6.1.0 ── -->
+  <div class="version-entry">
+    <div class="version-header">
+      <span class="version-tag tag-release">v1.6.1.0</span>
+      <span class="version-date">2026-08-08</span>
+      Textformatierung in Nachrichten
+    </div>
+    <p class="version-desc">Nachrichten unterstützen jetzt das Meshtastic-Formatierungs-Subset – im Chat wie in DMs, für empfangene und eigene Nachrichten. Die Marker-Zeichen zählen weiter zum Längenlimit; nur die Darstellung ändert sich.</p>
+
+    <div class="cl-section added">
+      <h3>📝 Textformatierung</h3>
+      <div class="cl-group">
+        <ul class="cl-list">
+          <li><strong>**fett**</strong>, <em>*kursiv*</em>, <code>~~durchgestrichen~~</code>, <code>`monospace`</code> und <code>[Linktext](https://…)</code> werden gerendert; nackte URLs bleiben klickbar</li>
+          <li>Format-Leiste am Eingabefeld (B / I / S / &lt;/&gt; / 🔗) umschließt den markierten Text – respektiert das Zeichenlimit</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── v1.6.0.1 ── -->
+  <div class="version-entry">
+    <div class="version-header">
+      <span class="version-tag tag-release">v1.6.0.1</span>
+      <span class="version-date">2026-07-31</span>
+      Virtuelle Node: Node-/Kanalliste erreicht Apps zuverlässig
+    </div>
+    <p class="version-desc">Die virtuelle Node übertrug an verbundene Apps über BLE dauerhaft 0 Kanäle / 0 Nodes, über Serial erst nach einer Recovery. Ursache und Fix liegen in der Datenquelle des Replays.</p>
+
+    <div class="cl-section fixed">
+      <h3>🔀 Virtuelle Node</h3>
+      <div class="cl-group">
+        <ul class="cl-list">
+          <li>Transportunabhängiger Gerätestand-Snapshot (my_info, Metadata, Configs, Kanäle, Nodes) über Serial, BLE <strong>und</strong> TCP – für die gesamte Verbindung vorgehalten</li>
+          <li>Replay funktioniert jetzt unabhängig davon, <strong>wann</strong> die virtuelle Node aktiviert wird; klarer Hinweis, falls noch kein vollständiger Stand vorliegt</li>
+          <li>Fehlt der eigene Node des Geräts im Stream, wird er aus <code>my_info</code> ergänzt (Android braucht ihn für Node-Liste/Senden)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── v1.6.0 ── -->
+  <div class="version-entry">
+    <div class="version-header">
+      <span class="version-tag tag-release">v1.6.0</span>
       <span class="version-date">2026-07-30</span>
       Offizielle Meshtastic-Protobufs, Tests &amp; CI
     </div>

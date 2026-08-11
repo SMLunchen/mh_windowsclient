@@ -191,6 +191,7 @@ public partial class MainWindow : Window
 
         _connectionService.ConnectionStateChanged += OnConnectionStateChanged;
         _protocolService.MessageReceived += OnMessageReceived;
+        _protocolService.PkiMessageDecrypted += OnPkiMessageDecrypted;
         _protocolService.NodeInfoReceived += OnNodeInfoReceived;
         _protocolService.ChannelInfoReceived += OnChannelInfoReceived;
         _protocolService.LoRaConfigReceived += OnLoRaConfigReceived;
@@ -888,6 +889,7 @@ public partial class MainWindow : Window
                 // (Protocol service subscribes to DataReceived in its constructor)
                 _protocolService = new MeshtasticProtocolService(_connectionService);
                 _protocolService.MessageReceived += OnMessageReceived;
+                _protocolService.PkiMessageDecrypted += OnPkiMessageDecrypted;
                 _protocolService.NodeInfoReceived += OnNodeInfoReceived;
                 _protocolService.ChannelInfoReceived += OnChannelInfoReceived;
                 _protocolService.LoRaConfigReceived += OnLoRaConfigReceived;
@@ -1599,6 +1601,7 @@ public partial class MainWindow : Window
 
                 _protocolService = new MeshtasticProtocolService(_connectionService);
                 _protocolService.MessageReceived += OnMessageReceived;
+                _protocolService.PkiMessageDecrypted += OnPkiMessageDecrypted;
                 _protocolService.NodeInfoReceived += OnNodeInfoReceived;
                 _protocolService.ChannelInfoReceived += OnChannelInfoReceived;
                 _protocolService.LoRaConfigReceived += OnLoRaConfigReceived;
@@ -1682,6 +1685,21 @@ public partial class MainWindow : Window
             ConnectButton.IsEnabled = true;
             UpdateStatusBar(Loc("StrConnectionLostMsg"));
             SetConnectionStatus(ConnectionStatus.Disconnected);
+        });
+    }
+
+    // A previously-encrypted DM was decrypted after its sender's key arrived —
+    // update the already-shown message in place (bubble + persisted copy).
+    private void OnPkiMessageDecrypted(object? sender, Services.PkiLateDecryptedEventArgs e)
+    {
+        Dispatcher.BeginInvoke(() =>
+        {
+            e.Item.Message = e.Text;
+            e.Item.IsEncrypted = false;
+            // The partner of an incoming DM is the sender.
+            _messageDbManager?.UpdateDmMessage(e.PacketId, e.Text);
+            if (_currentSettings.DebugMessages)
+                Services.Logger.WriteLine($"[MSG DEBUG] Late-decrypted DM pkt=!{e.PacketId:x8} from !{e.FromId:x8}");
         });
     }
 

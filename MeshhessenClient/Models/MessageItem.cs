@@ -7,13 +7,28 @@ public class MessageItem : INotifyPropertyChanged
 {
     public string Time { get; set; } = string.Empty;
     public string From { get; set; } = string.Empty;
-    public string Message { get; set; } = string.Empty;
+
+    private string _message = string.Empty;
+    // Observable: a PKI DM shown as an encrypted placeholder is updated in place
+    // once the sender's key arrives (retroactive decryption).
+    public string Message
+    {
+        get => _message;
+        set { _message = value; PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Message))); }
+    }
+
     public string Channel { get; set; } = string.Empty; // Channel Index (legacy)
     public string ChannelName { get; set; } = string.Empty; // Channel Name for display
     public uint FromId { get; set; }
     public uint ToId { get; set; }
     public uint Id { get; set; } // Packet ID (for reactions)
-    public bool IsEncrypted { get; set; } = false;
+
+    private bool _isEncrypted = false;
+    public bool IsEncrypted
+    {
+        get => _isEncrypted;
+        set { _isEncrypted = value; PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsEncrypted))); }
+    }
     public bool IsViaMqtt { get; set; } = false;
     public string SenderShortName { get; set; } = string.Empty;
     public string SenderColorHex { get; set; } = string.Empty;

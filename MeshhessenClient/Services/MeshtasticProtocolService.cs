@@ -131,6 +131,32 @@ public class MeshtasticProtocolService
     private NodeKeyService? _nodeKeyService;
     private PskMismatchAction _pskMismatchAction = PskMismatchAction.Overwrite;
     private readonly PkiDecryptionService _pkiDecrypt = new();
+    private byte[]? _myPublicKey;   // our node's Curve25519 public key (from SecurityConfig)
+
+    // --- Retroactive PKI decryption for DMs -------------------------------
+    // A PKI-encrypted DM addressed to us that we can't decrypt yet (we lack the
+    // sender's public key, or it rotated) is buffered here and its NodeInfo is
+    // actively requested. Once the key arrives, the buffered ciphertext is
+    // decrypted and the already-displayed placeholder is updated in place.
+    // Channels/broadcasts are excluded — PKI is 1:1, so this only applies to DMs.
+    private sealed class PendingPkiDm
+    {
+        public MeshhessenClient.Models.MessageItem Item = null!;
+        public byte[] Ciphertext = Array.Empty<byte>();
+        public uint FromId;
+        public uint PacketId;
+        public DateTime AddedAt;
+    }
+    private readonly Dictionary<uint, List<PendingPkiDm>> _pendingPki = new();
+    private readonly Dictionary<uint, DateTime> _lastNodeInfoRequest = new();
+    private readonly object _pendingPkiLock = new();
+    private static readonly TimeSpan NodeInfoRequestInterval = TimeSpan.FromMinutes(2);
+    private static readonly TimeSpan PendingPkiTtl = TimeSpan.FromMinutes(30);
+    private const int MaxPendingPerNode = 20;
+
+    /// <summary>Fired when a previously-encrypted DM was decrypted after its
+    /// sender's key arrived; the UI updates the existing message in place.</summary>
+    public event EventHandler<PkiLateDecryptedEventArgs>? PkiMessageDecrypted;
 
     private const byte PACKET_START_BYTE_1 = 0x94;
     private const byte PACKET_START_BYTE_2 = 0xC3;
@@ -176,7 +202,14 @@ public class MeshtasticProtocolService
             _receivedChannelResponses.Clear();
             _sessionPasskey = Array.Empty<byte>();
             _pkiDecrypt.ClearPrivateKey();
+            _myPublicKey = null;
             Logger.WriteLine("Cleared all data from previous session");
+        }
+
+        lock (_pendingPkiLock)
+        {
+            _pendingPki.Clear();
+            _lastNodeInfoRequest.Clear();
         }
 
         // Reset the Virtual Node snapshot for the new device/session
@@ -1242,7 +1275,146 @@ public class MeshtasticProtocolService
                 RxSnr  = encHops == 0 && !packet.ViaMqtt && packet.RxSnr  != 0f ? packet.RxSnr  : null,
                 RxRssi = encHops == 0 && !packet.ViaMqtt && packet.RxRssi != 0  ? packet.RxRssi : null,
             };
+
+            // PKI DM to us that we couldn't decrypt: buffer the ciphertext and
+            // actively request the sender's NodeInfo, so we can decrypt it
+            // retroactively once the key arrives. DM-only (PKI is 1:1).
+            if (packet.PkiEncrypted && _myNodeId != 0 && packet.To == _myNodeId && _pkiDecrypt.HasPrivateKey)
+            {
+                BufferPendingPkiDm(messageItem, packet.Encrypted.ToByteArray(), packet.From, packet.Id);
+                _ = RequestNodeInfoAsync(packet.From);
+            }
+
             MessageReceived?.Invoke(this, messageItem);
+        }
+    }
+
+    private void BufferPendingPkiDm(MeshhessenClient.Models.MessageItem item, byte[] ciphertext, uint fromId, uint packetId)
+    {
+        lock (_pendingPkiLock)
+        {
+            // Drop expired entries across all senders
+            var cutoff = DateTime.UtcNow - PendingPkiTtl;
+            foreach (var key in _pendingPki.Keys.ToList())
+            {
+                _pendingPki[key].RemoveAll(p => p.AddedAt < cutoff);
+                if (_pendingPki[key].Count == 0) _pendingPki.Remove(key);
+            }
+
+            if (!_pendingPki.TryGetValue(fromId, out var list))
+            {
+                list = new List<PendingPkiDm>();
+                _pendingPki[fromId] = list;
+            }
+            if (list.Count >= MaxPendingPerNode) list.RemoveAt(0);
+            list.Add(new PendingPkiDm { Item = item, Ciphertext = ciphertext, FromId = fromId, PacketId = packetId, AddedAt = DateTime.UtcNow });
+        }
+        Logger.WriteLine($"[PKI] Buffered undecryptable DM from !{fromId:x8} (pktId={packetId:x8}) — requesting NodeInfo");
+    }
+
+    /// <summary>Actively request a node's NodeInfo (NODEINFO_APP with want_response)
+    /// so it replies with its User incl. public key. Rate-limited per node.</summary>
+    public async Task RequestNodeInfoAsync(uint destNodeId)
+    {
+        if (destNodeId == 0 || destNodeId == _myNodeId) return;
+
+        lock (_pendingPkiLock)
+        {
+            if (_lastNodeInfoRequest.TryGetValue(destNodeId, out var last) &&
+                DateTime.UtcNow - last < NodeInfoRequestInterval)
+                return;
+            _lastNodeInfoRequest[destNodeId] = DateTime.UtcNow;
+        }
+
+        try
+        {
+            var meshPacket = new MeshPacket
+            {
+                From = _myNodeId,
+                To = destNodeId,
+                Decoded = new Data
+                {
+                    Portnum = (PortNum)4, // NODEINFO_APP
+                    Payload = BuildOwnUser().ToByteString(),
+                    WantResponse = true
+                },
+                Id = (uint)Random.Shared.Next()
+            };
+            await SendToRadioAsync(new ToRadio { Packet = meshPacket });
+            Logger.WriteLine($"[PKI] Requested NodeInfo from !{destNodeId:x8} (want_response) to obtain public key");
+        }
+        catch (Exception ex)
+        {
+            Logger.WriteLine($"[PKI] NodeInfo request to !{destNodeId:x8} failed: {ex.Message}");
+        }
+    }
+
+    private User BuildOwnUser()
+    {
+        string longName, shortName;
+        lock (_dataLock)
+        {
+            longName  = _myDeviceInfo?.LongName ?? "";
+            shortName = _myDeviceInfo?.ShortName ?? "";
+        }
+        string idHex = $"!{_myNodeId:x8}";
+        var user = new User
+        {
+            Id        = idHex,
+            LongName  = string.IsNullOrEmpty(longName) ? idHex : longName,
+            ShortName = string.IsNullOrEmpty(shortName) ? (idHex.Length >= 4 ? idHex[^4..] : idHex) : shortName
+        };
+        if (_myPublicKey is { Length: 32 })
+            user.PublicKey = ByteString.CopyFrom(_myPublicKey);
+        return user;
+    }
+
+    // Retry any buffered, undecryptable DMs from this node now that we have its
+    // public key. On success the existing placeholder message is updated in place.
+    private void RetryPendingPkiForNode(uint nodeId, byte[] senderPublicKey)
+    {
+        if (!_pkiDecrypt.HasPrivateKey || senderPublicKey is not { Length: 32 })
+            return;
+
+        List<PendingPkiDm>? list;
+        lock (_pendingPkiLock)
+        {
+            if (!_pendingPki.TryGetValue(nodeId, out list) || list.Count == 0)
+                return;
+            _pendingPki.Remove(nodeId);
+        }
+
+        var stillPending = new List<PendingPkiDm>();
+        foreach (var p in list)
+        {
+            var plaintext = _pkiDecrypt.TryDecrypt(p.Ciphertext, senderPublicKey, p.FromId, p.PacketId);
+            if (plaintext == null) { stillPending.Add(p); continue; }
+
+            try
+            {
+                var data = Data.Parser.ParseFrom(plaintext);
+                // Only text DMs get shown as text; other portnums keep the placeholder.
+                if ((int)data.Portnum != 1) continue;
+                string text = data.Payload.ToStringUtf8();
+                Logger.WriteLine($"[PKI] Late-decrypted DM from !{p.FromId:x8} (pktId={p.PacketId:x8}) after NodeInfo arrived");
+                PkiMessageDecrypted?.Invoke(this, new PkiLateDecryptedEventArgs
+                {
+                    Item = p.Item, Text = text, FromId = p.FromId, PacketId = p.PacketId
+                });
+            }
+            catch (Exception ex)
+            {
+                Logger.WriteLine($"[PKI] Late decrypt parse failed for !{p.FromId:x8}: {ex.Message}");
+            }
+        }
+
+        if (stillPending.Count > 0)
+        {
+            lock (_pendingPkiLock)
+            {
+                if (_pendingPki.TryGetValue(nodeId, out var cur)) cur.AddRange(stillPending);
+                else _pendingPki[nodeId] = stillPending;
+            }
         }
     }
 
@@ -1655,12 +1827,14 @@ public class MeshtasticProtocolService
 
             if (_nodeKeyService != null && protoNodeInfo.User?.PublicKey.Length > 0)
             {
+                var pubKey = protoNodeInfo.User.PublicKey.ToByteArray();
                 _nodeKeyService.CheckAndUpdate(
                     protoNodeInfo.Num,
                     protoNodeInfo.User.ShortName ?? "",
                     protoNodeInfo.User.LongName ?? "",
-                    protoNodeInfo.User.PublicKey.ToByteArray(),
+                    pubKey,
                     _pskMismatchAction);
+                RetryPendingPkiForNode(protoNodeInfo.Num, pubKey);
             }
 
             nodeInfo.PkiKeyKnown  = _nodeKeyService?.GetPublicKey(protoNodeInfo.Num) != null;
@@ -1711,12 +1885,14 @@ public class MeshtasticProtocolService
 
             if (_nodeKeyService != null && user.PublicKey.Length > 0)
             {
+                var pubKey = user.PublicKey.ToByteArray();
                 _nodeKeyService.CheckAndUpdate(
                     packet.From,
                     user.ShortName ?? "",
                     user.LongName ?? "",
-                    user.PublicKey.ToByteArray(),
+                    pubKey,
                     _pskMismatchAction);
+                RetryPendingPkiForNode(packet.From, pubKey);
             }
 
             var nodeInfo = new ModelNodeInfo
@@ -2846,6 +3022,8 @@ public class MeshtasticProtocolService
                             {
                                 Logger.WriteLine("SecurityConfig received but private key missing/invalid");
                             }
+                            if (sec.PublicKey != null && sec.PublicKey.Length == 32)
+                                _myPublicKey = sec.PublicKey.ToByteArray();
                             SecurityConfigReceived?.Invoke(this, sec);
                             break;
                     }
@@ -3169,4 +3347,14 @@ public class MeshtasticProtocolService
             return false;
         }
     }
+}
+
+/// <summary>Args for <see cref="MeshtasticProtocolService.PkiMessageDecrypted"/>:
+/// a DM that was shown encrypted has now been decrypted; update it in place.</summary>
+public class PkiLateDecryptedEventArgs : EventArgs
+{
+    public MeshhessenClient.Models.MessageItem Item { get; init; } = null!;
+    public string Text { get; init; } = string.Empty;
+    public uint FromId { get; init; }
+    public uint PacketId { get; init; }
 }

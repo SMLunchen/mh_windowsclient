@@ -71,6 +71,13 @@ public class MessageDbManager : IDisposable
         catch (Exception ex) { Logger.WriteLine($"[MsgDB] InsertDM: {ex.Message}"); }
     }
 
+    /// <summary>Correct a stored DM's text after retroactive PKI decryption.</summary>
+    public void UpdateDmMessage(uint packetId, string text)
+    {
+        try { GetOrCreateDmDb().UpdateMessageText(packetId, text); }
+        catch (Exception ex) { Logger.WriteLine($"[MsgDB] UpdateDM: {ex.Message}"); }
+    }
+
     // ── Read ──────────────────────────────────────────────────────────────────
 
     /// <summary>Load last-24h messages from all channel_*.db files in the base directory.</summary>

@@ -100,6 +100,22 @@ VALUES
         }
     }
 
+    /// <summary>Replace a stored message's text (and clear its encrypted flag) by
+    /// packet id — used when a PKI DM is decrypted retroactively.</summary>
+    public void UpdateMessageText(uint packetId, string message)
+    {
+        if (packetId == 0) return;
+        lock (_lock)
+        {
+            using var con = Open();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "UPDATE messages SET message = $msg, is_encrypted = 0 WHERE packet_id = $pi";
+            cmd.Parameters.AddWithValue("$msg", message ?? string.Empty);
+            cmd.Parameters.AddWithValue("$pi", (long)packetId);
+            cmd.ExecuteNonQuery();
+        }
+    }
+
     // ── Read ──────────────────────────────────────────────────────────────────
 
     public List<MessageDbEntry> LoadSince(long sinceUnixSeconds, uint? partnerId = null)
