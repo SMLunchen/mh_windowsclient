@@ -2,6 +2,9 @@
 using Google.Protobuf;
 using Meshtastic.Protobufs;
 using MeshhessenClient.Models;
+using Org.BouncyCastle.Crypto.Engines;
+using Org.BouncyCastle.Crypto.Modes;
+using Org.BouncyCastle.Crypto.Parameters;
 using ProtoNodeInfo = Meshtastic.Protobufs.NodeInfo;
 using ModelNodeInfo = MeshhessenClient.Models.NodeInfo;
 using TracerouteResult = MeshhessenClient.Models.TracerouteResult;
@@ -179,6 +182,16 @@ public class MeshtasticProtocolService
 
     private const byte PACKET_START_BYTE_1 = 0x94;
     private const byte PACKET_START_BYTE_2 = 0xC3;
+
+    /// <summary>Current display name for a node from the live node DB, or null if unknown.
+    /// Used to resolve stale "!hex" names in restored chat history.</summary>
+    public string? GetKnownNodeName(uint nodeId)
+    {
+        lock (_dataLock)
+        {
+            return _knownNodes.TryGetValue(nodeId, out var n) && !string.IsNullOrEmpty(n.Name) ? n.Name : null;
+        }
+    }
 
     public MeshtasticProtocolService(IConnectionService connectionService)
     {
@@ -1276,6 +1289,26 @@ public class MeshtasticProtocolService
                 }
             }
 
+            // --- Channel-PSK fallback ---
+            // MQTT-relayed packets are handed to us still channel-encrypted (the device
+            // decrypts only its own radio traffic). If we hold a channel key whose hash
+            // matches, decrypt it ourselves (AES-CTR) and route it as a normal packet.
+            var chPlain = TryChannelDecrypt(packet.Encrypted.ToByteArray(), packet.Channel, packet.From, packet.Id);
+            if (chPlain != null)
+            {
+                try
+                {
+                    var cdata = Data.Parser.ParseFrom(chPlain);
+                    if ((int)cdata.Portnum != 0) // not UNKNOWN_APP
+                    {
+                        Logger.WriteLine($"[ChanDec] decrypted channel-PSK packet from !{packet.From:x8} (hash={packet.Channel}, portnum={cdata.Portnum})");
+                        RouteDecodedData(packet, cdata);
+                        return;
+                    }
+                }
+                catch { /* hash collision / not our channel — fall through to placeholder */ }
+            }
+
             // Zeige verschlüsselte Nachricht (MainWindow filtert basierend auf Einstellung)
             string fromName = $"!{packet.From:x8}";
             lock (_dataLock)
@@ -1378,7 +1411,29 @@ public class MeshtasticProtocolService
         if (_pkiDecrypt.HasPrivateKey && _nodeKeyService?.GetPublicKey(item.FromId) is { } b64)
         {
             try { if (TryLateDecrypt(item, Convert.FromBase64String(b64))) return; }
-            catch { /* malformed key — fall through to request */ }
+            catch { /* malformed key — fall through */ }
+        }
+
+        // Channel-PSK fallback (e.g. an MQTT-relayed keyless DM on a channel we hold).
+        // item.ChannelIndex holds the channel hash captured at receive time — but a
+        // DM restored from the DB stores 0, so brute-force across channels here.
+        var chPlain = TryChannelDecrypt(item.PkiCipher!, item.ChannelIndex, item.FromId, item.Id, bruteForce: true);
+        if (chPlain != null)
+        {
+            try
+            {
+                var data = Data.Parser.ParseFrom(chPlain);
+                if ((int)data.Portnum == 1)
+                {
+                    Logger.WriteLine($"[ChanDec] late-decrypted buffered DM from !{item.FromId:x8} via channel key");
+                    PkiMessageDecrypted?.Invoke(this, new PkiLateDecryptedEventArgs
+                    {
+                        Item = item, Text = data.Payload.ToStringUtf8(), FromId = item.FromId, PacketId = item.Id
+                    });
+                    return;
+                }
+            }
+            catch { /* not our channel — fall through to request */ }
         }
 
         BufferPendingPkiDm(item);
@@ -1534,6 +1589,71 @@ public class MeshtasticProtocolService
         foreach (var b in Encoding.UTF8.GetBytes(ch.Settings?.Name ?? "")) h ^= b;
         foreach (var b in key) h ^= b;
         return h;
+    }
+
+    // Try to decrypt a channel-PSK packet (Meshtastic channel crypto = AES-CTR,
+    // nonce [packetId 8 LE][fromNode 4 LE][0 4]). First matches the channel by hash
+    // (authoritative for live packets). If <paramref name="bruteForce"/> and no hash
+    // matches — e.g. a restored DM whose channel wasn't persisted (stored as 0) — it
+    // tries every channel and accepts the first plaintext that parses as valid Data.
+    private byte[]? TryChannelDecrypt(byte[] cipher, uint channelHash, uint fromNode, uint packetId, bool bruteForce = false)
+    {
+        if (cipher.Length == 0) return null;
+        List<Channel> chans;
+        lock (_dataLock) { chans = new List<Channel>(_tempChannels); }
+
+        foreach (var ch in chans)
+        {
+            var key = ExpandChannelKey(ch);
+            if (key == null || ChannelHash(ch, key) != channelHash) continue;
+            var pt = AesCtrCrypt(key, fromNode, packetId, cipher);
+            if (pt != null) return pt;
+        }
+        if (!bruteForce) return null;
+
+        foreach (var ch in chans)
+        {
+            var key = ExpandChannelKey(ch);
+            if (key == null) continue;
+            var pt = AesCtrCrypt(key, fromNode, packetId, cipher);
+            if (pt == null) continue;
+            try
+            {
+                var d = Data.Parser.ParseFrom(pt);
+                if ((int)d.Portnum != 0 && d.Payload.Length > 0)
+                {
+                    Logger.WriteLine($"[ChanDec] brute-force matched channel {ch.Index} ({ch.Settings?.Name})");
+                    return pt;
+                }
+            }
+            catch { /* wrong channel — garbage */ }
+        }
+        return null;
+    }
+
+    // AES-CTR (Meshtastic channel scheme). Symmetric — used for decrypt.
+    private static byte[]? AesCtrCrypt(byte[] key, uint fromNode, uint packetId, byte[] input)
+    {
+        try
+        {
+            var nonce = new byte[16];
+            BitConverter.GetBytes((ulong)packetId).CopyTo(nonce, 0); // bytes 0-7 (high 4 = 0)
+            BitConverter.GetBytes(fromNode).CopyTo(nonce, 8);        // bytes 8-11; 12-15 stay 0
+            var ctr = new SicBlockCipher(new AesEngine());
+            ctr.Init(false, new ParametersWithIV(new KeyParameter(key), nonce));
+            var outBuf = new byte[input.Length];
+            int full = (input.Length / 16) * 16;
+            for (int i = 0; i < full; i += 16) ctr.ProcessBlock(input, i, outBuf, i);
+            int rem = input.Length - full;
+            if (rem > 0)
+            {
+                var inBlk = new byte[16]; Array.Copy(input, full, inBlk, 0, rem);
+                var outBlk = new byte[16]; ctr.ProcessBlock(inBlk, 0, outBlk, 0);
+                Array.Copy(outBlk, 0, outBuf, full, rem);
+            }
+            return outBuf;
+        }
+        catch { return null; }
     }
 
     // Diagnostic: does the channel hash of an undecryptable packet match any channel

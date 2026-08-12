@@ -67,7 +67,9 @@ public class MessageDbManager : IDisposable
 
     public void InsertDmMessage(uint partnerId, MessageItem msg)
     {
-        try { GetOrCreateDmDb().Insert(msg, channelIndex: 0, channelName: string.Empty, partnerId: partnerId); }
+        // Persist the channel index/hash (for an encrypted DM this is the channel
+        // hash) so a restored DM can be channel-decrypted without brute-forcing.
+        try { GetOrCreateDmDb().Insert(msg, channelIndex: (int)msg.ChannelIndex, channelName: string.Empty, partnerId: partnerId); }
         catch (Exception ex) { Logger.WriteLine($"[MsgDB] InsertDM: {ex.Message}"); }
     }
 

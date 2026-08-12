@@ -27,6 +27,17 @@ public partial class DirectMessagesWindow : Window
         InitializeComponent();
         _protocolService = protocolService;
         _myNodeId = myNodeId;
+        DmTabControl.SelectionChanged += DmTabControl_SelectionChanged;
+    }
+
+    // On switching to a DM tab, scroll its message list to the newest message.
+    private void DmTabControl_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    {
+        // Ignore selection changes bubbling up from inner selectors (the message list).
+        if (!ReferenceEquals(e.OriginalSource, DmTabControl)) return;
+        if (DmTabControl.SelectedItem is TabItem { Tag: ListView lv } && lv.Items.Count > 0)
+            lv.Dispatcher.BeginInvoke(new System.Action(() => lv.ScrollIntoView(lv.Items[lv.Items.Count - 1])),
+                System.Windows.Threading.DispatcherPriority.Loaded);
     }
 
     public void UpdateProtocolService(MeshtasticProtocolService protocolService)
@@ -220,7 +231,10 @@ public partial class DirectMessagesWindow : Window
                     var entries   = group.OrderBy(e => e.Timestamp).ToList();
 
                     var firstReceived = entries.FirstOrDefault(e => e.FromId != _myNodeId);
-                    var partnerName   = firstReceived?.FromName ?? $"!{partnerId:X8}";
+                    // Prefer the CURRENT node name (the stored name may be a stale "!hex"
+                    // captured before the node was known); the DB is only a fallback.
+                    var partnerName   = _protocolService.GetKnownNodeName(partnerId)
+                                        ?? firstReceived?.FromName ?? $"!{partnerId:X8}";
                     var colorHex      = firstReceived?.SenderColorHex ?? string.Empty;
 
                     var conversation = _conversations.FirstOrDefault(c => c.NodeId == partnerId);
@@ -241,6 +255,9 @@ public partial class DirectMessagesWindow : Window
                         if (entry.PacketId != 0 && _dmMessageById.ContainsKey(entry.PacketId)) continue;
                         var msg = DbEntryToMessageItem(entry);
                         msg.IsOwnMessage = (_myNodeId != 0 && entry.FromId == _myNodeId);
+                        // Resolve a stale stored sender name to the current node name.
+                        if (!msg.IsOwnMessage && _protocolService.GetKnownNodeName(msg.FromId) is { } liveName)
+                            msg.From = liveName;
                         MessageItem.InsertByTime(conversation.Messages, msg);
                         if (entry.PacketId != 0) _dmMessageById[entry.PacketId] = msg;
 
@@ -282,11 +299,16 @@ public partial class DirectMessagesWindow : Window
             ItemContainerStyle = (Style)FindResource("DmBubbleItemContainerStyle"),
             HorizontalContentAlignment = HorizontalAlignment.Stretch
         };
-        // Auto-scroll to newest message
+        tab.Tag = listView; // so tab-switch can scroll it to the newest message
+
+        // Auto-scroll — but only when the *newest* message is added, so inserting an
+        // older message mid-list (history / out-of-order) doesn't jump the view up.
         conversation.Messages.CollectionChanged += (s, e) =>
         {
-            if (e.NewItems?.Count > 0)
-                listView.ScrollIntoView(e.NewItems[e.NewItems.Count - 1]);
+            if (e.Action == System.Collections.Specialized.NotifyCollectionChangedAction.Add &&
+                conversation.Messages.Count > 0 &&
+                e.NewItems != null && e.NewItems.Contains(conversation.Messages[^1]))
+                listView.ScrollIntoView(conversation.Messages[^1]);
         };
 
         // Per-conversation reply state

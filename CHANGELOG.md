@@ -7,6 +7,24 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
 
+## [Unreleased]
+
+### 🐛 Behoben
+
+#### 🪪 DM-Absendername übersteht Neustart
+- Wurde ein DM-Absender nach Empfang auf den echten Node-Namen aufgelöst, stand nach einem Neustart wieder nur die Node-ID da: Die Auflösung landete nur im Speicher, nicht in der DB. Beim Laden der DM-History wird der Absender jetzt aus der **aktuellen Node-Liste** aufgelöst (der DB-Name ist nur Fallback) — Absender **und** Tab-Name stimmen sofort.
+
+#### 🖱️ DM-Fenster: Scroll-Position
+- Beim **Tab-Wechsel** springt die Nachrichtenliste jetzt ans **Ende** (neueste Nachricht) statt oben zu bleiben.
+- Auto-Scroll folgt nur noch, wenn die **neueste** Nachricht dazukommt — das Einfügen älterer Nachrichten (History/Sortierung) reißt die Ansicht nicht mehr nach oben.
+
+#### 📡 MQTT-Nachrichten client-seitig per Kanal-PSK entschlüsseln
+- **Über MQTT relayte Pakete** (Kanal-Chat **und** schlüssellose DMs) reicht das Gerät **noch verschlüsselt** an den Client weiter — es entschlüsselt nur seinen eigenen Funkverkehr. Der Client entschlüsselt sie jetzt **selbst per Kanal-PSK** (AES-CTR), wenn er einen Kanal mit passendem Hash hat. Zuvor blieben diese Nachrichten als „[Encrypted message]" stehen, obwohl der Kanalschlüssel vorlag.
+- Kanal-Hash + PSK-Expansion 1:1 aus der Firmware nachgebaut (`Channels::generateHash`/`getKey`); greift live (exakter Hash-Match) wie beim 🔑-Retry gepufferter/aus der DB restaurierter DMs (dort per Brute-Force über alle Kanäle mit Parse-Validierung, da DMs den Kanal bisher als 0 speicherten). DMs persistieren ab jetzt den echten Kanal-Hash.
+- Abgesichert durch 2 neue Tests (AES-CTR-Roundtrip mit passendem Kanal; bleibt verschlüsselt bei unbekanntem Kanal).
+
+---
+
 ## [1.6.2] - 2026-08-11
 
 ### 🐛 Behoben
