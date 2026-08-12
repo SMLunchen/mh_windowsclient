@@ -581,11 +581,13 @@ public partial class MainWindow
         {
             Id              = e.PacketId,
             Time            = timeStr,
+            SortTime        = dt.LocalDateTime,
             From            = e.FromName,
             FromId          = e.FromId,
             ToId            = e.ToId,
             Message         = e.Message,
             Channel         = e.ChannelIndex.ToString(),
+            ChannelIndex    = (uint)e.ChannelIndex,
             ChannelName     = e.ChannelName,
             IsEncrypted     = e.IsEncrypted,
             IsViaMqtt       = e.IsViaMqtt,
@@ -600,7 +602,7 @@ public partial class MainWindow
     private void RebuildVisibleMessages()
     {
         _messages.Clear();
-        foreach (var msg in _allMessages)
+        foreach (var msg in _allMessages.OrderBy(m => m.SortTime))
         {
             bool passes = true;
             if (_messageChannelFilter != null && _messageChannelFilter.Index != 999)

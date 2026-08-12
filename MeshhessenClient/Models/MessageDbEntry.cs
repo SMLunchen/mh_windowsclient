@@ -18,5 +18,6 @@ public record MessageDbEntry(
     string ReplyPreview,
     string SenderColorHex,
     string SenderNote,
-    uint   PartnerId        // 0 for channel messages; chat-partner node ID for DMs
+    uint   PartnerId,       // 0 for channel messages; chat-partner node ID for DMs
+    byte[]? Cipher = null   // PKI ciphertext for an undecryptable DM (null otherwise)
 );

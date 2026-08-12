@@ -41,7 +41,7 @@
     "url": "https://smlunchen.github.io/mh_windowsclient/",
     "downloadUrl": "https://github.com/SMLunchen/mh_windowsclient/releases/latest",
     "author": { "@type": "Organization", "name": "Meshhessen Community", "url": "https://www.meshhessen.de" },
-    "softwareVersion": "1.6.0",
+    "softwareVersion": "1.6.2.0",
     "screenshot": "https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map.png",
     "keywords": "Meshtastic, Windows, LoRa, Mesh, Telemetrie, Traceroute, Offline-Karte, PKI"
   }
@@ -312,8 +312,8 @@
 <main>
 
   <div class="whats-new">
-    <span class="vbadge">v1.6.0</span>
-    <span class="summary">🚀 Vektorkarten &amp; 🚒 Feuerwehr-/Rettungs-Layer – jetzt auf Basis der offiziellen Meshtastic-Protokolldefinitionen für bessere Firmware-Kompatibilität und Stabilität.</span>
+    <span class="vbadge">v1.6.2</span>
+    <span class="summary">🔐 Verschlüsselte DMs jetzt zuverlässig entschlüsselbar (korrekte PKI-Krypto, AES-CCM) &amp; nachträglich, sobald der Schlüssel da ist · 🪪 unbekannte Absender lösen sich automatisch auf · 🕒 Chat-Sortierung und Reaction-Absender gefixt.</span>
     <a href="changelog.html">Changelog ansehen →</a>
   </div>
 
@@ -324,6 +324,8 @@
       <h3>📨 Nachrichten</h3>
       <ul>
         <li>Broadcast &amp; Direktnachrichten, Multi-Channel</li>
+        <li><strong>NEU: Textformatierung</strong> – <strong>fett</strong>, <em>kursiv</em>, durchgestrichen, Monospace &amp; Links (mit Format-Buttons)</li>
+        <li><strong>NEU: 🔓 Verschlüsselte DMs</strong> werden nach Schlüsselempfang nachträglich entschlüsselt</li>
         <li>Antworten mit Zitat-Block, Nachrichten kopierbar</li>
         <li>Tap-Back-Reaktionen (32 Emojis)</li>
         <li>Alert Bell / SOS-Notruf mit Benachrichtigung</li>
@@ -392,10 +394,10 @@
     <div class="card" style="--card-accent:#d29922">
       <h3>🔒 PKI-Entschlüsselung</h3>
       <ul>
-        <li>Client-seitig: X25519 + AES-256-CTR</li>
-        <li>Private Key automatisch vom Gerät geladen</li>
-        <li>Key nur im RAM – nie auf Disk geschrieben</li>
-        <li>Automatische Erkennung verschlüsselter Pakete</li>
+        <li>Client-seitig: X25519 + <strong>AES-256-CCM</strong> (firmware-konform)</li>
+        <li>Private Key automatisch vom Gerät geladen, nur im RAM</li>
+        <li>Verschlüsselte DMs werden erkannt und <strong>nachträglich entschlüsselt</strong>, sobald der Schlüssel da ist</li>
+        <li>Fehlt der Schlüssel: aktive Anforderung auf dem richtigen Kanal</li>
       </ul>
     </div>
     <div class="card" style="--card-accent:#79c0ff">
@@ -773,8 +775,8 @@
 <main>
 
   <div class="whats-new">
-    <span class="vbadge">v1.6.0</span>
-    <span class="summary">🚀 Vector maps &amp; 🚒 fire service / rescue layer – now built on the official Meshtastic protocol definitions for better firmware compatibility and stability.</span>
+    <span class="vbadge">v1.6.2</span>
+    <span class="summary">🔐 Encrypted DMs are now reliably decryptable (correct PKI crypto, AES-CCM) &amp; retroactively once the key arrives · 🪪 unknown senders auto-resolve · 🕒 chat ordering and reaction senders fixed.</span>
     <a href="changelog.html">View changelog →</a>
   </div>
 
@@ -785,6 +787,8 @@
       <h3>📨 Messaging</h3>
       <ul>
         <li>Broadcast &amp; direct messages, multi-channel</li>
+        <li><strong>NEW: text formatting</strong> – <strong>bold</strong>, <em>italic</em>, strikethrough, monospace &amp; links (with format buttons)</li>
+        <li><strong>NEW: 🔓 encrypted DMs</strong> decrypted retroactively once the sender's key arrives</li>
         <li>Reply with quote block, copyable messages</li>
         <li>Tap-back reactions (32 emojis)</li>
         <li>Alert Bell / SOS with visual &amp; audio alert</li>
@@ -852,10 +856,10 @@
     <div class="card" style="--card-accent:#d29922">
       <h3>🔒 PKI Decryption</h3>
       <ul>
-        <li>Client-side: X25519 + AES-256-CTR</li>
-        <li>Private key loaded automatically from device</li>
-        <li>Key held in RAM only – never written to disk</li>
-        <li>Automatic detection of encrypted packets</li>
+        <li>Client-side: X25519 + <strong>AES-256-CCM</strong> (firmware-accurate)</li>
+        <li>Private key loaded automatically from device, RAM only</li>
+        <li>Encrypted DMs are detected and <strong>decrypted retroactively</strong> once the key arrives</li>
+        <li>Missing key: active request on the correct channel</li>
       </ul>
     </div>
     <div class="card" style="--card-accent:#79c0ff">

@@ -191,6 +191,7 @@ public partial class MainWindow : Window
 
         _connectionService.ConnectionStateChanged += OnConnectionStateChanged;
         _protocolService.MessageReceived += OnMessageReceived;
+        _protocolService.PkiMessageDecrypted += OnPkiMessageDecrypted;
         _protocolService.NodeInfoReceived += OnNodeInfoReceived;
         _protocolService.ChannelInfoReceived += OnChannelInfoReceived;
         _protocolService.LoRaConfigReceived += OnLoRaConfigReceived;
@@ -581,13 +582,19 @@ public partial class MainWindow : Window
         Dispatcher.BeginInvoke(() =>
         {
             DebugLogTextBox.AppendText(logMessage + Environment.NewLine);
-            DebugLogTextBox.ScrollToEnd();
 
-            // Begrenze auf maximal 10000 Zeilen
-            var lines = DebugLogTextBox.Text.Split('\n');
-            if (lines.Length > 10000)
+            // Only follow the tail (and trim, which resets scroll) while auto-scroll is
+            // on, so the user can scroll up and read without being yanked back down.
+            if (AutoScrollLogCheckBox?.IsChecked != false)
             {
-                DebugLogTextBox.Text = string.Join('\n', lines.Skip(lines.Length - 10000));
+                DebugLogTextBox.ScrollToEnd();
+
+                // Begrenze auf maximal 10000 Zeilen
+                var lines = DebugLogTextBox.Text.Split('\n');
+                if (lines.Length > 10000)
+                {
+                    DebugLogTextBox.Text = string.Join('\n', lines.Skip(lines.Length - 10000));
+                }
             }
         });
     }
@@ -888,6 +895,7 @@ public partial class MainWindow : Window
                 // (Protocol service subscribes to DataReceived in its constructor)
                 _protocolService = new MeshtasticProtocolService(_connectionService);
                 _protocolService.MessageReceived += OnMessageReceived;
+                _protocolService.PkiMessageDecrypted += OnPkiMessageDecrypted;
                 _protocolService.NodeInfoReceived += OnNodeInfoReceived;
                 _protocolService.ChannelInfoReceived += OnChannelInfoReceived;
                 _protocolService.LoRaConfigReceived += OnLoRaConfigReceived;
@@ -1122,7 +1130,7 @@ public partial class MainWindow : Window
             };
             _allMessages.Add(sentMessage);
             if (sentId != 0) _messageById[sentId] = sentMessage;
-            _messages.Add(sentMessage);
+            MessageItem.InsertByTime(_messages, sentMessage);
             MessageListView.ScrollIntoView(sentMessage);
 
             // Persistiere gesendete Nachricht in DB
@@ -1599,6 +1607,7 @@ public partial class MainWindow : Window
 
                 _protocolService = new MeshtasticProtocolService(_connectionService);
                 _protocolService.MessageReceived += OnMessageReceived;
+                _protocolService.PkiMessageDecrypted += OnPkiMessageDecrypted;
                 _protocolService.NodeInfoReceived += OnNodeInfoReceived;
                 _protocolService.ChannelInfoReceived += OnChannelInfoReceived;
                 _protocolService.LoRaConfigReceived += OnLoRaConfigReceived;
@@ -1682,6 +1691,21 @@ public partial class MainWindow : Window
             ConnectButton.IsEnabled = true;
             UpdateStatusBar(Loc("StrConnectionLostMsg"));
             SetConnectionStatus(ConnectionStatus.Disconnected);
+        });
+    }
+
+    // A previously-encrypted DM was decrypted after its sender's key arrived —
+    // update the already-shown message in place (bubble + persisted copy).
+    private void OnPkiMessageDecrypted(object? sender, Services.PkiLateDecryptedEventArgs e)
+    {
+        Dispatcher.BeginInvoke(() =>
+        {
+            e.Item.Message = e.Text;
+            e.Item.IsEncrypted = false;
+            // The partner of an incoming DM is the sender.
+            _messageDbManager?.UpdateDmMessage(e.PacketId, e.Text);
+            if (_currentSettings.DebugMessages)
+                Services.Logger.WriteLine($"[MSG DEBUG] Late-decrypted DM pkt=!{e.PacketId:x8} from !{e.FromId:x8}");
         });
     }
 
@@ -1847,7 +1871,7 @@ public partial class MainWindow : Window
                 // Füge zu sichtbarer Liste hinzu wenn Filter passt
                 if (passesFilter)
                 {
-                    _messages.Add(message);
+                    MessageItem.InsertByTime(_messages, message);
                     MessageListView.ScrollIntoView(message);
                 }
             }
@@ -1886,6 +1910,10 @@ public partial class MainWindow : Window
                 {
                     node.Note = note;
                 }
+
+                // Retroactively resolve any "Unknown"/placeholder chat messages from
+                // this node now that we know its name.
+                UpdateMessagesForNode(node);
 
                 // Apply pinned and favorite state (local settings take precedence; proto value also accepted)
                 node.IsPinned    = _currentSettings.PinnedNodes.ContainsKey(node.NodeId);
@@ -4354,6 +4382,32 @@ public partial class MainWindow : Window
     //  REACTIONS / TAP-BACKS
     // -----------------------------------------------------------------------
 
+    // Resolve a node id to a display name for chat/reactions (falls back to hex id).
+    private string ResolveNodeName(uint nodeId)
+    {
+        if (_myNodeId != 0 && nodeId == _myNodeId) return Loc("StrMe");
+        var n = _allNodes.FirstOrDefault(x => x.NodeId == nodeId);
+        return !string.IsNullOrEmpty(n?.Name) && n!.Name != "Unknown" ? n.Name : Models.NodeInfo.DefaultName(nodeId);
+    }
+
+    // Update already-displayed chat messages from a node once its NodeInfo arrives,
+    // so an "Unknown" sender resolves to the real name in place.
+    private void UpdateMessagesForNode(Models.NodeInfo node)
+    {
+        string name = !string.IsNullOrEmpty(node.Name) && node.Name != "Unknown" ? node.Name : Models.NodeInfo.DefaultName(node.NodeId);
+        int updated = 0;
+        foreach (var m in _allMessages)
+        {
+            if (m.FromId != node.NodeId || m.IsOwnMessage) continue;
+            if (m.From != name) { m.From = name; updated++; }
+            if (!string.IsNullOrEmpty(node.ShortName)) m.SenderShortName = node.ShortName;
+            if (!string.IsNullOrEmpty(node.ColorHex)) m.SenderColorHex = node.ColorHex;
+        }
+        if (updated > 0)
+            Services.Logger.WriteLine($"[Chat] Resolved {updated} message(s) from !{node.NodeId:x8} → \"{name}\" (viaMqtt={node.IsViaMqtt})");
+        _dmWindow?.UpdateSenderInfo(node.NodeId, name, node.ShortName ?? string.Empty, node.ColorHex ?? string.Empty);
+    }
+
     private void OnReactionReceived(object? sender, (uint ReplyId, string Emoji, uint FromId) reaction)
     {
         Dispatcher.BeginInvoke(() =>
@@ -4361,7 +4415,7 @@ public partial class MainWindow : Window
             // Try to find the message by ID in _messageById
             if (_messageById.TryGetValue(reaction.ReplyId, out var msg))
             {
-                msg.AddReaction(reaction.Emoji, reaction.FromId);
+                msg.AddReaction(reaction.Emoji, reaction.FromId, ResolveNodeName(reaction.FromId));
                 Services.Logger.WriteLine($"Reaction '{reaction.Emoji}' from !{reaction.FromId:x8} added to msg {reaction.ReplyId}");
             }
             else
@@ -4427,7 +4481,7 @@ public partial class MainWindow : Window
                 {
                     await _protocolService.SendReactionAsync(emoji, message.Id, destinationId, channel);
                     // Show our own reaction immediately
-                    message.AddReaction(emoji, _myNodeId);
+                    message.AddReaction(emoji, _myNodeId, Loc("StrMe"));
                     if (message.Id != 0) _messageById[message.Id] = message;
                 }
                 catch (Exception ex)

@@ -2,6 +2,10 @@
 
 public class NodeInfo
 {
+    /// <summary>Meshtastic-style placeholder name for a node we have no NodeInfo for:
+    /// "Meshtastic abcd" where abcd = last 4 hex digits of the node id (as in the apps).</summary>
+    public static string DefaultName(uint nodeId) => $"Meshtastic {nodeId & 0xFFFF:x4}";
+
     public string Name { get; set; } = "Unknown";
     public string ShortName { get; set; } = string.Empty;
     public string LongName { get; set; } = string.Empty;

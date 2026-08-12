@@ -98,6 +98,9 @@
     <sys:String x:Key="StrFormatMono">Monospace (`text`)</sys:String>
     <sys:String x:Key="StrFormatLink">Link ([text](https://…))</sys:String>
     <sys:String x:Key="StrFormatLinkLabel">text</sys:String>
+    <sys:String x:Key="StrRequestKeyTooltip">Request the sender's key and decrypt this message</sys:String>
+    <sys:String x:Key="StrRequestingKey">🔑 Requested key from {0}…</sys:String>
+    <sys:String x:Key="StrNoCipherToDecrypt">No ciphertext stored for this message (not a PKI DM).</sys:String>
     <sys:String x:Key="StrColTime">Time</sys:String>
     <sys:String x:Key="StrColFrom">From</sys:String>
     <sys:String x:Key="StrColShort">Short</sys:String>
@@ -228,6 +231,7 @@
     <sys:String x:Key="StrLogClear">Clear log</sys:String>
     <sys:String x:Key="StrLogCopy">Copy log</sys:String>
     <sys:String x:Key="StrLogFile">Open log file</sys:String>
+    <sys:String x:Key="StrLogAutoScroll">Auto-scroll</sys:String>
 
     <!-- NodeConfig window -->
     <sys:String x:Key="StrNcWindowTitle">Configure node</sys:String>

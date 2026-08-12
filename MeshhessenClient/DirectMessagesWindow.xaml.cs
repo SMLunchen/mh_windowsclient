@@ -27,6 +27,17 @@ public partial class DirectMessagesWindow : Window
         InitializeComponent();
         _protocolService = protocolService;
         _myNodeId = myNodeId;
+        DmTabControl.SelectionChanged += DmTabControl_SelectionChanged;
+    }
+
+    // On switching to a DM tab, scroll its message list to the newest message.
+    private void DmTabControl_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    {
+        // Ignore selection changes bubbling up from inner selectors (the message list).
+        if (!ReferenceEquals(e.OriginalSource, DmTabControl)) return;
+        if (DmTabControl.SelectedItem is TabItem { Tag: ListView lv } && lv.Items.Count > 0)
+            lv.Dispatcher.BeginInvoke(new System.Action(() => lv.ScrollIntoView(lv.Items[lv.Items.Count - 1])),
+                System.Windows.Threading.DispatcherPriority.Loaded);
     }
 
     public void UpdateProtocolService(MeshtasticProtocolService protocolService)
@@ -34,11 +45,60 @@ public partial class DirectMessagesWindow : Window
         _protocolService = protocolService;
     }
 
+    // Called by MainWindow when a node's NodeInfo arrives: resolve "Unknown"
+    // senders in existing DM messages (and the conversation title) to the real name.
+    public void UpdateSenderInfo(uint nodeId, string name, string shortName, string colorHex)
+    {
+        if (nodeId == 0 || string.IsNullOrEmpty(name)) return;
+        Dispatcher.BeginInvoke(() =>
+        {
+            foreach (var conv in _conversations)
+            {
+                foreach (var m in conv.Messages)
+                {
+                    if (m.FromId != nodeId || m.IsOwnMessage) continue;
+                    if (m.From != name) m.From = name;
+                    if (!string.IsNullOrEmpty(shortName)) m.SenderShortName = shortName;
+                    if (!string.IsNullOrEmpty(colorHex)) m.SenderColorHex = colorHex;
+                }
+
+                // Update the conversation title/tab if it was still a placeholder.
+                if (conv.NodeId == nodeId &&
+                    (conv.NodeName == "Unknown" || conv.NodeName.StartsWith("!") ||
+                     conv.NodeName.StartsWith("→ !") || conv.NodeName.StartsWith("Meshtastic ")))
+                {
+                    conv.NodeName = name;
+                    if (_tabByNodeId.TryGetValue(nodeId, out var tab))
+                        UpdateTabHeader(tab, conv);
+                }
+            }
+        });
+    }
+
     public void SetMessageDbManager(Services.MessageDbManager? manager)
     {
         _messageDbManager = manager;
         if (manager != null)
             Task.Run(LoadAllDmHistoryFromDb);
+    }
+
+    // Manual "request key / decrypt" on an encrypted DM bubble: decrypt now if we
+    // have the sender's key, otherwise (force-)request their NodeInfo.
+    private void RequestKey_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.DataContext is MessageItem item)
+        {
+            Services.Logger.WriteLine($"[PKI] Manual key request clicked: from=!{item.FromId:x8} pkt=!{item.Id:x8} " +
+                $"hasCipher={item.PkiCipher is { Length: > 0 }} encrypted={item.IsEncrypted}");
+            _protocolService.RetryOrRequestPendingDm(item, force: true);
+            StatusText.Text = item.PkiCipher is { Length: > 0 }
+                ? string.Format(Loc("StrRequestingKey"), item.From)
+                : Loc("StrNoCipherToDecrypt");
+        }
+        else
+        {
+            Services.Logger.WriteLine("[PKI] Manual key request: DataContext is not a MessageItem");
+        }
     }
 
     public void AddOrUpdateMessage(MessageItem message)
@@ -78,8 +138,8 @@ public partial class DirectMessagesWindow : Window
                 if (message.Id != 0)
                     _dmMessageById[message.Id] = message;
 
-                // Füge Nachricht hinzu
-                conversation.Messages.Add(message);
+                // Füge Nachricht zeitlich einsortiert hinzu (live + History mischen sich sonst)
+                MessageItem.InsertByTime(conversation.Messages, message);
 
                 // Persistiere in DM-Datenbank
                 if (_messageDbManager != null)
@@ -134,11 +194,15 @@ public partial class DirectMessagesWindow : Window
         {
             Id            = e.PacketId,
             Time          = timeStr,
+            SortTime      = dt,
             From          = e.FromName,
             FromId        = e.FromId,
             ToId          = e.ToId,
             Message       = e.Message,
+            ChannelIndex  = (uint)e.ChannelIndex,
             IsViaMqtt     = e.IsViaMqtt,
+            IsEncrypted   = e.IsEncrypted,
+            PkiCipher     = e.Cipher,
             ReplyId       = e.ReplyId,
             ReplyFromName = e.ReplyFromName,
             ReplyPreview  = e.ReplyPreview,
@@ -168,7 +232,12 @@ public partial class DirectMessagesWindow : Window
                     var entries   = group.OrderBy(e => e.Timestamp).ToList();
 
                     var firstReceived = entries.FirstOrDefault(e => e.FromId != _myNodeId);
-                    var partnerName   = firstReceived?.FromName ?? $"!{partnerId:X8}";
+                    // Prefer the CURRENT node name; the stored name may be a stale
+                    // placeholder ("Unknown"/"!hex") captured before the node was known.
+                    var storedName    = firstReceived?.FromName;
+                    var partnerName   = _protocolService.GetKnownNodeName(partnerId)
+                                        ?? (!string.IsNullOrEmpty(storedName) && storedName != "Unknown" && !storedName.StartsWith("!")
+                                            ? storedName : Models.NodeInfo.DefaultName(partnerId));
                     var colorHex      = firstReceived?.SenderColorHex ?? string.Empty;
 
                     var conversation = _conversations.FirstOrDefault(c => c.NodeId == partnerId);
@@ -189,8 +258,23 @@ public partial class DirectMessagesWindow : Window
                         if (entry.PacketId != 0 && _dmMessageById.ContainsKey(entry.PacketId)) continue;
                         var msg = DbEntryToMessageItem(entry);
                         msg.IsOwnMessage = (_myNodeId != 0 && entry.FromId == _myNodeId);
-                        conversation.Messages.Add(msg);
+                        // Resolve a stale stored sender name to the current node name,
+                        // else a Meshtastic-style placeholder.
+                        if (!msg.IsOwnMessage)
+                        {
+                            if (_protocolService.GetKnownNodeName(msg.FromId) is { } liveName)
+                                msg.From = liveName;
+                            else if (string.IsNullOrEmpty(msg.From) || msg.From == "Unknown" || msg.From.StartsWith("!"))
+                                msg.From = Models.NodeInfo.DefaultName(msg.FromId);
+                        }
+                        MessageItem.InsertByTime(conversation.Messages, msg);
                         if (entry.PacketId != 0) _dmMessageById[entry.PacketId] = msg;
+
+                        // Restored, still-encrypted DM with kept ciphertext: try to
+                        // decrypt now (or request the sender's key) so it can heal
+                        // across restarts.
+                        if (msg.IsEncrypted && msg.PkiCipher is { Length: > 0 } && !msg.IsOwnMessage)
+                            _protocolService.RetryOrRequestPendingDm(msg);
                     }
                 }
                 UpdateStatusBar();
@@ -224,11 +308,16 @@ public partial class DirectMessagesWindow : Window
             ItemContainerStyle = (Style)FindResource("DmBubbleItemContainerStyle"),
             HorizontalContentAlignment = HorizontalAlignment.Stretch
         };
-        // Auto-scroll to newest message
+        tab.Tag = listView; // so tab-switch can scroll it to the newest message
+
+        // Auto-scroll — but only when the *newest* message is added, so inserting an
+        // older message mid-list (history / out-of-order) doesn't jump the view up.
         conversation.Messages.CollectionChanged += (s, e) =>
         {
-            if (e.NewItems?.Count > 0)
-                listView.ScrollIntoView(e.NewItems[e.NewItems.Count - 1]);
+            if (e.Action == System.Collections.Specialized.NotifyCollectionChangedAction.Add &&
+                conversation.Messages.Count > 0 &&
+                e.NewItems != null && e.NewItems.Contains(conversation.Messages[^1]))
+                listView.ScrollIntoView(conversation.Messages[^1]);
         };
 
         // Per-conversation reply state
@@ -791,7 +880,7 @@ public partial class DirectMessagesWindow : Window
                 try
                 {
                     await _protocolService.SendReactionAsync(emoji, message.Id, partnerNodeId, 0);
-                    message.AddReaction(emoji, _myNodeId);
+                    message.AddReaction(emoji, _myNodeId, Loc("StrMe"));
                 }
                 catch (Exception ex)
                 {

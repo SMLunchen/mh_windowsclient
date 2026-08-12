@@ -67,8 +67,17 @@ public class MessageDbManager : IDisposable
 
     public void InsertDmMessage(uint partnerId, MessageItem msg)
     {
-        try { GetOrCreateDmDb().Insert(msg, channelIndex: 0, channelName: string.Empty, partnerId: partnerId); }
+        // Persist the channel index/hash (for an encrypted DM this is the channel
+        // hash) so a restored DM can be channel-decrypted without brute-forcing.
+        try { GetOrCreateDmDb().Insert(msg, channelIndex: (int)msg.ChannelIndex, channelName: string.Empty, partnerId: partnerId); }
         catch (Exception ex) { Logger.WriteLine($"[MsgDB] InsertDM: {ex.Message}"); }
+    }
+
+    /// <summary>Correct a stored DM's text after retroactive PKI decryption.</summary>
+    public void UpdateDmMessage(uint packetId, string text)
+    {
+        try { GetOrCreateDmDb().UpdateMessageText(packetId, text); }
+        catch (Exception ex) { Logger.WriteLine($"[MsgDB] UpdateDM: {ex.Message}"); }
     }
 
     // ── Read ──────────────────────────────────────────────────────────────────
