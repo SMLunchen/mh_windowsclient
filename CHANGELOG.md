@@ -7,7 +7,7 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
 
-## [Unreleased]
+## [1.6.2] - 2026-08-11
 
 ### 🐛 Behoben
 
@@ -22,12 +22,6 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 - **Über MQTT relayte Pakete** (Kanal-Chat **und** schlüssellose DMs) reicht das Gerät **noch verschlüsselt** an den Client weiter — es entschlüsselt nur seinen eigenen Funkverkehr. Der Client entschlüsselt sie jetzt **selbst per Kanal-PSK** (AES-CTR), wenn er einen Kanal mit passendem Hash hat. Zuvor blieben diese Nachrichten als „[Encrypted message]" stehen, obwohl der Kanalschlüssel vorlag.
 - Kanal-Hash + PSK-Expansion 1:1 aus der Firmware nachgebaut (`Channels::generateHash`/`getKey`); greift live (exakter Hash-Match) wie beim 🔑-Retry gepufferter/aus der DB restaurierter DMs (dort per Brute-Force über alle Kanäle mit Parse-Validierung, da DMs den Kanal bisher als 0 speicherten). DMs persistieren ab jetzt den echten Kanal-Hash.
 - Abgesichert durch 2 neue Tests (AES-CTR-Roundtrip mit passendem Kanal; bleibt verschlüsselt bei unbekanntem Kanal).
-
----
-
-## [1.6.2] - 2026-08-11
-
-### 🐛 Behoben
 
 #### 🔐 PKC-Entschlüsselung korrekt implementiert (AES-CCM statt CTR)
 - **Wurzelursache gefunden:** Unser `PkiDecryptionService` nutzte **AES-CTR** mit fester Null-Nonce und behandelte das ganze Paket als Ciphertext. Meshtastics echte Public-Key-Crypto ist aber **AES-CCM** (L=2, 8-Byte-Auth-Tag, kein AAD) mit einem **übertragenen 4-Byte-`extraNonce`** am Paketende. Damit konnte client-seitige PKI-Entschlüsselung **reale Firmware-Pakete nie** entschlüsseln (Ergebnis war Müll → „parse failed").
