@@ -2517,6 +2517,11 @@
                         <Button x:Name="OpenLogFileButton"
                                Content="{DynamicResource StrLogFile}"
                                Click="OpenLogFile_Click"/>
+                        <CheckBox x:Name="AutoScrollLogCheckBox"
+                                  Content="{DynamicResource StrLogAutoScroll}"
+                                  IsChecked="True"
+                                  VerticalAlignment="Center"
+                                  Margin="15,0,0,0"/>
                     </StackPanel>
 
                     <!-- Debug Log Output -->

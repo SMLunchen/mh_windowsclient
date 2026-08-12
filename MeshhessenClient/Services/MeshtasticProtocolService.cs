@@ -189,7 +189,8 @@ public class MeshtasticProtocolService
     {
         lock (_dataLock)
         {
-            return _knownNodes.TryGetValue(nodeId, out var n) && !string.IsNullOrEmpty(n.Name) ? n.Name : null;
+            return _knownNodes.TryGetValue(nodeId, out var n) && !string.IsNullOrEmpty(n.Name) && n.Name != "Unknown"
+                ? n.Name : null;
         }
     }
 
@@ -1310,10 +1311,11 @@ public class MeshtasticProtocolService
             }
 
             // Zeige verschlüsselte Nachricht (MainWindow filtert basierend auf Einstellung)
-            string fromName = $"!{packet.From:x8}";
+            string fromName = ModelNodeInfo.DefaultName(packet.From);
             lock (_dataLock)
             {
-                if (_knownNodes.TryGetValue(packet.From, out var node))
+                if (_knownNodes.TryGetValue(packet.From, out var node) &&
+                    !string.IsNullOrEmpty(node.Name) && node.Name != "Unknown")
                 {
                     fromName = node.Name;
                 }
@@ -1815,14 +1817,15 @@ public class MeshtasticProtocolService
                 Logger.WriteLine($"[MSG DEBUG] Alert Bell detected! First {Math.Min(20, payloadBytes.Length)} bytes from !{packet.From:x8}: {hexDump}");
             }
 
-            string fromName = "Unknown";
+            string fromName = ModelNodeInfo.DefaultName(packet.From);
             bool senderKnown = false;
             lock (_dataLock)
             {
                 if (_knownNodes.TryGetValue(packet.From, out var node))
                 {
-                    fromName = node.Name;
                     senderKnown = true;
+                    if (!string.IsNullOrEmpty(node.Name) && node.Name != "Unknown")
+                        fromName = node.Name;
                 }
             }
 

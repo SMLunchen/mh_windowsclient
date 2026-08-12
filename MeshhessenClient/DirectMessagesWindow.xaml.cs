@@ -64,7 +64,8 @@ public partial class DirectMessagesWindow : Window
 
                 // Update the conversation title/tab if it was still a placeholder.
                 if (conv.NodeId == nodeId &&
-                    (conv.NodeName == "Unknown" || conv.NodeName.StartsWith("!") || conv.NodeName.StartsWith("→ !")))
+                    (conv.NodeName == "Unknown" || conv.NodeName.StartsWith("!") ||
+                     conv.NodeName.StartsWith("→ !") || conv.NodeName.StartsWith("Meshtastic ")))
                 {
                     conv.NodeName = name;
                     if (_tabByNodeId.TryGetValue(nodeId, out var tab))
@@ -231,10 +232,12 @@ public partial class DirectMessagesWindow : Window
                     var entries   = group.OrderBy(e => e.Timestamp).ToList();
 
                     var firstReceived = entries.FirstOrDefault(e => e.FromId != _myNodeId);
-                    // Prefer the CURRENT node name (the stored name may be a stale "!hex"
-                    // captured before the node was known); the DB is only a fallback.
+                    // Prefer the CURRENT node name; the stored name may be a stale
+                    // placeholder ("Unknown"/"!hex") captured before the node was known.
+                    var storedName    = firstReceived?.FromName;
                     var partnerName   = _protocolService.GetKnownNodeName(partnerId)
-                                        ?? firstReceived?.FromName ?? $"!{partnerId:X8}";
+                                        ?? (!string.IsNullOrEmpty(storedName) && storedName != "Unknown" && !storedName.StartsWith("!")
+                                            ? storedName : Models.NodeInfo.DefaultName(partnerId));
                     var colorHex      = firstReceived?.SenderColorHex ?? string.Empty;
 
                     var conversation = _conversations.FirstOrDefault(c => c.NodeId == partnerId);
@@ -255,9 +258,15 @@ public partial class DirectMessagesWindow : Window
                         if (entry.PacketId != 0 && _dmMessageById.ContainsKey(entry.PacketId)) continue;
                         var msg = DbEntryToMessageItem(entry);
                         msg.IsOwnMessage = (_myNodeId != 0 && entry.FromId == _myNodeId);
-                        // Resolve a stale stored sender name to the current node name.
-                        if (!msg.IsOwnMessage && _protocolService.GetKnownNodeName(msg.FromId) is { } liveName)
-                            msg.From = liveName;
+                        // Resolve a stale stored sender name to the current node name,
+                        // else a Meshtastic-style placeholder.
+                        if (!msg.IsOwnMessage)
+                        {
+                            if (_protocolService.GetKnownNodeName(msg.FromId) is { } liveName)
+                                msg.From = liveName;
+                            else if (string.IsNullOrEmpty(msg.From) || msg.From == "Unknown" || msg.From.StartsWith("!"))
+                                msg.From = Models.NodeInfo.DefaultName(msg.FromId);
+                        }
                         MessageItem.InsertByTime(conversation.Messages, msg);
                         if (entry.PacketId != 0) _dmMessageById[entry.PacketId] = msg;
 

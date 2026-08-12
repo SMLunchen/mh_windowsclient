@@ -582,13 +582,19 @@ public partial class MainWindow : Window
         Dispatcher.BeginInvoke(() =>
         {
             DebugLogTextBox.AppendText(logMessage + Environment.NewLine);
-            DebugLogTextBox.ScrollToEnd();
 
-            // Begrenze auf maximal 10000 Zeilen
-            var lines = DebugLogTextBox.Text.Split('\n');
-            if (lines.Length > 10000)
+            // Only follow the tail (and trim, which resets scroll) while auto-scroll is
+            // on, so the user can scroll up and read without being yanked back down.
+            if (AutoScrollLogCheckBox?.IsChecked != false)
             {
-                DebugLogTextBox.Text = string.Join('\n', lines.Skip(lines.Length - 10000));
+                DebugLogTextBox.ScrollToEnd();
+
+                // Begrenze auf maximal 10000 Zeilen
+                var lines = DebugLogTextBox.Text.Split('\n');
+                if (lines.Length > 10000)
+                {
+                    DebugLogTextBox.Text = string.Join('\n', lines.Skip(lines.Length - 10000));
+                }
             }
         });
     }
@@ -4381,14 +4387,14 @@ public partial class MainWindow : Window
     {
         if (_myNodeId != 0 && nodeId == _myNodeId) return Loc("StrMe");
         var n = _allNodes.FirstOrDefault(x => x.NodeId == nodeId);
-        return !string.IsNullOrEmpty(n?.Name) ? n!.Name : $"!{nodeId:x8}";
+        return !string.IsNullOrEmpty(n?.Name) && n!.Name != "Unknown" ? n.Name : Models.NodeInfo.DefaultName(nodeId);
     }
 
     // Update already-displayed chat messages from a node once its NodeInfo arrives,
     // so an "Unknown" sender resolves to the real name in place.
     private void UpdateMessagesForNode(Models.NodeInfo node)
     {
-        string name = !string.IsNullOrEmpty(node.Name) ? node.Name : $"!{node.NodeId:x8}";
+        string name = !string.IsNullOrEmpty(node.Name) && node.Name != "Unknown" ? node.Name : Models.NodeInfo.DefaultName(node.NodeId);
         int updated = 0;
         foreach (var m in _allMessages)
         {

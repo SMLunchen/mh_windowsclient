@@ -231,6 +231,7 @@
     <sys:String x:Key="StrLogClear">Log löschen</sys:String>
     <sys:String x:Key="StrLogCopy">Log kopieren</sys:String>
     <sys:String x:Key="StrLogFile">Log-Datei öffnen</sys:String>
+    <sys:String x:Key="StrLogAutoScroll">Auto-Scroll</sys:String>
 
     <!-- NodeConfig window -->
     <sys:String x:Key="StrNcWindowTitle">Node konfigurieren</sys:String>

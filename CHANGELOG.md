@@ -33,6 +33,9 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ### ✨ Hinzugefügt
 
+#### 🏷️ „Meshtastic abcd" statt „Unknown"
+- Ein noch unbekannter Absender heißt im Chat jetzt **„Meshtastic abcd"** (abcd = letzte 4 Hex-Stellen der Node-ID) statt „Unknown"/„!hex" — wie in den Meshtastic-Apps. Gilt für Kanal-Chat, DM-Blasen, DM-Tabtitel und Reaction-Tooltips; sobald die echte NodeInfo eintrifft, wird der Platzhalter durch den echten Namen ersetzt.
+
 #### 🪪 Unbekannte Node in Chat → NodeInfo still anfordern
 - Erscheint ein Absender im Chat als „Unknown", fordert der Client dessen NodeInfo jetzt **automatisch und still** an (löst Name auf und – bei PKI – den öffentlichen Schlüssel). DM an uns: sofort. Channel/Broadcast: mit globalem Burst-Schutz (min. 8 s Abstand) plus Rate-Limit pro Node, damit ein voller Channel das Mesh nicht flutet.
 - **Nachträgliche Namensauflösung:** Sobald die NodeInfo eintrifft, werden bereits angezeigte „Unknown"-Nachrichten (Kanal **und** DM) **in place** auf den echten Absendernamen aktualisiert – inkl. Kurzname/Farbe und DM-Titel.
@@ -42,6 +45,9 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 #### 😀 Reaction-Tooltip zeigt Absender
 - Der Tooltip auf einer Reaction listet jetzt **wer** womit reagiert hat (z. B. „👍  Anna, Max") statt nur das Emoji zu wiederholen.
+
+#### 🖱️ Debug-Log: Auto-Scroll abschaltbar
+- Checkbox „Auto-Scroll" im Debug-Tab: abgeschaltet bleibt die Ansicht stehen (auch die Zeilen-Begrenzung reißt sie dann nicht mehr nach unten), sodass man in Ruhe hochscrollen und lesen kann.
 
 ### 🐛 Behoben
 
