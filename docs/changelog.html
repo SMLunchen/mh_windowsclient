@@ -172,10 +172,42 @@
 <div class="section active" id="de">
 <main>
 
-  <!-- ── v1.6.1.1 ── -->
+  <!-- ── v1.6.2 ── -->
   <div class="version-entry current">
     <div class="version-header">
-      <span class="version-tag tag-latest">v1.6.1.1</span>
+      <span class="version-tag tag-latest">v1.6.2</span>
+      <span class="version-date">2026-08-11</span>
+      Verschlüsselte DMs, Namensauflösung &amp; Chat-Feinschliff
+    </div>
+    <p class="version-desc">Rund um verschlüsselte Direktnachrichten und den Chat: Die client-seitige PKI-Entschlüsselung wurde grundlegend korrigiert, unbekannte Absender lösen sich automatisch auf, und die Nachrichten-Sortierung beim Verbinden stimmt wieder.</p>
+
+    <div class="cl-section fixed">
+      <h3>🔐 Verschlüsselte Nachrichten</h3>
+      <div class="cl-group">
+        <ul class="cl-list">
+          <li><strong>PKI-Entschlüsselung korrekt umgesetzt</strong> (AES-CCM statt CTR, inkl. extra-Nonce &amp; Auth-Tag) — verschlüsselte DMs lassen sich client-seitig überhaupt erst entschlüsseln</li>
+          <li>Fehlt der Schlüssel des Absenders, wird er <strong>aktiv angefordert</strong> und die Nachricht <strong>nachträglich</strong> entschlüsselt (Puffer übersteht Neustarts, plus 🔑-Button zum manuellen Anstoß)</li>
+          <li>Anfragen gehen auf dem <strong>richtigen Kanal</strong> raus (erreicht auch nur über MQTT gehörte Nodes) und senden unseren Public Key gleich mit</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="cl-section added">
+      <h3>💬 Chat &amp; Nodes</h3>
+      <div class="cl-group">
+        <ul class="cl-list">
+          <li><strong>Unbekannte Absender</strong> werden still per NodeInfo aufgelöst und angezeigte „Unknown"-Nachrichten nachträglich auf den echten Namen aktualisiert</li>
+          <li><strong>Chat-Sortierung</strong> beim Verbinden/History-Laden wieder chronologisch (Kanal &amp; DMs)</li>
+          <li>Reaction-Tooltip zeigt jetzt, <strong>wer</strong> reagiert hat; Positionen unbekannter Nodes werden gepuffert statt verworfen</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── v1.6.1.1 ── -->
+  <div class="version-entry">
+    <div class="version-header">
+      <span class="version-tag tag-release">v1.6.1.1</span>
       <span class="version-date">2026-08-11</span>
       Verschlüsselte DMs nachträglich entschlüsseln
     </div>
@@ -988,10 +1020,42 @@
 <div class="section" id="en">
 <main>
 
-  <!-- ── v1.6.0 ── -->
+  <!-- ── v1.6.2 (EN) ── -->
   <div class="version-entry current">
     <div class="version-header">
-      <span class="version-tag tag-latest">v1.6.0</span>
+      <span class="version-tag tag-latest">v1.6.2</span>
+      <span class="version-date">2026-08-11</span>
+      Encrypted DMs, name resolution &amp; chat polish
+    </div>
+    <p class="version-desc">All around encrypted direct messages and the chat: client-side PKI decryption was fundamentally corrected, unknown senders resolve automatically, and message ordering on connect is fixed again.</p>
+
+    <div class="cl-section fixed">
+      <h3>🔐 Encrypted messages</h3>
+      <div class="cl-group">
+        <ul class="cl-list">
+          <li><strong>PKI decryption implemented correctly</strong> (AES-CCM instead of CTR, incl. extra nonce &amp; auth tag) — encrypted DMs can be decrypted client-side at all now</li>
+          <li>If the sender's key is missing it is <strong>actively requested</strong> and the message is decrypted <strong>retroactively</strong> (buffer survives restarts, plus a 🔑 button for a manual retry)</li>
+          <li>Requests go out on the <strong>correct channel</strong> (reaching nodes we only hear via MQTT) and advertise our public key</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="cl-section added">
+      <h3>💬 Chat &amp; nodes</h3>
+      <div class="cl-group">
+        <ul class="cl-list">
+          <li><strong>Unknown senders</strong> resolve silently via NodeInfo, and displayed "Unknown" messages update to the real name in place</li>
+          <li><strong>Chat ordering</strong> on connect / history load is chronological again (channel &amp; DMs)</li>
+          <li>Reaction tooltip now shows <strong>who</strong> reacted; positions of unknown nodes are buffered instead of discarded</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── v1.6.0 ── -->
+  <div class="version-entry">
+    <div class="version-header">
+      <span class="version-tag tag-release">v1.6.0</span>
       <span class="version-date">2026-07-30</span>
       Official Meshtastic protobufs, tests &amp; CI
     </div>
