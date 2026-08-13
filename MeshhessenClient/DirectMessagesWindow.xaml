@@ -100,7 +100,7 @@
                                         </Style.Triggers>
                                     </Style>
                                 </StackPanel.Style>
-                                <TextBlock Text="{Binding From}"
+                                <emoji:TextBlock Text="{Binding From}"
                                            FontWeight="SemiBold" FontSize="11.5"
                                            Foreground="{DynamicResource MsgSenderNameFg}"
                                            VerticalAlignment="Center"/>

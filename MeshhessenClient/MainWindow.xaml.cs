@@ -4427,13 +4427,7 @@ public partial class MainWindow : Window
 
     private void ShowEmojiPickerForMessage(MessageItem message, uint destinationId, uint channel)
     {
-        var quickEmojis = new[]
-        {
-            "??", "??", "??", "??", "??", "??", "??", "??",
-            "?", "?", "??", "*??", "1??", "2??", "3??", "4??",
-            "5??", "6??", "7??", "??", "??", "??", "??", "??",
-            "??", "?", "??", "???", "?", "?", "??", "??",
-        };
+        var quickEmojis = Helpers.EmojiPalette.Reactions;
 
         var popup = new System.Windows.Controls.Primitives.Popup
         {

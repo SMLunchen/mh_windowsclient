@@ -111,7 +111,7 @@
 
                             <!-- Voller Name + Zeit -->
                             <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="12"
+                                <emoji:TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="12"
                                            TextTrimming="CharacterEllipsis"/>
                                 <TextBlock Text="{Binding TimeAgoDisplay}" FontSize="10" Foreground="Gray"/>
                             </StackPanel>
@@ -704,7 +704,7 @@
                                                         </Style>
                                                     </StackPanel.Style>
                                                     <!-- Sender name -->
-                                                    <TextBlock Text="{Binding From}"
+                                                    <emoji:TextBlock Text="{Binding From}"
                                                                FontWeight="SemiBold" FontSize="11.5"
                                                                Foreground="{DynamicResource MsgSenderNameFg}"
                                                                VerticalAlignment="Center"/>
@@ -1286,7 +1286,7 @@
                                                                FontSize="9" FontWeight="Bold"
                                                                Foreground="White"/>
                                                 </Border>
-                                                <TextBlock Text="{Binding Name}"
+                                                <emoji:TextBlock Text="{Binding Name}"
                                                            VerticalAlignment="Center"
                                                            FontWeight="SemiBold"
                                                            TextTrimming="CharacterEllipsis"
@@ -1502,7 +1502,13 @@
                         <ListView.View>
                             <GridView>
                                 <GridViewColumn Header="Index" Width="60" DisplayMemberBinding="{Binding Index}"/>
-                                <GridViewColumn Header="Name" Width="150" DisplayMemberBinding="{Binding Name}"/>
+                                <GridViewColumn Header="Name" Width="150">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <emoji:TextBlock Text="{Binding Name}"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
                                 <GridViewColumn Header="PSK" Width="300" DisplayMemberBinding="{Binding Psk}"/>
                                 <GridViewColumn Header="Role" Width="100" DisplayMemberBinding="{Binding Role}"/>
                                 <GridViewColumn Header="{DynamicResource StrMsgDbClearSelectedChannel}" Width="170">

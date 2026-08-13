@@ -7,6 +7,20 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
 
+## [1.6.2.1] - 2026-08-13
+
+### ✨ Hinzugefügt
+
+#### 🌈 Bunte Emoji in Node-Namen und Chat
+- Emoji in Node-Namen werden jetzt **farbig** dargestellt — in der Node-Kachelansicht, der Node-Tabelle, der Kanal-Tabelle sowie als Absendername im Kanal-Chat und in DM-Blasen (via `Emoji.Wpf.TextBlock` statt einfachem `TextBlock`).
+
+### 🐛 Behoben
+
+#### 😀 Emoji-Picker zeigte „??" statt Emojis
+- Beim Rechtsklick → Reagieren erschienen im Emoji-Picker nur noch „??"-Kästchen. Ursache war eine Nicht-UTF-8-Speicherung, die die Emoji-Literale im Quelltext zerstörte. Die Emoji-Liste liegt jetzt zentral in `Helpers/EmojiPalette.cs` und wird aus **Unicode-Codepoints** aufgebaut (reiner ASCII-Quelltext) — sie kann so nicht mehr kaputtgehen. Genutzt vom Picker im Kanal-Chat **und** im DM-Fenster.
+
+---
+
 ## [1.6.2] - 2026-08-11
 
 ### 🐛 Behoben

@@ -830,13 +830,7 @@ public partial class DirectMessagesWindow : Window
 
     private void ShowDmEmojiPicker(MeshhessenClient.Models.MessageItem message, uint partnerNodeId)
     {
-        var quickEmojis = new[]
-        {
-            "👍", "👎", "❤️", "😂", "😢", "😮", "😡", "🎉",
-            "❓", "❗", "‼️", "*️⃣", "1️⃣", "2️⃣", "3️⃣", "4️⃣",
-            "5️⃣", "6️⃣", "7️⃣", "💩", "👋", "🤠", "🐭", "😈",
-            "☀️", "☔", "☁️", "🌫️", "✅", "❌", "🔥", "💯",
-        };
+        var quickEmojis = Helpers.EmojiPalette.Reactions;
 
         var popup = new System.Windows.Controls.Primitives.Popup
         {
