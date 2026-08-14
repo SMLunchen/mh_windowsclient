@@ -64,12 +64,7 @@ public partial class MainWindow
         }
 
         MainTabs.SelectedIndex = 3;
-        var nodePos = SphericalMercator.FromLonLat(node.Longitude.Value, node.Latitude.Value);
-        if (_map != null)
-        {
-            _map.Navigator.CenterOnAndZoomTo(new MPoint(nodePos.x, nodePos.y), 76.0);
-            MapControl.Refresh();
-        }
+        CenterMapOnNode(node.Latitude.Value, node.Longitude.Value);
     }
 
     private void NodeFilterTextBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)

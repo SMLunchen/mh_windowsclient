@@ -796,10 +796,12 @@ public partial class RemoteAdminWindow : Window
 
     private async void NodeDbResetButton_Click(object sender, RoutedEventArgs e)
     {
-        if (MessageBox.Show(Loc("StrRemoteAdminNodeDbResetConfirm"), Loc("StrRemoteAdminTitle"),
-                MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes) return;
+        // Remote node: the "reset our internal DB" option doesn't apply.
+        var dlg = new NodeDbResetDialog(showInternalOption: false) { Owner = this };
+        if (dlg.ShowDialog() != true) return;
+        // nodedb_reset value == keepFavorites → wipe favorites means sending false.
         await _svc.SendRemoteAdminWriteAsync(_targetNode.NodeId,
-            new AdminMessage { NodedbReset = true });
+            new AdminMessage { NodedbReset = !dlg.WipeFavorites });
     }
 
     // ===== Favorite button =====

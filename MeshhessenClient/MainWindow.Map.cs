@@ -298,6 +298,13 @@ public partial class MainWindow
             // Restore cached line overlays (traceroutes, paths) e.g. after raster->vector switch
             foreach (var (key, json) in _vectorLineJson.ToList())
                 ExecVectorScript($"setLines({JsonSerializer.Serialize(key)}, {json})");
+
+            // A "Show on map" click that opened the map applies its center now that JS is callable.
+            if (_pendingVectorCenter is { } pc)
+            {
+                _pendingVectorCenter = null;
+                ExecVectorScript($"setCenter({pc.Lon.ToString(ci)}, {pc.Lat.ToString(ci)}, {pc.Zoom})");
+            }
         }
         catch (Exception ex)
         {
@@ -587,6 +594,49 @@ public partial class MainWindow
         if (!_vectorMapReady) return;
         try { await VectorMapView.CoreWebView2.ExecuteScriptAsync(script); }
         catch (Exception ex) { Services.Logger.WriteLine($"[VectorMap] script error: {ex.Message}"); }
+    }
+
+    /// <summary>
+    /// Centers whichever map is currently active on a node position. Handles both the
+    /// Mapsui raster map (<see cref="_map"/>) and the MapLibre vector map (WebView2) —
+    /// the raster-only path used to leave the vector map un-centered on "Show on map".
+    /// </summary>
+    private void CenterMapOnNode(double lat, double lon)
+    {
+        var nodePos = SphericalMercator.FromLonLat(lon, lat);
+        if (_map != null)
+        {
+            _map.Navigator.CenterOnAndZoomTo(new MPoint(nodePos.x, nodePos.y), 76.0);
+            MapControl.Refresh();
+        }
+        if (UseVectorMap)
+        {
+            const int zoom = 12;
+            if (_vectorMapReady)
+            {
+                var ci = System.Globalization.CultureInfo.InvariantCulture;
+                ExecVectorScript($"setCenter({lon.ToString(ci)}, {lat.ToString(ci)}, {zoom})");
+            }
+            else
+            {
+                // Map tab opened for the first time by this very click — apply once it's ready.
+                _pendingVectorCenter = (lon, lat, zoom);
+            }
+        }
+    }
+
+    /// <summary>Removes every node pin from both maps (raster features + vector). Assumes
+    /// <c>_allNodes</c> is already cleared so the vector push writes an empty set.</summary>
+    private void ClearAllNodePinsFromMap()
+    {
+        _nodeFeatures.Clear();
+        if (_nodeLayer != null)
+        {
+            _nodeLayer.Features = _nodeFeatures;
+            _nodeLayer.DataHasChanged();
+        }
+        MapControl?.Refresh();
+        PushNodePinsToVectorMap();
     }
 
     private static string CssColor(Mapsui.Styles.Color c) =>

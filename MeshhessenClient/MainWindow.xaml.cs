@@ -84,6 +84,7 @@ public partial class MainWindow : Window
     private Services.VectorTileCacheService? _vectorTileCache;
     private bool _vectorMapInitStarted = false;  // CoreWebView2 init/navigation kicked off
     private bool _vectorMapReady = false;        // map.html loaded, JS API callable
+    private (double Lon, double Lat, int Zoom)? _pendingVectorCenter;  // "Show on map" fired before the vector map was ready
     private MemoryLayer? _nodeLayer;
     private MemoryLayer? _myPosLayer;
     private readonly List<IFeature> _nodeFeatures = new();
@@ -193,6 +194,7 @@ public partial class MainWindow : Window
         _protocolService.MessageReceived += OnMessageReceived;
         _protocolService.PkiMessageDecrypted += OnPkiMessageDecrypted;
         _protocolService.NodeInfoReceived += OnNodeInfoReceived;
+        _protocolService.NodeDbCleared += OnNodeDbCleared;
         _protocolService.ChannelInfoReceived += OnChannelInfoReceived;
         _protocolService.LoRaConfigReceived += OnLoRaConfigReceived;
         _protocolService.DeviceInfoReceived += OnDeviceInfoReceived;
@@ -897,6 +899,7 @@ public partial class MainWindow : Window
                 _protocolService.MessageReceived += OnMessageReceived;
                 _protocolService.PkiMessageDecrypted += OnPkiMessageDecrypted;
                 _protocolService.NodeInfoReceived += OnNodeInfoReceived;
+                _protocolService.NodeDbCleared += OnNodeDbCleared;
                 _protocolService.ChannelInfoReceived += OnChannelInfoReceived;
                 _protocolService.LoRaConfigReceived += OnLoRaConfigReceived;
                 _protocolService.DeviceInfoReceived += OnDeviceInfoReceived;
@@ -1609,6 +1612,7 @@ public partial class MainWindow : Window
                 _protocolService.MessageReceived += OnMessageReceived;
                 _protocolService.PkiMessageDecrypted += OnPkiMessageDecrypted;
                 _protocolService.NodeInfoReceived += OnNodeInfoReceived;
+                _protocolService.NodeDbCleared += OnNodeDbCleared;
                 _protocolService.ChannelInfoReceived += OnChannelInfoReceived;
                 _protocolService.LoRaConfigReceived += OnLoRaConfigReceived;
                 _protocolService.DeviceInfoReceived += OnDeviceInfoReceived;
@@ -1960,6 +1964,26 @@ public partial class MainWindow : Window
             catch (Exception ex)
             {
                 Services.Logger.WriteLine($"Error updating node in UI: {ex.Message}");
+            }
+        });
+    }
+
+    /// <summary>Internal node DB was cleared (user-triggered) — drop the UI node list and map pins.</summary>
+    private void OnNodeDbCleared(object? sender, EventArgs e)
+    {
+        Dispatcher.BeginInvoke(() =>
+        {
+            try
+            {
+                _nodes.Clear();
+                _allNodes.Clear();
+                ApplyNodeSortAndFilterCore();
+                ClearAllNodePinsFromMap();
+                Services.Logger.WriteLine("[Nodes] Internal node DB cleared — UI list and map pins reset");
+            }
+            catch (Exception ex)
+            {
+                Services.Logger.WriteLine($"Error clearing node UI: {ex.Message}");
             }
         });
     }
@@ -2605,12 +2629,7 @@ public partial class MainWindow : Window
         }
 
         MainTabs.SelectedIndex = 3;
-        var nodePos = SphericalMercator.FromLonLat(node.Longitude.Value, node.Latitude.Value);
-        if (_map != null)
-        {
-            _map.Navigator.CenterOnAndZoomTo(new MPoint(nodePos.x, nodePos.y), 76.0);
-            MapControl.Refresh();
-        }
+        CenterMapOnNode(node.Latitude.Value, node.Longitude.Value);
     }
 
     private void MessageContextMenu_SetColor_Click(object sender, RoutedEventArgs e)
@@ -3218,14 +3237,8 @@ public partial class MainWindow : Window
             // Switch to Map tab
             MainTabs.SelectedIndex = 3; // Map is tab index 3 (0=Messages, 1=Nodes, 2=Channels, 3=Map, 4=Settings, ...)
 
-            // Center map on node position with closer zoom
-            var nodePos = SphericalMercator.FromLonLat(node.Longitude.Value, node.Latitude.Value);
-            if (_map != null)
-            {
-                // Zoom level 12 (resolution ~76)
-                _map.Navigator.CenterOnAndZoomTo(new MPoint(nodePos.x, nodePos.y), 76.0);
-                MapControl.Refresh();
-            }
+            // Center whichever map is active (raster + vector) on the node position
+            CenterMapOnNode(node.Latitude.Value, node.Longitude.Value);
 
             // Close notification
             AlertNotificationBar.Visibility = Visibility.Collapsed;

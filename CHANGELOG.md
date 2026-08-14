@@ -7,6 +7,36 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
 
+## [1.6.2.2] - 2026-08-14
+
+### ✨ Hinzugefügt / 🔧 Geändert
+
+#### 🗄️ NodeDB-Reset: Abfrage-Dialog mit Optionen
+- Der Button „NodeDB zurücksetzen" (Geräte-Einstellungen **und** Remote-Admin) öffnet jetzt einen Dialog mit zwei Häkchen statt einer simplen Ja/Nein-Abfrage:
+  - **Favoriten ebenfalls löschen** — steuert das `nodedb_reset`-Bool: Standard behält Favoriten (`true`), angehakt löscht sie (`false`). Firmware-Abgleich ergab: der Bool-Wert ist genau `keepFavorites` in `resetNodes()`. Hinweis im Dialog: Router/Client-Base behalten Favoriten firmwareseitig immer.
+  - **Interne Node-DB dieses Clients ebenfalls zurücksetzen** — leert zusätzlich die lokale Node-Liste (In-Memory) + Karten-Pins; Nachrichten-/Telemetrie-History bleibt.
+- **Korrektur der Beschreibungen:** Texte sagten „alle bekannten Nodes werden vergessen", obwohl Favoriten erhalten blieben — jetzt korrekt formuliert. Der Geräte-Reset löst wie zuvor einen **Reboot** aus (kein Shutdown).
+- Der hartcodierte Dialogtext wurde durch i18n-Strings (DE/EN) ersetzt.
+
+### 🐛 Behoben
+
+#### 🗺️ „Auf Karte zeigen" zentrierte die Vector-Map nicht
+- Bei aktiver **Vector-Map** (MapLibre/WebView2) öffnete „Auf Karte zeigen" zwar die Karte, sprang aber **nicht** auf die Node-Position — die Zentrierung lief nur über die Mapsui-**Rastermap**. Jetzt zentriert ein gemeinsamer Helfer (`CenterMapOnNode`) **beide** Karten (Raster via `CenterOnAndZoomTo`, Vector via `setCenter`). Betrifft alle drei Einstiege (Node-Kontextmenü, Nachrichten-Kontextmenü, Alert-Button). Öffnet der Klick die Vector-Map erstmalig, wird das Ziel gepuffert und nach dem Laden angewandt.
+
+#### 🔓 PKI-DMs werden sofort entschlüsselt, wenn wir den Key haben (Flag-unabhängig)
+- Der sofortige client-seitige PKI-Entschlüsselungsversuch war an `packet.PkiEncrypted` gekoppelt. Die Firmware setzt dieses Flag aber auf `false`, sobald der **eigene** Node nicht entschlüsseln konnte (Router.cpp:814) — z.B. nach einem **NodeDB-Reset**, wenn dessen nodedb den Sender-Key nicht mehr hat. Dadurch wurden PKI-DMs gepuffert und nicht entschlüsselt, **obwohl der Client den Key besitzt**.
+- Jetzt versucht der Client PKI-Entschlüsselung für **jede DM an uns**, sobald Private- und Sender-Key vorliegen — unabhängig vom Flag (sicher, da AES-CCM tag-verifiziert ist). Telemetrie/DMs von Nodes, deren Key wir kennen (der Node aber nach Reset nicht), gehen so sofort auf statt im Puffer zu landen.
+
+#### 📨 Request-Antworten werden nach Portnum verarbeitet (nicht mehr als „verschlüsselte DM")
+- Antworten auf `want_response`-Anfragen (UserInfo/Position/Telemetrie/PaxCounter) kommen teils verschlüsselt zurück: **Telemetrie/Pax** PKI-verschlüsselt (der Node hat unseren Key aus der Anfrage, uns fehlt seiner → Henne-Ei), **NodeInfo/Position** kanal-verschlüsselt (Firmware schließt diese Portnums von PKI aus, Router.cpp:1053). Konnte unser Node sie nicht entschlüsseln, landeten sie pauschal als „[Encrypted message]" im Chat und wurden beim Entschlüsseln nur akzeptiert, wenn es Text war.
+- Jetzt: ein gepuffertes Paket wird nach Entschlüsselung **nach Portnum geroutet** (`DispatchLateDecrypted` → `RouteDecodedData`) — NodeInfo/Position/Telemetrie/… gehen in die normale Verarbeitung (Node/Key/Telemetrie werden übernommen), nur echter Text (Portnum 1) erscheint als DM.
+- **Zusätzlich:** Kommt eine verschlüsselte Antwort kurz nach einer **expliziten** Info-Anfrage an denselben Node (≤30 s), wird sie als Request-Antwort erkannt, gepuffert und **nicht** mehr als Chat-Platzhalter angezeigt (und löst keine weitere NodeInfo-Anfrage aus). Hinweis: `pki=False` im Log ist irreführend — die Firmware setzt das Flag zurück, sobald der eigene Node nicht entschlüsseln konnte (Router.cpp:814).
+
+#### 📏 Node-Namen-Spalte folgt jetzt der Spaltenbreite
+- Die Namensspalte in der Node-Tabelle war hart auf 155 px gedeckelt (`MaxWidth`) und saß in einem `StackPanel` — beim Verbreitern der Spalte wurde der Name trotzdem abgeschnitten. Das Cell-Template nutzt jetzt ein `Grid` (Auto + `*`) ohne `MaxWidth`, und die Zeilen strecken sich auf die Spaltenbreite (`HorizontalContentAlignment=Stretch`). Der Name folgt jetzt der Spaltenbreite (Ellipsis) und zeigt per Tooltip den vollen Namen.
+
+---
+
 ## [1.6.2.1] - 2026-08-13
 
 ### ✨ Hinzugefügt
