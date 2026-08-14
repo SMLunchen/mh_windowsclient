@@ -1219,6 +1219,8 @@
                                 <Setter Property="MinHeight" Value="42"/>
                                 <Setter Property="BorderThickness" Value="0"/>
                                 <Setter Property="Padding" Value="0,2"/>
+                                <!-- Cells fill their column width so name trims to the column and follows resize -->
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
                                 <Style.Triggers>
                                     <!-- Ungerade Zeilen: dezentes Grau -->
                                     <Trigger Property="ItemsControl.AlternationIndex" Value="1">
@@ -1276,8 +1278,14 @@
                                     </GridViewColumn.Header>
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate>
-                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                                <Border Width="28" Height="28" CornerRadius="14"
+                                            <!-- Grid (Auto + *) so the name tracks the column width and trims to it;
+                                                 a StackPanel measures children with infinite width and ignores resize. -->
+                                            <Grid VerticalAlignment="Center" ClipToBounds="True">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <Border Grid.Column="0" Width="28" Height="28" CornerRadius="14"
                                                         Background="{Binding AvatarColor, Converter={StaticResource HexToColorConverter}}"
                                                         Margin="0,0,7,0">
                                                     <TextBlock Text="{Binding AvatarLabel}"
@@ -1286,12 +1294,13 @@
                                                                FontSize="9" FontWeight="Bold"
                                                                Foreground="White"/>
                                                 </Border>
-                                                <emoji:TextBlock Text="{Binding Name}"
+                                                <emoji:TextBlock Grid.Column="1" Text="{Binding Name}"
                                                            VerticalAlignment="Center"
+                                                           HorizontalAlignment="Left"
                                                            FontWeight="SemiBold"
                                                            TextTrimming="CharacterEllipsis"
-                                                           MaxWidth="155"/>
-                                            </StackPanel>
+                                                           ToolTip="{Binding Name}"/>
+                                            </Grid>
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>

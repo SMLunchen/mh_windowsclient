@@ -30,6 +30,11 @@ public class MeshtasticProtocolService
     private uint _myNodeId;
     private DeviceInfo? _myDeviceInfo;
     private readonly Dictionary<uint, ModelNodeInfo> _knownNodes = new();
+    // Nodes we recently sent an explicit want_response info-request to (UserInfo/Position/
+    // Telemetry/…). An encrypted reply from such a node is that request's response, not a chat
+    // DM, so we buffer it for portnum-routing instead of surfacing an "[Encrypted message]".
+    private readonly Dictionary<uint, DateTime> _recentInfoRequests = new();
+    private static readonly TimeSpan InfoReplyWindow = TimeSpan.FromSeconds(30);
     private readonly List<Channel> _tempChannels = new();
     private bool _configComplete = false;
     private LoRaConfig? _currentLoRaConfig;
@@ -70,6 +75,8 @@ public class MeshtasticProtocolService
 
     public event EventHandler<MessageItem>? MessageReceived;
     public event EventHandler<ModelNodeInfo>? NodeInfoReceived;
+    /// <summary>Raised when the internal known-node cache is cleared (see <see cref="ClearKnownNodes"/>).</summary>
+    public event EventHandler? NodeDbCleared;
     public event EventHandler<ChannelInfo>? ChannelInfoReceived;
     public event EventHandler<LoRaConfig>? LoRaConfigReceived;
     public event EventHandler<DeviceConfig>? DeviceConfigReceived;
@@ -1246,9 +1253,17 @@ public class MeshtasticProtocolService
                 return;
 
             // --- PKI fallback: try client-side decryption ---
-            if (packet.PkiEncrypted && _pkiDecrypt.HasPrivateKey)
+            // NOT gated on packet.PkiEncrypted: our own node resets that flag to false whenever it
+            // couldn't decrypt the packet itself (Router.cpp:814) — e.g. after a NodeDB reset, when
+            // its nodedb no longer holds the sender's key. So a genuine PKI DM routinely reaches the
+            // client with pki_encrypted=false. We therefore try PKI for ANY encrypted DM addressed to
+            // us whenever we hold a private key and can find the sender's key; a wrong guess just fails
+            // the AES-CCM tag check and falls through to the channel-PSK / buffer path.
+            bool isDmToUsEnc = _myNodeId != 0 && packet.To == _myNodeId;
+            if (_pkiDecrypt.HasPrivateKey && isDmToUsEnc)
             {
-                // Prefer the public key embedded in the packet (field 16); fall back to CSV
+                // Prefer the public key embedded in the packet (field 16, only set when the flag
+                // survived); fall back to our own key store.
                 byte[]? senderPublicKey = null;
                 if (packet.PublicKey != null && packet.PublicKey.Length == 32)
                     senderPublicKey = packet.PublicKey.ToByteArray();
@@ -1355,6 +1370,18 @@ public class MeshtasticProtocolService
                 messageItem.PkiCipher = packet.Encrypted.ToByteArray();
                 messageItem.ChannelIndex = packet.Channel;
                 BufferPendingPkiDm(messageItem);
+
+                // If we just explicitly requested info (UserInfo/Position/Telemetry/…) from this
+                // node, an encrypted reply is that request's response — not a chat message. Keep the
+                // ciphertext buffered (so it routes by portnum via DispatchLateDecrypted if we later
+                // get the key) but don't surface a bogus "[Encrypted message]" bubble and don't fire
+                // off another NodeInfo request.
+                if (HasRecentInfoRequest(packet.From))
+                {
+                    Logger.WriteLine($"[PKI] Encrypted packet from !{packet.From:x8} matches a recent info-request — buffered as reply, not shown as chat");
+                    return;
+                }
+
                 _ = RequestNodeInfoAsync(packet.From, reason: "encrypted DM to us (PKI)", channel: packet.Channel);
 
                 // Diagnostic: is this a channel-PSK DM (channel = hash) on a channel we
@@ -1420,23 +1447,8 @@ public class MeshtasticProtocolService
         // item.ChannelIndex holds the channel hash captured at receive time — but a
         // DM restored from the DB stores 0, so brute-force across channels here.
         var chPlain = TryChannelDecrypt(item.PkiCipher!, item.ChannelIndex, item.FromId, item.Id, bruteForce: true);
-        if (chPlain != null)
-        {
-            try
-            {
-                var data = Data.Parser.ParseFrom(chPlain);
-                if ((int)data.Portnum == 1)
-                {
-                    Logger.WriteLine($"[ChanDec] late-decrypted buffered DM from !{item.FromId:x8} via channel key");
-                    PkiMessageDecrypted?.Invoke(this, new PkiLateDecryptedEventArgs
-                    {
-                        Item = item, Text = data.Payload.ToStringUtf8(), FromId = item.FromId, PacketId = item.Id
-                    });
-                    return;
-                }
-            }
-            catch { /* not our channel — fall through to request */ }
-        }
+        if (chPlain != null && DispatchLateDecrypted(item, chPlain, "channel key"))
+            return;
 
         BufferPendingPkiDm(item);
         _ = RequestNodeInfoAsync(item.FromId, force, reason: "retry/decrypt DM", channel: item.ChannelIndex);
@@ -1449,23 +1461,53 @@ public class MeshtasticProtocolService
         if (item.PkiCipher is not { Length: > 0 } || !_pkiDecrypt.HasPrivateKey) return false;
         var plaintext = _pkiDecrypt.TryDecrypt(item.PkiCipher, senderPublicKey, item.FromId, item.Id);
         if (plaintext == null) return false;
-        try
+        return DispatchLateDecrypted(item, plaintext, "PKI");
+    }
+
+    /// <summary>
+    /// Route a successfully late-decrypted buffered packet by portnum. A buffered "encrypted DM"
+    /// can be any want_response reply we couldn't decrypt at receive time (NodeInfo/Position/
+    /// Telemetry/…), not just chat text. Text (portnum 1) updates the shown DM bubble in place;
+    /// everything else is fed through the normal decode pipeline so the node/telemetry/position is
+    /// processed properly instead of being dropped or rendered as garbage text. Returns true when
+    /// handled (caller then drops it from the pending buffer).
+    /// </summary>
+    private bool DispatchLateDecrypted(MeshhessenClient.Models.MessageItem item, byte[] plaintext, string via)
+    {
+        Data data;
+        try { data = Data.Parser.ParseFrom(plaintext); }
+        catch (Exception ex)
         {
-            var data = Data.Parser.ParseFrom(plaintext);
-            if ((int)data.Portnum != 1) return false; // only text DMs
-            var text = data.Payload.ToStringUtf8();
-            Logger.WriteLine($"[PKI] Late-decrypted DM from !{item.FromId:x8} (pktId={item.Id:x8})");
+            Logger.WriteLine($"[PKI] Late-decrypt parse failed for !{item.FromId:x8}: {ex.Message}");
+            return false;
+        }
+
+        if ((int)data.Portnum == 1) // TEXT_MESSAGE_APP → a real DM: update the shown bubble in place
+        {
+            Logger.WriteLine($"[PKI] Late-decrypted DM ({via}) from !{item.FromId:x8} (pktId={item.Id:x8})");
             PkiMessageDecrypted?.Invoke(this, new PkiLateDecryptedEventArgs
             {
-                Item = item, Text = text, FromId = item.FromId, PacketId = item.Id
+                Item = item, Text = data.Payload.ToStringUtf8(), FromId = item.FromId, PacketId = item.Id
             });
             return true;
         }
+
+        // want_response reply captured as an opaque DM — feed it into the normal handler.
+        Logger.WriteLine($"[PKI] Late-decrypted portnum {(int)data.Portnum} ({via}) from !{item.FromId:x8} — routing to handler (not chat)");
+        var reconstructed = new MeshPacket
+        {
+            From = item.FromId,
+            To = _myNodeId,
+            Id = item.Id,
+            Channel = item.ChannelIndex,
+            Decoded = data,
+        };
+        try { RouteDecodedData(reconstructed, data); }
         catch (Exception ex)
         {
-            Logger.WriteLine($"[PKI] Late decrypt parse failed for !{item.FromId:x8}: {ex.Message}");
-            return false;
+            Logger.WriteLine($"[PKI] Routing late-decrypted portnum {(int)data.Portnum} failed: {ex.Message}");
         }
+        return true;
     }
 
     // After our own private key loads, sweep all buffered DMs whose sender key we
@@ -2016,6 +2058,28 @@ public class MeshtasticProtocolService
         PowerMetrics, LocalStats, HostMetrics, PaxCounter
     }
 
+    /// <summary>Record that we just sent an explicit info-request to a node (see <see cref="_recentInfoRequests"/>).</summary>
+    private void NoteInfoRequestSent(uint nodeId)
+    {
+        lock (_dataLock)
+        {
+            _recentInfoRequests[nodeId] = DateTime.UtcNow;
+            if (_recentInfoRequests.Count > 32)
+            {
+                var cutoff = DateTime.UtcNow - InfoReplyWindow;
+                foreach (var k in _recentInfoRequests.Where(kv => kv.Value < cutoff).Select(kv => kv.Key).ToList())
+                    _recentInfoRequests.Remove(k);
+            }
+        }
+    }
+
+    /// <summary>True if we sent an explicit info-request to this node within <see cref="InfoReplyWindow"/>.</summary>
+    private bool HasRecentInfoRequest(uint nodeId)
+    {
+        lock (_dataLock)
+            return _recentInfoRequests.TryGetValue(nodeId, out var t) && (DateTime.UtcNow - t) < InfoReplyWindow;
+    }
+
     public async Task RequestNodeInfoAsync(uint destinationId, InfoRequestType type)
     {
         try
@@ -2078,6 +2142,7 @@ public class MeshtasticProtocolService
             };
 
             await SendToRadioAsync(new ToRadio { Packet = meshPacket });
+            NoteInfoRequestSent(destinationId);
             Logger.WriteLine($"Info request ({type}) sent to !{destinationId:x8}");
         }
         catch (Exception ex)
@@ -3116,11 +3181,29 @@ public class MeshtasticProtocolService
         await SendAdminMessageAsync(adminMsg);
     }
 
-    public async Task ResetNodeDbAsync()
+    /// <summary>
+    /// Tells the device to reset its node database and reboot.
+    /// <paramref name="keepFavorites"/> maps directly to the <c>nodedb_reset</c> bool
+    /// (firmware: <c>resetNodes(keepFavorites)</c>) — true keeps favorited nodes, false wipes them.
+    /// Note: CLIENT_BASE / ROUTER / ROUTER_LATE roles always keep favorites regardless.
+    /// </summary>
+    public async Task ResetNodeDbAsync(bool keepFavorites = true)
     {
         await EnsureSessionKeyAsync();
-        var adminMsg = new AdminMessage { NodedbReset = true };
+        var adminMsg = new AdminMessage { NodedbReset = keepFavorites };
         await SendAdminMessageAsync(adminMsg);
+    }
+
+    /// <summary>
+    /// Clears this client's in-memory node database and notifies the UI via
+    /// <see cref="NodeDbCleared"/>. Does not touch the device or persisted message/telemetry
+    /// history — pair with <see cref="ResetNodeDbAsync"/> for a device-side reset.
+    /// </summary>
+    public void ClearKnownNodes()
+    {
+        lock (_dataLock) { _knownNodes.Clear(); }
+        Logger.WriteLine("[NodeDB] Internal known-node cache cleared");
+        NodeDbCleared?.Invoke(this, EventArgs.Empty);
     }
 
     public async Task AddFavoriteNodeAsync(uint nodeId)

@@ -918,18 +918,21 @@ public partial class NodeConfigWindow : Window
 
     private async void NodeDbReset_Click(object sender, RoutedEventArgs e)
     {
-        var result = MessageBox.Show(
-            "NodeDB zurücksetzen?\n\nDas löscht alle bekannten Nodes auf dem Gerät.\nDie eigene Konfiguration bleibt erhalten.\n\nDas Gerät wird danach neu starten.",
-            "NodeDB zurücksetzen",
-            MessageBoxButton.YesNo,
-            MessageBoxImage.Warning);
-        if (result != MessageBoxResult.Yes) return;
+        var dlg = new NodeDbResetDialog { Owner = this };
+        if (dlg.ShowDialog() != true) return;
 
         try
         {
-            await _protocolService.ResetNodeDbAsync();
-            UpdateStatus("NodeDB-Reset gesendet. Gerät startet neu...");
-            Logger.WriteLine("NodeDB reset sent");
+            // nodedb_reset value == keepFavorites (firmware: resetNodes(keepFavorites)).
+            // The checkbox asks to WIPE favorites, so keepFavorites = !WipeFavorites.
+            await _protocolService.ResetNodeDbAsync(keepFavorites: !dlg.WipeFavorites);
+
+            // Optionally also drop our own in-memory node cache.
+            if (dlg.ResetInternalDb)
+                _protocolService.ClearKnownNodes();
+
+            UpdateStatus(Loc("StrNcNodeDbResetSent"));
+            Logger.WriteLine($"NodeDB reset sent (wipeFavorites={dlg.WipeFavorites}, resetInternal={dlg.ResetInternalDb})");
         }
         catch (Exception ex)
         {

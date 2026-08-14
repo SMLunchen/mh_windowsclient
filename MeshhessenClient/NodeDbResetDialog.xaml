@@ -1,0 +1,39 @@
+<Window x:Class="MeshhessenClient.NodeDbResetDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="http://schemas.modernwpf.com/2019"
+        ui:WindowHelper.UseModernWindowStyle="True"
+        Title="{DynamicResource StrNodeDbResetTitle}"
+        Width="500"
+        SizeToContent="Height"
+        MinWidth="440"
+        ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner">
+    <StackPanel Margin="22">
+        <TextBlock Text="{DynamicResource StrNodeDbResetHeader}"
+                   FontWeight="SemiBold" FontSize="15" TextWrapping="Wrap" Margin="0,0,0,10"/>
+        <TextBlock Text="{DynamicResource StrNodeDbResetBody}"
+                   TextWrapping="Wrap" Margin="0,0,0,18"/>
+
+        <!-- Option 1: wipe favorites too -->
+        <CheckBox x:Name="WipeFavoritesCheck"
+                  Content="{DynamicResource StrNodeDbResetWipeFavorites}" Margin="0,0,0,4"/>
+        <TextBlock Text="{DynamicResource StrNodeDbResetFavoritesHint}"
+                   FontSize="11" Opacity="0.75"
+                   TextWrapping="Wrap" Margin="28,0,0,14"/>
+
+        <!-- Option 2: also reset our internal node DB -->
+        <CheckBox x:Name="ResetInternalCheck"
+                  Content="{DynamicResource StrNodeDbResetInternal}" Margin="0,0,0,4"/>
+        <TextBlock x:Name="InternalHint" Text="{DynamicResource StrNodeDbResetInternalHint}"
+                   FontSize="11" Opacity="0.75"
+                   TextWrapping="Wrap" Margin="28,0,0,18"/>
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button x:Name="CancelButton" Content="{DynamicResource StrNodeDbResetCancelBtn}"
+                    Width="110" Margin="0,0,8,0" Click="Cancel_Click" IsCancel="True"/>
+            <Button x:Name="OkButton" Content="{DynamicResource StrNodeDbResetConfirmBtn}"
+                    Width="150" Click="Ok_Click" IsDefault="True"/>
+        </StackPanel>
+    </StackPanel>
+</Window>
