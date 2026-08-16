@@ -1045,14 +1045,14 @@ public partial class MainWindow : Window
 
             if (!string.IsNullOrEmpty(additionalText))
             {
-                // Bell emoji + user text
-                alertMessage = "?? " + additionalText;
+                // ASCII BEL (triggers the firmware bell) + bell emoji + user text
+                alertMessage = Helpers.EmojiPalette.AlertPrefix + additionalText;
                 MessageTextBox.Clear();
             }
             else
             {
-                // Bell emoji + standard text (compatible with other Meshtastic clients)
-                alertMessage = "?? Alert Bell Character!";
+                // ASCII BEL + bell emoji + standard text (compatible with other Meshtastic clients)
+                alertMessage = Helpers.EmojiPalette.AlertPrefix + "Alert Bell Character!";
             }
 
             // Debug log with hex dump (only if debug messages enabled)
@@ -1064,7 +1064,39 @@ public partial class MainWindow : Window
                 Services.Logger.WriteLine($"[MSG DEBUG] Text: '{alertMessage}'");
             }
 
-            await _protocolService.SendTextMessageAsync(alertMessage, 0xFFFFFFFF, (uint)_activeChannelIndex);
+            uint sentId = await _protocolService.SendTextMessageAsync(alertMessage, 0xFFFFFFFF, (uint)_activeChannelIndex);
+
+            // Show our own alert in the chat too (strip the 0x07 control char for display, keep 🔔)
+            var activeChannel = _channels.FirstOrDefault(c => c.Index == _activeChannelIndex);
+            var channelName = activeChannel?.Name ?? $"Kanal {_activeChannelIndex}";
+            var displayText = alertMessage.Replace(Helpers.EmojiPalette.BellChar, "").Trim();
+
+            var sentMessage = new MessageItem
+            {
+                Id = sentId,
+                Time = DateTime.Now.ToString("HH:mm"),
+                From = Loc("StrMe"),
+                FromId = _myNodeId,
+                Message = displayText,
+                Channel = _activeChannelIndex.ToString(),
+                ChannelName = channelName,
+                IsViaMqtt = false,
+                IsOwnMessage = true,
+                HasAlertBell = true,
+            };
+            _allMessages.Add(sentMessage);
+            if (sentId != 0) _messageById[sentId] = sentMessage;
+            MessageItem.InsertByTime(_messages, sentMessage);
+            MessageListView.ScrollIntoView(sentMessage);
+
+            if (_messageDbManager != null)
+            {
+                var dbChanName = channelName;
+                var dbChanIdx  = _activeChannelIndex;
+                var dbMsg      = sentMessage;
+                Task.Run(() => _messageDbManager.InsertChannelMessage(dbChanIdx, dbChanName, dbMsg));
+            }
+            Services.MessageLogger.LogChannelMessage(_activeChannelIndex, channelName, Loc("StrMe"), displayText, false);
 
             UpdateStatusBar(Loc("StrAlertSent"));
         }
@@ -1730,7 +1762,7 @@ public partial class MainWindow : Window
 
                 // Check for Alert Bell - both ASCII (0x07) and Emoji (??)
                 bool hasAlertBell = !string.IsNullOrEmpty(message.Message) &&
-                                   (message.Message.Contains('\u0007') || message.Message.Contains("??"));
+                                   (message.Message.Contains('\u0007') || message.Message.Contains(Helpers.EmojiPalette.Bell));
 
                 if (hasAlertBell)
                 {
@@ -1748,7 +1780,7 @@ public partial class MainWindow : Window
                     }
 
                     // Remove both ASCII bell character and bell emoji for display
-                    message.Message = message.Message.Replace("\u0007", "").Replace("??", "");
+                    message.Message = message.Message.Replace("\u0007", "").Replace(Helpers.EmojiPalette.Bell, "");
 
                     // Trim whitespace
                     message.Message = message.Message.Trim();

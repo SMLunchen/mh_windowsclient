@@ -19,4 +19,18 @@ public static class EmojiPalette
         Cp(0x1F600), Cp(0x1F605), Cp(0x1F60D), Cp(0x1F914), Cp(0x1F60E), Cp(0x1F973), Cp(0x1F634), Cp(0x1F92F),
         Cp(0x1F440), Cp(0x1F4AA), Cp(0x1F680), Cp(0x26A1), Cp(0x1F4CD), Cp(0x1F4E1), Cp(0x1F50B), Cp(0x1F6F0, 0xFE0F),
     };
+
+    /// <summary>Bell emoji (🔔) shown as the visual marker for alert/SOS messages.</summary>
+    public static readonly string Bell = Cp(0x1F514);
+
+    /// <summary>
+    /// ASCII BEL control character (0x07). This — not the emoji — is what actually triggers
+    /// Meshtastic's external-notification bell: the firmware scans the message payload for this
+    /// byte (ExternalNotificationModule: ASCII_BELL = 0x07). The emoji is display-only.
+    /// Built from the char code so no control character sits in the source file.
+    /// </summary>
+    public static readonly string BellChar = ((char)7).ToString();
+
+    /// <summary>Payload prefix for an alert-bell message: BEL control char + bell emoji + space.</summary>
+    public static string AlertPrefix => BellChar + Bell + " ";
 }

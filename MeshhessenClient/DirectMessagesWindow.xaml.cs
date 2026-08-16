@@ -469,13 +469,13 @@ public partial class DirectMessagesWindow : Window
 
             if (!string.IsNullOrEmpty(additionalText))
             {
-                // Bell emoji + user text
-                alertMessage = "🔔 " + additionalText;
+                // ASCII BEL (triggers the firmware bell) + bell emoji + user text
+                alertMessage = Helpers.EmojiPalette.AlertPrefix + additionalText;
             }
             else
             {
-                // Bell emoji + standard text (compatible with other Meshtastic clients)
-                alertMessage = "🔔 Alert Bell Character!";
+                // ASCII BEL + bell emoji + standard text (compatible with other Meshtastic clients)
+                alertMessage = Helpers.EmojiPalette.AlertPrefix + "Alert Bell Character!";
             }
 
             // Debug log with hex dump (always log for DM alerts as they're critical)

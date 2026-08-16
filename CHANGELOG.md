@@ -7,7 +7,7 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
 
-## [1.6.2.2] - 2026-08-14
+## [1.6.2.3] - 2026-08-16
 
 ### ✨ Hinzugefügt / 🔧 Geändert
 
@@ -23,7 +23,10 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 #### 🗺️ „Auf Karte zeigen" zentrierte die Vector-Map nicht
 - Bei aktiver **Vector-Map** (MapLibre/WebView2) öffnete „Auf Karte zeigen" zwar die Karte, sprang aber **nicht** auf die Node-Position — die Zentrierung lief nur über die Mapsui-**Rastermap**. Jetzt zentriert ein gemeinsamer Helfer (`CenterMapOnNode`) **beide** Karten (Raster via `CenterOnAndZoomTo`, Vector via `setCenter`). Betrifft alle drei Einstiege (Node-Kontextmenü, Nachrichten-Kontextmenü, Alert-Button). Öffnet der Klick die Vector-Map erstmalig, wird das Ziel gepuffert und nach dem Laden angewandt.
 
-#### 🔓 PKI-DMs werden sofort entschlüsselt, wenn wir den Key haben (Flag-unabhängig)
+#### 🔔 Alert Bell: ASCII-BEL (0x07) wird wieder gesendet
+- Der Alert-Bell-Button hat den **Hardware-Alert nie ausgelöst**: gesendet wurde nur das 🔔-Emoji, die Firmware triggert aber ausschließlich über das **ASCII-Steuerzeichen `0x07`** (`ExternalNotificationModule`: `ASCII_BELL = 0x07`, scannt den Payload). Zusätzlich war im Kanal-Fenster das Emoji durch eine Nicht-UTF-8-Speicherung zu `??` zerstört.
+- Jetzt senden Kanal **und** DM `0x07` + `🔔` (zentral in `EmojiPalette.AlertPrefix`, codepunkt-/char-basiert → korruptionssicher). Empfangserkennung und Anzeige-Stripping nutzen dieselben Konstanten. Abgesichert durch 4 neue Tests.
+- Zusätzlich: Der Kanal-Alert-Bell tauchte im eigenen Chat gar nicht auf — er hat die gesendete Nachricht (anders als der normale Sendepfad) nie lokal angezeigt. Jetzt erscheint sie als eigene Nachricht mit Glocken-Markierung (0x07 für die Anzeige entfernt, 🔔 bleibt).
 - Der sofortige client-seitige PKI-Entschlüsselungsversuch war an `packet.PkiEncrypted` gekoppelt. Die Firmware setzt dieses Flag aber auf `false`, sobald der **eigene** Node nicht entschlüsseln konnte (Router.cpp:814) — z.B. nach einem **NodeDB-Reset**, wenn dessen nodedb den Sender-Key nicht mehr hat. Dadurch wurden PKI-DMs gepuffert und nicht entschlüsselt, **obwohl der Client den Key besitzt**.
 - Jetzt versucht der Client PKI-Entschlüsselung für **jede DM an uns**, sobald Private- und Sender-Key vorliegen — unabhängig vom Flag (sicher, da AES-CCM tag-verifiziert ist). Telemetrie/DMs von Nodes, deren Key wir kennen (der Node aber nach Reset nicht), gehen so sofort auf statt im Puffer zu landen.
 

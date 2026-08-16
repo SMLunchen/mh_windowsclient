@@ -172,20 +172,40 @@
 <div class="section active" id="de">
 <main>
 
-  <!-- ── v1.6.2.2 ── -->
+  <!-- ── v1.6.2.3 ── -->
   <div class="version-entry current">
     <div class="version-header">
-      <span class="version-tag tag-latest">v1.6.2.2</span>
-      <span class="version-date">2026-08-14</span>
-      Vector-Map: „Auf Karte zeigen"-Fix
+      <span class="version-tag tag-latest">v1.6.2.3</span>
+      <span class="version-date">2026-08-16</span>
+      Alert-Bell, verschlüsselte Antworten &amp; Karten-Feinschliff
     </div>
-    <p class="version-desc">Bei aktiver Vector-Karte springt „Auf Karte zeigen" jetzt wieder korrekt auf die Node-Position — zuvor blieb die Zentrierung nur der Rasterkarte vorbehalten.</p>
+    <p class="version-desc">Sammel-Release mit mehreren Fixes: der Alert-Bell löst endlich den Hardware-Alert aus, Antworten auf Info-Anfragen werden korrekt verarbeitet, und ein paar Karten-/Listen-Themen sind bereinigt.</p>
 
     <div class="cl-section fixed">
-      <h3>🗺️ Karte</h3>
+      <h3>🔔 Alert-Bell</h3>
       <div class="cl-group">
         <ul class="cl-list">
-          <li><strong>„Auf Karte zeigen" zentriert die Vector-Karte</strong> (MapLibre) jetzt wie die Rasterkarte — für alle Einstiege (Node- und Nachrichten-Kontextmenü, Alert-Button)</li>
+          <li><strong>Alert-Bell sendet jetzt das ASCII-Steuerzeichen 0x07</strong> — nur das löst den Hardware-Alert der empfangenden Nodes aus (die Firmware prüft darauf); zuvor wurde nur das 🔔-Emoji verschickt. Der eigene Alert erscheint jetzt auch im Chat.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="cl-section fixed">
+      <h3>🔐 Verschlüsselte Antworten &amp; Nodes</h3>
+      <div class="cl-group">
+        <ul class="cl-list">
+          <li><strong>Antworten auf Info-Anfragen</strong> (NodeInfo/Telemetrie/Position) werden nach Portnum verarbeitet statt fälschlich als „verschlüsselte Nachricht" im Chat zu landen</li>
+          <li><strong>PKI-DMs werden sofort entschlüsselt, wenn wir den Key haben</strong> — auch wenn der eigene Node ihn (z.B. nach NodeDB-Reset) nicht mehr kennt</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="cl-section fixed">
+      <h3>🗺️ Karte &amp; Liste</h3>
+      <div class="cl-group">
+        <ul class="cl-list">
+          <li><strong>„Auf Karte zeigen"</strong> zentriert jetzt auch die Vector-Karte (MapLibre), nicht nur die Rasterkarte</li>
+          <li><strong>Node-Namen-Spalte</strong> folgt wieder der Spaltenbreite (Ellipsis + Tooltip statt harter Abschnitt)</li>
         </ul>
       </div>
     </div>
@@ -1067,23 +1087,44 @@
 <div class="section" id="en">
 <main>
 
-  <!-- ── v1.6.2.2 (EN) ── -->
+  <!-- ── v1.6.2.3 (EN) ── -->
   <div class="version-entry current">
     <div class="version-header">
-      <span class="version-tag tag-latest">v1.6.2.2</span>
-      <span class="version-date">2026-08-14</span>
-      Vector map: "Show on map" fix
+      <span class="version-tag tag-latest">v1.6.2.3</span>
+      <span class="version-date">2026-08-16</span>
+      Alert bell, encrypted replies &amp; map polish
     </div>
-    <p class="version-desc">With the vector map active, "Show on map" now correctly jumps to the node position again — previously centering only applied to the raster map.</p>
+    <p class="version-desc">A roll-up release with several fixes: the alert bell finally triggers the hardware alert, replies to info requests are handled correctly, and a few map/list issues are cleaned up.</p>
 
     <div class="cl-section fixed">
-      <h3>🗺️ Map</h3>
+      <h3>🔔 Alert bell</h3>
       <div class="cl-group">
         <ul class="cl-list">
-          <li><strong>"Show on map" now centers the vector map</strong> (MapLibre) just like the raster map — for all entry points (node and message context menus, alert button)</li>
+          <li><strong>Alert bell now sends the ASCII control character 0x07</strong> — the only thing that triggers receiving nodes' hardware alert (the firmware scans for it); previously only the 🔔 emoji was sent. Your own alert now also appears in the chat.</li>
         </ul>
       </div>
     </div>
+
+    <div class="cl-section fixed">
+      <h3>🔐 Encrypted replies &amp; nodes</h3>
+      <div class="cl-group">
+        <ul class="cl-list">
+          <li><strong>Replies to info requests</strong> (NodeInfo/telemetry/position) are processed by portnum instead of wrongly showing up as an "encrypted message" in chat</li>
+          <li><strong>PKI DMs decrypt immediately when we hold the key</strong> — even if our own node no longer knows it (e.g. after a NodeDB reset)</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="cl-section fixed">
+      <h3>🗺️ Map &amp; list</h3>
+      <div class="cl-group">
+        <ul class="cl-list">
+          <li><strong>"Show on map"</strong> now also centers the vector map (MapLibre), not just the raster map</li>
+          <li><strong>Node name column</strong> follows the column width again (ellipsis + tooltip instead of a hard cut)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
   </div>
 
   <!-- ── v1.6.2.1 (EN) ── -->
