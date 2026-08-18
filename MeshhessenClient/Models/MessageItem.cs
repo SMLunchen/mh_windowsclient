@@ -42,7 +42,15 @@ public class MessageItem : INotifyPropertyChanged
 
     public string Channel { get; set; } = string.Empty; // Channel Index (legacy, display string)
     public uint ChannelIndex { get; set; }              // raw channel index the packet arrived on
-    public string ChannelName { get; set; } = string.Empty; // Channel Name for display
+
+    // Observable: resolved from the current channel list, so a message shown before the
+    // channels arrived (e.g. DB backlog on connect) updates from "Kanal N" to the real name.
+    private string _channelName = string.Empty;
+    public string ChannelName
+    {
+        get => _channelName;
+        set { _channelName = value; PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ChannelName))); }
+    }
     public uint FromId { get; set; }
     public uint ToId { get; set; }
     public uint Id { get; set; } // Packet ID (for reactions)
