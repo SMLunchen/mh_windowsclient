@@ -432,6 +432,16 @@ dotnet publish MeshhessenClient/MeshhessenClient.csproj -c Release -r win-x64 --
 
 EXE liegt danach unter `public\MeshhessenClient.exe`. Alternativ: `build.bat` ausführen.
 
+### Forks & Weiterverwendung
+
+Der Quellcode darf im Rahmen der Lizenz geforkt und angepasst werden — wir freuen uns über abgeleitete Projekte.
+
+> ⚠️ **Der Meshhessen-Tile-Server ist davon ausgenommen.** Die Karten-Infrastruktur (`tile.meshhessenclient.de` und die zugehörigen Vektor-/Raster-Endpunkte) wird **ausschließlich für den offiziellen Meshhessen Client** bereitgestellt und aus Spenden der Community finanziert. Forks, abgeleitete oder umgebaute Clients (auch für andere Mesh-Protokolle wie MeshCore) dürfen diese Server **nicht** nutzen und müssen **eigene Tile-Infrastruktur betreiben**.
+>
+> Der Client bringt dafür alles mit: der Karten-Modus **„Online – eigener Tile-Server"** in den Einstellungen erlaubt beliebige eigene Tile-URLs. Ein einfacher Tile-Cache (z. B. eigener OSM/OpenTopo-Proxy) ist schnell und günstig aufgesetzt.
+>
+> Unautorisierte Zugriffe auf die Meshhessen-Server werden technisch unterbunden.
+
 
 ## 🙏 Credits
 
@@ -702,6 +712,16 @@ dotnet publish MeshhessenClient/MeshhessenClient.csproj -c Release -r win-x64 --
 ```
 
 The EXE will be at `public\MeshhessenClient.exe`. Alternatively, run `build.bat`.
+
+### Forks & Reuse
+
+You are welcome to fork and adapt the source code within the terms of the license — we're happy to see derivative projects.
+
+> ⚠️ **The Meshhessen tile server is not part of that.** The map infrastructure (`tile.meshhessenclient.de` and the associated vector/raster endpoints) is provided **exclusively for the official Meshhessen Client** and is funded by community donations. Forks, derivative or repurposed clients (including ports to other mesh protocols such as MeshCore) **may not** use these servers and must **run their own tile infrastructure**.
+>
+> The client ships with everything you need for that: the **"Online – custom tile server"** map mode in settings accepts any tile URLs you like. A simple tile cache (e.g. your own OSM/OpenTopo proxy) is quick and cheap to set up.
+>
+> Unauthorized access to the Meshhessen servers is blocked at the technical level.
 
 
 ## 🙏 Credits

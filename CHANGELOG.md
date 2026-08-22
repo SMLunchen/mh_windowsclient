@@ -7,6 +7,25 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
 
+## [Unreleased]
+
+---
+
+## [1.6.2.4] - 2026-08-22
+
+### 🐛 Behoben
+
+#### 🔢 Kanal-Anzeige: Backlog zeigte „Kanal N" statt Kanalname
+- Nachrichten aus dem Backlog (DB) zeigten teils „Kanal 0"/„Kanal 1" statt „Mesh Hessen" o.ä., während Live-Nachrichten den Namen zeigten. Ursache: der Backlog nutzt den **gespeicherten** Kanalnamen — der stand als „Kanal N" fest, wenn die Nachricht empfangen/gespeichert wurde, **bevor** die Kanäle vom Gerät kamen. Jetzt wird `ChannelName` einheitlich aus dem **aktuellen Kanal-Index** aufgelöst (observable) und beim Eintreffen von Kanälen sowie nach dem Backlog-Laden neu berechnet.
+
+#### ↩️ Reply wechselt jetzt auf den Kanal der Nachricht
+- „Antworten" auf eine Kanalnachricht schaltete den aktiven Kanal nicht mehr um — die Antwort ging auf dem gerade gewählten Kanal raus. Jetzt wird beim Reply der aktive Kanal auf den umgestellt, auf dem die Nachricht empfangen wurde (Live **und** Backlog, da Live-Nachrichten jetzt auch den `ChannelIndex` tragen).
+
+#### 🖱️ Debug-Log Auto-Scroll sprang nach oben
+- Bei aktivem Auto-Scroll sprang das Debug-Log nach oben statt dem Ende zu folgen: Ab 10000 Zeilen wurde `DebugLogTextBox.Text` neu gesetzt (Trim), was die Scroll-Position auf den Anfang zurücksetzt — und das passierte **nach** `ScrollToEnd()`. Bei viel Traffic (ständiges Trimmen) wurde die Ansicht so bei jeder Zeile nach oben gerissen. Jetzt wird erst getrimmt, dann als letzte Aktion ans Ende gescrollt.
+
+---
+
 ## [1.6.2.3] - 2026-08-16
 
 ### ✨ Hinzugefügt / 🔧 Geändert

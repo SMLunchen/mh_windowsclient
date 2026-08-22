@@ -508,7 +508,8 @@ public partial class MainWindow
                         _dbOldestTimestamp = entry.Timestamp;
                 }
 
-                // Rebuild visible list and scroll to newest
+                // Resolve stored "Kanal N" names against the current channel list, then rebuild.
+                RefreshChannelNames();
                 RebuildVisibleMessages();
                 if (_messages.Count > 0)
                     MessageListView.ScrollIntoView(_messages[^1]);
@@ -560,6 +561,7 @@ public partial class MainWindow
                 _dbOldestTimestamp = entry.Timestamp;
         }
 
+        RefreshChannelNames();
         RebuildVisibleMessages();
 
         // Restore scroll position to the item that was previously first

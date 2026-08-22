@@ -589,14 +589,16 @@ public partial class MainWindow : Window
             // on, so the user can scroll up and read without being yanked back down.
             if (AutoScrollLogCheckBox?.IsChecked != false)
             {
-                DebugLogTextBox.ScrollToEnd();
-
-                // Begrenze auf maximal 10000 Zeilen
+                // Trim FIRST: reassigning .Text resets the scroll position to the top, so it
+                // must happen before ScrollToEnd — otherwise every append past the limit yanks
+                // the view up instead of following the tail.
                 var lines = DebugLogTextBox.Text.Split('\n');
                 if (lines.Length > 10000)
                 {
                     DebugLogTextBox.Text = string.Join('\n', lines.Skip(lines.Length - 10000));
                 }
+
+                DebugLogTextBox.ScrollToEnd();
             }
         });
     }
@@ -1839,11 +1841,12 @@ public partial class MainWindow : Window
                     return; // Nicht anzeigen
                 }
 
-                // Setze ChannelName basierend auf Channel Index
+                // Setze ChannelName + ChannelIndex basierend auf Channel Index (einheitlich
+                // aufgelöst wie beim Backlog, damit die Anzeige konsistent ist).
                 if (uint.TryParse(message.Channel, out uint channelIndex))
                 {
-                    var channel = _channels.FirstOrDefault(c => c.Index == channelIndex);
-                    message.ChannelName = channel?.Name ?? $"Kanal {channelIndex}";
+                    message.ChannelIndex = channelIndex;
+                    message.ChannelName = ResolveChannelName(channelIndex);
                 }
                 else
                 {
@@ -2045,6 +2048,9 @@ public partial class MainWindow : Window
                         break;
                 }
                 _channels.Insert(insertAt, channel);
+
+                // A newly-arrived channel lets messages shown as "Kanal N" resolve to the real name.
+                RefreshChannelNames();
 
                 // Aktiviere Kanal-Auswahl wenn Kanäle vorhanden sind
                 if (_channels.Count > 0 && !ActiveChannelComboBox.IsEnabled)
@@ -4556,10 +4562,37 @@ public partial class MainWindow : Window
         // Forwarded from DirectMessagesWindow - handled there via EmojiPickerRequested
     }
 
+    /// <summary>Resolve a channel index to its display name from the current channel list,
+    /// falling back to "Kanal N" when the channel isn't (yet) known.</summary>
+    private string ResolveChannelName(uint index)
+    {
+        var ch = _channels.FirstOrDefault(c => c.Index == index);
+        return !string.IsNullOrEmpty(ch?.Name) ? ch!.Name : $"Kanal {index}";
+    }
+
+    /// <summary>Re-resolve channel display names for all messages from the current channel
+    /// list. Backlog (DB) messages carry the name stored at receive time — often "Kanal N"
+    /// if the channels hadn't arrived yet — and channels can arrive after messages are shown.</summary>
+    private void RefreshChannelNames()
+    {
+        foreach (var m in _allMessages)
+            if (uint.TryParse(m.Channel, out var idx))
+                m.ChannelName = ResolveChannelName(idx);
+    }
+
     private void MessageContextMenu_Reply_Click(object sender, RoutedEventArgs e)
     {
         if (MessageListView.SelectedItem is not MessageItem msg) return;
         _replyToMessage = msg;
+
+        // Switch the active channel to the one the message arrived on, so the reply goes out
+        // on the right channel (channel messages carry an index 0-7 in msg.Channel).
+        if (uint.TryParse(msg.Channel, out var replyChanIdx))
+        {
+            var ch = _channels.FirstOrDefault(c => c.Index == replyChanIdx);
+            if (ch != null) ActiveChannelComboBox.SelectedItem = ch;
+        }
+
         var preview = msg.Message?.Length > 60 ? msg.Message[..60] + "…" : msg.Message ?? string.Empty;
         ReplyIndicatorText.Text = string.Format(Loc("StrReplyingTo"), msg.From, preview);
         ReplyIndicatorPanel.Visibility = Visibility.Visible;
