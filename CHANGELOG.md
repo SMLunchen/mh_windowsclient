@@ -9,6 +9,10 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+---
+
+## [1.6.2.4] - 2026-08-22
+
 ### 🐛 Behoben
 
 #### 🔢 Kanal-Anzeige: Backlog zeigte „Kanal N" statt Kanalname
