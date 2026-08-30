@@ -177,6 +177,39 @@
     <sys:String x:Key="StrMapLegendBtnTooltip">Legende und Nachbar-Linien-Optionen anzeigen</sys:String>
     <sys:String x:Key="StrVectorOverlaysTitle">Zusatz-Layer:</sys:String>
     <sys:String x:Key="StrVectorOverlaysHint">Fach-Layer werden über die Vektorkarte gelegt. Solange ein Layer aus ist, werden keine Daten dafür geladen. Auch über den 🗂️-Button auf der Karte umschaltbar.</sys:String>
+
+    <!-- Umweltdaten (Map-Feature) -->
+    <sys:String x:Key="StrEnvGroup">🌡️ Umweltdaten</sys:String>
+    <sys:String x:Key="StrEnvEnable">Umweltdaten auf der Karte anzeigen</sys:String>
+    <sys:String x:Key="StrEnvEnableHint">Zeigt Messwerte, die Nodes liefern (Temperatur, Feuchte, IAQ u. v. m.), direkt auf der Karte. Nach dem Aktivieren über den 🌡️-Button an der Karte steuerbar.</sys:String>
+    <sys:String x:Key="StrEnvBoxes">Messwert-Boxen an den Nodes</sys:String>
+    <sys:String x:Key="StrEnvHeatmap">Heatmap-Überlagerung</sys:String>
+    <sys:String x:Key="StrEnvHeatmapRasterHint">Die Heatmap ist nur in der Vektor-Karte verfügbar.</sys:String>
+    <sys:String x:Key="StrEnvMetric">Heatmap-Metrik:</sys:String>
+    <sys:String x:Key="StrEnvBtn">🌡️ Umwelt</sys:String>
+    <sys:String x:Key="StrEnvBtnTooltip">Umweltdaten auf der Karte: Messwert-Boxen, Heatmap, Metrik und Node-Auswahl</sys:String>
+    <sys:String x:Key="StrEnvExcludeNodes">Nodes einbeziehen:</sys:String>
+    <sys:String x:Key="StrEnvExcludeHint">Node abwählen, wenn er Unsinn misst – er verschwindet aus Boxen und Heatmap.</sys:String>
+    <sys:String x:Key="StrEnvNoNodes">Noch keine Nodes mit Umweltdaten empfangen.</sys:String>
+    <!-- Metrik-Labels -->
+    <sys:String x:Key="StrEnvTemperature">Temperatur</sys:String>
+    <sys:String x:Key="StrEnvHumidity">Feuchte</sys:String>
+    <sys:String x:Key="StrEnvPressure">Luftdruck</sys:String>
+    <sys:String x:Key="StrEnvIaq">IAQ</sys:String>
+    <sys:String x:Key="StrEnvGas">Gas-Widerstand</sys:String>
+    <sys:String x:Key="StrEnvLux">Beleuchtung</sys:String>
+    <sys:String x:Key="StrEnvWhiteLux">Weißlicht</sys:String>
+    <sys:String x:Key="StrEnvUvLux">UV-Licht</sys:String>
+    <sys:String x:Key="StrEnvWindSpeed">Windgeschw.</sys:String>
+    <sys:String x:Key="StrEnvWindDir">Windrichtung</sys:String>
+    <sys:String x:Key="StrEnvWindGust">Windböe</sys:String>
+    <sys:String x:Key="StrEnvRain1h">Regen (1 h)</sys:String>
+    <sys:String x:Key="StrEnvRain24h">Regen (24 h)</sys:String>
+    <sys:String x:Key="StrEnvSoilMoisture">Bodenfeuchte</sys:String>
+    <sys:String x:Key="StrEnvSoilTemp">Bodentemperatur</sys:String>
+    <sys:String x:Key="StrEnvRadiation">Strahlung</sys:String>
+    <sys:String x:Key="StrEnvDistance">Distanz</sys:String>
+    <sys:String x:Key="StrEnvWeight">Gewicht</sys:String>
     <sys:String x:Key="StrDownloadVectorTiles">Vektor-Paket herunterladen…</sys:String>
     <sys:String x:Key="StrDownloadVectorTilesHint">Lädt Basiskarte und gewählte Zusatz-Layer für ein Gebiet in den Offline-Speicher (vectortiles/). Bereits vorhandene Kacheln werden übersprungen. Ein Basemap-Download deckt alle drei Kartenstile ab.</sys:String>
     <sys:String x:Key="StrVdTitle">Vektor-Offlinepaket</sys:String>

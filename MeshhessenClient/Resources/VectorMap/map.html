@@ -53,6 +53,27 @@
     background: rgba(255,255,255,0.75); padding: 0 4px; border-radius: 3px;
     pointer-events: none;
   }
+  /* Environment value box (below a node marker). Themed 1px border for contrast:
+     black by day, white at night (via .dark), passed from the host. */
+  .env-box {
+    font: 11px "Segoe UI", "Segoe UI Emoji", sans-serif; color: #1a1a1a;
+    background: rgba(255,248,196,0.95); border: 1px solid #000; border-radius: 4px;
+    padding: 2px 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.35);
+    pointer-events: none; white-space: nowrap; text-align: left;
+  }
+  .env-box.dark { border-color: #ffffff; }
+  .env-box .env-title { font-weight: 600; }
+  .env-box .env-time { opacity: 0.65; font-size: 10px; }
+  /* Weather-style legend for the interpolated value field */
+  #env-legend {
+    position: absolute; left: 10px; bottom: 12px; z-index: 5; display: none;
+    background: rgba(255,255,255,0.92); border: 1px solid rgba(0,0,0,0.25);
+    border-radius: 5px; padding: 6px 8px; color: #111; pointer-events: none;
+    font: 11px "Segoe UI", "Segoe UI Emoji", sans-serif; box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+  }
+  .env-legend-title { font-weight: 600; margin-bottom: 3px; }
+  .env-legend-bar { width: 170px; height: 10px; border-radius: 2px; border: 1px solid rgba(0,0,0,0.2); }
+  .env-legend-scale { display: flex; justify-content: space-between; margin-top: 2px; font-variant-numeric: tabular-nums; }
 </style>
 <script src="maplibre-gl.js"></script>
 </head>
@@ -140,7 +161,14 @@ function initMap(styleUrl, lon, lat, zoom, attribution, lang) {
     post('maperror', { message: (e && e.error && e.error.message) || 'unknown' });
   });
   // setStyle() resets layer visibility and custom layers – re-apply on every style(data) load
-  map.on('styledata', function () { applyOverlays(); restoreLineLayers(); });
+  // Re-add custom layers a style(data) reload dropped. Only re-create the heatmap when
+  // it's actually missing – calling updateEnvHeat() unconditionally here would fight the
+  // setData() updates and flicker.
+  map.on('styledata', function () {
+    applyOverlays();
+    restoreLineLayers();
+    if (envSurf && !map.getLayer(ENV_SURF_LYR)) updateEnvSurface();
+  });
 
   // Clicks: bridge circles (traceroute midpoints) first, then emergency features
   map.on('click', onMapClick);
@@ -211,6 +239,135 @@ function setWaypoints(wps) {
       function () { post('waypointcontext', { id: w.id }); });
     waypointMarkers.set(w.id, m);
   });
+}
+
+// ── Environment value boxes (DOM markers below the node pins) ─────────────
+const envMarkers = [];
+function setEnvBoxes(items) {
+  if (!map) return;
+  envMarkers.forEach(function (m) { m.remove(); });
+  envMarkers.length = 0;
+  (items || []).forEach(function (it) {
+    const el = document.createElement('div');
+    el.className = 'env-box' + (it.dark ? ' dark' : '');
+    const title = document.createElement('div');
+    title.className = 'env-title'; title.textContent = it.title || '';
+    el.appendChild(title);
+    (it.lines || []).forEach(function (ln) {
+      const d = document.createElement('div'); d.textContent = ln; el.appendChild(d);
+    });
+    if (it.time) {
+      const tm = document.createElement('div'); tm.className = 'env-time'; tm.textContent = it.time;
+      el.appendChild(tm);
+    }
+    // anchor 'top' + small offset puts the box just below the marker coordinate.
+    const m = new maplibregl.Marker({ element: el, anchor: 'top', offset: [0, 10] })
+      .setLngLat([it.lon, it.lat]).addTo(map);
+    envMarkers.push(m);
+  });
+}
+
+// ── Environment value field (IDW-interpolated surface, weather-service style) ──
+// Host passes a grid payload {lon0,lat0,dlon,dlat,nx,ny,v[],a[],stops[],legend} or
+// null to clear. Colour = calibrated value (stops), fill-opacity = coverage. Re-added
+// after a style(data) reload because setStyle() drops custom sources/layers.
+let envSurf = null;
+const ENV_SURF_SRC = 'env-surf-src';
+const ENV_SURF_LYR = 'env-surf-layer';
+
+function setEnvSurface(payload) {
+  envSurf = payload || null;
+  updateEnvSurface();
+  updateEnvLegend();
+}
+
+function envSurfFC() {
+  const p = envSurf;
+  const features = [];
+  if (!p) return { type: 'FeatureCollection', features: features };
+  for (let j = 0; j < p.ny; j++) {
+    for (let i = 0; i < p.nx; i++) {
+      const idx = j * p.nx + i;
+      const v = p.v[idx];
+      if (v === null || v === undefined) continue;   // no coverage
+      const a = p.a[idx] || 0;
+      if (a <= 0) continue;
+      const lonA = p.lon0 + i * p.dlon, lonB = lonA + p.dlon;
+      const latA = p.lat0 + j * p.dlat, latB = latA + p.dlat;
+      features.push({
+        type: 'Feature',
+        properties: { v: v, a: a },
+        geometry: { type: 'Polygon', coordinates: [[
+          [lonA, latA], [lonB, latA], [lonB, latB], [lonA, latB], [lonA, latA]
+        ]] }
+      });
+    }
+  }
+  return { type: 'FeatureCollection', features: features };
+}
+
+function envColorExpr() {
+  // Calibrated value -> colour from the per-metric stops (weather-service scale).
+  const stops = (envSurf && envSurf.stops) || [];
+  const expr = ['interpolate', ['linear'], ['get', 'v']];
+  stops.forEach(function (s) { expr.push(s.val, 'rgb(' + s.rgb + ')'); });
+  return expr.length > 3 ? expr : 'rgba(128,128,128,0.5)';
+}
+
+// In-place update (setData) to avoid the remove/add flicker.
+function updateEnvSurface() {
+  if (!map) return;
+  if (!map.isStyleLoaded()) { map.once('idle', updateEnvSurface); return; }
+  try {
+    if (!envSurf) {
+      if (map.getLayer(ENV_SURF_LYR)) map.removeLayer(ENV_SURF_LYR);
+      if (map.getSource(ENV_SURF_SRC)) map.removeSource(ENV_SURF_SRC);
+      post('envheat', { points: 0, added: false });
+      return;
+    }
+    const fc = envSurfFC();
+    const src = map.getSource(ENV_SURF_SRC);
+    if (src) {
+      src.setData(fc);
+      map.setPaintProperty(ENV_SURF_LYR, 'fill-color', envColorExpr());
+    } else {
+      map.addSource(ENV_SURF_SRC, { type: 'geojson', data: fc });
+      map.addLayer({
+        id: ENV_SURF_LYR, type: 'fill', source: ENV_SURF_SRC,
+        paint: {
+          'fill-color': envColorExpr(),
+          'fill-opacity': ['*', ['coalesce', ['get', 'a'], 0], 0.55],  // base map stays readable
+          'fill-antialias': false   // no antialiased cell borders -> no grid seams
+        }
+      });
+    }
+    post('envheat', { points: fc.features.length, added: true });
+  } catch (err) {
+    post('enverror', { where: 'surface', msg: String((err && err.message) || err) });
+  }
+}
+
+function updateEnvLegend() {
+  let el = document.getElementById('env-legend');
+  if (!envSurf || !envSurf.legend) { if (el) el.style.display = 'none'; return; }
+  if (!el) { el = document.createElement('div'); el.id = 'env-legend'; document.body.appendChild(el); }
+
+  const lg = envSurf.legend, stops = envSurf.stops || [];
+  const grad = stops.map(function (s, k) {
+    const pct = stops.length > 1 ? (k / (stops.length - 1) * 100) : 0;
+    return 'rgb(' + s.rgb + ') ' + pct.toFixed(0) + '%';
+  }).join(', ');
+
+  el.innerHTML =
+    '<div class="env-legend-title"></div>' +
+    '<div class="env-legend-bar"></div>' +
+    '<div class="env-legend-scale"><span></span><span></span></div>';
+  el.querySelector('.env-legend-title').textContent = lg.label + (lg.unit ? ' (' + lg.unit + ')' : '');
+  el.querySelector('.env-legend-bar').style.background = 'linear-gradient(to right, ' + grad + ')';
+  const sc = el.querySelectorAll('.env-legend-scale span');
+  sc[0].textContent = (Math.round(lg.min * 10) / 10).toString();
+  sc[1].textContent = (Math.round(lg.max * 10) / 10).toString();
+  el.style.display = 'block';
 }
 
 // ── Generic line/point overlays (traceroutes, neighbor lines, paths) ─────

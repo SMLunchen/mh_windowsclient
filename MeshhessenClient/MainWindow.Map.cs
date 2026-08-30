@@ -118,6 +118,10 @@ public partial class MainWindow
             _myPosLayer = new MemoryLayer("MyPosition") { Features = _myPosFeatures, Style = null };
             _map.Layers.Add(_myPosLayer);
 
+            // Umweltdaten-Boxen (oberhalb der Node-Pins)
+            _envLayer = new MemoryLayer("EnvBoxes") { Features = _envFeatures, Style = null };
+            _map.Layers.Add(_envLayer);
+
             MapControl.Map = _map;
             MapControl.MouseRightButtonUp += MapControl_RightClick;
             // PreviewMouseLeftButtonDown fires before Mapsui starts pan tracking.
@@ -146,6 +150,9 @@ public partial class MainWindow
 
             // Copyright-Hinweis basierend auf Kartenquelle setzen
             UpdateMapCopyright();
+
+            // Umweltdaten-Overlay (Button-Sichtbarkeit + Boxen/Heatmap)
+            ApplyEnvironmentUi();
         }
         catch (Exception ex)
         {
@@ -252,7 +259,15 @@ public partial class MainWindow
                 core.WebMessageReceived += VectorMap_WebMessageReceived;
                 core.NavigationCompleted += VectorMap_NavigationCompleted;
 
-                core.Navigate("https://meshmap.local/map.html");
+                // Cache-buster: map.html is served by WebView2's default virtual-host
+                // handler (it bypasses our interceptor), so WebView2 can cache it across
+                // runs. Key the URL to the extracted file's mtime → a rebuilt map.html
+                // (new JS) forces a fresh load instead of running a stale cached document.
+                var mapHtmlPath = Path.Combine(assetsDir, "map.html");
+                var bust = File.Exists(mapHtmlPath)
+                    ? new FileInfo(mapHtmlPath).LastWriteTimeUtc.Ticks.ToString()
+                    : "0";
+                core.Navigate($"https://meshmap.local/map.html?v={bust}");
                 // NavigationCompleted starts the map with the current settings
             }
 
@@ -310,6 +325,18 @@ public partial class MainWindow
             // Restore cached line overlays (traceroutes, paths) e.g. after raster->vector switch
             foreach (var (key, json) in _vectorLineJson.ToList())
                 ExecVectorScript($"setLines({JsonSerializer.Serialize(key)}, {json})");
+
+            // Environment overlay (value boxes + heatmap) for the vector map
+            ApplyEnvironmentUi();
+            // Diagnostic: confirm the running document actually has the env JS (catches a
+            // stale cached map.html) – logs "function/function" when current.
+            try
+            {
+                var probe = await VectorMapView.CoreWebView2.ExecuteScriptAsync(
+                    "(typeof setEnvSurface)+'/'+(typeof setEnvBoxes)");
+                Services.Logger.WriteLine($"[Env] js functions present: {probe}");
+            }
+            catch { }
 
             // A "Show on map" click that opened the map applies its center now that JS is callable.
             if (_pendingVectorCenter is { } pc)
@@ -529,6 +556,19 @@ public partial class MainWindow
                 case "maperror":
                     var msg = root.TryGetProperty("message", out var m) ? m.GetString() : "unknown";
                     Services.Logger.WriteLine($"[VectorMap] Map error: {msg}");
+                    break;
+
+                case "envheat":
+                {
+                    int pts = root.TryGetProperty("points", out var pEl) && pEl.TryGetInt32(out var pv) ? pv : -1;
+                    bool added = root.TryGetProperty("added", out var aEl) && aEl.ValueKind == JsonValueKind.True;
+                    Services.Logger.WriteLine($"[Env] heatmap layer applied: points={pts} added={added}");
+                    break;
+                }
+
+                case "enverror":
+                    Services.Logger.WriteLine($"[Env] JS error ({(root.TryGetProperty("where", out var wEl) ? wEl.GetString() : "?")}): " +
+                                              $"{(root.TryGetProperty("msg", out var meEl) ? meEl.GetString() : "?")}");
                     break;
 
                 case "nodeclick":

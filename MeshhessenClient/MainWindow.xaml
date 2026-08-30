@@ -1631,6 +1631,37 @@
                                    AllowsTransparency="True">
                                 <StackPanel x:Name="VectorLegendHost"/>
                             </Popup>
+
+                            <!-- Umweltdaten (beide Karten-Modi, wenn in den Einstellungen aktiviert) -->
+                            <Button x:Name="EnvBtn" Height="28" Padding="8,2" Margin="6,0,0,0"
+                                    Visibility="Collapsed" Click="EnvBtn_Click"
+                                    Content="{DynamicResource StrEnvBtn}"
+                                    ToolTip="{DynamicResource StrEnvBtnTooltip}"/>
+                            <Popup x:Name="EnvPopup" StaysOpen="False" Placement="Bottom"
+                                   AllowsTransparency="True">
+                                <Border Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                                        BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}"
+                                        BorderThickness="1" CornerRadius="4" Padding="12,10">
+                                    <StackPanel MinWidth="230" MaxWidth="280">
+                                        <CheckBox x:Name="EnvBoxesCheck" Content="{DynamicResource StrEnvBoxes}"
+                                                  Margin="0,0,0,6" Checked="EnvBoxesCheck_Changed" Unchecked="EnvBoxesCheck_Changed"/>
+                                        <CheckBox x:Name="EnvHeatmapCheck" Content="{DynamicResource StrEnvHeatmap}"
+                                                  Margin="0,0,0,2" Checked="EnvHeatmapCheck_Changed" Unchecked="EnvHeatmapCheck_Changed"/>
+                                        <TextBlock x:Name="EnvHeatmapRasterHint" Text="{DynamicResource StrEnvHeatmapRasterHint}"
+                                                   FontStyle="Italic" Foreground="Gray" TextWrapping="Wrap" FontSize="11"
+                                                   Margin="0,0,0,6" Visibility="Collapsed"/>
+                                        <TextBlock Text="{DynamicResource StrEnvMetric}" FontSize="11" Margin="0,4,0,2"/>
+                                        <ComboBox x:Name="EnvMetricCombo" SelectionChanged="EnvMetricCombo_Changed" Margin="0,0,0,8"/>
+                                        <TextBlock Text="{DynamicResource StrEnvExcludeNodes}"
+                                                   FontWeight="SemiBold" FontSize="12" Margin="0,4,0,2"/>
+                                        <TextBlock Text="{DynamicResource StrEnvExcludeHint}"
+                                                   FontStyle="Italic" Foreground="Gray" TextWrapping="Wrap" FontSize="11" Margin="0,0,0,4"/>
+                                        <ScrollViewer MaxHeight="200" VerticalScrollBarVisibility="Auto">
+                                            <StackPanel x:Name="EnvNodesPanel"/>
+                                        </ScrollViewer>
+                                    </StackPanel>
+                                </Border>
+                            </Popup>
                         </StackPanel>
                         <TextBlock x:Name="MapStatusText" Grid.Column="1" VerticalAlignment="Center" Foreground="Gray" FontStyle="Italic"/>
                     </Grid>
@@ -2028,6 +2059,17 @@
                                         <TextBox  Grid.Row="1" Grid.Column="1" x:Name="AntennaDaysBox" Margin="0,2,8,2" VerticalAlignment="Center"/>
                                         <TextBlock Grid.Row="1" Grid.Column="2" Text="{DynamicResource StrSignalAntennaUnit}" FontSize="11" Opacity="0.6" VerticalAlignment="Center"/>
                                     </Grid>
+                                </StackPanel>
+                            </GroupBox>
+
+                            <!-- g2) Umweltdaten -->
+                            <GroupBox Header="{DynamicResource StrEnvGroup}" Margin="0,0,0,16">
+                                <StackPanel Margin="10">
+                                    <CheckBox x:Name="ShowEnvironmentDataCheckBox"
+                                             Content="{DynamicResource StrEnvEnable}"
+                                             Margin="0,0,0,4"/>
+                                    <TextBlock Text="{DynamicResource StrEnvEnableHint}"
+                                              FontStyle="Italic" Foreground="Gray" TextWrapping="Wrap" FontSize="11"/>
                                 </StackPanel>
                             </GroupBox>
 

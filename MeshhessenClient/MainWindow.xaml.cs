@@ -335,6 +335,7 @@ public partial class MainWindow : Window
             DebugBluetoothCheckBox.IsChecked = settings.DebugBluetooth;
             AlertBellSoundCheckBox.IsChecked = settings.AlertBellSound;
             EnableLocationLoggingCheckBox.IsChecked = settings.EnableLocationLogging;
+            ShowEnvironmentDataCheckBox.IsChecked = settings.ShowEnvironmentData;
 
             // Language ComboBox
             foreach (System.Windows.Controls.ComboBoxItem item in LanguageComboBox.Items)
@@ -1478,6 +1479,7 @@ public partial class MainWindow : Window
                 AlertBellSound = AlertBellSoundCheckBox.IsChecked == true,
                 Language = (LanguageComboBox.SelectedItem as System.Windows.Controls.ComboBoxItem)?.Tag as string ?? "de",
                 EnableLocationLogging = EnableLocationLoggingCheckBox.IsChecked == true,
+                ShowEnvironmentData = ShowEnvironmentDataCheckBox.IsChecked == true,
                 TelemetryRetentionDays = int.TryParse((TelemetryRetentionComboBox.SelectedItem as System.Windows.Controls.ComboBoxItem)?.Tag as string, out var ret) ? ret : 90,
                 NodeKeyMismatchAction = PskWarnRadio.IsChecked == true ? Services.PskMismatchAction.Warn
                                       : PskAskRadio.IsChecked  == true ? Services.PskMismatchAction.Ask
@@ -1535,6 +1537,7 @@ public partial class MainWindow : Window
             _protocolService.SetDebugDevice(settings.DebugDevice);
             BluetoothConnectionService.SetDebugEnabled(settings.DebugBluetooth);
             UpdateKioskLockButton();
+            ApplyEnvironmentUi();
             SetSettingsDirty(false);
             MessageBox.Show(Loc("StrSettingsSaved"), Loc("StrSettingsSavedTitle"), MessageBoxButton.OK, MessageBoxImage.Information);
         }
@@ -1995,6 +1998,9 @@ public partial class MainWindow : Window
 
                 // Update map pin
                 UpdateNodePin(node);
+
+                // Environment overlay reflects new telemetry/positions (debounced)
+                ScheduleEnvRefresh();
             }
             catch (Exception ex)
             {

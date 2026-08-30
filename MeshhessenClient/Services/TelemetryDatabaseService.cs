@@ -111,6 +111,30 @@ CREATE TABLE IF NOT EXISTS waypoints (
 );
 ";
         cmd.ExecuteNonQuery();
+
+        // Extend environment_telemetry with the full sensor set (migration for existing DBs).
+        EnsureEnvironmentColumns(con);
+    }
+
+    /// <summary>Adds any environment metric column from <see cref="EnvironmentMetricInfo"/>
+    /// that an older DB doesn't have yet. SQLite ADD COLUMN is cheap and non-destructive;
+    /// column names come from the fixed registry (never user input).</summary>
+    private void EnsureEnvironmentColumns(SqliteConnection con)
+    {
+        var existing = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        using (var pragma = con.CreateCommand())
+        {
+            pragma.CommandText = "PRAGMA table_info(environment_telemetry)";
+            using var r = pragma.ExecuteReader();
+            while (r.Read()) existing.Add(r.GetString(1)); // col 1 = name
+        }
+        foreach (var col in EnvironmentMetricInfo.Columns)
+        {
+            if (existing.Contains(col)) continue;
+            using var alter = con.CreateCommand();
+            alter.CommandText = $"ALTER TABLE environment_telemetry ADD COLUMN {col} REAL";
+            alter.ExecuteNonQuery();
+        }
     }
 
     // ── Write methods ─────────────────────────────────────────────────────────
@@ -259,22 +283,38 @@ VALUES ($n, $ts, $bat, $v, $cu, $au, $up)";
         }
     }
 
+    /// <summary>Inserts one environment reading. <paramref name="metrics"/> is keyed by
+    /// <see cref="EnvironmentMetricInfo"/> metric Key (only present sensors); unknown keys
+    /// are ignored. Columns are resolved from the registry, so this stores the full sensor
+    /// set without a fixed signature.</summary>
     public void InsertEnvironmentTelemetry(uint nodeId, DateTime timestamp,
-        float temp, float humidity, float pressure, int iaq)
+        IReadOnlyDictionary<string, double> metrics)
     {
+        if (metrics == null || metrics.Count == 0) return;
+
+        var cols = new List<string>();
+        var vals = new List<double>();
+        foreach (var kv in metrics)
+        {
+            var m = EnvironmentMetricInfo.ByKey(kv.Key);
+            if (m == null) continue;               // ignore anything not in the registry
+            cols.Add(m.Column);
+            vals.Add(kv.Value);
+        }
+        if (cols.Count == 0) return;
+
         lock (_lock)
         {
             using var con = Open();
             using var cmd = con.CreateCommand();
-            cmd.CommandText = @"
-INSERT INTO environment_telemetry (node_id, timestamp, temperature, relative_humidity, barometric_pressure, iaq)
-VALUES ($n, $ts, $t, $h, $p, $q)";
+            var colList = string.Join(", ", cols);
+            var parList = string.Join(", ", cols.Select((_, i) => "$v" + i));
+            cmd.CommandText =
+                $"INSERT INTO environment_telemetry (node_id, timestamp, {colList}) VALUES ($n, $ts, {parList})";
             cmd.Parameters.AddWithValue("$n",  (long)nodeId);
             cmd.Parameters.AddWithValue("$ts", ToUnix(timestamp));
-            cmd.Parameters.AddWithValue("$t",  temp != 0 ? temp : DBNull.Value);
-            cmd.Parameters.AddWithValue("$h",  humidity > 0 ? humidity : DBNull.Value);
-            cmd.Parameters.AddWithValue("$p",  pressure > 0 ? pressure : DBNull.Value);
-            cmd.Parameters.AddWithValue("$q",  iaq > 0 ? iaq : DBNull.Value);
+            for (int i = 0; i < vals.Count; i++)
+                cmd.Parameters.AddWithValue("$v" + i, vals[i]);
             cmd.ExecuteNonQuery();
         }
     }
@@ -617,9 +657,7 @@ LIMIT 50";
             "voltage"      => ("device_telemetry",      "voltage"),
             "channel_util" => ("device_telemetry",      "channel_utilization"),
             "air_tx_util"  => ("device_telemetry",      "air_util_tx"),
-            "temperature"  => ("environment_telemetry", "temperature"),
-            "humidity"     => ("environment_telemetry", "relative_humidity"),
-            "pressure"     => ("environment_telemetry", "barometric_pressure"),
+            _ when EnvironmentMetricInfo.ByKey(metric) is { } envM => ("environment_telemetry", envM.Column),
             _              => ("packet_rx",             "rx_snr"),
         };
 
@@ -643,6 +681,50 @@ LIMIT 50";
             }
         }
 
+        return result;
+    }
+
+    // ── Query: Latest environment reading per node (for map info-boxes) ──────
+
+    /// <summary>Latest environment reading of one node: timestamp + every present metric
+    /// (keyed by <see cref="EnvironmentMetricInfo"/> Key), NULL columns omitted.</summary>
+    public sealed class EnvReading
+    {
+        public uint NodeId { get; init; }
+        public DateTime Timestamp { get; init; }
+        public Dictionary<string, double> Values { get; } = new();
+    }
+
+    /// <summary>Returns, for every node that ever reported environment data, its most
+    /// recent reading row. Used to render the on-map value boxes.</summary>
+    public List<EnvReading> GetLatestEnvironmentPerNode()
+    {
+        var cols = EnvironmentMetricInfo.All.ToList();          // fixed order = read order
+        var colList = string.Join(", ", cols.Select(m => m.Column));
+        var result = new List<EnvReading>();
+
+        using var con = Open();
+        using var cmd = con.CreateCommand();
+        cmd.CommandText = $@"
+SELECT e.node_id, e.timestamp, {colList}
+FROM environment_telemetry e
+JOIN (SELECT node_id, MAX(timestamp) AS mt FROM environment_telemetry GROUP BY node_id) m
+  ON e.node_id = m.node_id AND e.timestamp = m.mt";
+        using var r = cmd.ExecuteReader();
+        while (r.Read())
+        {
+            var reading = new EnvReading
+            {
+                NodeId    = (uint)r.GetInt64(0),
+                Timestamp = FromUnix(r.GetInt64(1)),
+            };
+            for (int i = 0; i < cols.Count; i++)
+            {
+                int ord = i + 2;                                // after node_id, timestamp
+                if (!r.IsDBNull(ord)) reading.Values[cols[i].Key] = r.GetDouble(ord);
+            }
+            result.Add(reading);
+        }
         return result;
     }
 
@@ -704,8 +786,7 @@ ORDER BY bucket";
             "snr"          => ("packet_rx",             "rx_snr"),
             "rssi"         => ("packet_rx",             "rx_rssi"),
             "battery"      => ("device_telemetry",      "battery_percent"),
-            "temperature"  => ("environment_telemetry", "temperature"),
-            "humidity"     => ("environment_telemetry", "relative_humidity"),
+            _ when EnvironmentMetricInfo.ByKey(metric) is { } envM => ("environment_telemetry", envM.Column),
             _              => ("packet_rx",             "rx_snr"),
         };
 

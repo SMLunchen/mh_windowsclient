@@ -177,6 +177,39 @@
     <sys:String x:Key="StrMapLegendBtnTooltip">Show legend and neighbor line options</sys:String>
     <sys:String x:Key="StrVectorOverlaysTitle">Overlay layers:</sys:String>
     <sys:String x:Key="StrVectorOverlaysHint">Specialist layers are drawn on top of the vector map. While a layer is off, no data is loaded for it. Also switchable via the 🗂️ button on the map.</sys:String>
+
+    <!-- Environment data (map feature) -->
+    <sys:String x:Key="StrEnvGroup">🌡️ Environment data</sys:String>
+    <sys:String x:Key="StrEnvEnable">Show environment data on the map</sys:String>
+    <sys:String x:Key="StrEnvEnableHint">Shows measurements that nodes report (temperature, humidity, IAQ and more) directly on the map. Once enabled, control it via the 🌡️ button on the map.</sys:String>
+    <sys:String x:Key="StrEnvBoxes">Value boxes at the nodes</sys:String>
+    <sys:String x:Key="StrEnvHeatmap">Heatmap overlay</sys:String>
+    <sys:String x:Key="StrEnvHeatmapRasterHint">The heatmap is only available on the vector map.</sys:String>
+    <sys:String x:Key="StrEnvMetric">Heatmap metric:</sys:String>
+    <sys:String x:Key="StrEnvBtn">🌡️ Environment</sys:String>
+    <sys:String x:Key="StrEnvBtnTooltip">Environment data on the map: value boxes, heatmap, metric and node selection</sys:String>
+    <sys:String x:Key="StrEnvExcludeNodes">Include nodes:</sys:String>
+    <sys:String x:Key="StrEnvExcludeHint">Deselect a node if it reports nonsense – it disappears from boxes and heatmap.</sys:String>
+    <sys:String x:Key="StrEnvNoNodes">No nodes with environment data received yet.</sys:String>
+    <!-- Metric labels -->
+    <sys:String x:Key="StrEnvTemperature">Temperature</sys:String>
+    <sys:String x:Key="StrEnvHumidity">Humidity</sys:String>
+    <sys:String x:Key="StrEnvPressure">Pressure</sys:String>
+    <sys:String x:Key="StrEnvIaq">IAQ</sys:String>
+    <sys:String x:Key="StrEnvGas">Gas resistance</sys:String>
+    <sys:String x:Key="StrEnvLux">Illuminance</sys:String>
+    <sys:String x:Key="StrEnvWhiteLux">White light</sys:String>
+    <sys:String x:Key="StrEnvUvLux">UV light</sys:String>
+    <sys:String x:Key="StrEnvWindSpeed">Wind speed</sys:String>
+    <sys:String x:Key="StrEnvWindDir">Wind direction</sys:String>
+    <sys:String x:Key="StrEnvWindGust">Wind gust</sys:String>
+    <sys:String x:Key="StrEnvRain1h">Rain (1 h)</sys:String>
+    <sys:String x:Key="StrEnvRain24h">Rain (24 h)</sys:String>
+    <sys:String x:Key="StrEnvSoilMoisture">Soil moisture</sys:String>
+    <sys:String x:Key="StrEnvSoilTemp">Soil temperature</sys:String>
+    <sys:String x:Key="StrEnvRadiation">Radiation</sys:String>
+    <sys:String x:Key="StrEnvDistance">Distance</sys:String>
+    <sys:String x:Key="StrEnvWeight">Weight</sys:String>
     <sys:String x:Key="StrDownloadVectorTiles">Download vector package…</sys:String>
     <sys:String x:Key="StrDownloadVectorTilesHint">Downloads the base map and selected overlay layers for an area into the offline store (vectortiles/). Existing tiles are skipped. One basemap download covers all three map styles.</sys:String>
     <sys:String x:Key="StrVdTitle">Vector offline package</sys:String>

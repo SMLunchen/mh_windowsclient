@@ -9,6 +9,16 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+### ✨ Hinzugefügt
+
+#### 🌡️ Umweltdaten auf der Karte
+- Neues, in den Einstellungen aktivierbares Feature: Nodes, die Umwelt-Telemetrie liefern, zeigen ihre Messwerte direkt auf der Karte. Funktioniert für **Raster- und Vektor-Karte**.
+- **Messwert-Boxen** unter dem jeweiligen Node-Marker (leicht gelbe Box mit themenabhängigem Rand – weiß bei Nacht, schwarz bei Tag) mit allen gemeldeten Werten plus Datum/Uhrzeit der Messung.
+- **Heatmap / interpolierte Wertefläche** (nur Vektor-Karte) für die gewählte Metrik — im **Wetterdienst-Stil**: die Farbe entspricht dem **tatsächlichen Messwert** auf einer kalibrierten Skala (nicht der Punktdichte), mit **Legende** am Kartenrand. Zwischen den Sensoren wird per IDW (inverse Distanzgewichtung, ~30 km Reichweite) interpoliert; jenseits der Reichweite bleibt die Fläche transparent. Ältere Messwerte zählen weniger (exponentieller Zeit-Abfall), veraltete Sensoren verlieren an Gewicht. Funktioniert für **alle Metriken** (Temperatur, IAQ, Feuchte, …). Die Karte bleibt darunter sichtbar. Im Raster-Modus ein Hinweis, dass die Fläche nur in der Vektor-Karte verfügbar ist.
+- **Voller Sensorsatz**: Temperatur, Feuchte, Luftdruck, IAQ, Gas-Widerstand, Beleuchtung/Weißlicht/UV, Wind (Geschw./Richtung/Böe), Regen (1 h/24 h), Bodenfeuchte/-temperatur, Strahlung, Distanz, Gewicht. Die Telemetrie-DB wird dafür automatisch migriert (bisher wurden nur Temperatur/Feuchte/Luftdruck/IAQ gespeichert).
+- **Einzelne Nodes abwählbar** (falls einer Unsinn misst): über den 🌡️-Button an der Karte, wirkt auf Boxen **und** Heatmap.
+- Steuerung komplett über den neuen 🌡️-Button (Boxen an/aus, Heatmap an/aus, Metrik-Auswahl, Node-Liste); Einstellungen bleiben erhalten.
+
 ---
 
 ## [1.6.2.5] - 2026-08-30

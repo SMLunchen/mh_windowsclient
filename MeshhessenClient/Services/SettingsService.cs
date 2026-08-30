@@ -60,6 +60,13 @@ public record AppSettings
     public string VectorStyleTopoUrl { get; init; } = "https://vectortile.meshhessenclient.de/styles/opentopo.json";
     public string VectorStyleDarkUrl { get; init; } = "https://vectortile.meshhessenclient.de/styles/dark.json";
     public string MapOverlays { get; init; } = string.Empty;   // CSV of active vector overlay keys (MapOverlayRegistry)
+
+    // ── Environment data on the map (opt-in) ──────────────────────────────────
+    public bool ShowEnvironmentData { get; init; } = false;    // master switch (Settings); unlocks the map controls
+    public bool EnvShowBoxes { get; init; } = true;            // value boxes below nodes that report env data
+    public bool EnvShowHeatmap { get; init; } = false;         // heatmap overlay (vector map only)
+    public string EnvMetric { get; init; } = "temperature";    // metric for the heatmap (EnvironmentMetricInfo key)
+    public string EnvDisabledNodes { get; init; } = string.Empty; // CSV of node ids excluded from boxes+heatmap
 }
 
 public static class SettingsService
@@ -230,7 +237,12 @@ public static class SettingsService
                 VectorStyleOsmUrl = values.TryGetValue("VectorStyleOsmUrl", out var vso) && !string.IsNullOrWhiteSpace(vso) ? vso : defaults.VectorStyleOsmUrl,
                 VectorStyleTopoUrl = values.TryGetValue("VectorStyleTopoUrl", out var vst) && !string.IsNullOrWhiteSpace(vst) ? vst : defaults.VectorStyleTopoUrl,
                 VectorStyleDarkUrl = values.TryGetValue("VectorStyleDarkUrl", out var vsd) && !string.IsNullOrWhiteSpace(vsd) ? vsd : defaults.VectorStyleDarkUrl,
-                MapOverlays = values.TryGetValue("MapOverlays", out var mov) ? mov : defaults.MapOverlays
+                MapOverlays = values.TryGetValue("MapOverlays", out var mov) ? mov : defaults.MapOverlays,
+                ShowEnvironmentData = values.TryGetValue("ShowEnvironmentData", out var sed) && bool.TryParse(sed, out var sedBool) && sedBool,
+                EnvShowBoxes = !values.TryGetValue("EnvShowBoxes", out var esb) || !bool.TryParse(esb, out var esbBool) || esbBool,
+                EnvShowHeatmap = values.TryGetValue("EnvShowHeatmap", out var esh) && bool.TryParse(esh, out var eshBool) && eshBool,
+                EnvMetric = values.TryGetValue("EnvMetric", out var emk) && !string.IsNullOrEmpty(emk) ? emk : defaults.EnvMetric,
+                EnvDisabledNodes = values.TryGetValue("EnvDisabledNodes", out var edn) ? edn : defaults.EnvDisabledNodes
             };
         }
         catch (Exception ex)
@@ -292,7 +304,12 @@ public static class SettingsService
                 $"VectorStyleOsmUrl={settings.VectorStyleOsmUrl}",
                 $"VectorStyleTopoUrl={settings.VectorStyleTopoUrl}",
                 $"VectorStyleDarkUrl={settings.VectorStyleDarkUrl}",
-                $"MapOverlays={settings.MapOverlays}"
+                $"MapOverlays={settings.MapOverlays}",
+                $"ShowEnvironmentData={settings.ShowEnvironmentData}",
+                $"EnvShowBoxes={settings.EnvShowBoxes}",
+                $"EnvShowHeatmap={settings.EnvShowHeatmap}",
+                $"EnvMetric={settings.EnvMetric}",
+                $"EnvDisabledNodes={settings.EnvDisabledNodes}"
             };
 
             // Save node colors

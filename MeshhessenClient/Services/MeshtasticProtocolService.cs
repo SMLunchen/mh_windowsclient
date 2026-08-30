@@ -2492,15 +2492,11 @@ public class MeshtasticProtocolService
                     uptimeSeconds:   dm.UptimeSeconds);
             }
 
-            if (telemetry?.EnvironmentMetrics is { } em && (em.Temperature != 0 || em.RelativeHumidity != 0))
+            if (telemetry?.EnvironmentMetrics is { } em)
             {
-                _db?.InsertEnvironmentTelemetry(
-                    nodeId:      packet.From,
-                    timestamp:   DateTime.UtcNow,
-                    temp:        em.Temperature,
-                    humidity:    em.RelativeHumidity,
-                    pressure:    em.BarometricPressure,
-                    iaq:         (int)em.Iaq);
+                var envMetrics = EnvironmentMetricInfo.Extract(em);
+                if (envMetrics.Count > 0)
+                    _db?.InsertEnvironmentTelemetry(packet.From, DateTime.UtcNow, envMetrics);
             }
 
             lock (_dataLock)
