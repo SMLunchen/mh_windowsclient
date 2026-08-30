@@ -172,10 +172,50 @@
 <div class="section active" id="de">
 <main>
 
-  <!-- ── v1.6.2.3 ── -->
+  <!-- ── v1.6.2.5 ── -->
   <div class="version-entry current">
     <div class="version-header">
-      <span class="version-tag tag-latest">v1.6.2.3</span>
+      <span class="version-tag tag-latest">v1.6.2.5</span>
+      <span class="version-date">2026-08-30</span>
+      Tile-Download folgt dem Karten-Modus
+    </div>
+    <p class="version-desc">Bugfix: Das Offline-Laden von Kacheln nutzte immer die „Tile-Server URL", egal welcher Karten-Modus gewählt war.</p>
+
+    <div class="cl-section fixed">
+      <h3>🗺️ Tile-Download</h3>
+      <div class="cl-group">
+        <ul class="cl-list">
+          <li><strong>Download ignorierte den Karten-Modus</strong> — es wurde immer die Custom-URL aus dem Feld „Tile-Server URL" verwendet, unabhängig von Modus und Quell-Auswahl (osm/topo/dark). Die Custom-URL ist jetzt <strong>nur</strong> im Modus „Eigener Tile-Server" aktiv; alle anderen Modi laden vom quellenrichtigen Server (Meshhessen bzw. public OSM). Download und Kartenabfrage sind damit konsistent.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── v1.6.2.4 ── -->
+  <div class="version-entry">
+    <div class="version-header">
+      <span class="version-tag">v1.6.2.4</span>
+      <span class="version-date">2026-08-22</span>
+      Kanal-Anzeige, Reply-Kanal &amp; Debug-Scroll
+    </div>
+    <p class="version-desc">Mehrere Fixes rund um Kanäle und das Debug-Log.</p>
+
+    <div class="cl-section fixed">
+      <h3>🐛 Behoben</h3>
+      <div class="cl-group">
+        <ul class="cl-list">
+          <li><strong>Kanal-Anzeige im Backlog</strong> zeigte teils „Kanal N" statt des Kanalnamens — jetzt einheitlich aus dem aktuellen Kanal-Index aufgelöst und beim Eintreffen der Kanäle neu berechnet.</li>
+          <li><strong>Reply wechselt wieder auf den Kanal der Nachricht</strong> — „Antworten" schaltet den aktiven Kanal auf den um, auf dem die Nachricht empfangen wurde (Live und Backlog).</li>
+          <li><strong>Debug-Log Auto-Scroll sprang nach oben</strong> statt dem Ende zu folgen — Reihenfolge korrigiert: erst trimmen, dann ans Ende scrollen.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── v1.6.2.3 ── -->
+  <div class="version-entry">
+    <div class="version-header">
+      <span class="version-tag">v1.6.2.3</span>
       <span class="version-date">2026-08-16</span>
       Alert-Bell, verschlüsselte Antworten &amp; Karten-Feinschliff
     </div>
@@ -1087,10 +1127,50 @@
 <div class="section" id="en">
 <main>
 
-  <!-- ── v1.6.2.3 (EN) ── -->
+  <!-- ── v1.6.2.5 (EN) ── -->
   <div class="version-entry current">
     <div class="version-header">
-      <span class="version-tag tag-latest">v1.6.2.3</span>
+      <span class="version-tag tag-latest">v1.6.2.5</span>
+      <span class="version-date">2026-08-30</span>
+      Tile download follows the map mode
+    </div>
+    <p class="version-desc">Bugfix: offline tile downloads always used the "Tile server URL", regardless of the selected map mode.</p>
+
+    <div class="cl-section fixed">
+      <h3>🗺️ Tile download</h3>
+      <div class="cl-group">
+        <ul class="cl-list">
+          <li><strong>Download ignored the map mode</strong> — it always used the custom URL from the "Tile server URL" field, regardless of mode and source selection (osm/topo/dark). The custom URL is now active <strong>only</strong> in "Own tile server" mode; every other mode downloads from the correct server for the source (Meshhessen or public OSM). Download and map query are now consistent.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── v1.6.2.4 (EN) ── -->
+  <div class="version-entry">
+    <div class="version-header">
+      <span class="version-tag">v1.6.2.4</span>
+      <span class="version-date">2026-08-22</span>
+      Channel display, reply channel &amp; debug scroll
+    </div>
+    <p class="version-desc">Several fixes around channels and the debug log.</p>
+
+    <div class="cl-section fixed">
+      <h3>🐛 Fixed</h3>
+      <div class="cl-group">
+        <ul class="cl-list">
+          <li><strong>Channel display in the backlog</strong> sometimes showed "Channel N" instead of the channel name — now resolved consistently from the current channel index and recomputed when channels arrive.</li>
+          <li><strong>Reply switches back to the message's channel</strong> — "Reply" sets the active channel to the one the message was received on (live and backlog).</li>
+          <li><strong>Debug-log auto-scroll jumped to the top</strong> instead of following the end — order fixed: trim first, then scroll to end.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── v1.6.2.3 (EN) ── -->
+  <div class="version-entry">
+    <div class="version-header">
+      <span class="version-tag">v1.6.2.3</span>
       <span class="version-date">2026-08-16</span>
       Alert bell, encrypted replies &amp; map polish
     </div>

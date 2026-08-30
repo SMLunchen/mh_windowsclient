@@ -11,6 +11,16 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
 
+## [1.6.2.5] - 2026-08-30
+
+### 🐛 Behoben
+
+#### 🗺️ Tile-Download ignorierte den Karten-Modus (nutzte immer die Tile-Server-URL)
+- Beim Offline-Laden von Kacheln wurde **immer** die im Feld „Tile-Server URL" stehende Adresse verwendet — unabhängig vom gewählten Karten-Modus und der Quell-Auswahl (osm/topo/dark). In Meshhessen-/Offline-Modus lud der Download so von der Custom-URL statt vom quellenrichtigen offiziellen Server.
+- Jetzt gilt: Die Custom-URL ist **nur** im Modus „Eigener Tile-Server" (`online-custom`) aktiv — dort weiterhin auch der ungespeicherte Wert aus dem Textfeld, damit man ohne Speichern laden kann. In allen anderen Modi nutzt der Download den zum Quell-Dropdown passenden Server (`online-own`/offline → offizielle Meshhessen-Server, `online-osm` → public OSM, für Bulk ohnehin gesperrt). Damit sind Download und Kartenabfrage konsistent.
+
+---
+
 ## [1.6.2.4] - 2026-08-22
 
 ### 🐛 Behoben

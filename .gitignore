@@ -62,3 +62,12 @@ SCHNELLSTART.md
 SCHNELLSTART.md
 backlog.txt
 PLAN.md
+
+# Tile-auth: private ops docs & any secrets. MUST NOT be published (full
+# attack/defense logic + token material). Keep out of the public repo.
+plan_tile_auth.md
+TILE_AUTH_IMPLEMENTATION.md
+TILE_AUTH_SERVER.md
+tile-keys/
+*.tileauth.key
+secret.key

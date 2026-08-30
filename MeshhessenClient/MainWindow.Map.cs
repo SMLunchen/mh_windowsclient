@@ -47,6 +47,18 @@ public partial class MainWindow
         _         => "https://tile.meshhessenclient.de/osm/{z}/{x}/{y}.png"
     };
 
+    // The tile URL actually in effect for the current map mode and the given source.
+    // The configured custom URL fields apply ONLY in custom mode; every other mode
+    // uses its own server (online-own + offline → official Meshhessen servers,
+    // online-osm → public OSM). Mirrors the live-map provider selection in
+    // InitializeMap, so downloads and map queries stay in sync.
+    private string GetActiveTileUrl(string source) => _currentSettings.MapMode switch
+    {
+        "online-custom" => GetUrlForSource(source),
+        "online-osm"    => "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+        _               => GetMeshhessenUrlForSource(source),
+    };
+
     // Vector rendering is available in all modes except online-osm (no public vector OSM server)
     private bool UseVectorMap =>
         _currentSettings.MapRenderMode == "vector" && _currentSettings.MapMode != "online-osm";
@@ -1315,26 +1327,28 @@ public partial class MainWindow
 
     private void DownloadTiles_Click(object sender, RoutedEventArgs e)
     {
-        // Tile-Server URL direkt aus TextBox übernehmen (auch ohne vorheriges Speichern)
-        var currentTileUrl = string.IsNullOrWhiteSpace(TileServerUrlTextBox.Text)
-            ? "https://tile.meshhessenclient.de/osm/{z}/{x}/{y}.png"
-            : TileServerUrlTextBox.Text.Trim();
+        var source = _currentSettings.MapSource;
 
-        // Update the appropriate URL based on current map source
-        switch (_currentSettings.MapSource)
+        // The custom "Tile-Server URL" field is honoured ONLY in custom mode – and
+        // there the (possibly unsaved) textbox value wins, so the user can download
+        // without saving first. Every other mode downloads from its own server, so
+        // the source dropdown (osm/topo/dark) decides, not the URL field.
+        string url;
+        if (_currentSettings.MapMode == "online-custom")
+            url = string.IsNullOrWhiteSpace(TileServerUrlTextBox.Text)
+                ? GetUrlForSource(source)
+                : TileServerUrlTextBox.Text.Trim();
+        else
+            url = GetActiveTileUrl(source);
+
+        switch (source)
         {
-            case "osm":
-                TileDownloaderService.OSMTileUrl = currentTileUrl;
-                break;
-            case "osmtopo":
-                TileDownloaderService.OSMTopoTileUrl = currentTileUrl;
-                break;
-            case "osmdark":
-                TileDownloaderService.OSMDarkTileUrl = currentTileUrl;
-                break;
+            case "osm":     TileDownloaderService.OSMTileUrl     = url; break;
+            case "osmtopo": TileDownloaderService.OSMTopoTileUrl = url; break;
+            case "osmdark": TileDownloaderService.OSMDarkTileUrl = url; break;
         }
 
-        var win = new TileDownloaderWindow(_currentSettings.MapSource) { Owner = this };
+        var win = new TileDownloaderWindow(source) { Owner = this };
         win.ShowDialog();
         // Nach Download: Map-Status aktualisieren
         UpdateMapTileStatus();
