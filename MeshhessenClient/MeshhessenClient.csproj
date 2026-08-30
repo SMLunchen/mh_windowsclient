@@ -25,7 +25,18 @@
     <Product>Meshhessen Client</Product>
     <Description>Offline-fähiger Windows Client für Meshtastic Geräte</Description>
     <ApplicationIcon>Resources\app.ico</ApplicationIcon>
+
+    <!-- Server-signed tile auth token, injected by official CI builds via
+         -p:TileAuthToken=<token> (from a CI secret, never committed). Empty on a
+         plain source/fork build, which is intentional (see Services/TileAuth.cs). -->
+    <TileAuthToken></TileAuthToken>
   </PropertyGroup>
+
+  <!-- Only emit the attribute when a token is actually supplied, so source builds
+       carry no (empty) metadata entry at all. -->
+  <ItemGroup Condition="'$(TileAuthToken)' != ''">
+    <AssemblyMetadata Include="TileAuthToken" Value="$(TileAuthToken)" />
+  </ItemGroup>
 
   <ItemGroup>
     <!-- Serial Port Communication -->

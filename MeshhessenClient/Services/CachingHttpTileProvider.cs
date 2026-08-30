@@ -37,7 +37,8 @@ public class CachingHttpTileProvider : ITileProvider
                           .GetName().Version?.ToString(3) ?? "1.0.0";
 
         // HTTP/3 preferred; automatic fall-back to HTTP/2 then HTTP/1.1
-        var client = new HttpClient
+        // Auth handler adds the Meshhessen token for our own hosts (no-op otherwise).
+        var client = new HttpClient(TileAuth.Wrap(new SocketsHttpHandler()))
         {
             DefaultRequestVersion = HttpVersion.Version30,
             DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrLower,

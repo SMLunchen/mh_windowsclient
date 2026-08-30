@@ -39,7 +39,7 @@ public class VectorTileCacheService
             // Martin/nginx deliver MVT gzip-compressed; store and serve decompressed bytes
             AutomaticDecompression = DecompressionMethods.All
         };
-        var client = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(30) };
+        var client = new HttpClient(TileAuth.Wrap(handler)) { Timeout = TimeSpan.FromSeconds(30) };
         // Server ACL requires MeshhessenClient/* user agent (same as raster server)
         client.DefaultRequestHeaders.UserAgent.ParseAdd(
             $"MeshhessenClient/{version} (+https://meshhessenclient.de; contact: admin@meshhessenclient.de)");

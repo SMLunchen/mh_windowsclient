@@ -60,7 +60,9 @@ jobs:
         run: dotnet restore MeshhessenClient/MeshhessenClient.csproj
 
       - name: Publish standalone EXE
-        run: dotnet publish MeshhessenClient/MeshhessenClient.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=false -o publish_output
+        # TILE_AUTH_TOKEN is a repo secret, injected only into official release builds.
+        # On a fork (no secret) it resolves empty → tokenless build, which is intended.
+        run: dotnet publish MeshhessenClient/MeshhessenClient.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=false -p:TileAuthToken=${{ secrets.TILE_AUTH_TOKEN }} -o publish_output
 
       - name: Create Release
         if: startsWith(github.ref, 'refs/tags/')

@@ -33,7 +33,9 @@ public partial class ChannelBrowserWindow : Window
         // Try online first
         try
         {
-            using var http = new HttpClient();
+            // Wrapped for consistency; the token is only attached to our own tile
+            // hosts, so this GitHub request goes out unauthenticated (IsOurHost=false).
+            using var http = new HttpClient(Services.TileAuth.Wrap(new SocketsHttpHandler()));
             http.Timeout = TimeSpan.FromSeconds(5);
             csvContent = await http.GetStringAsync(
                 "https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/CHANNELS.csv");

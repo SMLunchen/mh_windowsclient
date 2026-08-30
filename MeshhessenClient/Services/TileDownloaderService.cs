@@ -13,10 +13,15 @@ public enum MapSource
 public static class TileDownloaderService
 {
     private static readonly string _version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "0.0.0";
-    private static readonly HttpClient _httpClient = new()
+    private static readonly HttpClient _httpClient = CreateHttpClient();
+
+    private static HttpClient CreateHttpClient()
     {
-        DefaultRequestHeaders = { { "User-Agent", $"MeshhessenClient/{_version}" } }
-    };
+        // Auth handler adds the Meshhessen token for our own hosts (no-op otherwise).
+        var client = new HttpClient(TileAuth.Wrap(new SocketsHttpHandler()));
+        client.DefaultRequestHeaders.Add("User-Agent", $"MeshhessenClient/{_version}");
+        return client;
+    }
 
     // Tile URL templates für jede Kartenquelle (werden von Settings geladen)
     public static string OSMTileUrl { get; set; } = "https://tile.meshhessenclient.de/osm/{z}/{x}/{y}.png";
