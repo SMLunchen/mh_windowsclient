@@ -1643,8 +1643,12 @@
                                         BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}"
                                         BorderThickness="1" CornerRadius="4" Padding="12,10">
                                     <StackPanel MinWidth="230" MaxWidth="280">
-                                        <CheckBox x:Name="EnvBoxesCheck" Content="{DynamicResource StrEnvBoxes}"
-                                                  Margin="0,0,0,6" Checked="EnvBoxesCheck_Changed" Unchecked="EnvBoxesCheck_Changed"/>
+                                        <TextBlock Text="{DynamicResource StrEnvBoxes}" FontSize="11" Margin="0,0,0,2"/>
+                                        <ComboBox x:Name="EnvBoxModeCombo" SelectionChanged="EnvBoxModeCombo_Changed" Margin="0,0,0,8">
+                                            <ComboBoxItem Tag="off"    Content="{DynamicResource StrEnvBoxModeOff}"/>
+                                            <ComboBoxItem Tag="always" Content="{DynamicResource StrEnvBoxModeAlways}"/>
+                                            <ComboBoxItem Tag="hover"  Content="{DynamicResource StrEnvBoxModeHover}"/>
+                                        </ComboBox>
                                         <CheckBox x:Name="EnvHeatmapCheck" Content="{DynamicResource StrEnvHeatmap}"
                                                   Margin="0,0,0,2" Checked="EnvHeatmapCheck_Changed" Unchecked="EnvHeatmapCheck_Changed"/>
                                         <TextBlock x:Name="EnvHeatmapRasterHint" Text="{DynamicResource StrEnvHeatmapRasterHint}"
@@ -1672,6 +1676,18 @@
                              (legend, copyright) cannot render above it – attribution and
                              controls live inside the map page instead. -->
                         <wv2:WebView2 x:Name="VectorMapView" Visibility="Collapsed"/>
+
+                        <!-- Environment heatmap legend (raster map only; bottom-left) -->
+                        <Border x:Name="EnvLegendPanel" Visibility="Collapsed" IsHitTestVisible="False"
+                                HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="10"
+                                Background="#E6FFFFFF" BorderBrush="#40000000" BorderThickness="1"
+                                CornerRadius="5" Padding="6,5">
+                            <StackPanel>
+                                <TextBlock x:Name="EnvLegendTitle" FontWeight="SemiBold" FontSize="11"
+                                           Foreground="#111111" Margin="0,0,0,4"/>
+                                <StackPanel x:Name="EnvLegendRows"/>
+                            </StackPanel>
+                        </Border>
 
                         <!-- Traceroute Legend (top-left overlay) -->
                         <Border x:Name="TracerouteLegend"

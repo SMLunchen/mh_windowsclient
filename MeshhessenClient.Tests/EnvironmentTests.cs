@@ -34,6 +34,21 @@ public class EnvironmentMetricInfoTests
     }
 
     [Fact]
+    public void Bands_CoverRangeAtStep()
+    {
+        var temp = EnvironmentMetricInfo.ByKey("temperature")!;   // -10..40 step 5
+        var bands = EnvironmentMetricInfo.Bands(temp);
+        Assert.Equal(10, bands.Count);                            // (40 - -10)/5
+    }
+
+    [Fact]
+    public void RgbAt_EndsMatchGradient()
+    {
+        Assert.Equal(EnvironmentMetricInfo.Gradient[0].rgb,  EnvironmentMetricInfo.RgbAt(0.0));
+        Assert.Equal(EnvironmentMetricInfo.Gradient[^1].rgb, EnvironmentMetricInfo.RgbAt(1.0));
+    }
+
+    [Fact]
     public void Extract_TakesPresentFields_SkipsZeros()
     {
         var em = new EnvironmentMetrics { Temperature = 21.5f, RelativeHumidity = 60f, Iaq = 42, GasResistance = 12.3f };
@@ -84,6 +99,39 @@ public class EnvironmentHeatmapBuilderTests
     }
 }
 
+public class EnvironmentZonesTests
+{
+    [Fact]
+    public void SingleBand_AllCellsGetZoneAverage()
+    {
+        var g = new EnvironmentField.Grid
+        {
+            Nx = 4, Ny = 2, Lon0 = 8, Lat0 = 50, DLon = 0.1, DLat = 0.1,
+            Values = Enumerable.Repeat(12.0, 8).ToArray(),   // all in band [10,15)
+            Alpha = Enumerable.Repeat(1.0, 8).ToArray(),
+        };
+        var avg = EnvironmentZones.ZoneAverages(g, -10, 5, 10);
+        Assert.All(avg, a => Assert.Equal(12.0, a, 3));
+    }
+
+    [Fact]
+    public void TwoBands_EachCellGetsItsZoneAverage()
+    {
+        var vals = new double[8];
+        for (int j = 0; j < 2; j++)
+            for (int i = 0; i < 4; i++)
+                vals[j * 4 + i] = i < 2 ? 12.0 : 22.0;   // left band 12, right band 22
+        var g = new EnvironmentField.Grid
+        {
+            Nx = 4, Ny = 2, Lon0 = 8, Lat0 = 50, DLon = 0.1, DLat = 0.1,
+            Values = vals, Alpha = Enumerable.Repeat(1.0, 8).ToArray(),
+        };
+        var avg = EnvironmentZones.ZoneAverages(g, -10, 5, 10);
+        Assert.Equal(12.0, avg[0], 3);   // left cell
+        Assert.Equal(22.0, avg[3], 3);   // right cell
+    }
+}
+
 public class EnvironmentFieldTests
 {
     private static EnvironmentField.Grid.Cell Nearest(EnvironmentField.Grid g, double lon, double lat)
@@ -120,6 +168,21 @@ public class EnvironmentFieldTests
         foreach (var v in g!.Values)
             if (!double.IsNaN(v))
                 Assert.True(v >= 10.0 - 1e-6 && v <= 30.0 + 1e-6, $"value out of range: {v}");   // IDW weighted average
+    }
+
+    [Fact]
+    public void Contours_EmitSegmentWhereLevelCrossed()
+    {
+        // 2x2 lattice, only the NE corner above the level → exactly one contour segment.
+        var g = new EnvironmentField.Grid
+        {
+            Nx = 2, Ny = 2, Lon0 = 8.0, Lat0 = 50.0, DLon = 0.1, DLat = 0.1,
+            Values = new double[] { 0, 0, 0, 20 },   // row-major j*Nx+i; index 3 = NE
+            Alpha  = new double[] { 1, 1, 1, 1 },
+        };
+        var segs = EnvironmentContours.Build(g, new[] { 10.0 });
+        Assert.Single(segs);
+        Assert.Equal(4, segs[0].Length);   // [lon1,lat1,lon2,lat2]
     }
 
     [Fact]

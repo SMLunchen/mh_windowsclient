@@ -172,10 +172,32 @@
 <div class="section active" id="de">
 <main>
 
-  <!-- ── v1.6.2.5 ── -->
+  <!-- ── v1.6.3 ── -->
   <div class="version-entry current">
     <div class="version-header">
-      <span class="version-tag tag-latest">v1.6.2.5</span>
+      <span class="version-tag tag-latest">v1.6.3</span>
+      <span class="version-date">2026-08-31</span>
+      Umweltdaten auf der Karte
+    </div>
+    <p class="version-desc">Neues Feature: Nodes mit Umwelt-Telemetrie (Temperatur, Feuchte, IAQ u. v. m.) zeigen ihre Messwerte direkt auf der Karte – auf Raster- und Vektor-Karte.</p>
+
+    <div class="cl-section added">
+      <h3>🌡️ Umweltdaten</h3>
+      <div class="cl-group">
+        <ul class="cl-list">
+          <li><strong>Messwert-Boxen</strong> an den Nodes (Modus: aus / immer / beim Überfahren); Nodes mit Daten sind am grünen Marker-Ring erkennbar.</li>
+          <li><strong>Heatmap im Wetterdienst-Stil</strong>: IDW-interpolierte Wertefläche (~30 km Reichweite), kalibrierte Farbskala = tatsächlicher Messwert, weiche Kanten, <strong>Isothermen</strong> mit Temperatur-Beschriftung und Außenumrandung. Für alle Metriken.</li>
+          <li><strong>Voller Sensorsatz</strong> (Temperatur, Feuchte, Luftdruck, IAQ, Gas, Lux, Wind, Regen, Boden u. a.); Telemetrie-DB wird automatisch migriert.</li>
+          <li>Zeit-Gewichtung (ältere Messwerte zählen weniger), einzelne Nodes abwählbar, Metrik-Auswahl – alles über den 🌡️-Button an der Karte.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── v1.6.2.5 ── -->
+  <div class="version-entry">
+    <div class="version-header">
+      <span class="version-tag">v1.6.2.5</span>
       <span class="version-date">2026-08-30</span>
       Tile-Download folgt dem Karten-Modus
     </div>
@@ -1127,10 +1149,32 @@
 <div class="section" id="en">
 <main>
 
-  <!-- ── v1.6.2.5 (EN) ── -->
+  <!-- ── v1.6.3 (EN) ── -->
   <div class="version-entry current">
     <div class="version-header">
-      <span class="version-tag tag-latest">v1.6.2.5</span>
+      <span class="version-tag tag-latest">v1.6.3</span>
+      <span class="version-date">2026-08-31</span>
+      Environment data on the map
+    </div>
+    <p class="version-desc">New feature: nodes with environmental telemetry (temperature, humidity, IAQ and more) show their readings directly on the map – on both the raster and vector map.</p>
+
+    <div class="cl-section added">
+      <h3>🌡️ Environment data</h3>
+      <div class="cl-group">
+        <ul class="cl-list">
+          <li><strong>Value boxes</strong> at the nodes (mode: off / always / on hover); nodes with data are marked by a green marker ring.</li>
+          <li><strong>Weather-service style heatmap</strong>: IDW-interpolated value field (~30 km reach), calibrated colour scale = actual reading, soft edges, <strong>isotherms</strong> with temperature labels and an outer border. For all metrics.</li>
+          <li><strong>Full sensor set</strong> (temperature, humidity, pressure, IAQ, gas, lux, wind, rain, soil and more); telemetry DB is migrated automatically.</li>
+          <li>Time weighting (older readings count less), individual nodes can be excluded, metric selector – all via the 🌡️ button on the map.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── v1.6.2.5 (EN) ── -->
+  <div class="version-entry">
+    <div class="version-header">
+      <span class="version-tag">v1.6.2.5</span>
       <span class="version-date">2026-08-30</span>
       Tile download follows the map mode
     </div>

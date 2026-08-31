@@ -183,6 +183,9 @@
     <sys:String x:Key="StrEnvEnable">Show environment data on the map</sys:String>
     <sys:String x:Key="StrEnvEnableHint">Shows measurements that nodes report (temperature, humidity, IAQ and more) directly on the map. Once enabled, control it via the 🌡️ button on the map.</sys:String>
     <sys:String x:Key="StrEnvBoxes">Value boxes at the nodes</sys:String>
+    <sys:String x:Key="StrEnvBoxModeOff">Off</sys:String>
+    <sys:String x:Key="StrEnvBoxModeAlways">Always visible</sys:String>
+    <sys:String x:Key="StrEnvBoxModeHover">On hover</sys:String>
     <sys:String x:Key="StrEnvHeatmap">Heatmap overlay</sys:String>
     <sys:String x:Key="StrEnvHeatmapRasterHint">The heatmap is only available on the vector map.</sys:String>
     <sys:String x:Key="StrEnvMetric">Heatmap metric:</sys:String>

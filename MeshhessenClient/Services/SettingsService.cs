@@ -63,7 +63,7 @@ public record AppSettings
 
     // ── Environment data on the map (opt-in) ──────────────────────────────────
     public bool ShowEnvironmentData { get; init; } = false;    // master switch (Settings); unlocks the map controls
-    public bool EnvShowBoxes { get; init; } = true;            // value boxes below nodes that report env data
+    public string EnvBoxMode { get; init; } = "always";        // value boxes: "off" | "always" | "hover"
     public bool EnvShowHeatmap { get; init; } = false;         // heatmap overlay (vector map only)
     public string EnvMetric { get; init; } = "temperature";    // metric for the heatmap (EnvironmentMetricInfo key)
     public string EnvDisabledNodes { get; init; } = string.Empty; // CSV of node ids excluded from boxes+heatmap
@@ -239,7 +239,7 @@ public static class SettingsService
                 VectorStyleDarkUrl = values.TryGetValue("VectorStyleDarkUrl", out var vsd) && !string.IsNullOrWhiteSpace(vsd) ? vsd : defaults.VectorStyleDarkUrl,
                 MapOverlays = values.TryGetValue("MapOverlays", out var mov) ? mov : defaults.MapOverlays,
                 ShowEnvironmentData = values.TryGetValue("ShowEnvironmentData", out var sed) && bool.TryParse(sed, out var sedBool) && sedBool,
-                EnvShowBoxes = !values.TryGetValue("EnvShowBoxes", out var esb) || !bool.TryParse(esb, out var esbBool) || esbBool,
+                EnvBoxMode = values.TryGetValue("EnvBoxMode", out var ebm) && !string.IsNullOrEmpty(ebm) ? ebm : defaults.EnvBoxMode,
                 EnvShowHeatmap = values.TryGetValue("EnvShowHeatmap", out var esh) && bool.TryParse(esh, out var eshBool) && eshBool,
                 EnvMetric = values.TryGetValue("EnvMetric", out var emk) && !string.IsNullOrEmpty(emk) ? emk : defaults.EnvMetric,
                 EnvDisabledNodes = values.TryGetValue("EnvDisabledNodes", out var edn) ? edn : defaults.EnvDisabledNodes
@@ -306,7 +306,7 @@ public static class SettingsService
                 $"VectorStyleDarkUrl={settings.VectorStyleDarkUrl}",
                 $"MapOverlays={settings.MapOverlays}",
                 $"ShowEnvironmentData={settings.ShowEnvironmentData}",
-                $"EnvShowBoxes={settings.EnvShowBoxes}",
+                $"EnvBoxMode={settings.EnvBoxMode}",
                 $"EnvShowHeatmap={settings.EnvShowHeatmap}",
                 $"EnvMetric={settings.EnvMetric}",
                 $"EnvDisabledNodes={settings.EnvDisabledNodes}"

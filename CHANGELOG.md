@@ -9,15 +9,22 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+---
+
+## [1.6.3] - 2026-08-31
+
 ### ✨ Hinzugefügt
 
 #### 🌡️ Umweltdaten auf der Karte
 - Neues, in den Einstellungen aktivierbares Feature: Nodes, die Umwelt-Telemetrie liefern, zeigen ihre Messwerte direkt auf der Karte. Funktioniert für **Raster- und Vektor-Karte**.
 - **Messwert-Boxen** unter dem jeweiligen Node-Marker (leicht gelbe Box mit themenabhängigem Rand – weiß bei Nacht, schwarz bei Tag) mit allen gemeldeten Werten plus Datum/Uhrzeit der Messung.
-- **Heatmap / interpolierte Wertefläche** (nur Vektor-Karte) für die gewählte Metrik — im **Wetterdienst-Stil**: die Farbe entspricht dem **tatsächlichen Messwert** auf einer kalibrierten Skala (nicht der Punktdichte), mit **Legende** am Kartenrand. Zwischen den Sensoren wird per IDW (inverse Distanzgewichtung, ~30 km Reichweite) interpoliert; jenseits der Reichweite bleibt die Fläche transparent. Ältere Messwerte zählen weniger (exponentieller Zeit-Abfall), veraltete Sensoren verlieren an Gewicht. Funktioniert für **alle Metriken** (Temperatur, IAQ, Feuchte, …). Die Karte bleibt darunter sichtbar. Im Raster-Modus ein Hinweis, dass die Fläche nur in der Vektor-Karte verfügbar ist.
+- **Heatmap / interpolierte Wertefläche** (Vektor **und** Raster-Karte) für die gewählte Metrik — im **Wetterdienst-Stil**: die Farbe entspricht dem **tatsächlichen Messwert** auf einer kalibrierten, saturierten Skala (nicht der Punktdichte), mit **Legende** am Kartenrand. Zwischen den Sensoren wird per IDW (inverse Distanzgewichtung, ~30 km Reichweite) interpoliert; jenseits der Reichweite bleibt die Fläche transparent. Weiche, ineinander verlaufende Kanten (bilinear hochgerechnetes Bild) plus **Isobaren** an den Bandgrenzen und einer **Außenumrandung** des Gebiets. Ältere Messwerte zählen weniger (exponentieller Zeit-Abfall), veraltete Sensoren verlieren an Gewicht. Funktioniert für **alle Metriken** (Temperatur, IAQ, Feuchte, …). Die Karte bleibt darunter sichtbar.
 - **Voller Sensorsatz**: Temperatur, Feuchte, Luftdruck, IAQ, Gas-Widerstand, Beleuchtung/Weißlicht/UV, Wind (Geschw./Richtung/Böe), Regen (1 h/24 h), Bodenfeuchte/-temperatur, Strahlung, Distanz, Gewicht. Die Telemetrie-DB wird dafür automatisch migriert (bisher wurden nur Temperatur/Feuchte/Luftdruck/IAQ gespeichert).
 - **Einzelne Nodes abwählbar** (falls einer Unsinn misst): über den 🌡️-Button an der Karte, wirkt auf Boxen **und** Heatmap.
-- Steuerung komplett über den neuen 🌡️-Button (Boxen an/aus, Heatmap an/aus, Metrik-Auswahl, Node-Liste); Einstellungen bleiben erhalten.
+- Steuerung komplett über den neuen 🌡️-Button (Box-Modus, Heatmap an/aus, Metrik-Auswahl, Node-Liste); Einstellungen bleiben erhalten.
+- **Box-Modus konfigurierbar**: Aus / Immer sichtbar / Beim Überfahren (Hover). Nodes, die Umweltdaten liefern, sind am **grünen Marker-Ring** erkennbar.
+- **Abgestufte Legende** (z. B. 5-°C-Schritte bei Temperatur) mit diskreten Farbbändern statt weichem Verlauf — die Band-Grenzen sind als sichtbare Kontur in der Fläche erkennbar.
+- **Z-Reihenfolge** korrigiert: eigener Standort liegt über den Node-Markern, Messwert-Boxen über den Markern.
 
 ---
 

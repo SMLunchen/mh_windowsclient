@@ -183,6 +183,9 @@
     <sys:String x:Key="StrEnvEnable">Umweltdaten auf der Karte anzeigen</sys:String>
     <sys:String x:Key="StrEnvEnableHint">Zeigt Messwerte, die Nodes liefern (Temperatur, Feuchte, IAQ u. v. m.), direkt auf der Karte. Nach dem Aktivieren über den 🌡️-Button an der Karte steuerbar.</sys:String>
     <sys:String x:Key="StrEnvBoxes">Messwert-Boxen an den Nodes</sys:String>
+    <sys:String x:Key="StrEnvBoxModeOff">Aus</sys:String>
+    <sys:String x:Key="StrEnvBoxModeAlways">Immer sichtbar</sys:String>
+    <sys:String x:Key="StrEnvBoxModeHover">Beim Überfahren (Hover)</sys:String>
     <sys:String x:Key="StrEnvHeatmap">Heatmap-Überlagerung</sys:String>
     <sys:String x:Key="StrEnvHeatmapRasterHint">Die Heatmap ist nur in der Vektor-Karte verfügbar.</sys:String>
     <sys:String x:Key="StrEnvMetric">Heatmap-Metrik:</sys:String>

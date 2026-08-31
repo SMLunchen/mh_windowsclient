@@ -106,6 +106,12 @@ public partial class MainWindow
             var tileSource = new TileSource(tileProvider, schema);
             _map.Layers.Add(new TileLayer(tileSource) { Name = "OSM" });
 
+            // Environment heatmap: interpolated field image + contour/border lines (below data overlays)
+            _envFillLayer = new MemoryLayer("EnvFill") { Features = _envFillFeatures, Style = null };
+            _map.Layers.Add(_envFillLayer);
+            _envLineLayer = new MemoryLayer("EnvLines") { Features = _envLineFeatures, Style = null };
+            _map.Layers.Add(_envLineLayer);
+
             // Neighbour-lines layer (rendered below node pins)
             _neighborLinesLayer = new MemoryLayer("NeighborLines") { Features = _neighborLineFeatures, Style = null };
             _map.Layers.Add(_neighborLinesLayer);
@@ -129,6 +135,8 @@ public partial class MainWindow
             MapControl.PreviewMouseLeftButtonDown += MapControl_LeftClick_Preview;
             // MouseMove: cursor feedback when hovering near a segment
             MapControl.MouseMove += MapControl_MouseMoveSegmentHover;
+            // MouseMove: show env value box for the hovered node (box mode "hover")
+            MapControl.MouseMove += MapControl_EnvHover;
 
             // Karte auf eigenen Standort zentrieren
             var center = SphericalMercator.FromLonLat(_currentSettings.MyLongitude, _currentSettings.MyLatitude);
@@ -733,7 +741,8 @@ public partial class MainWindow
                 lat = n.Latitude!.Value,
                 color = CssColorFromHex(n.ColorHex, "#e53935"),
                 label = (string.IsNullOrEmpty(n.ShortName) ? n.Id : n.ShortName)
-                      + (string.IsNullOrEmpty(n.Note) ? "" : $" ({n.Note})")
+                      + (string.IsNullOrEmpty(n.Note) ? "" : $" ({n.Note})"),
+                hasEnv = _currentSettings.ShowEnvironmentData && _envNodeIds.Contains(n.NodeId)
             })
             .ToList();
         ExecVectorScript($"setNodes({JsonSerializer.Serialize(nodes)})");
@@ -897,11 +906,14 @@ public partial class MainWindow
             }
         }
 
+        // Green outline signals the node reports environment data (when the feature is on).
+        bool hasEnv = _currentSettings.ShowEnvironmentData && _envNodeIds.Contains(node.NodeId);
+        var outlineColor = hasEnv ? new Mapsui.Styles.Color(46, 204, 64) : Mapsui.Styles.Color.White;
         feature.Styles.Add(new SymbolStyle
         {
             SymbolType = SymbolType.Ellipse,
             Fill = new Mapsui.Styles.Brush(pinColor),
-            Outline = new Mapsui.Styles.Pen(Mapsui.Styles.Color.White, 2),
+            Outline = new Mapsui.Styles.Pen(outlineColor, hasEnv ? 3.5 : 2),
             SymbolScale = 0.5
         });
 
