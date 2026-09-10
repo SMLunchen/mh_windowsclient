@@ -74,6 +74,9 @@ public class MeshtasticProtocolService
     private const int MAX_PACKET_LENGTH = 512; // Per Meshtastic spec: >512 = corrupted
 
     public event EventHandler<MessageItem>? MessageReceived;
+    /// <summary>Raised on a ROUTING_APP ACK/NAK for one of our sent packets. <c>Delivered</c> is true
+    /// on ACK (Error.None), false on NAK — lets the UI show a delivered/failed tick + offer resend.</summary>
+    public event EventHandler<(uint PacketId, bool Delivered)>? MessageDeliveryUpdated;
     public event EventHandler<ModelNodeInfo>? NodeInfoReceived;
     /// <summary>Raised when the internal known-node cache is cleared (see <see cref="ClearKnownNodes"/>).</summary>
     public event EventHandler? NodeDbCleared;
@@ -318,6 +321,12 @@ public class MeshtasticProtocolService
         bool configReceivedInTime = false;
         for (int i = 0; i < 150; i++)
         {
+            if (_isDisconnecting)
+            {
+                Logger.WriteLine("Config wait aborted — disconnecting");
+                return;
+            }
+
             bool isComplete;
             lock (_dataLock)
             {
@@ -1780,10 +1789,14 @@ public class MeshtasticProtocolService
                     var routing = Routing.Parser.ParseFrom(data.Payload);
                     if (routing.VariantCase == Routing.VariantOneofCase.ErrorReason)
                     {
-                        if (routing.ErrorReason == Routing.Types.Error.None)
+                        bool ok = routing.ErrorReason == Routing.Types.Error.None;
+                        if (ok)
                             Logger.WriteLine($"[Routing] ACK from !{packet.From:x8} for request {data.RequestId:x8}");
                         else
                             Logger.WriteLine($"[Routing] *** NAK from !{packet.From:x8} for request {data.RequestId:x8}: {routing.ErrorReason} ***");
+                        // Notify the chat UI about delivery of one of our own sent messages.
+                        if (data.RequestId != 0)
+                            MessageDeliveryUpdated?.Invoke(this, (data.RequestId, ok));
                     }
                 }
                 catch (Exception ex)
@@ -2645,7 +2658,10 @@ public class MeshtasticProtocolService
                     ReplyId = replyId
                 },
                 Id = packetId,
-                WantAck = false,
+                // Request an ACK for every text message, matching the Meshtastic Android app, so the
+                // UI can confirm delivery (or flag failure + offer resend). A DM is ACKed by the
+                // recipient; a broadcast gets an implicit ACK when a neighbour rebroadcasts.
+                WantAck = true,
                 HopLimit = 7,
                 HopStart = 0
             };

@@ -29,6 +29,8 @@ public record AppSettings
     public bool DebugDevice { get; init; } = false;
     public bool DebugBluetooth { get; init; } = false;
     public bool AlertBellSound { get; init; } = true;           // Play sound on alert bell character
+    public bool MessageToasts { get; init; } = true;            // Windows toast notification on new incoming message
+    public string DmStyle { get; init; } = "window";           // Direct messages: "window" (separate) or "inline" (WhatsApp-style)
     public string Language { get; init; } = "de";              // UI language: "de" or "en"
     public bool EnableLocationLogging { get; init; } = false;   // Log GPS positions to locationlogs/
     public Dictionary<uint, bool> PinnedNodes { get; init; } = new();     // NodeId -> pinned
@@ -207,6 +209,8 @@ public static class SettingsService
                 DebugDevice = values.TryGetValue("DebugDevice", out var dbd) && bool.TryParse(dbd, out var dbdBool) && dbdBool,
                 DebugBluetooth = values.TryGetValue("DebugBluetooth", out var dbb) && bool.TryParse(dbb, out var dbbBool) && dbbBool,
                 AlertBellSound = !values.TryGetValue("AlertBellSound", out var abs) || !bool.TryParse(abs, out var absBool) || absBool,
+                MessageToasts = !values.TryGetValue("MessageToasts", out var mtb) || !bool.TryParse(mtb, out var mtbBool) || mtbBool,
+                DmStyle = values.TryGetValue("DmStyle", out var dmsv) ? dmsv : "window",
                 Language = values.TryGetValue("Language", out var lang) && !string.IsNullOrEmpty(lang) ? lang : defaults.Language,
                 EnableLocationLogging = values.TryGetValue("EnableLocationLogging", out var ell) && bool.TryParse(ell, out var ellBool) && ellBool,
                 PinnedNodes = pinnedNodes,
@@ -277,6 +281,8 @@ public static class SettingsService
                 $"DebugDevice={settings.DebugDevice}",
                 $"DebugBluetooth={settings.DebugBluetooth}",
                 $"AlertBellSound={settings.AlertBellSound}",
+                $"MessageToasts={settings.MessageToasts}",
+                $"DmStyle={settings.DmStyle}",
                 $"Language={settings.Language}",
                 $"EnableLocationLogging={settings.EnableLocationLogging}",
                 $"TelemetryRetentionDays={settings.TelemetryRetentionDays}",

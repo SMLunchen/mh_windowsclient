@@ -1361,6 +1361,12 @@ public partial class MainWindow
 
     private void OpenDmToNode(NodeInfo node)
     {
+        // Inline (WhatsApp-style) mode: open the DM in the main overview instead of a window.
+        if (DmInline)
+        {
+            OpenInlineDm(node.NodeId, node.Name, node.ColorHex);
+            return;
+        }
         if (_dmWindow == null || !_dmWindow.IsVisible)
         {
             _dmWindow = new DirectMessagesWindow(_protocolService, _myNodeId);
@@ -1369,6 +1375,17 @@ public partial class MainWindow
         }
         _dmWindow.Activate();
         _dmWindow.OpenChatWithNode(node.NodeId, node.Name, node.ColorHex);
+    }
+
+    /// <summary>Open (or create) an inline DM conversation and show it in the Messages overview tab.</summary>
+    private void OpenInlineDm(uint nodeId, string name, string color)
+    {
+        if (nodeId == 0 || nodeId == _myNodeId) return;
+        var dm = GetOrCreateDmItem(nodeId, name, color);
+        MainTabs.SelectedIndex = 0;                    // Messages tab
+        bool alreadyOpen = _currentDmPartner == nodeId;
+        DmList.SelectedItem = dm;                       // fires DmList_SelectionChanged → shows the chat
+        if (alreadyOpen) DmList_SelectionChanged(DmList, null!);  // force reload if it was already selected
     }
 
     private void ShowNodeInfoDialog(NodeInfo node)

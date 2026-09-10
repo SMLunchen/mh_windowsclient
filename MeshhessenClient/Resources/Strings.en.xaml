@@ -141,6 +141,8 @@
     <sys:String x:Key="StrNotifications">Notifications</sys:String>
     <sys:String x:Key="StrAlertBellSound">Play sound on Alert Bell (🔔)</sys:String>
     <sys:String x:Key="StrAlertBellSoundHint">Plays a notification sound when a message contains the Alert Bell Character (ASCII 7).</sys:String>
+    <sys:String x:Key="StrMessageToasts">Windows notification on new message</sys:String>
+    <sys:String x:Key="StrMessageToastsHint">Shows a Windows toast notification when a new message arrives while the app is not in the foreground.</sys:String>
     <sys:String x:Key="StrMapGroup">Map / Tiles</sys:String>
     <sys:String x:Key="StrMapSource">Map style:</sys:String>
     <sys:String x:Key="StrTileServerUrl">Tile server URL:</sys:String>
@@ -872,6 +874,20 @@
     <sys:String x:Key="StrLicense">License</sys:String>
 
     <!-- Status bar channel/sent messages -->
+    <!-- Chat sidebar -->
+    <sys:String x:Key="StrDmInline">Show direct messages inside the client (WhatsApp-style)</sys:String>
+    <sys:String x:Key="StrDmInlineHint">On: DMs appear in the messages overview (list on the left). Off: DMs open in a separate window.</sys:String>
+    <sys:String x:Key="StrChannelsHeader">Channels</sys:String>
+    <sys:String x:Key="StrDirectMessagesHeader">Direct messages</sys:String>
+    <sys:String x:Key="StrDmNodeUnknownAskRequest">This node is not known yet. Request user info now?</sys:String>
+
+    <!-- Delivery status (send ticks) -->
+    <sys:String x:Key="StrMsgSending">Sending…</sys:String>
+    <sys:String x:Key="StrMsgSent">Sent</sys:String>
+    <sys:String x:Key="StrMsgDelivered">Delivered (acknowledged)</sys:String>
+    <sys:String x:Key="StrMsgFailed">Not delivered – tap to resend</sys:String>
+    <sys:String x:Key="StrResend">Resend</sys:String>
+
     <sys:String x:Key="StrMsgSentChannel">Message sent (channel {0})</sys:String>
     <sys:String x:Key="StrActiveChannel">active channel</sys:String>
     <sys:String x:Key="StrNodeDistanceStatus">{0} ({1}): {2:F2} km distance | Last seen: {3}</sys:String>

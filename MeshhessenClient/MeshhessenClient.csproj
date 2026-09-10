@@ -2,7 +2,10 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <!-- Projection target 22621 exposes the low-latency BLE connection-parameters API
+         (RequestPreferredConnectionParameters / ThroughputOptimized). Minimum OS stays 17763
+         (see below); the API is guarded by try/catch and no-ops on older Windows. -->
+    <TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
     <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
     <UseWPF>true</UseWPF>
     <ApplicationManifest>app.manifest</ApplicationManifest>
@@ -18,9 +21,9 @@
     <PublishDir>..\public\</PublishDir>
 
     <AssemblyName>MeshhessenClient</AssemblyName>
-    <Version>1.6.3</Version>
-    <AssemblyVersion>1.6.3</AssemblyVersion>
-    <FileVersion>1.6.3</FileVersion>
+    <Version>1.7.0</Version>
+    <AssemblyVersion>1.7.0</AssemblyVersion>
+    <FileVersion>1.7.0</FileVersion>
     <Company>Meshtastic Community</Company>
     <Product>Meshhessen Client</Product>
     <Description>Offline-fähiger Windows Client für Meshtastic Geräte</Description>
@@ -32,6 +35,8 @@
     <PackageReference Include="Mapsui.Nts" Version="4.1.7" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.3" />
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4078.44" />
+    <!-- Windows toast notifications (new-message pop-ups, toggleable in settings) -->
+    <PackageReference Include="Microsoft.Toolkit.Uwp.Notifications" Version="7.1.3" />
     <PackageReference Include="OxyPlot.Wpf" Version="2.2.0" />
     <PackageReference Include="System.IO.Ports" Version="8.0.0" />
 

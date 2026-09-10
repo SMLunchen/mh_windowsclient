@@ -11,6 +11,41 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
 
+## [1.7.0] - 2026-09-10
+
+### ✨ Hinzugefügt
+
+#### 💬 Nachrichten-Übersicht mit Seitenleiste (WhatsApp-Stil)
+- Neue **Seitenleiste** im Nachrichten-Tab: links die Auswahl (Kanäle **und** Direktnachrichten), rechts der Chat. Das bewährte **Kontextmenü** und die farbigen Bubbles bleiben unverändert — die **Node-Farbe** wird weiterhin je Bubble berücksichtigt.
+- **Ungelesen-Badge** (grüne Blase mit Zähler) an Kanälen und DMs, die nicht gerade geöffnet sind.
+
+#### ✅ Zustellstatus & erneutes Senden
+- Gesendete Nachrichten zeigen jetzt **Statushaken**: … (wird gesendet) → ✓ (gesendet) → ✓✓ (zugestellt, grün) bzw. ⚠ (fehlgeschlagen, rot). Basiert auf `want_ack` und der Routing-Bestätigung der Firmware (Android-Parität).
+- **Erneut-senden-Button** (↻) an fehlgeschlagenen Nachrichten.
+
+#### 🔔 Direktnachrichten wahlweise inline oder im Fenster
+- In den Einstellungen umschaltbar: DMs **wie bei WhatsApp direkt im Client** (inline in der Übersicht) **oder** im separaten Fenster (Standard bleibt Fenster).
+
+#### 🔔 Toast-Benachrichtigungen
+- Optionale **Windows-Toast-Benachrichtigungen** bei neuen Nachrichten (in den Einstellungen aktivierbar), nur wenn das Fenster nicht im Vordergrund ist.
+
+#### 🚀 Verbindung
+- **BLE-Durchsatz optimiert**: bevorzugte Verbindungsparameter (`ThroughputOptimized`) werden angefordert — spürbar schnellerer Datenaustausch über Bluetooth.
+- **BLE-Reconnect** stabilisiert: GATT-Session/-Service und Verbindungsparameter werden beim Trennen sauber freigegeben, sodass ein erneutes Verbinden zuverlässig funktioniert.
+
+> ℹ️ Diese Version hebt das Windows-SDK-Ziel auf `10.0.22621` an (für die BLE-Durchsatz-API). Mindest-Windows-Version bleibt unverändert.
+
+### 🐛 Behoben
+- **Toast-Spam bei verschlüsselten Nachrichten**: Für unentschlüsselbare Nachrichten (Platzhalter „Verschlüsselte Nachricht – PSK erforderlich") wird **kein** Toast mehr angezeigt.
+- **„DM senden" springt jetzt in den Chat**: Der „DM senden"-Button an der Node-Liste respektiert nun den Inline/Fenster-Schalter — im Inline-Modus wird direkt in den Nachrichten-Tab gesprungen statt zusätzlich das DM-Fenster zu öffnen; im Fenster-Modus wird der passende Chat direkt geöffnet und aktiviert.
+- **„Info anfordern" im Chat**: Das Nachrichten-Kontextmenü (Rechtsklick auf eine Nachricht) hat jetzt das vollständige **„Info anfordern"**-Untermenü (Nutzer-Info, Position, Geräte-/Umwelt-/Luftqualitäts-/Power-Metriken, LocalStats, HostMetrics, PaxCounter) — zielt auf den Absender. Funktioniert auch bei **noch unbekannten Nodes** (nur die Node-ID ist nötig — genau so lernt man einen unbekannten Node kennen). Zusätzlich hat die **Chatliste selbst** (Direktnachrichten-Einträge) jetzt ein Rechtsklick-Menü mit „Node-Info", „Auf Karte zeigen" und „Info anfordern".
+- **Kanalauswahl-Dropdown neben dem Eingabefeld entfernt**: Der Sende-Kanal folgt jetzt der Auswahl in der Seitenleiste — das separate Dropdown war doppelt und ist weg. Mehr Platz fürs Eingabefeld.
+- **Chat startet unten (neueste Nachricht) statt oben**: Beim Start bzw. Kanal-/DM-Wechsel wird jetzt zuverlässig ans Ende gescrollt. Zuvor landete man im Back-Scroll ganz oben, weil das Nachladen älterer Nachrichten schon beim ersten Layout-Durchlauf (Scroll-Position 0) auslöste; das ist jetzt bis nach dem ersten Scroll-to-Bottom gesperrt.
+- **Chatliste und angezeigte Nachrichten stimmen beim Start überein**: Beim Start war in der Seitenleiste zwar ein Kanal (z. B. „short slow") ausgewählt, angezeigt wurden aber die Nachrichten eines anderen Kanals — erst ein erneuter Klick schaltete um. Ursache: der versteckte alte Kanal-Filter (ComboBox) überschrieb beim Befüllen die Auswahl der Seitenleiste mit „Alle Kanäle". Die Seitenleiste ist jetzt alleinige Filterquelle; der versteckte ComboBox kann sie nicht mehr überschreiben.
+- **Serielle Verbindung hängt nicht mehr beim Trennen**: Verband man sich versehentlich mit einem COM-Port, der kein Meshtastic-Node ist, und trennte sofort, konnte der Client einfrieren. Ursache: unendlicher Write-Timeout ließ Schreibvorgänge auf dem toten Port ewig blockieren, wodurch `SerialPort.Close()` beim Trennen deadlockte. Jetzt: finiter Write-Timeout (2 s), das Schließen läuft zeitlich begrenzt auf einem eigenen Thread, der Trenn-Vorgang ist reentranz-sicher, die Config-Wartephase bricht beim Trennen sofort ab, und die Oberfläche gibt nach spätestens 8 s garantiert wieder frei.
+
+---
+
 ## [1.6.3] - 2026-08-31
 
 ### ✨ Hinzugefügt

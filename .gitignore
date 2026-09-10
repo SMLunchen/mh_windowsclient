@@ -71,3 +71,7 @@ TILE_AUTH_SERVER.md
 tile-keys/
 *.tileauth.key
 secret.key
+
+# Legal drafts (Impressum, Datenschutz) — contain personal/operator data,
+# kept out of the public repo until finalized.
+legal/

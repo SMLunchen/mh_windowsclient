@@ -589,21 +589,100 @@
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
 
-                    <!-- Message Filter -->
-                    <Grid Grid.Row="0" Margin="10,10,10,5">
+                    <!-- ── Conversation sidebar (WhatsApp-style): channels (+ DMs in inline mode),
+                         selection drives the same channel filter the old ComboBox did. ── -->
+                    <Border Grid.Row="0" Grid.RowSpan="3" Grid.Column="0" Width="230"
+                            BorderBrush="{DynamicResource MsgBubbleOtherBorder}" BorderThickness="0,0,1,0">
+                        <Grid>
+                            <Grid.Resources>
+                                <Style x:Key="SidebarItemContainerStyle" TargetType="ListBoxItem">
+                                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                    <Setter Property="Padding" Value="10,9"/>
+                                    <Setter Property="Margin" Value="4,1"/>
+                                </Style>
+                                <DataTemplate x:Key="SidebarItemTemplate">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="{Binding Name}" VerticalAlignment="Center"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                        <Border Grid.Column="1" Background="#25D366" CornerRadius="10" Height="20" MinWidth="20"
+                                                Padding="6,0" VerticalAlignment="Center"
+                                                Visibility="{Binding HasUnread, Converter={StaticResource BoolToVis}}">
+                                            <TextBlock Text="{Binding UnreadText}" Foreground="White" FontSize="11"
+                                                       FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
+                                    </Grid>
+                                </DataTemplate>
+                                <!-- DM chat-list entries: right-click to request info / show node info
+                                     directly from the sidebar — works even for still-unknown partners.
+                                     NOTE: the ContextMenu is a keyed resource (NOT inlined in the Style
+                                     setter) — inline event handlers inside a Style setter crash startup. -->
+                                <ContextMenu x:Key="DmItemContextMenu">
+                                    <MenuItem Header="{DynamicResource StrNodeInfo}" Click="DmContext_NodeInfo_Click"/>
+                                    <MenuItem Header="{DynamicResource StrShowOnMap}" Click="DmContext_ShowOnMap_Click"/>
+                                    <Separator/>
+                                    <MenuItem Header="{DynamicResource StrRequestInfo}">
+                                        <MenuItem Header="{DynamicResource StrReqUserInfo}"      Tag="UserInfo"           Click="DmContext_RequestInfo_Click"/>
+                                        <MenuItem Header="{DynamicResource StrReqPosition}"      Tag="Position"           Click="DmContext_RequestInfo_Click"/>
+                                        <MenuItem Header="{DynamicResource StrReqDeviceMetrics}" Tag="DeviceMetrics"      Click="DmContext_RequestInfo_Click"/>
+                                        <MenuItem Header="{DynamicResource StrReqEnvMetrics}"    Tag="EnvironmentMetrics" Click="DmContext_RequestInfo_Click"/>
+                                        <MenuItem Header="{DynamicResource StrReqAirQuality}"    Tag="AirQualityMetrics"  Click="DmContext_RequestInfo_Click"/>
+                                        <MenuItem Header="{DynamicResource StrReqPowerMetrics}"  Tag="PowerMetrics"       Click="DmContext_RequestInfo_Click"/>
+                                        <MenuItem Header="{DynamicResource StrReqLocalStats}"    Tag="LocalStats"         Click="DmContext_RequestInfo_Click"/>
+                                        <MenuItem Header="{DynamicResource StrReqHostMetrics}"   Tag="HostMetrics"        Click="DmContext_RequestInfo_Click"/>
+                                        <MenuItem Header="{DynamicResource StrReqPax}"           Tag="PaxCounter"         Click="DmContext_RequestInfo_Click"/>
+                                    </MenuItem>
+                                </ContextMenu>
+                                <Style x:Key="DmItemContainerStyle" TargetType="ListBoxItem" BasedOn="{StaticResource SidebarItemContainerStyle}">
+                                    <Setter Property="ContextMenu" Value="{StaticResource DmItemContextMenu}"/>
+                                </Style>
+                            </Grid.Resources>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            <TextBlock Grid.Row="0" Text="{DynamicResource StrChannelsHeader}" FontWeight="SemiBold" Margin="12,12,12,6"/>
+                            <ListBox x:Name="ConversationList" Grid.Row="1" MaxHeight="340" BorderThickness="0" Background="Transparent"
+                                     SelectionChanged="ConversationList_SelectionChanged"
+                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                     ItemContainerStyle="{StaticResource SidebarItemContainerStyle}"
+                                     ItemTemplate="{StaticResource SidebarItemTemplate}"/>
+                            <!-- DM section: only shown in inline (WhatsApp) mode -->
+                            <TextBlock x:Name="DmSectionHeader" Grid.Row="2" Text="{DynamicResource StrDirectMessagesHeader}"
+                                       FontWeight="SemiBold" Margin="12,12,12,6" Visibility="Collapsed"/>
+                            <ListBox x:Name="DmList" Grid.Row="3" BorderThickness="0" Background="Transparent" Visibility="Collapsed"
+                                     SelectionChanged="DmList_SelectionChanged"
+                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                     ItemContainerStyle="{StaticResource DmItemContainerStyle}"
+                                     ItemTemplate="{StaticResource SidebarItemTemplate}"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- Message Filter (ComboBox hidden — selection now via the sidebar; logo kept) -->
+                    <Grid Grid.Row="0" Grid.Column="1" Margin="10,10,10,5">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="{DynamicResource StrFilterChannel}" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <TextBlock Grid.Column="0" Text="{DynamicResource StrFilterChannel}" VerticalAlignment="Center" Margin="0,0,10,0" Visibility="Collapsed"/>
                         <ComboBox x:Name="MessageChannelFilterComboBox"
                                  Grid.Column="1"
                                  Width="200"
                                  VerticalAlignment="Center"
                                  SelectionChanged="MessageChannelFilter_Changed"
-                                 DisplayMemberPath="Name"/>
+                                 DisplayMemberPath="Name"
+                                 Visibility="Collapsed"/>
                         <Image x:Name="mh_logo_wide_top" Grid.Column="2" Height="56" Width="286"
                                Source="/logo_mh_wide.jpg" HorizontalAlignment="Right"
                                Cursor="Arrow" MouseLeftButtonUp="Logo_Click"/>
@@ -611,7 +690,7 @@
 
                     <!-- Message List – Chat Bubble Layout -->
                     <ListView x:Name="MessageListView"
-                             Grid.Row="1"
+                             Grid.Row="1" Grid.Column="1"
                              Margin="4,5,4,10"
                              Padding="0,0,14,0"
                              ContextMenuOpening="MessagesListView_ContextMenuOpening"
@@ -884,6 +963,16 @@
                                                         <TextBlock Text="{Binding Time}"
                                                                    FontSize="10" Foreground="{DynamicResource MsgSubtleFg}"
                                                                    VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                                        <!-- Delivery status (own messages): …/✓/✓✓/⚠ + resend on failure -->
+                                                        <TextBlock Text="{Binding StatusGlyph}" FontSize="11" FontWeight="Bold"
+                                                                   Foreground="{Binding StatusColorHex, Converter={StaticResource HexToColorConverter}}"
+                                                                   ToolTip="{Binding StatusTooltip}" VerticalAlignment="Center" Margin="0,0,6,0"
+                                                                   Visibility="{Binding ShowStatus, Converter={StaticResource BoolToVis}}"/>
+                                                        <Button Content="↻" FontSize="12" Padding="4,0" MinWidth="0" Cursor="Hand"
+                                                                Background="Transparent" BorderThickness="0" Foreground="#E53935"
+                                                                ToolTip="{DynamicResource StrResend}" Click="ResendButton_Click"
+                                                                VerticalAlignment="Center" Margin="0,0,6,0"
+                                                                Visibility="{Binding CanResend, Converter={StaticResource BoolToVis}}"/>
                                                         <TextBlock Text="{Binding ChannelName}"
                                                                    FontSize="9.5" Foreground="{DynamicResource MsgSubtleFg}"
                                                                    VerticalAlignment="Center" Margin="0,0,10,0">
@@ -964,6 +1053,17 @@
                                 <MenuItem x:Name="HidePathMsgMenuItem" Header="{DynamicResource StrHidePath}" Click="MessageContextMenu_HidePath_Click" Visibility="Collapsed"/>
                                 <MenuItem Header="{DynamicResource StrTraceroute}" Click="MessageContextMenu_Traceroute_Click"/>
                                 <MenuItem Header="{DynamicResource StrTelemetry}" Click="MessageContextMenu_Telemetry_Click"/>
+                                <MenuItem x:Name="MsgRequestInfoMenuItem" Header="{DynamicResource StrRequestInfo}">
+                                    <MenuItem Header="{DynamicResource StrReqUserInfo}"      Tag="UserInfo"           Click="MessageContextMenu_RequestInfo_Click"/>
+                                    <MenuItem Header="{DynamicResource StrReqPosition}"      Tag="Position"           Click="MessageContextMenu_RequestInfo_Click"/>
+                                    <MenuItem Header="{DynamicResource StrReqDeviceMetrics}" Tag="DeviceMetrics"      Click="MessageContextMenu_RequestInfo_Click"/>
+                                    <MenuItem Header="{DynamicResource StrReqEnvMetrics}"    Tag="EnvironmentMetrics" Click="MessageContextMenu_RequestInfo_Click"/>
+                                    <MenuItem Header="{DynamicResource StrReqAirQuality}"    Tag="AirQualityMetrics"  Click="MessageContextMenu_RequestInfo_Click"/>
+                                    <MenuItem Header="{DynamicResource StrReqPowerMetrics}"  Tag="PowerMetrics"       Click="MessageContextMenu_RequestInfo_Click"/>
+                                    <MenuItem Header="{DynamicResource StrReqLocalStats}"    Tag="LocalStats"         Click="MessageContextMenu_RequestInfo_Click"/>
+                                    <MenuItem Header="{DynamicResource StrReqHostMetrics}"   Tag="HostMetrics"        Click="MessageContextMenu_RequestInfo_Click"/>
+                                    <MenuItem Header="{DynamicResource StrReqPax}"           Tag="PaxCounter"         Click="MessageContextMenu_RequestInfo_Click"/>
+                                </MenuItem>
                                 <Separator/>
                                 <MenuItem Header="{DynamicResource StrReact}" Click="MessageContextMenu_React_Click"/>
                                 <MenuItem Header="{DynamicResource StrReplyMessage}" Click="MessageContextMenu_Reply_Click"/>
@@ -972,7 +1072,7 @@
                     </ListView>
 
                     <!-- Send Message -->
-                    <StackPanel Grid.Row="2">
+                    <StackPanel Grid.Row="2" Grid.Column="1">
                         <!-- Reply indicator bar -->
                         <Border x:Name="ReplyIndicatorPanel"
                                 Visibility="Collapsed"
@@ -1028,25 +1128,14 @@
 
                     <Grid Margin="10">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
-                        <!-- Channel Selection -->
-                        <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
-                            <TextBlock Text="{DynamicResource StrChannelLabel}" VerticalAlignment="Center" Margin="0,0,10,0" FontWeight="Bold"/>
-                            <ComboBox x:Name="ActiveChannelComboBox"
-                                     Width="150"
-                                     VerticalAlignment="Center"
-                                     SelectionChanged="ActiveChannelComboBox_SelectionChanged"
-                                     DisplayMemberPath="Name"
-                                     IsEnabled="False"/>
-                        </StackPanel>
-
+                        <!-- Channel selection removed: the sidebar drives the active channel now -->
                         <TextBox x:Name="MessageTextBox"
-                                Grid.Column="1"
+                                Grid.Column="0"
                                 ui:ControlHelper.PlaceholderText="{DynamicResource StrMessagePlaceholder}"
                                 VerticalContentAlignment="Center"
                                 Padding="10"
@@ -1054,7 +1143,7 @@
                                 KeyDown="MessageTextBox_KeyDown"/>
 
                         <Button x:Name="AlertBellButton"
-                               Grid.Column="2"
+                               Grid.Column="1"
                                Content="🚨 SOS"
                                Width="80"
                                Margin="10,0,0,0"
@@ -1065,7 +1154,7 @@
                                Click="AlertBell_Click"/>
 
                         <Button x:Name="SendButton"
-                               Grid.Column="3"
+                               Grid.Column="2"
                                Content="{DynamicResource StrSend}"
                                Width="100"
                                Margin="10,0,0,0"
@@ -1886,6 +1975,17 @@
                                              Content="{DynamicResource StrAlertBellSound}"
                                              Margin="0,0,0,4"/>
                                     <TextBlock Text="{DynamicResource StrAlertBellSoundHint}"
+                                              FontStyle="Italic" Foreground="Gray" TextWrapping="Wrap" FontSize="11"/>
+                                    <CheckBox x:Name="MessageToastsCheckBox"
+                                             Content="{DynamicResource StrMessageToasts}"
+                                             Margin="0,10,0,4"/>
+                                    <TextBlock Text="{DynamicResource StrMessageToastsHint}"
+                                              FontStyle="Italic" Foreground="Gray" TextWrapping="Wrap" FontSize="11"/>
+                                    <CheckBox x:Name="DmInlineCheckBox"
+                                             Content="{DynamicResource StrDmInline}"
+                                             Checked="DmInline_Changed" Unchecked="DmInline_Changed"
+                                             Margin="0,10,0,4"/>
+                                    <TextBlock Text="{DynamicResource StrDmInlineHint}"
                                               FontStyle="Italic" Foreground="Gray" TextWrapping="Wrap" FontSize="11"/>
                                 </StackPanel>
                             </GroupBox>

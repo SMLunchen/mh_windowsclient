@@ -141,6 +141,8 @@
     <sys:String x:Key="StrNotifications">Benachrichtigungen</sys:String>
     <sys:String x:Key="StrAlertBellSound">Ton bei Alert Bell abspielen (🔔)</sys:String>
     <sys:String x:Key="StrAlertBellSoundHint">Spielt einen Benachrichtigungston ab, wenn eine Nachricht das Alert Bell Character (ASCII 7) enthält.</sys:String>
+    <sys:String x:Key="StrMessageToasts">Windows-Benachrichtigung bei neuer Nachricht</sys:String>
+    <sys:String x:Key="StrMessageToastsHint">Zeigt eine Windows-Toast-Benachrichtigung, wenn eine neue Nachricht eintrifft und die App nicht im Vordergrund ist.</sys:String>
     <sys:String x:Key="StrMapGroup">Karte / Tiles</sys:String>
     <sys:String x:Key="StrMapSource">Kartenstil:</sys:String>
     <sys:String x:Key="StrTileServerUrl">Tile-Server URL:</sys:String>
@@ -870,6 +872,20 @@
     <sys:String x:Key="StrMapLibreDesc">Vektorkarten-Rendering (MapLibre GL JS)</sys:String>
     <sys:String x:Key="StrNotoSansDesc">Kartenbeschriftungs-Schriftart Noto Sans © Google LLC</sys:String>
     <sys:String x:Key="StrLicense">Lizenz</sys:String>
+
+    <!-- Chat sidebar -->
+    <sys:String x:Key="StrDmInline">Direktnachrichten im Client anzeigen (WhatsApp-Stil)</sys:String>
+    <sys:String x:Key="StrDmInlineHint">An: DMs erscheinen in der Nachrichtenübersicht (Liste links). Aus: DMs öffnen sich in einem eigenen Fenster.</sys:String>
+    <sys:String x:Key="StrChannelsHeader">Kanäle</sys:String>
+    <sys:String x:Key="StrDirectMessagesHeader">Direktnachrichten</sys:String>
+    <sys:String x:Key="StrDmNodeUnknownAskRequest">Dieser Node ist noch nicht bekannt. Jetzt Nutzer-Info anfordern?</sys:String>
+
+    <!-- Delivery status (send ticks) -->
+    <sys:String x:Key="StrMsgSending">Wird gesendet…</sys:String>
+    <sys:String x:Key="StrMsgSent">Gesendet</sys:String>
+    <sys:String x:Key="StrMsgDelivered">Zugestellt (bestätigt)</sys:String>
+    <sys:String x:Key="StrMsgFailed">Nicht zugestellt – zum erneuten Senden tippen</sys:String>
+    <sys:String x:Key="StrResend">Erneut senden</sys:String>
 
     <!-- Status bar channel/sent messages -->
     <sys:String x:Key="StrMsgSentChannel">Nachricht gesendet (Kanal {0})</sys:String>

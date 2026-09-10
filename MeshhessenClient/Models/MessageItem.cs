@@ -3,6 +3,16 @@ using System.ComponentModel;
 
 namespace MeshhessenClient.Models;
 
+/// <summary>Delivery state of an outgoing (own) message.</summary>
+public enum SendState
+{
+    None,       // incoming message — no status shown
+    Sending,    // handed to the radio, waiting for confirmation
+    Sent,       // queued/broadcast without error (no per-recipient ack expected)
+    Delivered,  // recipient ACKed (DM) / implicit ack (broadcast)
+    Failed,     // send threw, NAK, or no ack before timeout → offer resend
+}
+
 public class MessageItem : INotifyPropertyChanged
 {
     public string Time { get; set; } = string.Empty;
@@ -114,6 +124,59 @@ public class MessageItem : INotifyPropertyChanged
         get => _isOwnMessage;
         set { _isOwnMessage = value; PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsOwnMessage))); }
     }
+
+    // Delivery state of our own outgoing messages, so the bubble can show a
+    // sending/sent/delivered/failed indicator and offer a resend on failure.
+    private SendState _status = SendState.None;
+    public SendState Status
+    {
+        get => _status;
+        set
+        {
+            _status = value;
+            foreach (var p in new[] { nameof(Status), nameof(StatusGlyph), nameof(StatusColorHex),
+                                      nameof(StatusTooltip), nameof(ShowStatus), nameof(CanResend),
+                                      nameof(IsFailed) })
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(p));
+        }
+    }
+
+    /// <summary>Small status glyph for the current send state (empty for incoming messages).
+    /// Plain unicode so it renders in the normal UI font: waiting / check / double-check / warning.</summary>
+    public string StatusGlyph => _status switch
+    {
+        SendState.Sending   => "…",       // horizontal ellipsis (waiting)
+        SendState.Sent      => "✓",       // check mark (handed to radio)
+        SendState.Delivered => "✓✓", // double check (acknowledged)
+        SendState.Failed    => "⚠",       // warning sign (failed)
+        _ => string.Empty,
+    };
+
+    /// <summary>Accent colour for the status glyph: green when delivered, red on failure, muted otherwise.</summary>
+    public string StatusColorHex => _status switch
+    {
+        SendState.Delivered => "#25D366",
+        SendState.Failed    => "#E53935",
+        _ => "#9E9E9E",
+    };
+
+    /// <summary>Localized tooltip for the status glyph (resolved from the string dictionaries).</summary>
+    public string StatusTooltip => _status switch
+    {
+        SendState.Sending   => Loc("StrMsgSending"),
+        SendState.Sent      => Loc("StrMsgSent"),
+        SendState.Delivered => Loc("StrMsgDelivered"),
+        SendState.Failed    => Loc("StrMsgFailed"),
+        _ => string.Empty,
+    };
+
+    private static string Loc(string key) =>
+        System.Windows.Application.Current?.TryFindResource(key) as string ?? key;
+
+    public bool ShowStatus => _isOwnMessage && _status != SendState.None;
+    public bool IsFailed => _status == SendState.Failed;
+    /// <summary>The resend affordance shows only for a failed own message.</summary>
+    public bool CanResend => _isOwnMessage && _status == SendState.Failed;
 
     // Hop count: number of relay hops the packet traversed. -1 = unknown (e.g. from DB without hop info)
     public int HopCount { get; set; } = -1;

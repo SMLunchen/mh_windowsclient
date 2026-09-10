@@ -48,7 +48,19 @@ public partial class MainWindow : Window
     private int _activeChannelIndex = 0;
     private bool _showEncryptedMessages = false;
     private ChannelInfo? _messageChannelFilter = null;
+    // The old channel-filter ComboBox is hidden — the sidebar (ConversationList) is now the
+    // authoritative selector. This guard stops the ComboBox's programmatic repopulation from
+    // firing MessageChannelFilter_Changed and clobbering the sidebar's channel filter.
+    private bool _suppressChannelFilterCombo = false;
+    private bool _channelsInitialized = false;   // one-time: sidebar auto-selects the primary channel
+    private bool _initialScrollDone = false;      // gates lazy-load so the startup scroll-to-bottom isn't hijacked
     private DirectMessagesWindow? _dmWindow = null;
+
+    // Inline (WhatsApp-style) DM state — used when Settings.DmStyle == "inline".
+    private readonly ObservableCollection<DmSidebarItem> _dmSidebarItems = new();
+    private readonly Dictionary<uint, DmSidebarItem> _dmByPartner = new();
+    private uint _currentDmPartner = 0;   // 0 = a channel is open; else the open DM partner node id
+    private bool DmInline => _currentSettings.DmStyle == "inline";
     private uint _myNodeId = 0;
     private string _activeStationName = string.Empty;
     private bool _kioskLocked = false;   // kiosk/training mode: true = features hidden
@@ -187,11 +199,13 @@ public partial class MainWindow : Window
         MessageListView.ItemsSource = _messages;
         NodesListView.ItemsSource = _nodes;
         ChannelsListView.ItemsSource = _channels;
-        ActiveChannelComboBox.ItemsSource = _channels;
+        ConversationList.ItemsSource = _channels;   // WhatsApp-style left sidebar (channels)
+        DmList.ItemsSource = _dmSidebarItems;        // inline DM conversations (WhatsApp mode)
         BluetoothDeviceComboBox.ItemsSource = _bluetoothDevices;
 
         _connectionService.ConnectionStateChanged += OnConnectionStateChanged;
         _protocolService.MessageReceived += OnMessageReceived;
+        _protocolService.MessageDeliveryUpdated += OnMessageDeliveryUpdated;
         _protocolService.PkiMessageDecrypted += OnPkiMessageDecrypted;
         _protocolService.NodeInfoReceived += OnNodeInfoReceived;
         _protocolService.NodeDbCleared += OnNodeDbCleared;
@@ -334,6 +348,8 @@ public partial class MainWindow : Window
             DebugDeviceCheckBox.IsChecked = settings.DebugDevice;
             DebugBluetoothCheckBox.IsChecked = settings.DebugBluetooth;
             AlertBellSoundCheckBox.IsChecked = settings.AlertBellSound;
+            MessageToastsCheckBox.IsChecked = settings.MessageToasts;
+            DmInlineCheckBox.IsChecked = settings.DmStyle == "inline";
             EnableLocationLoggingCheckBox.IsChecked = settings.EnableLocationLogging;
             ShowEnvironmentDataCheckBox.IsChecked = settings.ShowEnvironmentData;
 
@@ -349,6 +365,7 @@ public partial class MainWindow : Window
             ApplyLanguage(settings.Language);
 
             _currentSettings = settings;
+            ApplyDmStyle();
             _protocolService.SetDebugSerial(settings.DebugSerial);
             _protocolService.SetDebugDevice(settings.DebugDevice);
             BluetoothConnectionService.SetDebugEnabled(settings.DebugBluetooth);
@@ -604,13 +621,105 @@ public partial class MainWindow : Window
         });
     }
 
-    private void ActiveChannelComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    /// <summary>WhatsApp-style left sidebar: selecting a channel filters the chat to that channel,
+    /// clears its unread badge, and points the send box at it. Replaces the old channel-filter
+    /// ComboBox (now hidden and mirrored by this list). Channel and DM selection are mutually
+    /// exclusive.</summary>
+    private void ConversationList_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (ActiveChannelComboBox.SelectedItem is ChannelInfo channel)
+        if (ConversationList.SelectedItem is not ChannelInfo ch) return;
+
+        _currentDmPartner = 0;                 // a channel is now open, not a DM
+        if (DmList.SelectedItem != null) DmList.SelectedItem = null;
+
+        _messageChannelFilter = ch;
+        ch.Unread = 0; // opening the conversation marks it read
+
+        // Rebuild the visible chat to only this channel's messages.
+        _messages.Clear();
+        foreach (var msg in _allMessages)
         {
-            _activeChannelIndex = channel.Index;
-            UpdateStatusBar(string.Format(Loc("StrActiveChannelStatus"), channel.Name));
+            if (uint.TryParse(msg.Channel, out uint ci) && ci == ch.Index)
+                _messages.Add(msg);
         }
+
+        // Sending now targets the sidebar-selected channel.
+        _activeChannelIndex = ch.Index;
+
+        // Open at the newest message (bottom), like a chat.
+        ScrollMessagesToBottom();
+    }
+
+    /// <summary>Inline DM selected in the sidebar → show that conversation in the right-hand chat.</summary>
+    private void DmList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (DmList.SelectedItem is not DmSidebarItem dm) return;
+
+        _currentDmPartner = dm.PartnerId;      // a DM is now open
+        _messageChannelFilter = null;
+        if (ConversationList.SelectedItem != null) ConversationList.SelectedItem = null;
+        dm.Unread = 0;
+
+        // Rebuild the visible chat to only this DM's messages (both directions).
+        _messages.Clear();
+        foreach (var msg in _allMessages)
+        {
+            if (IsDmWithPartner(msg, dm.PartnerId))
+                _messages.Add(msg);
+        }
+        ScrollMessagesToBottom();
+    }
+
+    /// <summary>True if <paramref name="msg"/> is a direct message between us and <paramref name="partner"/>.</summary>
+    private bool IsDmWithPartner(MessageItem msg, uint partner)
+    {
+        bool isDm = msg.ToId != 0 && msg.ToId != 0xFFFFFFFF;
+        if (!isDm) return false;
+        return (msg.FromId == partner && msg.ToId == _myNodeId)
+            || (msg.FromId == _myNodeId && msg.ToId == partner);
+    }
+
+    private DmSidebarItem GetOrCreateDmItem(uint partnerId, string name, string colorHex)
+    {
+        if (!_dmByPartner.TryGetValue(partnerId, out var dm))
+        {
+            dm = new DmSidebarItem(partnerId, string.IsNullOrWhiteSpace(name) ? $"!{partnerId:x8}" : name)
+            {
+                ColorHex = colorHex
+            };
+            _dmByPartner[partnerId] = dm;
+            _dmSidebarItems.Add(dm);
+        }
+        else if (!string.IsNullOrWhiteSpace(name) && name != dm.Name && !name.StartsWith("!"))
+        {
+            dm.Name = name;
+        }
+        return dm;
+    }
+
+    /// <summary>Show/hide the inline DM section per the DmStyle setting. In window mode the inline
+    /// selection is cleared (DMs go back to the separate window).</summary>
+    private void ApplyDmStyle()
+    {
+        bool inline = DmInline;
+        var vis = inline ? Visibility.Visible : Visibility.Collapsed;
+        if (DmSectionHeader != null) DmSectionHeader.Visibility = vis;
+        if (DmList != null) DmList.Visibility = vis;
+        if (!inline && _currentDmPartner != 0)
+        {
+            // Leaving inline mode while a DM was open → fall back to a channel view.
+            DmList.SelectedItem = null;
+            _currentDmPartner = 0;
+            if (ConversationList.SelectedItem == null)
+                ConversationList.SelectedItem = _channels.FirstOrDefault(c => c.Role == "PRIMARY") ?? _channels.FirstOrDefault();
+        }
+    }
+
+    private void DmInline_Changed(object sender, RoutedEventArgs e)
+    {
+        _currentSettings = _currentSettings with { DmStyle = DmInlineCheckBox.IsChecked == true ? "inline" : "window" };
+        ApplyDmStyle();
+        try { Services.SettingsService.Save(_currentSettings); } catch { }
     }
 
     private void RefreshPorts()
@@ -788,13 +897,17 @@ public partial class MainWindow : Window
                 UpdateStatusBar("Trenne Verbindung...");
                 SetConnectionStatus(ConnectionStatus.Disconnecting);
 
-                // Disconnect im Hintergrund, nicht auf UI-Thread blockieren
-                await Task.Run(() =>
+                // Disconnect im Hintergrund, nicht auf UI-Thread blockieren.
+                // Zeitlich begrenzen: falls das Schließen eines hängenden/Nicht-Node-Ports
+                // ausnahmsweise doch blockiert, gibt die UI trotzdem wieder frei.
+                var disconnectTask = Task.Run(() =>
                 {
                     _protocolService.Disconnect();
                     System.Threading.Thread.Sleep(200);
                     _connectionService?.Disconnect();
                 });
+                if (await Task.WhenAny(disconnectTask, Task.Delay(8000)) != disconnectTask)
+                    Services.Logger.WriteLine("[SERIAL] Disconnect took longer than 8s — freeing the UI anyway (teardown continues in background)");
 
                 ConnectButton.Content = Loc("StrConnect");
                 UpdateStatusBar(Loc("StrDisconnectedMsg"));
@@ -900,6 +1013,7 @@ public partial class MainWindow : Window
                 // (Protocol service subscribes to DataReceived in its constructor)
                 _protocolService = new MeshtasticProtocolService(_connectionService);
                 _protocolService.MessageReceived += OnMessageReceived;
+                _protocolService.MessageDeliveryUpdated += OnMessageDeliveryUpdated;
                 _protocolService.PkiMessageDecrypted += OnPkiMessageDecrypted;
                 _protocolService.NodeInfoReceived += OnNodeInfoReceived;
                 _protocolService.NodeDbCleared += OnNodeDbCleared;
@@ -1135,65 +1249,156 @@ public partial class MainWindow : Window
             return;
         }
 
+        // Inline DM open → send a direct message to that partner instead of a channel broadcast.
+        if (DmInline && _currentDmPartner != 0)
+        {
+            await SendInlineDmAsync(_currentDmPartner, message);
+            return;
+        }
+
+        var replyTarget = _replyToMessage;
+        var activeChannel = _channels.FirstOrDefault(c => c.Index == _activeChannelIndex);
+        var channelName = activeChannel?.Name ?? $"Kanal {_activeChannelIndex}";
+
+        // Show the bubble immediately with a "Sending…" status, then hand it to the radio. The
+        // status advances to Sent → Delivered (ACK) / Failed (NAK, error, or timeout → resend).
+        var sentMessage = new MessageItem
+        {
+            Time = DateTime.Now.ToString("HH:mm"),
+            From = Loc("StrMe"),
+            FromId = _myNodeId,
+            Message = message,
+            Channel = _activeChannelIndex.ToString(),
+            ChannelIndex = (uint)_activeChannelIndex,
+            ChannelName = channelName,
+            ToId = 0xFFFFFFFF, // broadcast on a channel
+            IsViaMqtt = false,
+            IsOwnMessage = true,
+            Status = SendState.Sending,
+            ReplyId = replyTarget?.Id ?? 0,
+            ReplyFromName = replyTarget?.From ?? string.Empty,
+            ReplyPreview = replyTarget?.Message?.Length > 60 ? replyTarget.Message[..60] + "…" : replyTarget?.Message ?? string.Empty
+        };
+        _allMessages.Add(sentMessage);
+        MessageItem.InsertByTime(_messages, sentMessage);
+        MessageListView.ScrollIntoView(sentMessage);
+
+        // Clear reply state + input
+        _replyToMessage = null;
+        ReplyIndicatorPanel.Visibility = Visibility.Collapsed;
+        MessageTextBox.Clear();
+
+        await SendMessageItemAsync(sentMessage, message, 0xFFFFFFFF, (uint)_activeChannelIndex,
+            sentMessage.ReplyId, channelName, persist: true);
+        UpdateStatusBar(string.Format(Loc("StrMsgSentChannel"), _activeChannelIndex));
+    }
+
+    // Grace period before an un-ACKed message is flagged Failed. Matches the Meshtastic
+    // Android/iOS SEND_ACK_TIMEOUT (5 min) — generous, well past the radio's retransmit window.
+    private static readonly TimeSpan SendAckTimeout = TimeSpan.FromMinutes(5);
+
+    /// <summary>Core send path (also used by the resend button): hands the message to the radio and
+    /// tracks its delivery status (Sending → Sent → Delivered on ACK / Failed on NAK, error or
+    /// timeout). Every text is sent with want_ack, so a DM ACK or a broadcast implicit-ACK confirms it.</summary>
+    private async Task SendMessageItemAsync(MessageItem item, string text, uint destId, uint channel,
+                                            uint replyId, string channelName, bool persist)
+    {
+        item.Status = SendState.Sending;
+        SendButton.IsEnabled = false;
         try
         {
-            SendButton.IsEnabled = false;
+            uint sentId = await _protocolService.SendTextMessageAsync(text, destId, channel, replyId);
+            item.Id = sentId;
+            if (sentId != 0) _messageById[sentId] = item;
+            item.Status = SendState.Sent;
+            _ = AwaitDeliveryAsync(item, sentId);
 
-            // Sende Nachricht mit dem aktiven Kanal
-            var replyTarget = _replyToMessage;
-            uint sentId = await _protocolService.SendTextMessageAsync(message, 0xFFFFFFFF, (uint)_activeChannelIndex, replyTarget?.Id ?? 0);
-
-            // Clear reply state
-            _replyToMessage = null;
-            ReplyIndicatorPanel.Visibility = Visibility.Collapsed;
-
-            // Zeige gesendete Nachricht in der Liste
-            var activeChannel = _channels.FirstOrDefault(c => c.Index == _activeChannelIndex);
-            var channelName = activeChannel?.Name ?? $"Kanal {_activeChannelIndex}";
-
-            var sentMessage = new MessageItem
+            if (persist && _messageDbManager != null)
             {
-                Id = sentId,
-                Time = DateTime.Now.ToString("HH:mm"),
-                From = Loc("StrMe"),
-                FromId = _myNodeId,
-                Message = message,
-                Channel = _activeChannelIndex.ToString(),
-                ChannelName = channelName,
-                IsViaMqtt = false,
-                IsOwnMessage = true,
-                ReplyId = replyTarget?.Id ?? 0,
-                ReplyFromName = replyTarget?.From ?? string.Empty,
-                ReplyPreview = replyTarget?.Message?.Length > 60 ? replyTarget.Message[..60] + "…" : replyTarget?.Message ?? string.Empty
-            };
-            _allMessages.Add(sentMessage);
-            if (sentId != 0) _messageById[sentId] = sentMessage;
-            MessageItem.InsertByTime(_messages, sentMessage);
-            MessageListView.ScrollIntoView(sentMessage);
-
-            // Persistiere gesendete Nachricht in DB
-            if (_messageDbManager != null)
-            {
-                var dbChanName = channelName;
-                var dbChanIdx  = _activeChannelIndex;
-                var dbMsg      = sentMessage;
+                var dbChanName = channelName; var dbChanIdx = (int)channel; var dbMsg = item;
                 Task.Run(() => _messageDbManager.InsertChannelMessage(dbChanIdx, dbChanName, dbMsg));
             }
-
-            // Log die gesendete Nachricht
-            Services.MessageLogger.LogChannelMessage(_activeChannelIndex, channelName, Loc("StrMe"), message, false);
-
-            MessageTextBox.Clear();
-            UpdateStatusBar(string.Format(Loc("StrMsgSentChannel"), _activeChannelIndex));
+            Services.MessageLogger.LogChannelMessage((int)channel, channelName, Loc("StrMe"), text, false);
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Fehler beim Senden: {ex.Message}", "Fehler", MessageBoxButton.OK, MessageBoxImage.Error);
+            item.Status = SendState.Failed;
+            Services.Logger.WriteLine($"Send failed: {ex.Message}");
         }
         finally
         {
             SendButton.IsEnabled = true;
         }
+    }
+
+    /// <summary>A sent message stays "Sent"/"Sending" until its ACK flips it to Delivered (or a NAK
+    /// to Failed). If neither arrives within <see cref="SendAckTimeout"/>, flag it Failed for resend.</summary>
+    private async Task AwaitDeliveryAsync(MessageItem item, uint packetId)
+    {
+        await Task.Delay(SendAckTimeout);
+        if (item.Id == packetId && item.Status is SendState.Sending or SendState.Sent)
+            item.Status = SendState.Failed;
+    }
+
+    private void OnMessageDeliveryUpdated(object? sender, (uint PacketId, bool Delivered) e)
+    {
+        Dispatcher.BeginInvoke(() =>
+        {
+            if (_messageById.TryGetValue(e.PacketId, out var msg) && msg.IsOwnMessage)
+                msg.Status = e.Delivered ? SendState.Delivered : SendState.Failed;
+        });
+    }
+
+    /// <summary>Resend a previously failed own message (reuses its bubble, new packet id).</summary>
+    private async void ResendMessage(MessageItem? item)
+    {
+        if (item is null || !item.IsOwnMessage || string.IsNullOrEmpty(item.Message)) return;
+        bool isDm = item.ToId != 0 && item.ToId != 0xFFFFFFFF;
+        uint dest = isDm ? item.ToId : 0xFFFFFFFF;
+        uint channel = isDm ? 0u : item.ChannelIndex;
+        await SendMessageItemAsync(item, item.Message, dest, channel, item.ReplyId, item.ChannelName, persist: false);
+    }
+
+    private void ResendButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement fe && fe.DataContext is MessageItem msg) ResendMessage(msg);
+    }
+
+    /// <summary>Send an inline (WhatsApp-style) direct message to <paramref name="partnerId"/> and
+    /// show it in the right-hand chat with delivery status.</summary>
+    private async Task SendInlineDmAsync(uint partnerId, string text)
+    {
+        var replyTarget = _replyToMessage;
+        _dmByPartner.TryGetValue(partnerId, out var dmItem);
+        var dmName = dmItem?.Name ?? $"!{partnerId:x8}";
+
+        var msg = new MessageItem
+        {
+            Time = DateTime.Now.ToString("HH:mm"),
+            From = Loc("StrMe"),
+            FromId = _myNodeId,
+            ToId = partnerId,
+            Message = text,
+            IsOwnMessage = true,
+            Status = SendState.Sending,
+            ChannelName = dmName,
+            ReplyId = replyTarget?.Id ?? 0,
+            ReplyFromName = replyTarget?.From ?? string.Empty,
+            ReplyPreview = replyTarget?.Message?.Length > 60 ? replyTarget.Message[..60] + "…" : replyTarget?.Message ?? string.Empty
+        };
+        _allMessages.Add(msg);
+        if (_currentDmPartner == partnerId)
+        {
+            MessageItem.InsertByTime(_messages, msg);
+            MessageListView.ScrollIntoView(msg);
+        }
+
+        _replyToMessage = null;
+        ReplyIndicatorPanel.Visibility = Visibility.Collapsed;
+        MessageTextBox.Clear();
+
+        // channel 0 for a DM; not persisted to the channel DB.
+        await SendMessageItemAsync(msg, text, partnerId, 0, msg.ReplyId, dmName, persist: false);
     }
 
     private const string MeshHessenPsk = "+uTMEaOR7hkqaXv+DROOEd5BhvAIQY/CZ/Hr4soZcOU=";
@@ -1477,6 +1682,8 @@ public partial class MainWindow : Window
                 DebugDevice = DebugDeviceCheckBox.IsChecked == true,
                 DebugBluetooth = DebugBluetoothCheckBox.IsChecked == true,
                 AlertBellSound = AlertBellSoundCheckBox.IsChecked == true,
+                MessageToasts = MessageToastsCheckBox.IsChecked == true,
+                DmStyle = DmInlineCheckBox.IsChecked == true ? "inline" : "window",
                 Language = (LanguageComboBox.SelectedItem as System.Windows.Controls.ComboBoxItem)?.Tag as string ?? "de",
                 EnableLocationLogging = EnableLocationLoggingCheckBox.IsChecked == true,
                 ShowEnvironmentData = ShowEnvironmentDataCheckBox.IsChecked == true,
@@ -1575,7 +1782,8 @@ public partial class MainWindow : Window
                     GlobalMeshHealthLed.Fill = gray;
                     GlobalMeshHealthText.Text = "–";
 
-                    ActiveChannelComboBox.IsEnabled = false;
+                    _channelsInitialized = false;
+                    _initialScrollDone = false;
                     _messages.Clear();
                     _allMessages.Clear();
                     _messageById.Clear();
@@ -1647,6 +1855,7 @@ public partial class MainWindow : Window
 
                 _protocolService = new MeshtasticProtocolService(_connectionService);
                 _protocolService.MessageReceived += OnMessageReceived;
+                _protocolService.MessageDeliveryUpdated += OnMessageDeliveryUpdated;
                 _protocolService.PkiMessageDecrypted += OnPkiMessageDecrypted;
                 _protocolService.NodeInfoReceived += OnNodeInfoReceived;
                 _protocolService.NodeDbCleared += OnNodeDbCleared;
@@ -1810,8 +2019,40 @@ public partial class MainWindow : Window
                 // Prüfe ob es eine Direktnachricht ist (nicht Broadcast)
                 bool isDirectMessage = message.ToId != 0xFFFFFFFF && message.ToId != 0;
 
+                // Windows toast for new incoming messages (toggleable in settings), only while the
+                // app is not in the foreground — so it doesn't pop while the user is already reading.
+                if (_currentSettings.MessageToasts && !message.IsOwnMessage && !IsActive
+                    && !message.IsEncrypted
+                    && !string.IsNullOrWhiteSpace(message.Message))
+                {
+                    var toastTitle = isDirectMessage
+                        ? message.From
+                        : (string.IsNullOrEmpty(message.ChannelName) ? message.From : $"{message.From} · {message.ChannelName}");
+                    Services.ToastService.ShowMessage(toastTitle, message.Message);
+                }
+
                 if (isDirectMessage)
                 {
+                    // Inline (WhatsApp-style) mode: show the DM in the main overview instead of a window.
+                    if (DmInline)
+                    {
+                        uint partner = message.FromId;
+                        var dmItem = GetOrCreateDmItem(partner, message.From, message.SenderColorHex);
+                        _allMessages.Add(message);
+                        if (message.Id != 0) _messageById[message.Id] = message;
+                        if (_currentDmPartner == partner)
+                        {
+                            MessageItem.InsertByTime(_messages, message);
+                            MessageListView.ScrollIntoView(message);
+                            dmItem.Unread = 0;
+                        }
+                        else
+                        {
+                            dmItem.Unread++;
+                        }
+                        return;
+                    }
+
                     if (_currentSettings.DebugMessages)
                     {
                         Services.Logger.WriteLine($"[MSG DEBUG] Message is DM, routing to DM window");
@@ -1915,6 +2156,12 @@ public partial class MainWindow : Window
                 {
                     MessageItem.InsertByTime(_messages, message);
                     MessageListView.ScrollIntoView(message);
+                }
+                else if (!message.IsOwnMessage && uint.TryParse(message.Channel, out uint unreadCh))
+                {
+                    // Message for a channel that isn't currently open → bump its sidebar unread badge.
+                    var chan = _channels.FirstOrDefault(c => c.Index == unreadCh);
+                    if (chan != null) chan.Unread++;
                 }
             }
             catch (Exception ex)
@@ -2058,21 +2305,13 @@ public partial class MainWindow : Window
                 // A newly-arrived channel lets messages shown as "Kanal N" resolve to the real name.
                 RefreshChannelNames();
 
-                // Aktiviere Kanal-Auswahl wenn Kanäle vorhanden sind
-                if (_channels.Count > 0 && !ActiveChannelComboBox.IsEnabled)
+                // Once channels are present, open the primary channel in the sidebar by default.
+                if (_channels.Count > 0 && !_channelsInitialized)
                 {
-                    ActiveChannelComboBox.IsEnabled = true;
-
-                    // Wähle ersten PRIMARY Kanal oder ersten Kanal aus
+                    _channelsInitialized = true;
                     var primaryChannel = _channels.FirstOrDefault(c => c.Role == "PRIMARY");
-                    if (primaryChannel != null)
-                    {
-                        ActiveChannelComboBox.SelectedItem = primaryChannel;
-                    }
-                    else if (ActiveChannelComboBox.SelectedItem == null)
-                    {
-                        ActiveChannelComboBox.SelectedIndex = 0;
-                    }
+                    if (ConversationList.SelectedItem == null)
+                        ConversationList.SelectedItem = primaryChannel ?? _channels.FirstOrDefault();
                 }
 
                 // Update Message Filter ComboBox
@@ -2572,14 +2811,21 @@ public partial class MainWindow : Window
         SendInfoRequest(node, tag, mi.Header as string);
     }
 
-    private async void SendInfoRequest(NodeInfo node, string tag, string? label)
+    private void SendInfoRequest(NodeInfo node, string tag, string? label)
+        => SendInfoRequest(node.NodeId, node.Name, tag, label);
+
+    // Requesting info only needs the node ID — so this works for still-unknown nodes too
+    // (a DM partner we have never received a NodeInfo for). Requesting info is exactly how
+    // we get to know such a node.
+    private async void SendInfoRequest(uint nodeId, string nodeName, string tag, string? label)
     {
         if (_connectionService?.IsConnected != true) return;
+        if (nodeId == 0 || nodeId == _myNodeId) return;
         if (!Enum.TryParse<Services.MeshtasticProtocolService.InfoRequestType>(tag, out var type)) return;
         try
         {
-            await _protocolService.RequestNodeInfoAsync(node.NodeId, type);
-            UpdateStatusBar(string.Format(Loc("StrInfoRequestSent"), label ?? tag, node.Name));
+            await _protocolService.RequestNodeInfoAsync(nodeId, type);
+            UpdateStatusBar(string.Format(Loc("StrInfoRequestSent"), label ?? tag, string.IsNullOrEmpty(nodeName) ? $"!{nodeId:x8}" : nodeName));
         }
         catch
         {
@@ -2663,6 +2909,57 @@ public partial class MainWindow : Window
         ShowNodeInfoDialog(node);
     }
 
+    // "Info anfordern"-Untermenü im Chat-Kontextmenü — löst den Ziel-Node aus der
+    // rechtsgeklickten Nachricht auf und nutzt dieselbe Sende-Logik wie die Node-Liste.
+    private void MessageContextMenu_RequestInfo_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem mi || mi.Tag is not string tag) return;
+        // Prefer the known NodeInfo, but fall back to the message's sender ID so info can be
+        // requested even for a node we don't know yet.
+        var node = GetNodeFromSelectedMessage();
+        if (node != null) { SendInfoRequest(node.NodeId, node.Name, tag, mi.Header as string); return; }
+        if (MessageListView.SelectedItem is MessageItem msg && msg.FromId != 0 && msg.FromId != _myNodeId)
+            SendInfoRequest(msg.FromId, msg.From, tag, mi.Header as string);
+        else
+            MessageBox.Show("Node nicht gefunden.", "Hinweis", MessageBoxButton.OK, MessageBoxImage.Information);
+    }
+
+    // ===== DM chat-list (sidebar) context menu — operates on the partner's node ID =====
+
+    private static Models.DmSidebarItem? DmItemFromSender(object sender)
+        => (sender as FrameworkElement)?.DataContext as Models.DmSidebarItem;
+
+    private void DmContext_RequestInfo_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem mi || mi.Tag is not string tag) return;
+        if (DmItemFromSender(sender) is not Models.DmSidebarItem dm) return;
+        SendInfoRequest(dm.PartnerId, dm.Name, tag, mi.Header as string);
+    }
+
+    private void DmContext_NodeInfo_Click(object sender, RoutedEventArgs e)
+    {
+        if (DmItemFromSender(sender) is not Models.DmSidebarItem dm) return;
+        var node = _allNodes.FirstOrDefault(n => n.NodeId == dm.PartnerId);
+        if (node != null) { ShowNodeInfoDialog(node); return; }
+        // Node not known yet — offer to request its user info so it becomes known.
+        if (MessageBox.Show(Loc("StrDmNodeUnknownAskRequest"), Loc("StrHint"),
+                MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
+            SendInfoRequest(dm.PartnerId, dm.Name, "UserInfo", Loc("StrReqUserInfo"));
+    }
+
+    private void DmContext_ShowOnMap_Click(object sender, RoutedEventArgs e)
+    {
+        if (DmItemFromSender(sender) is not Models.DmSidebarItem dm) return;
+        var node = _allNodes.FirstOrDefault(n => n.NodeId == dm.PartnerId);
+        if (node == null || !node.Latitude.HasValue || !node.Longitude.HasValue)
+        {
+            MessageBox.Show("Position für diesen Node ist nicht bekannt.", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+        MainTabs.SelectedIndex = 3;
+        CenterMapOnNode(node.Latitude.Value, node.Longitude.Value);
+    }
+
     private void MessageContextMenu_ShowOnMap_Click(object sender, RoutedEventArgs e)
     {
         var node = GetNodeFromSelectedMessage();
@@ -2712,6 +3009,11 @@ public partial class MainWindow : Window
 
         // Node-specific items: hide when sender is unknown
         PinMsgMenuItem.Visibility = hasNode ? Visibility.Visible : Visibility.Collapsed;
+        // "Info anfordern" only needs the sender ID → keep it available even for unknown nodes
+        // (that is precisely how you make an unknown node known). Hide only for own messages.
+        var selMsg = MessageListView.SelectedItem as MessageItem;
+        bool canRequestInfo = selMsg != null && selMsg.FromId != 0 && selMsg.FromId != _myNodeId;
+        MsgRequestInfoMenuItem.Visibility = canRequestInfo ? Visibility.Visible : Visibility.Collapsed;
 
         if (hasNode)
         {
@@ -4592,11 +4894,16 @@ public partial class MainWindow : Window
         _replyToMessage = msg;
 
         // Switch the active channel to the one the message arrived on, so the reply goes out
-        // on the right channel (channel messages carry an index 0-7 in msg.Channel).
+        // on the right channel (channel messages carry an index 0-7 in msg.Channel). Selecting it
+        // in the sidebar also points the send box there via ConversationList_SelectionChanged.
         if (uint.TryParse(msg.Channel, out var replyChanIdx))
         {
             var ch = _channels.FirstOrDefault(c => c.Index == replyChanIdx);
-            if (ch != null) ActiveChannelComboBox.SelectedItem = ch;
+            if (ch != null)
+            {
+                _activeChannelIndex = ch.Index;
+                if (!Equals(ConversationList.SelectedItem, ch)) ConversationList.SelectedItem = ch;
+            }
         }
 
         var preview = msg.Message?.Length > 60 ? msg.Message[..60] + "…" : msg.Message ?? string.Empty;

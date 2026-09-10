@@ -10,6 +10,7 @@ public class SerialConnectionService : IConnectionService
 {
     private SerialPort? _serialPort;
     private bool _isConnected;
+    private int _disconnecting = 0;   // reentrancy guard: reader/watchdog/user may all call Disconnect
     private readonly object _lock = new();
     private Thread? _readerThread;
     private bool _wantExit = false;
@@ -67,7 +68,10 @@ public class SerialConnectionService : IConnectionService
                     StopBits = StopBits.One,
                     Handshake = Handshake.None,
                     ReadTimeout = 500,
-                    WriteTimeout = -1
+                    // Finite write timeout: an infinite (-1) timeout lets a write to a
+                    // non-Meshtastic / unresponsive port block forever, which in turn makes
+                    // SerialPort.Close() deadlock on the pending write when disconnecting.
+                    WriteTimeout = 2000
                 };
 
                 _serialPort.Open();
@@ -109,6 +113,11 @@ public class SerialConnectionService : IConnectionService
 
     public void Disconnect()
     {
+        // Reader thread, watchdog and the user's disconnect click can all land here at
+        // once — only the first caller performs the teardown; the rest return immediately.
+        if (System.Threading.Interlocked.Exchange(ref _disconnecting, 1) == 1)
+            return;
+
         try
         {
             Logger.WriteLine("[SERIAL] Disconnecting...");
@@ -130,37 +139,39 @@ public class SerialConnectionService : IConnectionService
                 }
             }
 
-            // Jetzt Serial Port schließen und disposen
-            if (_serialPort != null)
+            // Jetzt Serial Port schließen und disposen.
+            // WICHTIG: SerialPort.Close()/Dispose() kann bei einem hängenden oder
+            // Nicht-Meshtastic-Port (z. B. ausstehender Write, entferntes Gerät) auf
+            // unbestimmte Zeit blockieren. Deshalb auf einem Wegwerf-Thread schließen
+            // und nur begrenzt darauf warten — sonst wedged der ganze Disconnect.
+            var port = _serialPort;
+            _serialPort = null;
+            if (port != null)
             {
-                try
+                var closeThread = new Thread(() =>
                 {
-                    if (_serialPort.IsOpen)
+                    try
                     {
-                        // Clear DTR/RTS vor Close
-                        _serialPort.DtrEnable = false;
-                        _serialPort.RtsEnable = false;
-
-                        _serialPort.Close();
+                        if (port.IsOpen)
+                        {
+                            try { port.DtrEnable = false; port.RtsEnable = false; } catch { }
+                            port.Close();
+                        }
                     }
-                }
-                catch (Exception ex)
-                {
-                    Logger.WriteLine($"[SERIAL] ERROR closing serial port: {ex.Message}");
-                }
+                    catch (Exception ex)
+                    {
+                        Logger.WriteLine($"[SERIAL] ERROR closing serial port: {ex.Message}");
+                    }
+                    finally
+                    {
+                        try { port.Dispose(); } catch { }
+                    }
+                })
+                { IsBackground = true, Name = "SerialClose" };
+                closeThread.Start();
 
-                try
-                {
-                    _serialPort.Dispose();
-                }
-                catch (Exception ex)
-                {
-                    Logger.WriteLine($"[SERIAL] ERROR disposing serial port: {ex.Message}");
-                }
-                finally
-                {
-                    _serialPort = null;
-                }
+                if (!closeThread.Join(3000))
+                    Logger.WriteLine("[SERIAL] WARNING: serial port close did not finish in 3s — abandoning port object (leaked) to avoid a hang");
             }
 
             _readerThread = null;
@@ -169,6 +180,7 @@ public class SerialConnectionService : IConnectionService
         finally
         {
             IsConnected = false;
+            System.Threading.Interlocked.Exchange(ref _disconnecting, 0);
         }
     }
 
