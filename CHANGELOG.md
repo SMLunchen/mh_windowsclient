@@ -11,6 +11,13 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
 
+## [1.6.4.2] - 2026-09-17
+
+### 🐛 Behoben
+- **Virtueller Node: Verbindung mit der Meshtastic-Android-App stabilisiert.** Die App nutzt einen **zweistufigen** `want_config`-Handshake mit zwei festen Spezial-Nonces: `69420` = „nur Config" (my_info, Metadata, Config, ModuleConfig, Kanäle) und `69421` = „nur Nodes" (ausschließlich NodeInfos). Der vNode hat bisher **beide** Anfragen mit dem vollständigen Dump inkl. `my_info` beantwortet. Dadurch setzte Androids `handleMyInfo` in Stufe 2 den Handshake-Zustand zurück, das `config_complete` von Stufe 2 wurde verworfen, die App wurde nie „verbunden" und lief in eine Reconnect-Schleife (2 Replays pro Versuch, 4 Versuche, dann Abbruch). Der vNode **verzweigt jetzt nach Nonce**: auf `69420` nur die Config (ohne Nodes), auf `69421` nur die Nodes (ohne my_info/Config/Kanäle); jede andere Nonce erhält weiterhin den vollständigen Einstufen-Dump. Zusätzlich loggt der vNode jetzt Nonce und Stufe pro Replay.
+
+---
+
 ## [1.6.4] - 2026-09-10
 
 ### ✨ Hinzugefügt

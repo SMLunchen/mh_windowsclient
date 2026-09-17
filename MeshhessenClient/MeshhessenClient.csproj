@@ -21,9 +21,9 @@
     <PublishDir>..\public\</PublishDir>
 
     <AssemblyName>MeshhessenClient</AssemblyName>
-    <Version>1.6.4</Version>
-    <AssemblyVersion>1.6.4</AssemblyVersion>
-    <FileVersion>1.6.4</FileVersion>
+    <Version>1.6.4.2</Version>
+    <AssemblyVersion>1.6.4.2</AssemblyVersion>
+    <FileVersion>1.6.4.2</FileVersion>
     <Company>Meshtastic Community</Company>
     <Product>Meshhessen Client</Product>
     <Description>Offline-fähiger Windows Client für Meshtastic Geräte</Description>
