@@ -1531,75 +1531,196 @@ public partial class MainWindow : Window
 
     private async void AddMeshHessenChannel_Click(object sender, RoutedEventArgs e)
     {
+        if (_connectionService?.IsConnected != true || _protocolService == null)
+        {
+            MessageBox.Show("Kein Gerät verbunden.", "Hinweis", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        var confirm = MessageBox.Show(
+            "Das Mesh-Hessen-Profil wird in dieser Reihenfolge geschrieben:\n\n" +
+            "  1. Modem-Preset ShortSlow + Region EU868\n" +
+            "  2. Kanal „Mesh Hessen\" (Uplink + Downlink)\n" +
+            "  3. MQTT (ok_to_mqtt = an, ignore_mqtt = aus) + Hop-Limit 7\n\n" +
+            "Alles wird in einer Edit-Transaktion gebündelt, damit das Gerät nur EINMAL " +
+            "neu startet (kein Zwischen-Reboot, der den Kanal verschluckt). Danach verbindet " +
+            "sich der Client automatisch wieder und liest zur Kontrolle alle Werte zurück.\n\nFortfahren?",
+            "Mesh-Hessen anwenden", MessageBoxButton.OKCancel, MessageBoxImage.Question);
+        if (confirm != MessageBoxResult.OK) return;
+
+        MeshHessenButton.IsEnabled = false;
         try
         {
-            if (_channels.Any(c => c.Psk == MeshHessenPsk))
-            {
-                MessageBox.Show("Mesh-Hessen Kanal ist bereits vorhanden.", "Hinweis",
-                    MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
-            }
-
-            // LoRa-Check: Mesh-Hessen benötigt SHORT_SLOW, EU_868, Hop 7
-            if (_currentLoRaConfig != null)
-            {
-                bool needsPreset = _currentLoRaConfig.ModemPreset != ModemPreset.ShortSlow;
-                bool needsRegion = (int)_currentLoRaConfig.Region == 0; // Unset = enum value 0
-                bool needsHop   = _currentLoRaConfig.HopLimit != 7;
-
-                if (needsPreset || needsRegion || needsHop)
-                {
-                    var changes = new System.Text.StringBuilder();
-                    changes.AppendLine("Für Mesh-Hessen werden folgende Einstellungen empfohlen:\n");
-                    if (needsPreset) changes.AppendLine($"  – Modem-Preset: {_currentLoRaConfig.ModemPreset} ? SHORT_SLOW");
-                    if (needsRegion) changes.AppendLine("  – Region: Unset ? EU_868");
-                    if (needsHop)   changes.AppendLine($"  – Hop-Limit: {_currentLoRaConfig.HopLimit} ? 7");
-                    changes.AppendLine("\nJetzt ändern?");
-
-                    var result = MessageBox.Show(
-                        changes.ToString(),
-                        "LoRa-Einstellungen für Mesh-Hessen",
-                        MessageBoxButton.YesNoCancel,
-                        MessageBoxImage.Question);
-
-                    if (result == MessageBoxResult.Cancel)
-                        return;
-
-                    if (result == MessageBoxResult.Yes)
-                    {
-                        var newLora = _currentLoRaConfig.Clone();
-                        if (needsPreset) { newLora.ModemPreset = ModemPreset.ShortSlow; newLora.UsePreset = true; }
-                        if (needsRegion) { newLora.Region = Region.Eu868; }
-                        if (needsHop)    { newLora.HopLimit = 7; }
-                        await _protocolService.SetLoRaConfigAsync(newLora);
-                        Services.Logger.WriteLine("LoRa config updated for Mesh-Hessen (preset/region/hop)");
-                    }
-                }
-            }
-
-            int freeIndex = FindFirstFreeChannelIndex();
-            if (freeIndex < 0)
-            {
-                MessageBox.Show("Kein freier Kanal-Slot verfügbar (max. 8 Kanäle).", "Fehler",
-                    MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            var pskBytes = Convert.FromBase64String(MeshHessenPsk);
-            await _protocolService.SetChannelAsync(freeIndex, MeshHessenName, pskBytes,
-                secondary: true, uplinkEnabled: true, downlinkEnabled: true);
-
-            await Task.Delay(1000);
-            await _protocolService.RefreshChannelAsync(freeIndex);
-
-            UpdateMeshHessenButtonState();
-            Services.Logger.WriteLine($"Mesh-Hessen channel added at index {freeIndex}");
+            await ApplyMeshHessenProfileAsync();
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Fehler beim Hinzufügen des Mesh-Hessen Kanals: {ex.Message}", "Fehler",
+            Services.Logger.WriteLine($"[MeshHessen] Apply error: {ex.Message}");
+            MessageBox.Show($"Fehler beim Schreiben des Mesh-Hessen-Profils: {ex.Message}", "Fehler",
                 MessageBoxButton.OK, MessageBoxImage.Error);
         }
+        finally
+        {
+            UpdateMeshHessenButtonState();
+        }
+    }
+
+    /// <summary>
+    /// Writes the Mesh-Hessen profile reboot-safely and staged, then verifies by read-back and
+    /// automatically pulls in whatever is still missing on a second pass.
+    /// Each pass wraps all writes in a single BeginEdit/CommitEdit transaction so the device applies
+    /// everything and reboots exactly ONCE (at commit) — this avoids the mid-sequence reboot that
+    /// otherwise dropped the channel write. The LoRa config is written twice (once before and once
+    /// after the channel): the first write triggers the firmware's region-change coercion
+    /// (EU868 has a duty-cycle limit → it force-sets ignore_mqtt=true); the second write leaves the
+    /// region unchanged, so the coercion is skipped and our ignore_mqtt=false + ok_to_mqtt=true stick.
+    /// See meshhessen-client-lite/docs/findings/ignore-mqtt-eu868-coercion.md.
+    /// </summary>
+    private async Task ApplyMeshHessenProfileAsync()
+    {
+        if (_channels.All(c => c.Psk != MeshHessenPsk) && FindFirstFreeChannelIndex() < 0)
+        {
+            MessageBox.Show("Kein freier Kanal-Slot verfügbar (max. 8 Kanäle).", "Fehler",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        // Up to two passes: write → reboot → reconnect → read back → and if something is still
+        // missing (e.g. the firmware coerced a value), pull exactly that in on a second pass.
+        (bool AllOk, string Text) result = (false, "");
+        const int maxPasses = 2;
+        for (int pass = 1; pass <= maxPasses; pass++)
+        {
+            // Build the target from the freshly-read config each pass (fields we don't own stay put).
+            var lora = _currentLoRaConfig?.Clone() ?? new LoRaConfig();
+            lora.Region         = Region.Eu868;
+            lora.UsePreset      = true;
+            lora.ModemPreset    = ModemPreset.ShortSlow;
+            lora.HopLimit       = 7;
+            lora.TxEnabled      = true;
+            lora.ConfigOkToMqtt = true;   // ok_to_mqtt  -> 1
+            lora.IgnoreMqtt     = false;  // ignore_mqtt -> 0
+
+            bool channelMissing = _channels.All(c => c.Psk != MeshHessenPsk);
+            int channelIndex = channelMissing ? FindFirstFreeChannelIndex() : -1;
+
+            UpdateStatusBar(pass == 1
+                ? "Mesh-Hessen: schreibe Profil …"
+                : "Mesh-Hessen: ziehe fehlende Werte nach …");
+            await WriteMeshHessenTransactionAsync(lora, channelMissing && channelIndex >= 0, channelIndex);
+
+            UpdateStatusBar("Mesh-Hessen geschrieben — Gerät startet neu und verbindet sich wieder …");
+            bool reconnected = await WaitForReconnectAndInitAsync();
+            if (!reconnected)
+            {
+                MessageBox.Show(
+                    "Profil wurde geschrieben. Das Gerät startet nach dem Region-Wechsel neu; die automatische " +
+                    "Neuverbindung hat im Zeitfenster aber nicht geklappt. Bitte manuell neu verbinden und die Werte " +
+                    "prüfen (Region EU868, Preset ShortSlow, Hop 7, ok_to_mqtt = an, ignore_mqtt = aus, Kanal „Mesh Hessen\").",
+                    "Mesh-Hessen", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            // Wait for the re-init to repopulate the LoRa config + channels, then read back + verify.
+            for (int i = 0; i < 40 && (_currentLoRaConfig == null || _channels.Count == 0); i++)
+                await Task.Delay(500);
+            await Task.Delay(1500);
+
+            result = VerifyMeshHessenProfile();
+            if (result.AllOk) break;
+
+            Services.Logger.WriteLine($"[MeshHessen] Pass {pass}/{maxPasses}: profile still incomplete" +
+                (pass < maxPasses ? " — pulling in the missing settings" : " — giving up"));
+        }
+
+        UpdateStatusBar(result.AllOk ? "Mesh-Hessen: alle Werte gesetzt ✓" : "Mesh-Hessen: einige Werte weichen ab");
+        MessageBox.Show(
+            result.Text + (result.AllOk ? "" : "\n\n(Auch nach automatischem Nachziehen blieben Abweichungen — bitte prüfen.)"),
+            "Mesh-Hessen – Ergebnis", MessageBoxButton.OK,
+            result.AllOk ? MessageBoxImage.Information : MessageBoxImage.Warning);
+    }
+
+    /// <summary>One staged write of the Mesh-Hessen profile, wrapped in a single edit transaction so
+    /// the device reboots only once at commit. LoRa is written twice (before and after the channel)
+    /// to beat the EU868 ignore_mqtt coercion; the channel is written only when requested.</summary>
+    private async Task WriteMeshHessenTransactionAsync(LoRaConfig lora, bool writeChannel, int channelIndex)
+    {
+        var svc = _protocolService!;
+        static async Task Settle() => await Task.Delay(500);
+
+        await svc.BeginEditSettingsAsync(); await Settle();
+
+        // Stage 1 — Modem-Preset + Region (a region change triggers the ignore_mqtt coercion).
+        await svc.SetLoRaConfigAsync(lora); await Settle();
+
+        // Stage 2 — Kanaleinstellungen: Mesh-Hessen als Sekundärkanal, Uplink+Downlink für vollen MQTT-Relay.
+        if (writeChannel)
+        {
+            var pskBytes = Convert.FromBase64String(MeshHessenPsk);
+            await svc.SetChannelAsync(channelIndex, MeshHessenName, pskBytes,
+                secondary: true, uplinkEnabled: true, downlinkEnabled: true);
+            await Settle();
+        }
+
+        // Stage 3 — MQTT + Max-Hops: identischer LoRa-Write. Region jetzt unverändert → keine Coercion →
+        // ignore_mqtt=false + ok_to_mqtt=true + hop=7 bleiben stehen.
+        await svc.SetLoRaConfigAsync(lora); await Settle();
+
+        // Commit — Gerät wendet alles an und startet EINMAL neu.
+        await svc.CommitEditSettingsAsync();
+        Services.Logger.WriteLine("[MeshHessen] transaction committed (preset/region → channel → mqtt+hops); device reboots once");
+    }
+
+    /// <summary>Wait for a reboot-induced disconnect and the following auto-reconnect. Returns true
+    /// once reconnected (or if no reboot happened and the link stayed up). Tick = 500 ms.</summary>
+    private async Task<bool> WaitForReconnectAndInitAsync(int graceTicks = 40, int reconnectTicks = 180)
+    {
+        // Phase 1: detect the reboot (connection drops) within a grace window. If it never drops
+        // (e.g. region was already EU868 → no reboot), the link stayed up → nothing to wait for.
+        bool sawDisconnect = false;
+        for (int i = 0; i < graceTicks; i++)
+        {
+            if (_connectionService?.IsConnected != true) { sawDisconnect = true; break; }
+            await Task.Delay(500);
+        }
+        if (!sawDisconnect) return true;
+
+        // Phase 2: wait for the auto-reconnect to bring the link back up.
+        for (int i = 0; i < reconnectTicks; i++)
+        {
+            if (_connectionService?.IsConnected == true) return true;
+            await Task.Delay(500);
+        }
+        return false;
+    }
+
+    /// <summary>Read-back verification of the applied Mesh-Hessen profile against the freshly
+    /// re-read device config/channels. Returns a per-item ✓/✗ report.</summary>
+    private (bool AllOk, string Text) VerifyMeshHessenProfile()
+    {
+        var sb = new System.Text.StringBuilder();
+        bool ok = true;
+        void Check(string label, bool cond) { sb.AppendLine($"  {(cond ? "✓" : "✗")} {label}"); ok &= cond; }
+
+        sb.AppendLine("Rücklesung nach Neustart:\n");
+        var l = _currentLoRaConfig;
+        if (l == null)
+        {
+            sb.AppendLine("  ✗ LoRa-Konfiguration konnte nicht gelesen werden");
+            ok = false;
+        }
+        else
+        {
+            Check($"Region EU868 (ist: {l.Region})", l.Region == Region.Eu868);
+            Check($"Preset ShortSlow (ist: {l.ModemPreset}, UsePreset={l.UsePreset})", l.ModemPreset == ModemPreset.ShortSlow && l.UsePreset);
+            Check($"Hop-Limit 7 (ist: {l.HopLimit})", l.HopLimit == 7);
+            Check($"ok_to_mqtt = an (ist: {l.ConfigOkToMqtt})", l.ConfigOkToMqtt);
+            Check($"ignore_mqtt = aus (ist: {l.IgnoreMqtt})", !l.IgnoreMqtt);
+        }
+        Check("Kanal „Mesh Hessen\" vorhanden", _channels.Any(c => c.Psk == MeshHessenPsk));
+
+        sb.AppendLine(ok ? "\nAlles gesetzt. ✓" : "\nEinige Werte weichen ab — siehe oben.");
+        return (ok, sb.ToString());
     }
 
     private int FindFirstFreeChannelIndex()
@@ -1618,10 +1739,22 @@ public partial class MainWindow : Window
 
     private void UpdateMeshHessenButtonState()
     {
-        if (MeshHessenButton != null)
-        {
-            MeshHessenButton.IsEnabled = !_channels.Any(c => c.Psk == MeshHessenPsk);
-        }
+        if (MeshHessenButton == null) return;
+
+        // Enabled while connected AND the full Mesh-Hessen profile is not yet satisfied — so the
+        // button can also be used to fix a partial state (e.g. channel present but ignore_mqtt still
+        // coerced to true). Disabled only when everything is already in the target state.
+        bool connected  = _connectionService?.IsConnected == true;
+        bool channelOk  = _channels.Any(c => c.Psk == MeshHessenPsk);
+        var l = _currentLoRaConfig;
+        bool loraOk = l != null
+                      && l.Region == Region.Eu868
+                      && l.ModemPreset == ModemPreset.ShortSlow && l.UsePreset
+                      && l.HopLimit == 7
+                      && l.ConfigOkToMqtt
+                      && !l.IgnoreMqtt;
+
+        MeshHessenButton.IsEnabled = connected && !(channelOk && loraOk);
     }
 
     private void SaveSettings_Click(object sender, RoutedEventArgs e)

@@ -11,6 +11,13 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
 
+## [1.6.4.3] - 2026-09-18
+
+### 🐛 Behoben / ✨ Verbessert
+- **Mesh-Hessen-Button: reboot-sicher, gestaged, mit Rücklesung + automatischem Nachziehen.** Der Button schreibt das Profil jetzt in einer **einzigen Edit-Transaktion** (`BeginEditSettings`/`CommitEditSettings`), sodass das Gerät nur **einmal am Ende** neu startet — vorher rebootete es schon nach dem Modem-Preset/Region-Wechsel, wodurch der anschließende Kanal-Write verloren ging. Reihenfolge: **1.** Modem-Preset ShortSlow + Region EU868, **2.** Kanal „Mesh Hessen" (Uplink+Downlink), **3.** MQTT + Hop-Limit 7. Die LoRa-Config wird dabei **zweimal** geschrieben (vor und nach dem Kanal): Der erste Write löst die Firmware-Coercion aus (EU868 mit Duty-Cycle → `ignore_mqtt` wird zwangsweise `true`), der zweite Write lässt die Region unverändert → keine Coercion → `ok_to_mqtt=1` / `ignore_mqtt=0` bleiben stehen (Fund aus `ignore-mqtt-eu868-coercion.md`, jetzt auch im Full-Client). **Vorher wurden `ok_to_mqtt`/`ignore_mqtt` gar nicht gesetzt.** Nach dem Commit wartet der Client reboot-sicher auf die automatische Neuverbindung und **liest alle Werte zurück** (Region/Preset/Hop/MQTT/Kanal). Fehlt danach noch etwas, wird es in einem **zweiten Durchlauf automatisch nachgezogen**; das Endergebnis wird mit ✓/✗ angezeigt. Der Button ist außerdem nutzbar, solange das Profil noch nicht vollständig gesetzt ist (z. B. zum Nachbessern der MQTT-Werte).
+
+---
+
 ## [1.6.4.2] - 2026-09-17
 
 ### 🐛 Behoben
