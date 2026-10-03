@@ -141,6 +141,8 @@
     <sys:String x:Key="StrNotifications">Notifications</sys:String>
     <sys:String x:Key="StrAlertBellSound">Play sound on Alert Bell (🔔)</sys:String>
     <sys:String x:Key="StrAlertBellSoundHint">Plays a notification sound when a message contains the Alert Bell Character (ASCII 7).</sys:String>
+    <sys:String x:Key="StrMessageToasts">Windows notification on new message</sys:String>
+    <sys:String x:Key="StrMessageToastsHint">Shows a Windows toast notification when a new message arrives while the app is not in the foreground.</sys:String>
     <sys:String x:Key="StrMapGroup">Map / Tiles</sys:String>
     <sys:String x:Key="StrMapSource">Map style:</sys:String>
     <sys:String x:Key="StrTileServerUrl">Tile server URL:</sys:String>
@@ -177,6 +179,42 @@
     <sys:String x:Key="StrMapLegendBtnTooltip">Show legend and neighbor line options</sys:String>
     <sys:String x:Key="StrVectorOverlaysTitle">Overlay layers:</sys:String>
     <sys:String x:Key="StrVectorOverlaysHint">Specialist layers are drawn on top of the vector map. While a layer is off, no data is loaded for it. Also switchable via the 🗂️ button on the map.</sys:String>
+
+    <!-- Environment data (map feature) -->
+    <sys:String x:Key="StrEnvGroup">🌡️ Environment data</sys:String>
+    <sys:String x:Key="StrEnvEnable">Show environment data on the map</sys:String>
+    <sys:String x:Key="StrEnvEnableHint">Shows measurements that nodes report (temperature, humidity, IAQ and more) directly on the map. Once enabled, control it via the 🌡️ button on the map.</sys:String>
+    <sys:String x:Key="StrEnvBoxes">Value boxes at the nodes</sys:String>
+    <sys:String x:Key="StrEnvBoxModeOff">Off</sys:String>
+    <sys:String x:Key="StrEnvBoxModeAlways">Always visible</sys:String>
+    <sys:String x:Key="StrEnvBoxModeHover">On hover</sys:String>
+    <sys:String x:Key="StrEnvHeatmap">Heatmap overlay</sys:String>
+    <sys:String x:Key="StrEnvHeatmapRasterHint">The heatmap is only available on the vector map.</sys:String>
+    <sys:String x:Key="StrEnvMetric">Heatmap metric:</sys:String>
+    <sys:String x:Key="StrEnvBtn">🌡️ Environment</sys:String>
+    <sys:String x:Key="StrEnvBtnTooltip">Environment data on the map: value boxes, heatmap, metric and node selection</sys:String>
+    <sys:String x:Key="StrEnvExcludeNodes">Include nodes:</sys:String>
+    <sys:String x:Key="StrEnvExcludeHint">Deselect a node if it reports nonsense – it disappears from boxes and heatmap.</sys:String>
+    <sys:String x:Key="StrEnvNoNodes">No nodes with environment data received yet.</sys:String>
+    <!-- Metric labels -->
+    <sys:String x:Key="StrEnvTemperature">Temperature</sys:String>
+    <sys:String x:Key="StrEnvHumidity">Humidity</sys:String>
+    <sys:String x:Key="StrEnvPressure">Pressure</sys:String>
+    <sys:String x:Key="StrEnvIaq">IAQ</sys:String>
+    <sys:String x:Key="StrEnvGas">Gas resistance</sys:String>
+    <sys:String x:Key="StrEnvLux">Illuminance</sys:String>
+    <sys:String x:Key="StrEnvWhiteLux">White light</sys:String>
+    <sys:String x:Key="StrEnvUvLux">UV light</sys:String>
+    <sys:String x:Key="StrEnvWindSpeed">Wind speed</sys:String>
+    <sys:String x:Key="StrEnvWindDir">Wind direction</sys:String>
+    <sys:String x:Key="StrEnvWindGust">Wind gust</sys:String>
+    <sys:String x:Key="StrEnvRain1h">Rain (1 h)</sys:String>
+    <sys:String x:Key="StrEnvRain24h">Rain (24 h)</sys:String>
+    <sys:String x:Key="StrEnvSoilMoisture">Soil moisture</sys:String>
+    <sys:String x:Key="StrEnvSoilTemp">Soil temperature</sys:String>
+    <sys:String x:Key="StrEnvRadiation">Radiation</sys:String>
+    <sys:String x:Key="StrEnvDistance">Distance</sys:String>
+    <sys:String x:Key="StrEnvWeight">Weight</sys:String>
     <sys:String x:Key="StrDownloadVectorTiles">Download vector package…</sys:String>
     <sys:String x:Key="StrDownloadVectorTilesHint">Downloads the base map and selected overlay layers for an area into the offline store (vectortiles/). Existing tiles are skipped. One basemap download covers all three map styles.</sys:String>
     <sys:String x:Key="StrVdTitle">Vector offline package</sys:String>
@@ -836,6 +874,20 @@
     <sys:String x:Key="StrLicense">License</sys:String>
 
     <!-- Status bar channel/sent messages -->
+    <!-- Chat sidebar -->
+    <sys:String x:Key="StrDmInline">Show direct messages inside the client (WhatsApp-style)</sys:String>
+    <sys:String x:Key="StrDmInlineHint">On: DMs appear in the messages overview (list on the left). Off: DMs open in a separate window.</sys:String>
+    <sys:String x:Key="StrChannelsHeader">Channels</sys:String>
+    <sys:String x:Key="StrDirectMessagesHeader">Direct messages</sys:String>
+    <sys:String x:Key="StrDmNodeUnknownAskRequest">This node is not known yet. Request user info now?</sys:String>
+
+    <!-- Delivery status (send ticks) -->
+    <sys:String x:Key="StrMsgSending">Sending…</sys:String>
+    <sys:String x:Key="StrMsgSent">Sent</sys:String>
+    <sys:String x:Key="StrMsgDelivered">Delivered (acknowledged)</sys:String>
+    <sys:String x:Key="StrMsgFailed">Not delivered – tap to resend</sys:String>
+    <sys:String x:Key="StrResend">Resend</sys:String>
+
     <sys:String x:Key="StrMsgSentChannel">Message sent (channel {0})</sys:String>
     <sys:String x:Key="StrActiveChannel">active channel</sys:String>
     <sys:String x:Key="StrNodeDistanceStatus">{0} ({1}): {2:F2} km distance | Last seen: {3}</sys:String>
@@ -1027,6 +1079,11 @@ Green ≤15% | Yellow 15–25% | Red &gt;25% | Gray = no airtime data</sys:Strin
     <sys:String x:Key="StrRemoteAdminWaiting">Waiting for response</sys:String>
     <sys:String x:Key="StrRemoteAdminTimeout">Timeout — no response</sys:String>
     <sys:String x:Key="StrRemoteAdminTimeoutMsg">No response from node within the timeout. The node may be unreachable or has not granted admin access.</sys:String>
+    <sys:String x:Key="StrRemoteAdminRejected">Rejected</sys:String>
+    <sys:String x:Key="StrRemoteAdminNakMsg">The admin request was rejected (NAK):&#x0a;{0}</sys:String>
+    <sys:String x:Key="StrRemoteAdminNakKeyHint">The public key of the locally connected node is not registered as an admin key on the target node (Security → Admin keys).</sys:String>
+    <sys:String x:Key="StrRemoteAdminNakPkiHint">PKI error: the local node does not know the target node's public key, or the stored keys do not match.</sys:String>
+    <sys:String x:Key="StrRemoteAdminNakRadioHint">The packet did not get through over RF — no acknowledgement from the next hop or no route to the target.</sys:String>
     <sys:String x:Key="StrRemoteAdminSaving">Saving...</sys:String>
     <sys:String x:Key="StrRemoteAdminSaved">Saved</sys:String>
     <sys:String x:Key="StrRemoteAdminSavedMsg">Configuration successfully sent to the node.</sys:String>

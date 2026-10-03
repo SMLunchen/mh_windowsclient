@@ -66,6 +66,12 @@ public class MeshtasticProtocolService
     // Remote admin state — per-node session keys and pending request completions
     private readonly Dictionary<uint, byte[]> _remoteSessionKeys = new();
     private readonly Dictionary<uint, TaskCompletionSource<AdminMessage>> _pendingRemoteRequests = new();
+    // Request-ID → (node, TCS): lets a ROUTING_APP NAK fail the pending admin request
+    // immediately with a reason instead of silently running into the timeout.
+    private readonly Dictionary<uint, (uint NodeId, TaskCompletionSource<AdminMessage> Tcs)> _pendingRemoteByReqId = new();
+    /// <summary>Routing error of the most recent remote-admin NAK (null = no NAK; request either
+    /// succeeded or timed out). Read by RemoteAdminWindow to show *why* a request failed.</summary>
+    public Routing.Types.Error? LastRemoteAdminError { get; private set; }
     private DateTime _lastValidPacketTime = DateTime.MinValue;
     private int _consecutiveTextChunks = 0;
     private bool _recoveryInProgress = false;
@@ -74,6 +80,9 @@ public class MeshtasticProtocolService
     private const int MAX_PACKET_LENGTH = 512; // Per Meshtastic spec: >512 = corrupted
 
     public event EventHandler<MessageItem>? MessageReceived;
+    /// <summary>Raised on a ROUTING_APP ACK/NAK for one of our sent packets. <c>Delivered</c> is true
+    /// on ACK (Error.None), false on NAK — lets the UI show a delivered/failed tick + offer resend.</summary>
+    public event EventHandler<(uint PacketId, bool Delivered)>? MessageDeliveryUpdated;
     public event EventHandler<ModelNodeInfo>? NodeInfoReceived;
     /// <summary>Raised when the internal known-node cache is cleared (see <see cref="ClearKnownNodes"/>).</summary>
     public event EventHandler? NodeDbCleared;
@@ -318,6 +327,12 @@ public class MeshtasticProtocolService
         bool configReceivedInTime = false;
         for (int i = 0; i < 150; i++)
         {
+            if (_isDisconnecting)
+            {
+                Logger.WriteLine("Config wait aborted — disconnecting");
+                return;
+            }
+
             bool isComplete;
             lock (_dataLock)
             {
@@ -1780,10 +1795,36 @@ public class MeshtasticProtocolService
                     var routing = Routing.Parser.ParseFrom(data.Payload);
                     if (routing.VariantCase == Routing.VariantOneofCase.ErrorReason)
                     {
-                        if (routing.ErrorReason == Routing.Types.Error.None)
+                        bool ok = routing.ErrorReason == Routing.Types.Error.None;
+                        if (ok)
                             Logger.WriteLine($"[Routing] ACK from !{packet.From:x8} for request {data.RequestId:x8}");
                         else
                             Logger.WriteLine($"[Routing] *** NAK from !{packet.From:x8} for request {data.RequestId:x8}: {routing.ErrorReason} ***");
+
+                        // Fail a pending remote-admin request immediately on NAK (PKI_FAILED from our
+                        // own node, ADMIN_PUBLIC_KEY_UNAUTHORIZED from the target, MAX_RETRANSMIT from
+                        // the route, …) so the UI can show the reason instead of a generic timeout.
+                        if (!ok && data.RequestId != 0)
+                        {
+                            TaskCompletionSource<AdminMessage>? nakTcs = null;
+                            lock (_dataLock)
+                            {
+                                if (_pendingRemoteByReqId.TryGetValue(data.RequestId, out var pend))
+                                {
+                                    LastRemoteAdminError = routing.ErrorReason;
+                                    _pendingRemoteByReqId.Remove(data.RequestId);
+                                    if (_pendingRemoteRequests.TryGetValue(pend.NodeId, out var t) && ReferenceEquals(t, pend.Tcs))
+                                        _pendingRemoteRequests.Remove(pend.NodeId);
+                                    nakTcs = pend.Tcs;
+                                }
+                            }
+                            // null result = "failed with LastRemoteAdminError", distinct from timeout
+                            nakTcs?.TrySetResult(null!);
+                        }
+
+                        // Notify the chat UI about delivery of one of our own sent messages.
+                        if (data.RequestId != 0)
+                            MessageDeliveryUpdated?.Invoke(this, (data.RequestId, ok));
                     }
                 }
                 catch (Exception ex)
@@ -2492,15 +2533,11 @@ public class MeshtasticProtocolService
                     uptimeSeconds:   dm.UptimeSeconds);
             }
 
-            if (telemetry?.EnvironmentMetrics is { } em && (em.Temperature != 0 || em.RelativeHumidity != 0))
+            if (telemetry?.EnvironmentMetrics is { } em)
             {
-                _db?.InsertEnvironmentTelemetry(
-                    nodeId:      packet.From,
-                    timestamp:   DateTime.UtcNow,
-                    temp:        em.Temperature,
-                    humidity:    em.RelativeHumidity,
-                    pressure:    em.BarometricPressure,
-                    iaq:         (int)em.Iaq);
+                var envMetrics = EnvironmentMetricInfo.Extract(em);
+                if (envMetrics.Count > 0)
+                    _db?.InsertEnvironmentTelemetry(packet.From, DateTime.UtcNow, envMetrics);
             }
 
             lock (_dataLock)
@@ -2649,7 +2686,10 @@ public class MeshtasticProtocolService
                     ReplyId = replyId
                 },
                 Id = packetId,
-                WantAck = false,
+                // Request an ACK for every text message, matching the Meshtastic Android app, so the
+                // UI can confirm delivery (or flag failure + offer resend). A DM is ACKed by the
+                // recipient; a broadcast gets an implicit ACK when a neighbour rebroadcasts.
+                WantAck = true,
                 HopLimit = 7,
                 HopStart = 0
             };
@@ -3228,34 +3268,75 @@ public class MeshtasticProtocolService
     public async Task<AdminMessage?> SendRemoteAdminRequestAsync(uint destNodeId, AdminMessage adminMsg, int timeoutMs = 30000)
     {
         var tcs = new TaskCompletionSource<AdminMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var reqId = (uint)Random.Shared.Next(1, int.MaxValue);
         lock (_dataLock)
         {
+            LastRemoteAdminError = null;
             _pendingRemoteRequests[destNodeId] = tcs;
+            _pendingRemoteByReqId[reqId] = (destNodeId, tcs);
             if (_remoteSessionKeys.TryGetValue(destNodeId, out var key) && key.Length > 0)
                 adminMsg.SessionPasskey = ByteString.CopyFrom(key);
         }
         var reqPayload = adminMsg.ToByteString();
+        // WantAck + HopLimit are mandatory here: the firmware only backfills the default hop
+        // limit for phone packets when want_ack is set (Router.cpp, sendLocal). Without them the
+        // admin packet leaves the node with hop_limit=0 and never gets relayed — remote admin
+        // then only works for direct RF neighbors, not over multi-hop/MQTT paths.
         var meshPacket = new MeshPacket
         {
             From = _myNodeId,
             To = destNodeId,
             Decoded = new Data { Portnum = (PortNum)6, Payload = reqPayload, WantResponse = true },
-            Id = (uint)Random.Shared.Next()
+            Id = reqId,
+            WantAck = true,
+            HopLimit = 7,
+            HopStart = 7,
+            Priority = MeshPacket.Types.Priority.Reliable,
         };
+        ApplyRemoteAdminPki(meshPacket, destNodeId);
         await SendToRadioAsync(new ToRadio { Packet = meshPacket });
         Logger.WriteLine($"[RemoteAdmin] Request {adminMsg.PayloadVariantCase} → !{destNodeId:x8} " +
-            $"pktId={meshPacket.Id:x8} passkey={(adminMsg.SessionPasskey is { Length: > 0 } ? "yes" : "NONE")} " +
+            $"pktId={meshPacket.Id:x8} pki={(meshPacket.PkiEncrypted ? "yes" : "no")} " +
+            $"passkey={(adminMsg.SessionPasskey is { Length: > 0 } ? "yes" : "NONE")} " +
             $"payload[{reqPayload.Length}]={Convert.ToHexString(reqPayload.ToByteArray()).ToLowerInvariant()} (timeout {timeoutMs}ms)");
 
         var completed = await Task.WhenAny(tcs.Task, Task.Delay(timeoutMs));
-        lock (_dataLock) { _pendingRemoteRequests.Remove(destNodeId); }
+        lock (_dataLock)
+        {
+            _pendingRemoteRequests.Remove(destNodeId);
+            _pendingRemoteByReqId.Remove(reqId);
+        }
 
         if (completed != tcs.Task)
         {
             Logger.WriteLine($"[RemoteAdmin] Timeout waiting for response from !{destNodeId:x8}");
             return null;
         }
-        return tcs.Task.Result;
+        var result = tcs.Task.Result;
+        if (result == null)
+            Logger.WriteLine($"[RemoteAdmin] Request {reqId:x8} rejected: {LastRemoteAdminError}");
+        return result;
+    }
+
+    /// <summary>
+    /// Marks a remote-admin packet for PKI encryption when we know the target's public key —
+    /// same as the Android app (PKC_CHANNEL_INDEX). The firmware would auto-upgrade to PKI
+    /// anyway if its NodeDB has the key, but with the explicit flag it NAKs loudly
+    /// (PKI_FAILED / PKI_SEND_FAIL_PUBLIC_KEY) instead of silently falling back to channel
+    /// encryption, which the target's AdminModule would reject. Supplying the key also makes
+    /// the firmware verify it against its NodeDB, surfacing stale-key mismatches.
+    /// </summary>
+    private void ApplyRemoteAdminPki(MeshPacket p, uint destNodeId)
+    {
+        if (_nodeKeyService?.GetPublicKey(destNodeId) is not { } b64) return;
+        try
+        {
+            var keyBytes = Convert.FromBase64String(b64);
+            if (keyBytes.Length != 32) return;
+            p.PkiEncrypted = true;
+            p.PublicKey = ByteString.CopyFrom(keyBytes);
+        }
+        catch { /* malformed cached key — leave it to the firmware's own key lookup */ }
     }
 
     /// <summary>
@@ -3303,16 +3384,24 @@ public class MeshtasticProtocolService
             adminMsg.SessionPasskey = ByteString.CopyFrom(key);
 
         var payload = adminMsg.ToByteString();
+        // Same as SendRemoteAdminRequestAsync: want_ack=true makes the firmware backfill the
+        // default hop limit and retransmit; without it writes die after hop 0.
         var meshPacket = new MeshPacket
         {
             From = _myNodeId,
             To = destNodeId,
             Decoded = new Data { Portnum = (PortNum)6, Payload = payload, WantResponse = false },
-            Id = (uint)Random.Shared.Next()
+            Id = (uint)Random.Shared.Next(),
+            WantAck = true,
+            HopLimit = 7,
+            HopStart = 7,
+            Priority = MeshPacket.Types.Priority.Reliable,
         };
+        ApplyRemoteAdminPki(meshPacket, destNodeId);
         await SendToRadioAsync(new ToRadio { Packet = meshPacket });
         Logger.WriteLine($"[RemoteAdmin] Write {adminMsg.PayloadVariantCase} → !{destNodeId:x8} " +
-            $"pktId={meshPacket.Id:x8} passkey={(key is { Length: > 0 } ? "yes" : "NONE")} " +
+            $"pktId={meshPacket.Id:x8} pki={(meshPacket.PkiEncrypted ? "yes" : "no")} " +
+            $"passkey={(key is { Length: > 0 } ? "yes" : "NONE")} " +
             $"payload[{payload.Length}]={Convert.ToHexString(payload.ToByteArray()).ToLowerInvariant()}");
     }
 
