@@ -11,6 +11,15 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
 
+## [1.6.4.5] - 2026-10-03
+
+### 🐛 Behoben / ✨ Verbessert
+- **Remote Admin: Ablehnungen (NAK) werden jetzt gemeldet statt still in den Timeout zu laufen.** Lehnte der Ziel-Node oder die Route eine Admin-Anfrage ab (z. B. `ADMIN_PUBLIC_KEY_UNAUTHORIZED` = unser Key ist drüben nicht als Admin-Key eingetragen, `PKI_FAILED` = Schlüsselproblem am lokalen Node, `MAX_RETRANSMIT` = Paket kam über Funk nicht durch), wurde der Routing-NAK bisher nur ins Log geschrieben — das Fenster zeigte nach 30 s kommentarlos „Timeout". Jetzt bricht die Anfrage sofort ab und das Fenster nennt den konkreten Fehlergrund samt Hinweis, was zu prüfen ist.
+- **Remote Admin: Pakete werden explizit als PKI markiert (Android-Parität).** Wenn der Public Key des Ziel-Nodes bekannt ist, wird `pki_encrypted` + Key gesetzt — wie in der Android-App. Vorteil: Kann die Firmware nicht per PKI verschlüsseln (Key fehlt in der NodeDB des lokalen Nodes oder stimmt nicht überein), gibt sie sofort einen sichtbaren NAK zurück, statt das Paket still kanalverschlüsselt zu senden, das der Ziel-Node dann kommentarlos verwirft.
+- **Remote Admin: funktionierte nur zu direkt erreichbaren Nodes (hop_limit=0).** Die Remote-Admin-Pakete (Requests **und** Writes) wurden ohne `hop_limit` und ohne `want_ack` gesendet. Die Firmware füllt das Standard-Hop-Limit bei Paketen von der App aber **nur** auf, wenn `want_ack` gesetzt ist (`Router.cpp`, `sendLocal`) — die Pakete gingen also mit **0 Hops** auf die Luft und wurden nie weitergeleitet. Folge: Remote Admin klappte nur bei Nodes in direkter Funkreichweite, über Multi-Hop- oder MQTT-Strecken lief jede Anfrage in den Timeout (die Android-App setzt `hop_limit`/`want_ack` explizit und war deshalb nicht betroffen). Der Client sendet Admin-Pakete jetzt wie alle anderen Remote-Pakete mit `hop_limit=7`, `want_ack=true` und Priorität *Reliable* (inkl. Firmware-Retransmits auf verlustreichen Strecken).
+
+---
+
 ## [1.6.4.3] - 2026-09-18
 
 ### 🐛 Behoben / ✨ Verbessert

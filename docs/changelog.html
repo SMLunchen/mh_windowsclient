@@ -172,10 +172,104 @@
 <div class="section active" id="de">
 <main>
 
-  <!-- ── v1.6.3 ── -->
+  <!-- ── v1.6.4.5 ── -->
   <div class="version-entry current">
     <div class="version-header">
-      <span class="version-tag tag-latest">v1.6.3</span>
+      <span class="version-tag tag-latest">v1.6.4.5</span>
+      <span class="version-date">2026-10-03</span>
+      Remote Admin über Multi-Hop &amp; MQTT
+    </div>
+    <p class="version-desc">Die Fernkonfiguration entfernter Nodes funktioniert jetzt auch über Relay- und MQTT-Strecken — und Ablehnungen werden mit konkretem Grund gemeldet statt als stiller Timeout.</p>
+
+    <div class="cl-section fixed">
+      <h3>🛠️ Remote Admin</h3>
+      <div class="cl-group">
+        <ul class="cl-list">
+          <li><strong>Funktionierte nur zu direkt erreichbaren Nodes</strong> — Admin-Pakete gingen ohne <code>want_ack</code>/<code>hop_limit</code> raus, die Firmware ließ das Hop-Limit dadurch auf 0 und kein Node leitete sie weiter. Jetzt: Hop-Limit 7, <code>want_ack</code> und Priorität „Reliable" (inkl. Funk-Retransmits auf verlustreichen Strecken).</li>
+          <li><strong>Ablehnungen (NAK) werden gemeldet</strong> — lehnt der Ziel-Node oder die Route ab (z.&nbsp;B. Admin-Key nicht eingetragen, PKI-Schlüsselproblem, keine Funk-Bestätigung), zeigt das Fenster sofort den konkreten Grund samt Hinweis statt 30&nbsp;s später „Timeout".</li>
+          <li><strong>Explizites PKI-Flag</strong> (wie die Android-App) — kann der lokale Node nicht per PKI verschlüsseln, gibt es jetzt einen sichtbaren Fehler, statt dass das Paket still kanalverschlüsselt gesendet und drüben kommentarlos verworfen wird.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── v1.6.4.3 ── -->
+  <div class="version-entry">
+    <div class="version-header">
+      <span class="version-tag">v1.6.4.3</span>
+      <span class="version-date">2026-09-18</span>
+      Mesh-Hessen-Button reboot-sicher
+    </div>
+    <p class="version-desc">Der Mesh-Hessen-Button schreibt das Profil jetzt in einer einzigen Transaktion (nur noch ein Reboot), liest alle Werte zurück und zieht Fehlendes automatisch nach.</p>
+
+    <div class="cl-section fixed">
+      <h3>🔵 Mesh-Hessen-Button</h3>
+      <div class="cl-group">
+        <ul class="cl-list">
+          <li><strong>Nur noch ein Reboot am Ende</strong> (eine Edit-Transaktion) — vorher rebootete das Gerät schon nach dem Preset-Wechsel und der Kanal-Write ging verloren.</li>
+          <li><strong><code>ok_to_mqtt</code>/<code>ignore_mqtt</code> werden jetzt korrekt gesetzt</strong> — die EU868-Zwangskorrektur der Firmware wird durch einen zweiten LoRa-Write umgangen.</li>
+          <li><strong>Rücklesung mit ✓/✗</strong> nach dem automatischen Reconnect; fehlt etwas, wird es in einem zweiten Durchlauf nachgezogen.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── v1.6.4.2 ── -->
+  <div class="version-entry">
+    <div class="version-header">
+      <span class="version-tag">v1.6.4.2</span>
+      <span class="version-date">2026-09-17</span>
+      Virtueller Node: Android-App-Verbindung stabil
+    </div>
+    <p class="version-desc">Bugfix: Die Meshtastic-Android-App lief beim Verbinden mit dem virtuellen Node in eine Reconnect-Schleife.</p>
+
+    <div class="cl-section fixed">
+      <h3>📡 Virtueller Node</h3>
+      <div class="cl-group">
+        <ul class="cl-list">
+          <li><strong>Zweistufiger <code>want_config</code>-Handshake der Android-App</strong> wird jetzt korrekt beantwortet (Stufe&nbsp;1: nur Config, Stufe&nbsp;2: nur Nodes) — vorher wurde die App nie „verbunden".</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── v1.6.4 ── -->
+  <div class="version-entry">
+    <div class="version-header">
+      <span class="version-tag">v1.6.4</span>
+      <span class="version-date">2026-09-10</span>
+      Nachrichten im Messenger-Stil
+    </div>
+    <p class="version-desc">Großes Update rund um Nachrichten: Seitenleiste mit Kanälen &amp; Direktnachrichten, Zustellhaken, Toast-Benachrichtigungen und schnelleres Bluetooth.</p>
+
+    <div class="cl-section added">
+      <h3>💬 Nachrichten</h3>
+      <div class="cl-group">
+        <ul class="cl-list">
+          <li><strong>Seitenleiste</strong> im Nachrichten-Tab (Kanäle <strong>und</strong> DMs) mit <strong>Ungelesen-Badges</strong>; DMs wahlweise inline im Client oder im separaten Fenster.</li>
+          <li><strong>Zustellstatus-Haken</strong> (… → ✓ → ✓✓ bzw. ⚠) auf Basis der Firmware-Bestätigung plus <strong>Erneut-senden-Button</strong> an fehlgeschlagenen Nachrichten.</li>
+          <li><strong>Windows-Toast-Benachrichtigungen</strong> bei neuen Nachrichten (optional, nur wenn das Fenster nicht im Vordergrund ist).</li>
+          <li><strong>BLE schneller und stabiler</strong>: durchsatzoptimierte Verbindungsparameter und sauberer Reconnect.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="cl-section fixed">
+      <h3>🐛 Behoben</h3>
+      <div class="cl-group">
+        <ul class="cl-list">
+          <li>Chat startet unten bei der neuesten Nachricht; Kanalauswahl folgt der Seitenleiste (doppeltes Dropdown entfernt); Anzeige und Auswahl stimmen beim Start überein.</li>
+          <li>„Info anfordern" im Chat-Kontextmenü (auch für unbekannte Nodes); „DM senden" respektiert den Inline/Fenster-Schalter.</li>
+          <li>Serielle Verbindung friert beim Trennen von einem Nicht-Meshtastic-Port nicht mehr ein; kein Toast-Spam bei unentschlüsselbaren Nachrichten.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── v1.6.3 ── -->
+  <div class="version-entry">
+    <div class="version-header">
+      <span class="version-tag">v1.6.3</span>
       <span class="version-date">2026-08-31</span>
       Umweltdaten auf der Karte
     </div>
@@ -1149,10 +1243,104 @@
 <div class="section" id="en">
 <main>
 
-  <!-- ── v1.6.3 (EN) ── -->
+  <!-- ── v1.6.4.5 (EN) ── -->
   <div class="version-entry current">
     <div class="version-header">
-      <span class="version-tag tag-latest">v1.6.3</span>
+      <span class="version-tag tag-latest">v1.6.4.5</span>
+      <span class="version-date">2026-10-03</span>
+      Remote admin over multi-hop &amp; MQTT
+    </div>
+    <p class="version-desc">Remote administration of distant nodes now works across relay and MQTT paths — and rejections are reported with a concrete reason instead of a silent timeout.</p>
+
+    <div class="cl-section fixed">
+      <h3>🛠️ Remote admin</h3>
+      <div class="cl-group">
+        <ul class="cl-list">
+          <li><strong>Only worked for directly reachable nodes</strong> — admin packets were sent without <code>want_ack</code>/<code>hop_limit</code>, so the firmware left the hop limit at 0 and no node relayed them. Now: hop limit 7, <code>want_ack</code> and "Reliable" priority (including RF retransmits on lossy paths).</li>
+          <li><strong>Rejections (NAK) are reported</strong> — if the target node or the route rejects a request (e.g. admin key not registered, PKI key problem, no RF acknowledgement), the window immediately shows the concrete reason plus a hint instead of "timeout" 30&nbsp;s later.</li>
+          <li><strong>Explicit PKI flag</strong> (like the Android app) — if the local node cannot encrypt via PKI, you now get a visible error instead of the packet being silently sent channel-encrypted and dropped on the other side.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── v1.6.4.3 (EN) ── -->
+  <div class="version-entry">
+    <div class="version-header">
+      <span class="version-tag">v1.6.4.3</span>
+      <span class="version-date">2026-09-18</span>
+      Mesh-Hessen button reboot-safe
+    </div>
+    <p class="version-desc">The Mesh-Hessen button now writes the profile in a single transaction (only one reboot), reads all values back and automatically re-applies anything missing.</p>
+
+    <div class="cl-section fixed">
+      <h3>🔵 Mesh-Hessen button</h3>
+      <div class="cl-group">
+        <ul class="cl-list">
+          <li><strong>Only one reboot at the end</strong> (a single edit transaction) — previously the device rebooted right after the preset change and the channel write was lost.</li>
+          <li><strong><code>ok_to_mqtt</code>/<code>ignore_mqtt</code> are now set correctly</strong> — the firmware's EU868 coercion is bypassed with a second LoRa write.</li>
+          <li><strong>Read-back with ✓/✗</strong> after the automatic reconnect; anything missing is re-applied in a second pass.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── v1.6.4.2 (EN) ── -->
+  <div class="version-entry">
+    <div class="version-header">
+      <span class="version-tag">v1.6.4.2</span>
+      <span class="version-date">2026-09-17</span>
+      Virtual node: stable Android app connection
+    </div>
+    <p class="version-desc">Bugfix: the Meshtastic Android app ran into a reconnect loop when connecting to the virtual node.</p>
+
+    <div class="cl-section fixed">
+      <h3>📡 Virtual node</h3>
+      <div class="cl-group">
+        <ul class="cl-list">
+          <li><strong>The Android app's two-stage <code>want_config</code> handshake</strong> is now answered correctly (stage&nbsp;1: config only, stage&nbsp;2: nodes only) — previously the app never reached "connected".</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── v1.6.4 (EN) ── -->
+  <div class="version-entry">
+    <div class="version-header">
+      <span class="version-tag">v1.6.4</span>
+      <span class="version-date">2026-09-10</span>
+      Messenger-style messaging
+    </div>
+    <p class="version-desc">Big messaging update: sidebar with channels &amp; direct messages, delivery ticks, toast notifications and faster Bluetooth.</p>
+
+    <div class="cl-section added">
+      <h3>💬 Messaging</h3>
+      <div class="cl-group">
+        <ul class="cl-list">
+          <li><strong>Sidebar</strong> in the messages tab (channels <strong>and</strong> DMs) with <strong>unread badges</strong>; DMs either inline in the client or in a separate window.</li>
+          <li><strong>Delivery ticks</strong> (… → ✓ → ✓✓ or ⚠) based on the firmware acknowledgement, plus a <strong>resend button</strong> on failed messages.</li>
+          <li><strong>Windows toast notifications</strong> for new messages (optional, only while the window is not in the foreground).</li>
+          <li><strong>Faster, more stable BLE</strong>: throughput-optimized connection parameters and clean reconnect.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="cl-section fixed">
+      <h3>🐛 Fixed</h3>
+      <div class="cl-group">
+        <ul class="cl-list">
+          <li>Chat starts at the newest message; the send channel follows the sidebar (duplicate dropdown removed); selection and displayed messages match at startup.</li>
+          <li>"Request info" in the chat context menu (works for unknown nodes too); "Send DM" respects the inline/window switch.</li>
+          <li>Serial connection no longer freezes when disconnecting from a non-Meshtastic port; no toast spam for undecryptable messages.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── v1.6.3 (EN) ── -->
+  <div class="version-entry">
+    <div class="version-header">
+      <span class="version-tag">v1.6.3</span>
       <span class="version-date">2026-08-31</span>
       Environment data on the map
     </div>

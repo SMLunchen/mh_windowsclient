@@ -104,12 +104,28 @@ public partial class RemoteAdminWindow : Window
 
         if (metaResp == null)
         {
-            SetStatus("StrRemoteAdminTimeout", "#F44336");
+            // Distinguish a NAK (we know *why* it failed) from a plain timeout.
+            var nak = _svc.LastRemoteAdminError;
+            SetStatus(nak != null ? "StrRemoteAdminRejected" : "StrRemoteAdminTimeout", "#F44336");
             Dispatcher.Invoke(() =>
             {
-                StatusLabel.Text = Loc("StrRemoteAdminTimeout");
+                string msg;
+                if (nak != null)
+                {
+                    msg = string.Format(Loc("StrRemoteAdminNakMsg"), nak.ToString());
+                    if (nak == Routing.Types.Error.AdminPublicKeyUnauthorized)
+                        msg += "\n\n" + Loc("StrRemoteAdminNakKeyHint");
+                    else if (nak is Routing.Types.Error.PkiFailed or Routing.Types.Error.PkiUnknownPubkey)
+                        msg += "\n\n" + Loc("StrRemoteAdminNakPkiHint");
+                    else if (nak is Routing.Types.Error.MaxRetransmit or Routing.Types.Error.NoRoute)
+                        msg += "\n\n" + Loc("StrRemoteAdminNakRadioHint");
+                }
+                else
+                {
+                    msg = Loc("StrRemoteAdminTimeoutMsg");
+                }
                 MessageBox.Show(
-                    Loc("StrRemoteAdminTimeoutMsg"),
+                    msg,
                     Loc("StrRemoteAdminTitle"),
                     MessageBoxButton.OK, MessageBoxImage.Warning);
             });
