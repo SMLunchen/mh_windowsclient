@@ -11,6 +11,81 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
 
+## [1.6.4.5] - 2026-10-03
+
+### 🐛 Behoben / ✨ Verbessert
+- **Remote Admin: Ablehnungen (NAK) werden jetzt gemeldet statt still in den Timeout zu laufen.** Lehnte der Ziel-Node oder die Route eine Admin-Anfrage ab (z. B. `ADMIN_PUBLIC_KEY_UNAUTHORIZED` = unser Key ist drüben nicht als Admin-Key eingetragen, `PKI_FAILED` = Schlüsselproblem am lokalen Node, `MAX_RETRANSMIT` = Paket kam über Funk nicht durch), wurde der Routing-NAK bisher nur ins Log geschrieben — das Fenster zeigte nach 30 s kommentarlos „Timeout". Jetzt bricht die Anfrage sofort ab und das Fenster nennt den konkreten Fehlergrund samt Hinweis, was zu prüfen ist.
+- **Remote Admin: Pakete werden explizit als PKI markiert (Android-Parität).** Wenn der Public Key des Ziel-Nodes bekannt ist, wird `pki_encrypted` + Key gesetzt — wie in der Android-App. Vorteil: Kann die Firmware nicht per PKI verschlüsseln (Key fehlt in der NodeDB des lokalen Nodes oder stimmt nicht überein), gibt sie sofort einen sichtbaren NAK zurück, statt das Paket still kanalverschlüsselt zu senden, das der Ziel-Node dann kommentarlos verwirft.
+- **Remote Admin: funktionierte nur zu direkt erreichbaren Nodes (hop_limit=0).** Die Remote-Admin-Pakete (Requests **und** Writes) wurden ohne `hop_limit` und ohne `want_ack` gesendet. Die Firmware füllt das Standard-Hop-Limit bei Paketen von der App aber **nur** auf, wenn `want_ack` gesetzt ist (`Router.cpp`, `sendLocal`) — die Pakete gingen also mit **0 Hops** auf die Luft und wurden nie weitergeleitet. Folge: Remote Admin klappte nur bei Nodes in direkter Funkreichweite, über Multi-Hop- oder MQTT-Strecken lief jede Anfrage in den Timeout (die Android-App setzt `hop_limit`/`want_ack` explizit und war deshalb nicht betroffen). Der Client sendet Admin-Pakete jetzt wie alle anderen Remote-Pakete mit `hop_limit=7`, `want_ack=true` und Priorität *Reliable* (inkl. Firmware-Retransmits auf verlustreichen Strecken).
+
+---
+
+## [1.6.4.3] - 2026-09-18
+
+### 🐛 Behoben / ✨ Verbessert
+- **Mesh-Hessen-Button: reboot-sicher, gestaged, mit Rücklesung + automatischem Nachziehen.** Der Button schreibt das Profil jetzt in einer **einzigen Edit-Transaktion** (`BeginEditSettings`/`CommitEditSettings`), sodass das Gerät nur **einmal am Ende** neu startet — vorher rebootete es schon nach dem Modem-Preset/Region-Wechsel, wodurch der anschließende Kanal-Write verloren ging. Reihenfolge: **1.** Modem-Preset ShortSlow + Region EU868, **2.** Kanal „Mesh Hessen" (Uplink+Downlink), **3.** MQTT + Hop-Limit 7. Die LoRa-Config wird dabei **zweimal** geschrieben (vor und nach dem Kanal): Der erste Write löst die Firmware-Coercion aus (EU868 mit Duty-Cycle → `ignore_mqtt` wird zwangsweise `true`), der zweite Write lässt die Region unverändert → keine Coercion → `ok_to_mqtt=1` / `ignore_mqtt=0` bleiben stehen (Fund aus `ignore-mqtt-eu868-coercion.md`, jetzt auch im Full-Client). **Vorher wurden `ok_to_mqtt`/`ignore_mqtt` gar nicht gesetzt.** Nach dem Commit wartet der Client reboot-sicher auf die automatische Neuverbindung und **liest alle Werte zurück** (Region/Preset/Hop/MQTT/Kanal). Fehlt danach noch etwas, wird es in einem **zweiten Durchlauf automatisch nachgezogen**; das Endergebnis wird mit ✓/✗ angezeigt. Der Button ist außerdem nutzbar, solange das Profil noch nicht vollständig gesetzt ist (z. B. zum Nachbessern der MQTT-Werte).
+
+---
+
+## [1.6.4.2] - 2026-09-17
+
+### 🐛 Behoben
+- **Virtueller Node: Verbindung mit der Meshtastic-Android-App stabilisiert.** Die App nutzt einen **zweistufigen** `want_config`-Handshake mit zwei festen Spezial-Nonces: `69420` = „nur Config" (my_info, Metadata, Config, ModuleConfig, Kanäle) und `69421` = „nur Nodes" (ausschließlich NodeInfos). Der vNode hat bisher **beide** Anfragen mit dem vollständigen Dump inkl. `my_info` beantwortet. Dadurch setzte Androids `handleMyInfo` in Stufe 2 den Handshake-Zustand zurück, das `config_complete` von Stufe 2 wurde verworfen, die App wurde nie „verbunden" und lief in eine Reconnect-Schleife (2 Replays pro Versuch, 4 Versuche, dann Abbruch). Der vNode **verzweigt jetzt nach Nonce**: auf `69420` nur die Config (ohne Nodes), auf `69421` nur die Nodes (ohne my_info/Config/Kanäle); jede andere Nonce erhält weiterhin den vollständigen Einstufen-Dump. Zusätzlich loggt der vNode jetzt Nonce und Stufe pro Replay.
+
+---
+
+## [1.6.4] - 2026-09-10
+
+### ✨ Hinzugefügt
+
+#### 💬 Nachrichten-Übersicht mit Seitenleiste (WhatsApp-Stil)
+- Neue **Seitenleiste** im Nachrichten-Tab: links die Auswahl (Kanäle **und** Direktnachrichten), rechts der Chat. Das bewährte **Kontextmenü** und die farbigen Bubbles bleiben unverändert — die **Node-Farbe** wird weiterhin je Bubble berücksichtigt.
+- **Ungelesen-Badge** (grüne Blase mit Zähler) an Kanälen und DMs, die nicht gerade geöffnet sind.
+
+#### ✅ Zustellstatus & erneutes Senden
+- Gesendete Nachrichten zeigen jetzt **Statushaken**: … (wird gesendet) → ✓ (gesendet) → ✓✓ (zugestellt, grün) bzw. ⚠ (fehlgeschlagen, rot). Basiert auf `want_ack` und der Routing-Bestätigung der Firmware (Android-Parität).
+- **Erneut-senden-Button** (↻) an fehlgeschlagenen Nachrichten.
+
+#### 🔔 Direktnachrichten wahlweise inline oder im Fenster
+- In den Einstellungen umschaltbar: DMs **wie bei WhatsApp direkt im Client** (inline in der Übersicht) **oder** im separaten Fenster (Standard bleibt Fenster).
+
+#### 🔔 Toast-Benachrichtigungen
+- Optionale **Windows-Toast-Benachrichtigungen** bei neuen Nachrichten (in den Einstellungen aktivierbar), nur wenn das Fenster nicht im Vordergrund ist.
+
+#### 🚀 Verbindung
+- **BLE-Durchsatz optimiert**: bevorzugte Verbindungsparameter (`ThroughputOptimized`) werden angefordert — spürbar schnellerer Datenaustausch über Bluetooth.
+- **BLE-Reconnect** stabilisiert: GATT-Session/-Service und Verbindungsparameter werden beim Trennen sauber freigegeben, sodass ein erneutes Verbinden zuverlässig funktioniert.
+
+> ℹ️ Diese Version hebt das Windows-SDK-Ziel auf `10.0.22621` an (für die BLE-Durchsatz-API). Mindest-Windows-Version bleibt unverändert.
+
+### 🐛 Behoben
+- **Toast-Spam bei verschlüsselten Nachrichten**: Für unentschlüsselbare Nachrichten (Platzhalter „Verschlüsselte Nachricht – PSK erforderlich") wird **kein** Toast mehr angezeigt.
+- **„DM senden" springt jetzt in den Chat**: Der „DM senden"-Button an der Node-Liste respektiert nun den Inline/Fenster-Schalter — im Inline-Modus wird direkt in den Nachrichten-Tab gesprungen statt zusätzlich das DM-Fenster zu öffnen; im Fenster-Modus wird der passende Chat direkt geöffnet und aktiviert.
+- **„Info anfordern" im Chat**: Das Nachrichten-Kontextmenü (Rechtsklick auf eine Nachricht) hat jetzt das vollständige **„Info anfordern"**-Untermenü (Nutzer-Info, Position, Geräte-/Umwelt-/Luftqualitäts-/Power-Metriken, LocalStats, HostMetrics, PaxCounter) — zielt auf den Absender. Funktioniert auch bei **noch unbekannten Nodes** (nur die Node-ID ist nötig — genau so lernt man einen unbekannten Node kennen). Zusätzlich hat die **Chatliste selbst** (Direktnachrichten-Einträge) jetzt ein Rechtsklick-Menü mit „Node-Info", „Auf Karte zeigen" und „Info anfordern".
+- **Kanalauswahl-Dropdown neben dem Eingabefeld entfernt**: Der Sende-Kanal folgt jetzt der Auswahl in der Seitenleiste — das separate Dropdown war doppelt und ist weg. Mehr Platz fürs Eingabefeld.
+- **Chat startet unten (neueste Nachricht) statt oben**: Beim Start bzw. Kanal-/DM-Wechsel wird jetzt zuverlässig ans Ende gescrollt. Zuvor landete man im Back-Scroll ganz oben, weil das Nachladen älterer Nachrichten schon beim ersten Layout-Durchlauf (Scroll-Position 0) auslöste; das ist jetzt bis nach dem ersten Scroll-to-Bottom gesperrt.
+- **Chatliste und angezeigte Nachrichten stimmen beim Start überein**: Beim Start war in der Seitenleiste zwar ein Kanal (z. B. „short slow") ausgewählt, angezeigt wurden aber die Nachrichten eines anderen Kanals — erst ein erneuter Klick schaltete um. Ursache: der versteckte alte Kanal-Filter (ComboBox) überschrieb beim Befüllen die Auswahl der Seitenleiste mit „Alle Kanäle". Die Seitenleiste ist jetzt alleinige Filterquelle; der versteckte ComboBox kann sie nicht mehr überschreiben.
+- **Serielle Verbindung hängt nicht mehr beim Trennen**: Verband man sich versehentlich mit einem COM-Port, der kein Meshtastic-Node ist, und trennte sofort, konnte der Client einfrieren. Ursache: unendlicher Write-Timeout ließ Schreibvorgänge auf dem toten Port ewig blockieren, wodurch `SerialPort.Close()` beim Trennen deadlockte. Jetzt: finiter Write-Timeout (2 s), das Schließen läuft zeitlich begrenzt auf einem eigenen Thread, der Trenn-Vorgang ist reentranz-sicher, die Config-Wartephase bricht beim Trennen sofort ab, und die Oberfläche gibt nach spätestens 8 s garantiert wieder frei.
+
+---
+
+## [1.6.3] - 2026-08-31
+
+### ✨ Hinzugefügt
+
+#### 🌡️ Umweltdaten auf der Karte
+- Neues, in den Einstellungen aktivierbares Feature: Nodes, die Umwelt-Telemetrie liefern, zeigen ihre Messwerte direkt auf der Karte. Funktioniert für **Raster- und Vektor-Karte**.
+- **Messwert-Boxen** unter dem jeweiligen Node-Marker (leicht gelbe Box mit themenabhängigem Rand – weiß bei Nacht, schwarz bei Tag) mit allen gemeldeten Werten plus Datum/Uhrzeit der Messung.
+- **Heatmap / interpolierte Wertefläche** (Vektor **und** Raster-Karte) für die gewählte Metrik — im **Wetterdienst-Stil**: die Farbe entspricht dem **tatsächlichen Messwert** auf einer kalibrierten, saturierten Skala (nicht der Punktdichte), mit **Legende** am Kartenrand. Zwischen den Sensoren wird per IDW (inverse Distanzgewichtung, ~30 km Reichweite) interpoliert; jenseits der Reichweite bleibt die Fläche transparent. Weiche, ineinander verlaufende Kanten (bilinear hochgerechnetes Bild) plus **Isobaren** an den Bandgrenzen und einer **Außenumrandung** des Gebiets. Ältere Messwerte zählen weniger (exponentieller Zeit-Abfall), veraltete Sensoren verlieren an Gewicht. Funktioniert für **alle Metriken** (Temperatur, IAQ, Feuchte, …). Die Karte bleibt darunter sichtbar.
+- **Voller Sensorsatz**: Temperatur, Feuchte, Luftdruck, IAQ, Gas-Widerstand, Beleuchtung/Weißlicht/UV, Wind (Geschw./Richtung/Böe), Regen (1 h/24 h), Bodenfeuchte/-temperatur, Strahlung, Distanz, Gewicht. Die Telemetrie-DB wird dafür automatisch migriert (bisher wurden nur Temperatur/Feuchte/Luftdruck/IAQ gespeichert).
+- **Einzelne Nodes abwählbar** (falls einer Unsinn misst): über den 🌡️-Button an der Karte, wirkt auf Boxen **und** Heatmap.
+- Steuerung komplett über den neuen 🌡️-Button (Box-Modus, Heatmap an/aus, Metrik-Auswahl, Node-Liste); Einstellungen bleiben erhalten.
+- **Box-Modus konfigurierbar**: Aus / Immer sichtbar / Beim Überfahren (Hover). Nodes, die Umweltdaten liefern, sind am **grünen Marker-Ring** erkennbar.
+- **Abgestufte Legende** (z. B. 5-°C-Schritte bei Temperatur) mit diskreten Farbbändern statt weichem Verlauf — die Band-Grenzen sind als sichtbare Kontur in der Fläche erkennbar.
+- **Z-Reihenfolge** korrigiert: eigener Standort liegt über den Node-Markern, Messwert-Boxen über den Markern.
+
+---
+
 ## [1.6.2.5] - 2026-08-30
 
 ### 🐛 Behoben

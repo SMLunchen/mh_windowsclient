@@ -246,6 +246,17 @@ public class VirtualNodeService : IDisposable
         }
     }
 
+    // Meshtastic phone apps (Android/iOS) run a TWO-STAGE want_config handshake with two
+    // fixed "special" nonces the firmware branches on (PhoneAPI.h). We must branch the same way:
+    //   69420 (ONLY_CONFIG) → stage 1: my_info, metadata, config, module config, channels — NO nodes.
+    //   69421 (ONLY_NODES)  → stage 2: node infos ONLY — NO my_info/metadata/config/channels.
+    // Answering BOTH with a full dump (incl. my_info) makes the app's handleMyInfo reset its
+    // handshake state during stage 2, so the stage-2 config_complete is rejected, the app never
+    // reaches "connected", and it loops/gives up. Any OTHER nonce → single-stage full dump
+    // (older/generic clients that expect everything at once).
+    private const uint WANT_CONFIG_ONLY_CONFIG = 69420;
+    private const uint WANT_CONFIG_ONLY_NODES  = 69421;
+
     private async Task SendConfigReplayAsync(VnClient client, uint wantConfigId, CancellationToken ct)
     {
         try
@@ -262,16 +273,32 @@ public class VirtualNodeService : IDisposable
                 await Task.Delay(10, ct);
             }
 
-            if (snap != null)
+            string stage;
+            if (snap == null)
             {
-                // Order mirrors a real device's want_config response:
-                // my_info, metadata, configs, module configs, channels, nodes.
+                stage = "empty";
+            }
+            else if (wantConfigId == WANT_CONFIG_ONLY_NODES)
+            {
+                // Stage 2 — nodes ONLY. Sending my_info/metadata/config here would reset the
+                // phone app's handshake back to stage 1 and make it reject config_complete.
+                stage = "stage2/nodes";
+                foreach (var ni in snap.Nodes) await Send(ni);
+            }
+            else
+            {
+                // Stage 1 (69420) or a single-stage/generic request: the config bundle.
+                // Order mirrors a real device: my_info, metadata, configs, module configs, channels.
+                stage = wantConfigId == WANT_CONFIG_ONLY_CONFIG ? "stage1/config" : "full";
                 await Send(snap.MyInfo);
                 await Send(snap.Metadata);
                 foreach (var cfg in snap.Configs) await Send(cfg);
                 foreach (var mod in snap.ModuleConfigs) await Send(mod);
                 foreach (var ch in snap.Channels) await Send(ch);
-                foreach (var ni in snap.Nodes) await Send(ni);
+                // Only a generic single-stage client gets nodes in the same response; a phone app's
+                // stage 1 (69420) must NOT include (other) node infos — those come in stage 2.
+                if (wantConfigId != WANT_CONFIG_ONLY_CONFIG)
+                    foreach (var ni in snap.Nodes) await Send(ni);
             }
 
             // Always echo the client's own wantConfigId — the physical node's ID is irrelevant here
@@ -280,9 +307,9 @@ public class VirtualNodeService : IDisposable
 
             int chCount = snap?.Channels.Count ?? 0;
             int nodeCount = snap?.Nodes.Count ?? 0;
-            Log($"Client {client.Id}: config replay done ({chCount} ch, {nodeCount} nodes)");
+            Log($"Client {client.Id}: config replay done (nonce={wantConfigId}, {stage}; snapshot has {chCount} ch, {nodeCount} nodes)");
             if (snap is not { IsReady: true })
-                Log($"Client {client.Id}: WARNING device config snapshot not ready — replayed {chCount} ch / {nodeCount} nodes. " +
+                Log($"Client {client.Id}: WARNING device config snapshot not ready — snapshot has {chCount} ch / {nodeCount} nodes. " +
                     "Reconnect the physical device so the Virtual Node can capture its full config.");
         }
         catch (OperationCanceledException) { }

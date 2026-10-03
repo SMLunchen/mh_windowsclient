@@ -13,6 +13,9 @@ namespace MeshhessenClient.Services;
 public class BluetoothConnectionService : IConnectionService
 {
     private BluetoothLEDevice? _device;
+    private GattSession? _gattSession;
+    private BluetoothLEPreferredConnectionParametersRequest? _connParamsRequest;
+    private GattDeviceService? _service;
     private GattCharacteristic? _toRadioChar;
     private GattCharacteristic? _fromRadioChar;
     private GattCharacteristic? _fromNumChar;
@@ -122,6 +125,9 @@ public class BluetoothConnectionService : IConnectionService
             }
 
             var service = serviceResult.Services.First();
+            _service = service; // keep so Disconnect can dispose it (else Windows holds the link → next connect fails until app restart)
+            foreach (var extra in serviceResult.Services.Skip(1))
+                try { extra.Dispose(); } catch { }
             LogDebug($"[BLE] Found Meshtastic service");
 
             // Maintain persistent GATT session for better reliability
@@ -129,11 +135,11 @@ public class BluetoothConnectionService : IConnectionService
             // helps Windows negotiate optimal parameters automatically
             try
             {
-                var session = await Windows.Devices.Bluetooth.GenericAttributeProfile.GattSession.FromDeviceIdAsync(_device.BluetoothDeviceId);
-                if (session != null)
+                _gattSession = await Windows.Devices.Bluetooth.GenericAttributeProfile.GattSession.FromDeviceIdAsync(_device.BluetoothDeviceId);
+                if (_gattSession != null)
                 {
-                    session.MaintainConnection = true;
-                    LogDebug($"[BLE] GATT Session established. Current MaxPduSize: {session.MaxPduSize}");
+                    _gattSession.MaintainConnection = true;
+                    LogDebug($"[BLE] GATT Session established. Current MaxPduSize: {_gattSession.MaxPduSize}");
                     LogDebug($"[BLE] Note: Meshtastic recommends MTU 512, but UWP negotiates this automatically");
                 }
             }
@@ -141,6 +147,22 @@ public class BluetoothConnectionService : IConnectionService
             {
                 LogDebug($"[BLE] WARNING: Could not establish GATT session: {ex.Message}");
                 LogDebug($"[BLE] Continuing anyway...");
+            }
+
+            // Request a LOW-LATENCY connection interval. Windows defaults to a power-optimized
+            // (~180 ms) interval, which makes each FROMRADIO read take ~180 ms — reading a large
+            // NodeDB then takes tens of seconds. ThroughputOptimized drops it to ~15 ms (~10× faster).
+            // Keep the request object alive (dispose on Disconnect) or Windows reverts to the slow
+            // interval. Guarded: no-ops on Windows older than the supporting build.
+            try
+            {
+                _connParamsRequest = _device.RequestPreferredConnectionParameters(
+                    BluetoothLEPreferredConnectionParameters.ThroughputOptimized);
+                LogDebug($"[BLE] Requested ThroughputOptimized connection params (status: {_connParamsRequest?.Status})");
+            }
+            catch (Exception ex)
+            {
+                LogDebug($"[BLE] Could not request fast connection params: {ex.Message}");
             }
 
             // Get characteristics
@@ -628,6 +650,25 @@ public class BluetoothConnectionService : IConnectionService
             _fromNumChar = null;
             _toRadioChar = null;
             _fromRadioChar = null;
+
+            // Order matters: drop the GATT session's MaintainConnection + dispose it, THEN the
+            // service, THEN the device. Leaving the GattDeviceService undisposed keeps the BLE link
+            // open in Windows, so the next connect in this process fails until the app is restarted.
+            if (_connParamsRequest != null)
+            {
+                try { _connParamsRequest.Dispose(); } catch { }
+                _connParamsRequest = null;
+            }
+            if (_gattSession != null)
+            {
+                try { _gattSession.MaintainConnection = false; _gattSession.Dispose(); } catch { }
+                _gattSession = null;
+            }
+            if (_service != null)
+            {
+                try { _service.Dispose(); } catch { }
+                _service = null;
+            }
 
             if (_device != null)
             {

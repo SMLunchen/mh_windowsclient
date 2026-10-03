@@ -511,8 +511,7 @@ public partial class MainWindow
                 // Resolve stored "Kanal N" names against the current channel list, then rebuild.
                 RefreshChannelNames();
                 RebuildVisibleMessages();
-                if (_messages.Count > 0)
-                    MessageListView.ScrollIntoView(_messages[^1]);
+                ScrollMessagesToBottom();
             });
         }
         catch (Exception ex)
@@ -618,9 +617,25 @@ public partial class MainWindow
 
     private void MessageListView_ScrollChanged(object sender, ScrollChangedEventArgs e)
     {
+        // Don't lazy-load until the initial scroll-to-bottom has happened — otherwise the
+        // startup layout pass (VerticalOffset 0) would immediately drag us back to the top.
+        if (!_initialScrollDone) return;
         // When scrolled to (near) the top, lazy-load older messages from DB
         if (e.VerticalOffset < 10 && _messageDbManager != null && _dbOldestTimestamp != long.MaxValue)
             LazyLoadOlderMessages();
+    }
+
+    /// <summary>Scroll the chat to the newest message. Deferred to Background priority so the
+    /// (virtualized) list has finished its layout pass before we scroll — otherwise the scroll
+    /// is a no-op and we stay at the top. Also arms lazy-load-on-scroll-up.</summary>
+    private void ScrollMessagesToBottom()
+    {
+        Dispatcher.BeginInvoke(new Action(() =>
+        {
+            if (_messages.Count > 0)
+                MessageListView.ScrollIntoView(_messages[^1]);
+            _initialScrollDone = true;
+        }), System.Windows.Threading.DispatcherPriority.Background);
     }
 
     private void ClearChannelMessages_Click(object sender, RoutedEventArgs e)
@@ -724,25 +739,35 @@ public partial class MainWindow
 
     private void UpdateMessageFilterComboBox()
     {
-        // Speichere aktuelle Auswahl
-        var selectedFilter = MessageChannelFilterComboBox.SelectedItem as ChannelInfo;
-
-        // Erstelle Liste mit "Alle" Option
-        var filterItems = new List<ChannelInfo>();
-        filterItems.Add(new ChannelInfo { Index = 999, Name = Loc("StrAllChannels"), Role = "" });
-        filterItems.AddRange(_channels);
-
-        MessageChannelFilterComboBox.ItemsSource = filterItems;
-
-        // Stelle Auswahl wieder her oder wähle "Alle"
-        if (selectedFilter != null)
+        // Populate the (hidden) ComboBox without letting its SelectionChanged clobber the
+        // sidebar-driven _messageChannelFilter — see MessageChannelFilter_Changed.
+        _suppressChannelFilterCombo = true;
+        try
         {
-            var restored = filterItems.FirstOrDefault(c => c.Index == selectedFilter.Index);
-            MessageChannelFilterComboBox.SelectedItem = restored ?? filterItems[0];
+            // Speichere aktuelle Auswahl
+            var selectedFilter = MessageChannelFilterComboBox.SelectedItem as ChannelInfo;
+
+            // Erstelle Liste mit "Alle" Option
+            var filterItems = new List<ChannelInfo>();
+            filterItems.Add(new ChannelInfo { Index = 999, Name = Loc("StrAllChannels"), Role = "" });
+            filterItems.AddRange(_channels);
+
+            MessageChannelFilterComboBox.ItemsSource = filterItems;
+
+            // Stelle Auswahl wieder her oder wähle "Alle"
+            if (selectedFilter != null)
+            {
+                var restored = filterItems.FirstOrDefault(c => c.Index == selectedFilter.Index);
+                MessageChannelFilterComboBox.SelectedItem = restored ?? filterItems[0];
+            }
+            else
+            {
+                MessageChannelFilterComboBox.SelectedIndex = 0;
+            }
         }
-        else
+        finally
         {
-            MessageChannelFilterComboBox.SelectedIndex = 0;
+            _suppressChannelFilterCombo = false;
         }
     }
 
@@ -796,6 +821,9 @@ public partial class MainWindow
 
     private void MessageChannelFilter_Changed(object sender, SelectionChangedEventArgs e)
     {
+        // The ComboBox is hidden and only ever changes programmatically (via
+        // UpdateMessageFilterComboBox). Ignore those so it can't overwrite the sidebar filter.
+        if (_suppressChannelFilterCombo) return;
         try
         {
             _messageChannelFilter = MessageChannelFilterComboBox.SelectedItem as ChannelInfo;
@@ -824,14 +852,9 @@ public partial class MainWindow
                 }
             }
 
-            // Sync send-channel dropdown to the selected filter channel
-            // (skip "Alle Kanäle" sentinel with Index 999)
+            // Send-channel now follows the sidebar selection (ActiveChannelComboBox removed).
             if (_messageChannelFilter != null && _messageChannelFilter.Index != 999)
-            {
-                var match = _channels.FirstOrDefault(c => c.Index == _messageChannelFilter.Index);
-                if (match != null && !Equals(ActiveChannelComboBox.SelectedItem, match))
-                    ActiveChannelComboBox.SelectedItem = match;
-            }
+                _activeChannelIndex = (int)_messageChannelFilter.Index;
 
             Services.Logger.WriteLine($"Message filter changed to: {_messageChannelFilter?.Name ?? "Alle"} ({_messages.Count}/{_allMessages.Count} messages)");
         }
@@ -860,15 +883,10 @@ public partial class MainWindow
                 return;
             }
 
-            // Öffne/Erstelle DM-Fenster
-            if (_dmWindow == null)
-            {
-                _dmWindow = new DirectMessagesWindow(_protocolService, _myNodeId);
-                _dmWindow.SetMessageDbManager(_messageDbManager);
-            }
-
-            // Öffne Chat mit diesem Knoten
-            _dmWindow.OpenChatWithNode(selectedNode.NodeId, selectedNode.Name);
+            // Über OpenDmToNode leiten, damit der Inline/Fenster-Schalter aus den
+            // Einstellungen respektiert wird (Inline: springt in den Nachrichten-Tab,
+            // Fenster: öffnet das DM-Fenster und den passenden Chat).
+            OpenDmToNode(selectedNode);
 
             Services.Logger.WriteLine($"Opening DM chat with node: {selectedNode.Name} ({selectedNode.Id})");
         }
