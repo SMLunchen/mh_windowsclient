@@ -24,4 +24,17 @@ public class DashboardStore
 {
     [JsonPropertyName("dashboards")]
     public List<Dashboard> Dashboards { get; set; } = new();
+
+    /// <summary>Auto-refresh interval in seconds (0 = off). Persisted so the
+    /// dashboard reopens with the user's last choice instead of resetting to 30 s.</summary>
+    [JsonPropertyName("refreshSeconds")]
+    public int RefreshSeconds { get; set; } = 30;
+
+    // Window placement + last active dashboard, restored on reopen (NaN = never saved)
+    [JsonPropertyName("windowWidth")]   public double  WindowWidth  { get; set; } = double.NaN;
+    [JsonPropertyName("windowHeight")]  public double  WindowHeight { get; set; } = double.NaN;
+    [JsonPropertyName("windowLeft")]    public double  WindowLeft   { get; set; } = double.NaN;
+    [JsonPropertyName("windowTop")]     public double  WindowTop    { get; set; } = double.NaN;
+    [JsonPropertyName("windowMax")]     public bool    WindowMaximized { get; set; }
+    [JsonPropertyName("lastDashboard")] public string? LastDashboard   { get; set; }
 }

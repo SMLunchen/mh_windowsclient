@@ -3,60 +3,164 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ui="http://schemas.modernwpf.com/2019"
         ui:WindowHelper.UseModernWindowStyle="True"
-        Title="Node Info"
-        Width="380"
-        Height="420"
+        Title="{DynamicResource StrNiTitle}"
+        Width="400"
+        SizeToContent="Height"
         ResizeMode="NoResize"
         WindowStartupLocation="CenterOwner">
-    <StackPanel Margin="20">
-        <Grid>
+
+    <Window.Resources>
+        <!-- Info card -->
+        <Style x:Key="NiCard" TargetType="Border">
+            <Setter Property="Background"      Value="{DynamicResource MsgBubbleOtherBg}"/>
+            <Setter Property="BorderBrush"     Value="{DynamicResource MsgBubbleOtherBorder}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius"    Value="10"/>
+            <Setter Property="Padding"         Value="14,10"/>
+            <Setter Property="Margin"          Value="0,0,0,10"/>
+        </Style>
+        <!-- Row label (left, subtle) -->
+        <Style x:Key="NiLabel" TargetType="TextBlock">
+            <Setter Property="Foreground"        Value="{DynamicResource MsgSubtleFg}"/>
+            <Setter Property="FontSize"          Value="12"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Margin"            Value="0,5"/>
+        </Style>
+        <!-- Row value (right-aligned, prominent) -->
+        <Style x:Key="NiValue" TargetType="TextBlock">
+            <Setter Property="FontSize"            Value="12.5"/>
+            <Setter Property="FontWeight"          Value="SemiBold"/>
+            <Setter Property="VerticalAlignment"   Value="Center"/>
+            <Setter Property="HorizontalAlignment" Value="Right"/>
+            <Setter Property="TextAlignment"       Value="Right"/>
+            <Setter Property="TextWrapping"        Value="Wrap"/>
+            <Setter Property="Margin"              Value="12,5,0,5"/>
+        </Style>
+        <!-- Card section title -->
+        <Style x:Key="NiSection" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource MsgSubtleFg}"/>
+            <Setter Property="FontSize"   Value="11"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Margin"     Value="2,0,0,4"/>
+        </Style>
+    </Window.Resources>
+
+    <StackPanel Margin="18,14,18,16">
+
+        <!-- ── Header: avatar + names + role badge ─────────────────────── -->
+        <Grid Margin="2,4,2,14">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="130"/>
+                <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
 
-            <TextBlock Grid.Row="0" Grid.Column="0" Text="Short Name:" FontWeight="Bold" Margin="0,6"/>
-            <TextBlock Grid.Row="0" Grid.Column="1" x:Name="ShortNameText" Margin="0,6"/>
+            <Border x:Name="AvatarBorder"
+                    Width="56" Height="56" CornerRadius="28"
+                    VerticalAlignment="Center">
+                <TextBlock x:Name="AvatarText"
+                           Foreground="White" FontWeight="Bold" FontSize="15"
+                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
 
-            <TextBlock Grid.Row="1" Grid.Column="0" Text="Long Name:" FontWeight="Bold" Margin="0,6"/>
-            <TextBlock Grid.Row="1" Grid.Column="1" x:Name="LongNameText" Margin="0,6"/>
-
-            <TextBlock Grid.Row="2" Grid.Column="0" Text="Node ID:" FontWeight="Bold" Margin="0,6"/>
-            <TextBlock Grid.Row="2" Grid.Column="1" x:Name="NodeIdText" Margin="0,6"/>
-
-            <TextBlock Grid.Row="3" Grid.Column="0" Text="Hardware:" FontWeight="Bold" Margin="0,6"/>
-            <TextBlock Grid.Row="3" Grid.Column="1" x:Name="HardwareModelText" Margin="0,6"/>
-
-            <TextBlock Grid.Row="4" Grid.Column="0" Text="PKI Key:" FontWeight="Bold" Margin="0,6"/>
-            <TextBlock Grid.Row="4" Grid.Column="1" x:Name="PkiKeyText" Margin="0,6"/>
-
-            <TextBlock Grid.Row="5" Grid.Column="0" Text="Latitude:" FontWeight="Bold" Margin="0,6"/>
-            <TextBlock Grid.Row="5" Grid.Column="1" x:Name="LatText" Margin="0,6"/>
-
-            <TextBlock Grid.Row="6" Grid.Column="0" Text="Longitude:" FontWeight="Bold" Margin="0,6"/>
-            <TextBlock Grid.Row="6" Grid.Column="1" x:Name="LonText" Margin="0,6"/>
-
-            <TextBlock Grid.Row="7" Grid.Column="0" Text="Altitude:" FontWeight="Bold" Margin="0,6"/>
-            <TextBlock Grid.Row="7" Grid.Column="1" x:Name="AltText" Margin="0,6"/>
-
-            <TextBlock Grid.Row="8" Grid.Column="0" Text="Last Seen:" FontWeight="Bold" Margin="0,6"/>
-            <TextBlock Grid.Row="8" Grid.Column="1" x:Name="LastSeenText" Margin="0,6"/>
+            <StackPanel Grid.Column="1" Margin="14,0,0,0" VerticalAlignment="Center">
+                <TextBlock x:Name="LongNameText"
+                           FontSize="17" FontWeight="SemiBold"
+                           TextWrapping="Wrap"/>
+                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                    <TextBlock x:Name="NodeIdText"
+                               FontFamily="Consolas" FontSize="12"
+                               Foreground="{DynamicResource MsgSubtleFg}"
+                               VerticalAlignment="Center"/>
+                    <Border x:Name="RoleBadge"
+                            Background="{DynamicResource MsgBubbleOtherBg}"
+                            BorderBrush="{DynamicResource MsgBubbleOtherBorder}"
+                            BorderThickness="1" CornerRadius="9"
+                            Padding="8,1.5" Margin="8,0,0,0"
+                            VerticalAlignment="Center">
+                        <TextBlock x:Name="RoleBadgeText"
+                                   FontSize="11" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource MsgSenderNameFg}"/>
+                    </Border>
+                </StackPanel>
+            </StackPanel>
         </Grid>
 
+        <!-- ── Device card ─────────────────────────────────────────────── -->
+        <TextBlock Text="{DynamicResource StrNiSectionDevice}" Style="{StaticResource NiSection}"/>
+        <Border Style="{StaticResource NiCard}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" Text="{DynamicResource StrNiHardware}" Style="{StaticResource NiLabel}"/>
+                <TextBlock Grid.Row="0" Grid.Column="1" x:Name="HardwareModelText" Style="{StaticResource NiValue}"/>
+
+                <TextBlock Grid.Row="1" Text="{DynamicResource StrNiRole}" Style="{StaticResource NiLabel}"/>
+                <TextBlock Grid.Row="1" Grid.Column="1" x:Name="RoleText" Style="{StaticResource NiValue}"/>
+
+                <TextBlock Grid.Row="2" Text="{DynamicResource StrNiPki}" Style="{StaticResource NiLabel}"/>
+                <TextBlock Grid.Row="2" Grid.Column="1" x:Name="PkiKeyText" Style="{StaticResource NiValue}"/>
+            </Grid>
+        </Border>
+
+        <!-- ── Status card ─────────────────────────────────────────────── -->
+        <TextBlock Text="{DynamicResource StrNiSectionStatus}" Style="{StaticResource NiSection}"/>
+        <Border Style="{StaticResource NiCard}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" Text="{DynamicResource StrNiBattery}" Style="{StaticResource NiLabel}"/>
+                <TextBlock Grid.Row="0" Grid.Column="1" x:Name="BatteryText" Style="{StaticResource NiValue}"/>
+
+                <TextBlock Grid.Row="1" Text="{DynamicResource StrNiSignal}" Style="{StaticResource NiLabel}"/>
+                <TextBlock Grid.Row="1" Grid.Column="1" x:Name="SignalText" Style="{StaticResource NiValue}"/>
+
+                <TextBlock Grid.Row="2" Text="{DynamicResource StrNiLastSeen}" Style="{StaticResource NiLabel}"/>
+                <TextBlock Grid.Row="2" Grid.Column="1" x:Name="LastSeenText" Style="{StaticResource NiValue}"/>
+            </Grid>
+        </Border>
+
+        <!-- ── Position card ────────────────────────────────────────────── -->
+        <TextBlock Text="{DynamicResource StrNiSectionPosition}" Style="{StaticResource NiSection}"/>
+        <Border Style="{StaticResource NiCard}" Margin="0,0,0,4">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" Text="{DynamicResource StrNiCoordinates}" Style="{StaticResource NiLabel}"/>
+                <TextBlock Grid.Row="0" Grid.Column="1" x:Name="CoordinatesText"
+                           Style="{StaticResource NiValue}" FontFamily="Consolas"/>
+
+                <TextBlock Grid.Row="1" Text="{DynamicResource StrNiAltitude}" Style="{StaticResource NiLabel}"/>
+                <TextBlock Grid.Row="1" Grid.Column="1" x:Name="AltText" Style="{StaticResource NiValue}"/>
+            </Grid>
+        </Border>
+
+        <!-- ── Footer ──────────────────────────────────────────────────── -->
         <Button Content="{DynamicResource StrClose}"
-                Width="100"
-                Margin="0,16,0,0"
+                Width="110"
+                Margin="0,12,0,0"
                 HorizontalAlignment="Right"
                 Click="Close_Click"/>
     </StackPanel>

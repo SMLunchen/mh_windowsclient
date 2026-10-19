@@ -4,7 +4,7 @@ Der **Meshhessen Client** ist ein **kostenloser, nativer Windows-Client für Mes
 
 ![Windows](https://img.shields.io/badge/Windows-10%2F11-blue)
 ![.NET](https://img.shields.io/badge/.NET-8.0-purple)
-![Status](https://img.shields.io/badge/Status-v1.6.4.5-yellow)
+![Status](https://img.shields.io/badge/Status-v1.6.4.6-yellow)
 ![License](https://img.shields.io/github/license/SMLunchen/mh_windowsclient)
 ![Stars](https://img.shields.io/github/stars/SMLunchen/mh_windowsclient)
 
@@ -60,13 +60,19 @@ Der **Meshhessen Client** ist ein **kostenloser, nativer Windows-Client für Mes
 * **Telemetrie-Dashboard** – frei konfigurierbares Widget-Dashboard mit benannten Dashboards (📊-Button in der Toolbar):
   * **11 Widget-Typen:** Linie, Fläche, Balken, Scatter, Gauge, Stat-Wert, Heatmap, Histogramm, Candlestick, State-Timeline, Uhrzeit
   * Multi-Node-Support, alle Metriken: SNR, RSSI, Batterie, Spannung, Kanal-/TX-Auslastung, Temperatur, Luftfeuchtigkeit, Luftdruck, Pakete/h
-  * Widgets per Drag-and-Drop anordnen, frei skalierbar (Resize-Griff), editierbar, Auto-Refresh
-  * Dark & Light Mode, Theme-adaptiv (OxyPlot + WPF)
+  * Widgets per Drag-and-Drop anordnen, frei skalierbar (Resize-Griff), editierbar, duplizierbar, Auto-Refresh
+  * **Zoom/Pan in Charts** (bleibt über den Auto-Refresh erhalten), Tag/Nacht-Schattierung, Schwellwert-Linien mit **Windows-Toast-Alarm** bei Über-/Unterschreitung
+  * **Export:** CSV (wahlweise für deutsches Excel), Widget als PNG, Bild in Zwischenablage, ganze Dashboards als JSON teilen (Export/Import)
+  * **Vollbild-Modus (F11)** für Wandmonitore; Fensterposition und zuletzt aktives Dashboard werden gemerkt
+  * **Automatische Telemetrie-Abfragen (📥):** bis zu 4 Nodes werden aktiv nach LocalStats/Umwelt-/Gerätedaten gefragt (mesh-schonend: LocalStats max. 1×/h, anderes max. alle 30 min); aus den Zähler-Deltas entstehen Raten in Pakete/h
+  * Dark & Light Mode, Theme-adaptiv, folgt Windows-Theme-Wechseln live (OxyPlot + WPF)
   * Persistenz in `dashboards.json`
   * **Unabhängiges Fenster** – kann auf einem zweiten Monitor platziert werden
 * **Node-Statistik-Fenster** – detaillierte Auswertung pro Node:
   * Tag/Nacht-Auswertung der Empfangsqualität
   * Zeitreihen-Graphen für SNR, RSSI, Paketrate und Gerätedaten (Batterie, Spannung)
+  * **Echte HF-Nachbarn** – belegt durch Direktempfang, Traceroute-Teilstrecken und NeighborInfo-Pakete, mit SNR in beide Richtungen (füllt sich mit der Zeit; bis dahin automatisch die klassische „gehört"-Liste)
+  * **LocalStats** (neuere Firmware): Noise Floor, RX fehlerhaft/Duplikate, TX Relay u. v. m. (Routing-Tab)
 * **LED-Indikatoren** im Hauptfenster zeigen auf einen Blick den Status des verbundenen Nodes:
   * 📶 **Signal** – Empfangsqualität (SNR/RSSI-Trend)
   * 👥 **Nachbarn** – Anzahl und Stabilität direkter Nachbar-Nodes
@@ -127,10 +133,12 @@ Zuschaltbarer Fach-Layer für Feuerwehr, Rettungsdienst und Katastrophenschutz �
   * Option **„Dauerhaft"** zeigt alle je direkt gehörten Nachbarn (statt nur der letzten 24 h); historische 0-Hop-Kontakte kommen aus der Telemetrie-DB
   * Dunkler Umriss unter jeder Linie für gute Sichtbarkeit auch auf der Topo-Karte
 * **Wegpunkte (Waypoints)** – empfangene Wegpunkte werden auf der Karte angezeigt; Wegpunkte per Karte-Rechtsklick erstellen und senden
+* **Umwelt- & Funk-Overlay** (🌡️-Button) – Messwert-Boxen an den Nodes und interpolierte Heatmap im Wetterdienst-Stil; neben allen Umweltmetriken (Temperatur, Feuchte, IAQ, Wind, Regen …) jetzt auch **SNR, RSSI und Noise Floor** als Flächen-Overlay
 
 ### 📡 Traceroute
 
 * **Traceroute starten** – direkt aus dem Node-Kontextmenü (Nodes-Liste, Karte, Nachrichtenliste)
+* **„Nur HF"-Modus** – sendet die Anfrage mit gelöschtem OK-to-MQTT-Bit (vorverschlüsseltes Paket): MQTT-Gateways leiten sie nicht weiter, die Route läuft ausschließlich über Funk
 * **Eigenes Fenster** pro Ziel-Node mit:
   * Hop-Tabelle: Node-Name, Entfernung, SNR (in dB), MQTT-Indikator (⚡ Blitz-Symbol)
   * Live-Status (Warten / Empfangen)
@@ -468,7 +476,7 @@ Meshhessen Client · Windows-Client für Meshtastic-Geräte · Meshtastic Window
 
  ![Windows](https://img.shields.io/badge/Windows-10%2F11-blue)
  ![.NET](https://img.shields.io/badge/.NET-8.0-purple)
- ![Status](https://img.shields.io/badge/Status-v1.6.4.5-yellow)
+ ![Status](https://img.shields.io/badge/Status-v1.6.4.6-yellow)
  ![License](https://img.shields.io/github/license/SMLunchen/mh_windowsclient)
  ![Stars](https://img.shields.io/github/stars/SMLunchen/mh_windowsclient)
 
@@ -520,12 +528,19 @@ Meshhessen Client · Windows-Client für Meshtastic-Geräte · Meshtastic Window
 
 * **Persistent telemetry database** – received packet and device data is stored locally in a SQLite database
 * **Telemetry Dashboard** – freely configurable widget dashboard with named dashboards:
-  * Four widget types: line chart (time series), bar chart (current comparison), gauge (single value), heatmap (hour × day)
-  * Multi-node support, all metrics: SNR, RSSI, battery, voltage, channel/TX utilization, temperature, humidity, pressure
-  * Persisted in `dashboards.json`, dark OxyPlot theme
+  * **11 widget types:** line, area, bar, scatter, gauge, stat value, heatmap, histogram, candlestick, state timeline, clock
+  * Multi-node support, all metrics: SNR, RSSI, battery, voltage, channel/TX utilization, temperature, humidity, pressure, packets/h, noise floor, RX/TX stats
+  * Drag-and-drop arrangement, freely resizable, editable, duplicatable, auto-refresh
+  * **Zoom/pan in charts** (survives auto-refresh), day/night shading, threshold lines with **Windows toast alerts** on crossings
+  * **Export:** CSV (incl. a German-Excel flavour), widget as PNG, copy image, share whole dashboards as JSON (export/import)
+  * **Fullscreen mode (F11)** for wall monitors; window placement and last active dashboard are remembered
+  * **Automatic telemetry polling (📥):** up to 4 nodes are actively polled for LocalStats/environment/device data (mesh-friendly: LocalStats at most 1×/h, others every 30 min max); counter deltas yield packets/h rates
+  * Persisted in `dashboards.json`, theme-adaptive incl. live Windows theme switching
 * **Node statistics window** – detailed analysis per node:
   * Day/night breakdown of reception quality
   * Time-series graphs for SNR, RSSI, packet rate and device data (battery, voltage)
+  * **Real RF neighbors** – proven by direct reception, traceroute hop pairs and NeighborInfo packets, with SNR in both directions (fills over time; classic "heard" list as automatic fallback until then)
+  * **LocalStats** (newer firmware): noise floor, RX bad/duplicates, TX relay and more (routing tab)
 * **LED indicators** in the main window show the connected node's status at a glance:
   * 📶 **Signal** – reception quality (SNR/RSSI trend)
   * 👥 **Neighbors** – number and stability of direct neighbor nodes
@@ -548,10 +563,12 @@ Meshhessen Client · Windows-Client für Meshtastic-Geräte · Meshtastic Window
   * **"Permanent"** option shows every neighbor ever heard directly (instead of only the last 24 h); historical 0-hop contacts come from the telemetry DB
   * Dark outline beneath each line for good visibility even on the topo map
 * **Waypoints** – received waypoints are displayed on the map; create and send waypoints via right-click on the map
+* **Environment & radio overlay** (🌡️ button) – value boxes at the nodes and a weather-service-style interpolated heatmap; besides all environment metrics (temperature, humidity, IAQ, wind, rain …) now also **SNR, RSSI and noise floor** as surface overlays
 
 ### 📡 Traceroute
 
 * **Start traceroute** – directly from the node context menu (node list, map, message list)
+* **"RF only" mode** – sends the request with the OK-to-MQTT bit cleared (pre-encrypted packet): MQTT gateways won't uplink it, the route runs over RF exclusively
 * **Dedicated window** per target node with:
   * Hop table: node name, distance, SNR (in dB), MQTT indicator (⚡ lightning symbol)
   * Live status (waiting / received)

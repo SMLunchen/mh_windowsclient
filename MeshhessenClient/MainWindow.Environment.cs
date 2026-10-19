@@ -224,7 +224,23 @@ public partial class MainWindow
         else PushEnvBoxes(active, mode);
 
         if (_currentSettings.EnvShowHeatmap)
-            PushEnvSurface(active.Select(c => c.n).ToList());
+        {
+            var metric = Services.EnvironmentMetricInfo.ByKey(_currentSettings.EnvMetric);
+            if (metric is { Virtual: true })
+            {
+                // Radio metrics (SNR/RSSI/noise floor) don't come from environment
+                // telemetry — every positioned node may contribute; PushEnvSurface
+                // skips nodes without data for the metric anyway.
+                var radioNodes = nodeById.Values
+                    .Where(n => !_envDisabledNodes.Contains(n.NodeId))
+                    .ToList();
+                PushEnvSurface(radioNodes);
+            }
+            else
+            {
+                PushEnvSurface(active.Select(c => c.n).ToList());
+            }
+        }
         else
             ClearEnvSurfaceBoth();
     }

@@ -44,6 +44,17 @@ public class AddWidgetDialog : Window
         ("humidity",     "Luftfeuchtigkeit (%)"),
         ("pressure",     "Luftdruck (hPa)"),
         ("packet_count", "Pakete pro Stunde"),
+        ("noise_floor",       "Noise Floor (dBm)"),
+        ("rx_pph",            "RX-Rate (Pakete/h)"),
+        ("tx_pph",            "TX-Rate (Pakete/h)"),
+        ("rx_bad_pph",        "RX fehlerhaft (Pakete/h)"),
+        ("rx_dupe_pph",       "RX Duplikate (Pakete/h)"),
+        ("tx_relay_pph",      "TX Relay (Pakete/h)"),
+        ("rx_bad",            "RX fehlerhaft (gesamt)"),
+        ("rx_dupe",           "RX Duplikate (gesamt)"),
+        ("tx_relay",          "TX Relay (gesamt)"),
+        ("tx_relay_canceled", "TX Relay abgebrochen (gesamt)"),
+        ("tx_dropped",        "TX verworfen (gesamt)"),
     };
 
     private static readonly (string key, string labelKey, bool multiNode)[] WidgetTypes =

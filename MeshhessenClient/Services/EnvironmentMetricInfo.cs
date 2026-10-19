@@ -20,7 +20,10 @@ public sealed record EnvMetric(
     int Decimals,
     double HeatMin,
     double HeatMax,
-    double Step);   // legend/band step for the discrete weather-style scale
+    double Step,          // legend/band step for the discrete weather-style scale
+    bool Virtual = false); // true = NOT an environment_telemetry column (lives in another
+                           // table, resolved via GetTimeSeries) — selectable as overlay
+                           // metric, but excluded from env schema/insert/info-boxes
 
 public static class EnvironmentMetricInfo
 {
@@ -45,13 +48,22 @@ public static class EnvironmentMetricInfo
         new EnvMetric("radiation",        "radiation",           "StrEnvRadiation",       "µR/h",1,    0,  100,    20),
         new EnvMetric("distance",         "distance",            "StrEnvDistance",        "mm",  0,    0, 5000,  1000),
         new EnvMetric("weight",           "weight",              "StrEnvWeight",          "kg",  2,    0,  200,    25),
+        // Radio-quality overlays (virtual: data from packet_rx / local_stats, not env telemetry)
+        new EnvMetric("snr",              "rx_snr",              "StrEnvSnr",             "dB",  1,  -20,   12,     4, Virtual: true),
+        new EnvMetric("rssi",             "rx_rssi",             "StrEnvRssi",            "dBm", 0, -130,  -60,    10, Virtual: true),
+        new EnvMetric("noise_floor",      "noise_floor",         "StrEnvNoiseFloor",      "dBm", 0, -130,  -80,    10, Virtual: true),
     };
 
     private static readonly Dictionary<string, EnvMetric> _byKey =
         All.ToDictionary(m => m.Key, StringComparer.OrdinalIgnoreCase);
 
-    /// <summary>All DB columns for the metrics, in registry order (for schema/insert/select).</summary>
-    public static IReadOnlyList<string> Columns { get; } = All.Select(m => m.Column).ToList();
+    /// <summary>All environment_telemetry DB columns, in registry order (for
+    /// schema/insert/select). Virtual metrics live in other tables and are excluded.</summary>
+    public static IReadOnlyList<string> Columns { get; } =
+        All.Where(m => !m.Virtual).Select(m => m.Column).ToList();
+
+    /// <summary>Non-virtual metrics (= real environment_telemetry columns), registry order.</summary>
+    public static IReadOnlyList<EnvMetric> EnvOnly { get; } = All.Where(m => !m.Virtual).ToList();
 
     public static EnvMetric? ByKey(string? key) =>
         key != null && _byKey.TryGetValue(key, out var m) ? m : null;
@@ -104,7 +116,7 @@ public static class EnvironmentMetricInfo
         BandList(m).Select(b => (object)new { lo = b.Lo, hi = b.Hi, rgb = b.Rgb }).ToList();
 
     public static bool IsKnownColumn(string column) =>
-        All.Any(m => string.Equals(m.Column, column, StringComparison.OrdinalIgnoreCase));
+        EnvOnly.Any(m => string.Equals(m.Column, column, StringComparison.OrdinalIgnoreCase));
 
     /// <summary>Format a raw value for display, e.g. 21.4 → "21.4 °C". Uses invariant-ish
     /// decimals; unit appended with a thin space (none when unitless).</summary>

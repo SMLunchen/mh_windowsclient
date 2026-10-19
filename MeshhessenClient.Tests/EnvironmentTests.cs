@@ -19,10 +19,18 @@ public class EnvironmentMetricInfoTests
     [Fact]
     public void Columns_MatchRegistryOneToOne()
     {
-        Assert.Equal(EnvironmentMetricInfo.All.Count, EnvironmentMetricInfo.Columns.Count);
+        // Columns drive the environment_telemetry schema: exactly the NON-virtual metrics.
+        // Virtual metrics (snr/rssi/noise_floor) live in other tables and must stay out.
+        Assert.Equal(EnvironmentMetricInfo.EnvOnly.Count, EnvironmentMetricInfo.Columns.Count);
+        Assert.True(EnvironmentMetricInfo.All.Count > EnvironmentMetricInfo.EnvOnly.Count);
         Assert.Contains("gas_resistance", EnvironmentMetricInfo.Columns);
+        Assert.DoesNotContain("rx_snr", EnvironmentMetricInfo.Columns);
         Assert.True(EnvironmentMetricInfo.IsKnownColumn("relative_humidity"));
         Assert.False(EnvironmentMetricInfo.IsKnownColumn("node_id"));
+        Assert.False(EnvironmentMetricInfo.IsKnownColumn("rx_snr"));
+        // Virtual metrics are still resolvable for the overlay selector
+        Assert.True(EnvironmentMetricInfo.ByKey("snr") is { Virtual: true });
+        Assert.True(EnvironmentMetricInfo.ByKey("noise_floor") is { Virtual: true });
     }
 
     [Fact]
