@@ -10,8 +10,13 @@
         ResizeMode="CanResize">
 
     <Window.Resources>
+        <!-- Foreground/BorderBrush come from DashFg/DashBorder (set theme-aware in
+             code-behind) — the custom template drops the ModernWPF style, so without
+             them buttons fall back to the WPF default black text (issue #47). -->
         <Style x:Key="ToolbarBtn" TargetType="Button">
             <Setter Property="Background"       Value="Transparent"/>
+            <Setter Property="Foreground"       Value="{DynamicResource DashFg}"/>
+            <Setter Property="BorderBrush"      Value="{DynamicResource DashBorder}"/>
             <Setter Property="BorderThickness"  Value="1"/>
             <Setter Property="Padding"          Value="10,5"/>
             <Setter Property="FontSize"         Value="12"/>
@@ -53,6 +58,7 @@
 
         <Style x:Key="CardIconBtn" TargetType="Button">
             <Setter Property="Background"       Value="Transparent"/>
+            <Setter Property="Foreground"       Value="{DynamicResource DashFgSub}"/>
             <Setter Property="BorderThickness"  Value="0"/>
             <Setter Property="Width"            Value="22"/>
             <Setter Property="Height"           Value="22"/>
@@ -117,6 +123,18 @@
                     <Button Content="{DynamicResource StrDashboardDelete}"
                             Style="{StaticResource ToolbarBtn}"
                             Click="DeleteDashboard_Click"/>
+                    <Button Content="{DynamicResource StrDashboardExportBtn}"
+                            ToolTip="{DynamicResource StrDashboardExportTip}"
+                            Style="{StaticResource ToolbarBtn}" Margin="8,0,4,0"
+                            Click="ExportDashboard_Click"/>
+                    <Button Content="{DynamicResource StrDashboardImportBtn}"
+                            ToolTip="{DynamicResource StrDashboardImportTip}"
+                            Style="{StaticResource ToolbarBtn}"
+                            Click="ImportDashboard_Click"/>
+                    <Button Content="{DynamicResource StrDashPollBtn}"
+                            ToolTip="{DynamicResource StrDashPollTip}"
+                            Style="{StaticResource ToolbarBtn}" Margin="8,0,0,0"
+                            Click="PollingPlan_Click"/>
 
                     <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}"
                                Margin="10,0" Opacity="0.3"/>
@@ -140,6 +158,11 @@
                     <Ellipse x:Name="RefreshDot" Width="8" Height="8"
                              Fill="#238636" Margin="8,0,0,0"
                              VerticalAlignment="Center" Opacity="0"/>
+                    <Button Content="⛶"
+                            ToolTip="{DynamicResource StrDashboardFullscreenTip}"
+                            Style="{StaticResource ToolbarBtn}" Margin="10,0,0,0"
+                            FontSize="13" Padding="7,3"
+                            Click="Fullscreen_Click"/>
                 </StackPanel>
             </DockPanel>
         </Border>

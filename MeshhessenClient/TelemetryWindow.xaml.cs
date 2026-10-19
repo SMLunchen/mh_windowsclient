@@ -67,7 +67,11 @@ public partial class TelemetryWindow : Window
             var power     = _db.GetPowerStats(_node.NodeId, _days);
             var airtime   = _db.GetAirtimeStats(_node.NodeId, _days);
             var routing   = _db.GetRoutingStats(_node.NodeId, _days);
-            var neighbors = _db.GetNeighborStats(_node.NodeId, _days, _nodeNames);
+            // Direct-RF neighbors (0-hop reception, traceroute hops, NeighborInfo).
+            // The rf_links table starts empty and fills over time, so while there is
+            // little evidence we fall back to the legacy "heard nodes" grouping — once
+            // enough direct links are collected, the view switches for good.
+            var rfNeighbors = _db.GetRfNeighbors(_node.NodeId, _days, _nodeNames);
 
             string rangeName = _days == 0 ? Loc("StrTelAll") : $"{_days}d";
             FooterInfoText.Text = string.Format(Loc("StrTelFooterInfo"), rangeName);
@@ -199,12 +203,50 @@ public partial class TelemetryWindow : Window
             RouteChangeRateText.Text  = hopSamples > 0 ? $"{routeChangeRate:0.00}/h" : "–";
             TracerouteCountText.Text  = tracerouteRows > 0 ? tracerouteRows.ToString() : "–";
 
-            // ── Neighbors ──
-            var trends = _db.GetNeighborSnrTrends(_node.NodeId, _shortHours, _longDays, _nodeNames)
-                            .ToDictionary(t => t.NeighborId);
-            NeighborGrid.ItemsSource = neighbors
-                .Select(n => new NeighborRow(n, trends.GetValueOrDefault(n.NeighborId)))
-                .ToList();
+            // ── LocalStats (only shown once the node has reported them) ──
+            var ls = _db.GetLatestLocalStats(_node.NodeId);
+            LocalStatsSection.Visibility = ls != null ? Visibility.Visible : Visibility.Collapsed;
+            if (ls != null)
+            {
+                NoiseFloorText.Text = ls.NoiseFloor.HasValue ? $"{ls.NoiseFloor} dBm" : "–";
+                double badPct  = ls.PacketsRx > 0 ? 100.0 * ls.PacketsRxBad / ls.PacketsRx : 0;
+                double dupePct = ls.PacketsRx > 0 ? 100.0 * ls.RxDupe / ls.PacketsRx : 0;
+                // Current rates from the delta between the last two polls (needs ≥2 readings)
+                string RateSuffix(string metric)
+                {
+                    var pts = _db.GetTimeSeries(new[] { _node.NodeId }, metric, _days);
+                    return pts.Count > 0 ? $"  ·  ≈{pts[^1].Value:0.#} {Loc("StrUnitPacketsPerHour")}" : "";
+                }
+                RxStatsText.Text = $"{ls.PacketsRx}  ({Loc("StrTelRxBad")} {ls.PacketsRxBad} = {badPct:0.0}%, " +
+                                   $"{Loc("StrTelRxDupe")} {ls.RxDupe} = {dupePct:0.0}%){RateSuffix("rx_pph")}";
+                TxStatsText.Text = $"{ls.PacketsTx}  ({Loc("StrTelTxDropped")} {ls.TxDropped}){RateSuffix("tx_pph")}";
+                RelayStatsText.Text = $"{ls.TxRelay}  ({Loc("StrTelRelayCanceled")} {ls.TxRelayCanceled})";
+                NodeCountsText.Text = $"{ls.OnlineNodes} / {ls.TotalNodes}  ·  {ls.Timestamp.ToLocalTime():dd.MM. HH:mm}";
+            }
+
+            // ── Neighbors: direct RF links, legacy fallback while data is sparse ──
+            // ≥3 partners: the data is obviously rich enough → RF view immediately.
+            // 1–2 partners: trust it once collection has run long enough (a week) —
+            // remote nodes genuinely have few neighbors, that's a finding, not a gap.
+            // 0 partners: legacy "heard" list (something is better than nothing).
+            var collectingSince = _db.GetRfCollectionStart(); // local time (FromUnix)
+            bool matured = collectingSince.HasValue &&
+                           DateTime.Now - collectingSince.Value >= TimeSpan.FromDays(7);
+            bool useRf = rfNeighbors.Count >= 3 || (rfNeighbors.Count >= 1 && matured);
+            if (useRf)
+            {
+                NeighborSectionText.Text = Loc("StrTtNeighborSection");
+                NeighborGrid.ItemsSource = rfNeighbors
+                    .Select(n => new NeighborRow(n, Loc))
+                    .ToList();
+            }
+            else
+            {
+                NeighborSectionText.Text = Loc("StrTtNeighborLegacy");
+                NeighborGrid.ItemsSource = _db.GetNeighborStats(_node.NodeId, _days, _nodeNames)
+                    .Select(s => NeighborRow.FromLegacy(s, Loc))
+                    .ToList();
+            }
         }
         catch (Exception ex)
         {
@@ -297,34 +339,43 @@ public partial class TelemetryWindow : Window
     // ── View model for DataGrid ────────────────────────────────────────────
     private class NeighborRow
     {
-        public string NeighborName          { get; }
-        public string MedianSnrDisplay      { get; }
-        public string MedianRssiDisplay     { get; }
-        public string PacketsPerHourDisplay { get; }
-        public string TrendArrow            { get; }
-        public string LastSeenDisplay       { get; }
+        public string NeighborName   { get; }
+        public string SnrInDisplay   { get; }  // selected node hears the partner at …
+        public string SnrOutDisplay  { get; }  // partner hears the selected node at …
+        public string SourcesDisplay { get; }
+        public string LastSeenDisplay { get; }
 
-        public NeighborRow(NeighborStats s, NeighborTrend? trend)
+        public NeighborRow(TelemetryDatabaseService.RfNeighbor n, Func<string, string> loc)
         {
-            NeighborName          = s.NeighborName;
-            MedianSnrDisplay      = s.MedianSnr.HasValue  ? $"{s.MedianSnr:F1} dB"  : "–";
-            MedianRssiDisplay     = s.MedianRssi.HasValue ? $"{s.MedianRssi:F0} dBm" : "–";
-            PacketsPerHourDisplay = $"{s.PacketsPerHour:F1}";
-            LastSeenDisplay       = s.LastSeen > DateTime.MinValue
-                ? s.LastSeen.ToString("dd.MM. HH:mm") : "–";
-            if (trend == null || trend.PointCount < 5)
+            NeighborName  = n.NeighborName;
+            SnrInDisplay  = n.SnrIn.HasValue  ? $"{n.SnrIn:F1} dB"  : "–";
+            SnrOutDisplay = n.SnrOut.HasValue ? $"{n.SnrOut:F1} dB" : "–";
+            SourcesDisplay = string.Join(", ", n.Sources.Select(s => s switch
             {
-                TrendArrow = "–";
-            }
-            else
-            {
-                string arrow = trend.ShortSlope >  1.0f ? "↑"
-                             : trend.ShortSlope >  0.3f ? "↗"
-                             : trend.ShortSlope > -0.3f ? "→"
-                             : trend.ShortSlope > -1.0f ? "↘"
-                             :                            "↓";
-                TrendArrow = $"{arrow} {trend.ShortSlope:+0.0;-0.0}/h";
-            }
+                "rx"           => loc("StrRfSrcRx"),
+                "traceroute"   => loc("StrRfSrcTraceroute"),
+                "neighborinfo" => loc("StrRfSrcNeighborInfo"),
+                _              => s,
+            }));
+            LastSeenDisplay = n.LastSeen > DateTime.MinValue
+                ? n.LastSeen.ToLocalTime().ToString("dd.MM. HH:mm") : "–";
         }
+
+        private NeighborRow(string name, string snrIn, string sources, string lastSeen)
+        {
+            NeighborName = name;
+            SnrInDisplay = snrIn;
+            SnrOutDisplay = "–";
+            SourcesDisplay = sources;
+            LastSeenDisplay = lastSeen;
+        }
+
+        /// <summary>Legacy fallback row (all heard packets, any hop count) used while
+        /// the rf_links table has not collected enough direct-link evidence yet.</summary>
+        public static NeighborRow FromLegacy(NeighborStats s, Func<string, string> loc) => new(
+            s.NeighborName,
+            s.MedianSnr.HasValue ? $"{s.MedianSnr:F1} dB" : "–",
+            loc("StrRfSrcLegacy"),
+            s.LastSeen > DateTime.MinValue ? s.LastSeen.ToString("dd.MM. HH:mm") : "–");
     }
 }

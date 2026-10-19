@@ -56,12 +56,18 @@ public partial class TelemetryDashboardWindow : Window
         Color.FromRgb( 82, 174, 255),
     };
 
-    // ── Theme colors (instance, set from theme detection) ─────────────────────
-    private readonly bool _isDark;
-    private readonly Color _bgCard, _bgPage, _bgHeader, _borderCol;
-    private readonly Color _fgMain, _fgSub, _fgMuted;
-    private readonly OxyColor _oxyText, _oxyTick, _oxyGrid, _oxyLegendBg;
-    private readonly Color[] _uiPalette;  // theme-adjusted accent colors for text/UI (not charts)
+    // ── Theme colors (instance; re-initialized when the app theme changes live) ──
+    private bool _isDark;
+    private Color _bgCard, _bgPage, _bgHeader, _borderCol;
+    private Color _fgMain, _fgSub, _fgMuted;
+    private OxyColor _oxyText, _oxyTick, _oxyGrid, _oxyLegendBg;
+    private Color[] _uiPalette = Array.Empty<Color>();  // theme-adjusted accent colors for text/UI (not charts)
+
+    // Fullscreen (F11) state
+    private bool _isFullscreen;
+    private WindowState _preFsState;
+    private WindowStyle _preFsStyle;
+    private ResizeMode  _preFsResize;
 
     // ── Fields ────────────────────────────────────────────────────────────────
     private readonly TelemetryDatabaseService _db;
@@ -73,6 +79,83 @@ public partial class TelemetryDashboardWindow : Window
     private readonly DispatcherTimer _refreshTimer = new();
     private int _refreshIntervalSeconds = 30;
     private readonly Dictionary<string, DispatcherTimer> _clockTimers = new();
+
+    // Per-refresh-cycle data cache, filled on a background thread (prefetch) so widget
+    // building no longer blocks the UI thread with SQLite queries. The DB service opens
+    // a fresh connection per call, so background access is safe. A cache miss simply
+    // falls back to a synchronous query — never wrong data, at worst the old behavior.
+    private readonly Dictionary<string, object> _dataCache = new();
+    private int _renderGeneration; // invalidates in-flight prefetches when a newer render starts
+
+    private T Cached<T>(string key, Func<T> fetch)
+    {
+        lock (_dataCache)
+            if (_dataCache.TryGetValue(key, out var hit)) return (T)hit;
+        var value = fetch();
+        lock (_dataCache) _dataCache[key] = value!;
+        return value;
+    }
+
+    private void ClearDataCache() { lock (_dataCache) _dataCache.Clear(); }
+
+    private List<TimeSeriesPoint> GetSeries(uint nodeId, string metric, int days) =>
+        Cached($"ts|{nodeId}|{metric}|{days}", () => _db.GetTimeSeries(new[] { nodeId }, metric, days));
+
+    // Grid-based widgets cannot render an unbounded day range — these fallbacks for
+    // Days == 0 ("Gesamt") match the DB service's own defaults. Mesh health uses a
+    // 7-day analysis window (a health score over "all time" would be meaningless).
+    private static int HeatmapDays(DashboardWidget w)    => w.Days > 0 ? w.Days : 30;
+    private static int StatelineDays(DashboardWidget w)  => w.Days > 0 ? w.Days : 14;
+    private static int MeshHealthDays(DashboardWidget w) => w.Days > 0 ? w.Days : 7;
+
+    /// <summary>Runs the data queries a widget will need, mirroring BuildWidgetContent.
+    /// Called on a background thread; results land in the cache.</summary>
+    private void PrefetchWidgetData(DashboardWidget w)
+    {
+        switch (w.Type)
+        {
+            case "clock":
+                return;
+            case "heatmap":
+                Cached($"hm|{w.NodeIds.FirstOrDefault()}|{w.Metric}|{HeatmapDays(w)}",
+                    () => _db.GetHeatmapData(w.NodeIds.FirstOrDefault(), w.Metric, HeatmapDays(w)));
+                return;
+            case "stateline":
+                Cached($"sl|{w.NodeIds.FirstOrDefault()}|{StatelineDays(w)}",
+                    () => _db.GetNodeActivityGrid(w.NodeIds.FirstOrDefault(), StatelineDays(w)));
+                return;
+            case "candlestick":
+                Cached($"cs|{w.NodeIds.FirstOrDefault()}|{w.Metric}|{w.Days}",
+                    () => _db.GetCandlestickData(w.NodeIds.FirstOrDefault(), w.Metric, w.Days));
+                return;
+            case "meshhealth":
+            {
+                int days = MeshHealthDays(w);
+                Cached($"mhs|{days}", () => _db.GetMeshHealthScore(days));
+                var ids = w.NodeIds.Count > 0 ? w.NodeIds : _nodeNames.Keys.ToList();
+                foreach (var id in ids)
+                    Cached($"sa|{id}|{days}", () => _db.GetSignalAnalysis(id, 6, days, _nodeNames));
+                return;
+            }
+            case "ranking":
+            case "multistat":
+            {
+                var ids = w.NodeIds.Count > 0 ? w.NodeIds
+                        : w.Type == "multistat" ? _nodeNames.Keys.Take(8).ToList()
+                        : _nodeNames.Keys.ToList();
+                foreach (var id in ids) GetSeries(id, w.Metric, w.Days);
+                return;
+            }
+            case "gauge":
+            case "stat":
+            case "histogram":
+                GetSeries(w.NodeIds.FirstOrDefault(), w.Metric, w.Days);
+                return;
+            default: // line, area, bar, scatter
+                foreach (var id in w.NodeIds) GetSeries(id, w.Metric, w.Days);
+                return;
+        }
+    }
 
     // ── Constructor ───────────────────────────────────────────────────────────
 
@@ -92,9 +175,52 @@ public partial class TelemetryDashboardWindow : Window
                 merged[id] = $"!{id:x8}";
         _nodeNames = merged;
 
-        Closing += (_, _) => SaveStore();
+        Closing += (_, _) =>
+        {
+            // Stop all timers — DispatcherTimers are rooted by the dispatcher, so a
+            // forgotten timer keeps the closed window (and its 30 s DB refresh) alive
+            // for the rest of the app's lifetime.
+            _refreshTimer.Stop();
+            foreach (var t in _clockTimers.Values) t.Stop();
+            _clockTimers.Clear();
+            _renderGeneration++; // cancel any in-flight prefetch result
+            // Static event — would otherwise root this window instance forever
+            ThemeManager.Current.ActualApplicationThemeChanged -= OnAppThemeChanged;
+            SaveWindowPlacement();
+            SaveStore();
+        };
 
-        // Detect theme
+        InitThemeColors();
+        ApplyThemeToWindow();
+        // Follow live Windows/app theme changes (colors above are plain fields, so the
+        // window would otherwise keep the stale palette until reopened)
+        ThemeManager.Current.ActualApplicationThemeChanged += OnAppThemeChanged;
+
+        LoadStore();                // before the combo: it preselects the stored interval
+        RestoreWindowPlacement();
+        PopulateAutoRefreshCombo();
+        // Reopen with the dashboard that was active last time
+        if (_store.LastDashboard is { } lastName)
+            _current = _store.Dashboards.FirstOrDefault(d => d.Name == lastName);
+        RebuildCombo();
+
+        _refreshTimer.Tick += (_, _) => OnAutoRefreshTick();
+
+        PreviewKeyDown += (_, e) =>
+        {
+            if (e.Key == System.Windows.Input.Key.F11) { ToggleFullscreen(); e.Handled = true; }
+            else if (e.Key == System.Windows.Input.Key.Escape && _isFullscreen) { ToggleFullscreen(); e.Handled = true; }
+        };
+
+        Loaded += (_, _) =>
+        {
+            RenderCurrentDashboard();
+            StartAutoRefreshIfEnabled();
+        };
+    }
+
+    private void InitThemeColors()
+    {
         _isDark = ThemeManager.Current.ActualApplicationTheme == ApplicationTheme.Dark;
 
         if (_isDark)
@@ -137,24 +263,83 @@ public partial class TelemetryDashboardWindow : Window
         _oxyLegendBg = _isDark
             ? OxyColor.FromArgb(180,  13, 17, 23)
             : OxyColor.FromArgb(220, 255, 255, 255);
+    }
 
+    private void OnAppThemeChanged(ThemeManager sender, object? args) => Dispatcher.Invoke(() =>
+    {
+        InitThemeColors();
         ApplyThemeToWindow();
+        RenderCurrentDashboard();
+    });
 
-        PopulateAutoRefreshCombo();
-        LoadStore();
-        RebuildCombo();
-
-        _refreshTimer.Tick += (_, _) => OnAutoRefreshTick();
-
-        Loaded += (_, _) =>
+    private void ToggleFullscreen()
+    {
+        if (!_isFullscreen)
         {
-            RenderCurrentDashboard();
-            StartAutoRefreshIfEnabled();
-        };
+            _preFsState  = WindowState;
+            _preFsStyle  = WindowStyle;
+            _preFsResize = ResizeMode;
+            WindowStyle  = WindowStyle.None;
+            ResizeMode   = ResizeMode.NoResize;
+            WindowState  = WindowState.Normal;     // re-trigger so the taskbar is covered
+            WindowState  = WindowState.Maximized;
+            _isFullscreen = true;
+        }
+        else
+        {
+            WindowStyle  = _preFsStyle;
+            ResizeMode   = _preFsResize;
+            WindowState  = _preFsState;
+            _isFullscreen = false;
+        }
+    }
+
+    private void Fullscreen_Click(object sender, RoutedEventArgs e) => ToggleFullscreen();
+
+    private void RestoreWindowPlacement()
+    {
+        if (!double.IsNaN(_store.WindowWidth)  && _store.WindowWidth  >= MinWidth)  Width  = _store.WindowWidth;
+        if (!double.IsNaN(_store.WindowHeight) && _store.WindowHeight >= MinHeight) Height = _store.WindowHeight;
+        if (!double.IsNaN(_store.WindowLeft) && !double.IsNaN(_store.WindowTop))
+        {
+            // Only restore a position that is still on a connected screen
+            double vl = SystemParameters.VirtualScreenLeft,  vt = SystemParameters.VirtualScreenTop;
+            double vw = SystemParameters.VirtualScreenWidth, vh = SystemParameters.VirtualScreenHeight;
+            if (_store.WindowLeft >= vl - 8 && _store.WindowTop >= vt - 8 &&
+                _store.WindowLeft + 120 <= vl + vw && _store.WindowTop + 80 <= vt + vh)
+            {
+                WindowStartupLocation = WindowStartupLocation.Manual;
+                Left = _store.WindowLeft;
+                Top  = _store.WindowTop;
+            }
+        }
+        if (_store.WindowMaximized) WindowState = WindowState.Maximized;
+    }
+
+    private void SaveWindowPlacement()
+    {
+        _store.WindowMaximized = WindowState == WindowState.Maximized && !_isFullscreen;
+        var b = WindowState == WindowState.Normal
+            ? new Rect(Left, Top, Width, Height)
+            : RestoreBounds;
+        if (b.Width > 0 && b.Height > 0 && !double.IsInfinity(b.Width))
+        {
+            _store.WindowWidth  = b.Width;
+            _store.WindowHeight = b.Height;
+            _store.WindowLeft   = b.Left;
+            _store.WindowTop    = b.Top;
+        }
+        _store.LastDashboard = _current?.Name;
     }
 
     private void ApplyThemeToWindow()
     {
+        // Theme-aware brushes consumed by the XAML button styles via DynamicResource
+        // (their custom templates bypass ModernWPF's theme foreground — issue #47)
+        Resources["DashFg"]     = new SolidColorBrush(_fgMain);
+        Resources["DashFgSub"]  = new SolidColorBrush(_fgSub);
+        Resources["DashBorder"] = new SolidColorBrush(_borderCol);
+
         Background               = new SolidColorBrush(_bgPage);
         RootPanel.Background     = new SolidColorBrush(_bgPage);
         ToolbarBorder.Background = new SolidColorBrush(_bgCard);
@@ -186,13 +371,22 @@ public partial class TelemetryDashboardWindow : Window
         };
         foreach (var (seconds, label) in items)
             AutoRefreshCombo.Items.Add(new ComboBoxItem { Tag = seconds, Content = label });
-        AutoRefreshCombo.SelectedIndex = 2;
+
+        // Restore the persisted interval (fallback: 30 s)
+        int stored = _store.RefreshSeconds;
+        int idx = Array.FindIndex(items, x => x.Item1 == stored);
+        AutoRefreshCombo.SelectedIndex = idx >= 0 ? idx : 2;
     }
 
     private void AutoRefreshCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (AutoRefreshCombo.SelectedItem is not ComboBoxItem item) return;
         _refreshIntervalSeconds = item.Tag is int s ? s : 0;
+        if (_store.RefreshSeconds != _refreshIntervalSeconds)
+        {
+            _store.RefreshSeconds = _refreshIntervalSeconds;
+            SaveStore();
+        }
         StartAutoRefreshIfEnabled();
     }
 
@@ -206,18 +400,34 @@ public partial class TelemetryDashboardWindow : Window
 
     private async void OnAutoRefreshTick()
     {
+        // Dot lights while the refresh actually runs (it used to flash before the work)
         RefreshDot.Opacity = 1.0;
-        await Task.Delay(600);
-        RefreshDot.Opacity = 0.0;
-
-        RefreshAllCardsInPlace();
+        await RefreshAllCardsInPlaceAsync();
         LastRefreshText.Text = string.Format(Loc("StrDashboardLastRefreshed"),
             DateTime.Now.ToString("HH:mm:ss"));
+        await Task.Delay(400);
+        RefreshDot.Opacity = 0.0;
     }
 
-    private void RefreshAllCardsInPlace()
+    private async Task RefreshAllCardsInPlaceAsync()
     {
         if (_current == null) return;
+        var widgets = WidgetPanel.Children.OfType<Grid>()
+            .Select(g => g.Tag).OfType<DashboardWidget>().ToList();
+        // Nothing rendered yet (e.g. initial render still prefetching) — don't bump the
+        // generation, that would cancel the in-flight initial render.
+        if (widgets.Count == 0) return;
+        int gen = ++_renderGeneration;
+
+        // Fresh data each cycle: clear, then prefetch off the UI thread
+        ClearDataCache();
+        await Task.Run(() =>
+        {
+            foreach (var w in widgets)
+                try { PrefetchWidgetData(w); } catch { /* builder falls back to sync query */ }
+        });
+        if (gen != _renderGeneration) return; // a newer render/refresh superseded us
+
         foreach (Grid container in WidgetPanel.Children.OfType<Grid>())
         {
             if (container.Tag is not DashboardWidget w) continue;
@@ -231,7 +441,22 @@ public partial class TelemetryDashboardWindow : Window
             var newContent = BuildWidgetContent(w);
             if (newContent is FrameworkElement fe) fe.Tag = "widgetcontent";
             dock.Children.Insert(idx, newContent);
+
+            // Restore the user's zoom/pan — without this the view snapped back to the
+            // full range on every refresh cycle.
+            if (_zoomedWidgets.Contains(w.Id) &&
+                PlotModelOf(oldContent) is { } oldModel &&
+                PlotModelOf(newContent) is { } newModel &&
+                oldModel.Axes.Count == newModel.Axes.Count)
+            {
+                for (int a = 0; a < newModel.Axes.Count; a++)
+                    if (newModel.Axes[a].Position == oldModel.Axes[a].Position)
+                        newModel.Axes[a].Zoom(oldModel.Axes[a].ActualMinimum, oldModel.Axes[a].ActualMaximum);
+                newModel.InvalidatePlot(false);
+            }
         }
+
+        CheckThresholdAlerts(widgets);
     }
 
     // ── Persistence ───────────────────────────────────────────────────────────
@@ -292,6 +517,7 @@ public partial class TelemetryDashboardWindow : Window
         if (DashboardCombo.SelectedItem is ComboBoxItem { Tag: Dashboard d })
         {
             _current = d;
+            _store.LastDashboard = d.Name;
             RenderCurrentDashboard();
         }
     }
@@ -366,9 +592,272 @@ public partial class TelemetryDashboardWindow : Window
 
     private void Refresh_Click(object sender, RoutedEventArgs e) => RenderCurrentDashboard();
 
+    // ── Telemetry polling plan (active requests for LocalStats, env data, …) ──
+
+    private static string PollTypeLabelKey(string type) => type switch
+    {
+        "LocalStats"         => "StrReqLocalStats",
+        "EnvironmentMetrics" => "StrReqEnvMetrics",
+        "DeviceMetrics"      => "StrReqDeviceMetrics",
+        "AirQualityMetrics"  => "StrReqAirQuality",
+        "PowerMetrics"       => "StrReqPowerMetrics",
+        _                    => type,
+    };
+
+    private void PollingPlan_Click(object sender, RoutedEventArgs e)
+    {
+        var svc = TelemetryPollingService.Instance;
+        if (svc == null) return;
+
+        var plan    = svc.GetPlanSnapshot();
+        var entries = new List<TelemetryPollingService.PollEntry>(plan.Entries);
+
+        var dlg = new Window
+        {
+            Title  = Loc("StrDashPollTitle"),
+            Width  = 700,
+            MinWidth = 700,
+            SizeToContent = SizeToContent.Height,
+            Owner  = this,
+            Background = new SolidColorBrush(_bgCard),
+            ResizeMode = ResizeMode.NoResize,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+        };
+
+        var stack = new StackPanel { Margin = new Thickness(16) };
+        stack.Children.Add(new TextBlock
+        {
+            Text = Loc("StrDashPollHint"),
+            Foreground = new SolidColorBrush(_fgSub),
+            FontSize = 11, TextWrapping = TextWrapping.Wrap,
+            Margin = new Thickness(0, 0, 0, 10),
+        });
+
+        var enabledCb = new CheckBox
+        {
+            Content = Loc("StrDashPollEnabled"),
+            IsChecked = plan.Enabled,
+            Foreground = new SolidColorBrush(_fgMain),
+            Margin = new Thickness(0, 0, 0, 10),
+        };
+        stack.Children.Add(enabledCb);
+
+        var listPanel = new StackPanel { Margin = new Thickness(0, 0, 0, 10) };
+        stack.Children.Add(listPanel);
+
+        void RebuildList()
+        {
+            listPanel.Children.Clear();
+            foreach (var entry in entries)
+            {
+                var row = new DockPanel { Margin = new Thickness(0, 2, 0, 2) };
+                var rm = new Button { Content = "✕", Width = 26, Height = 22, Padding = new Thickness(0), FontSize = 11 };
+                var captured = entry;
+                rm.Click += (_, _) => { entries.Remove(captured); RebuildList(); };
+                DockPanel.SetDock(rm, Dock.Right);
+                row.Children.Add(rm);
+                row.Children.Add(new TextBlock
+                {
+                    Text = $"{NodeLabel(entry.NodeId)}  —  {Loc(PollTypeLabelKey(entry.Type))}  —  " +
+                           string.Format(Loc("StrDashPollEvery"), entry.IntervalMinutes),
+                    Foreground = new SolidColorBrush(_fgMain),
+                    FontSize = 12, VerticalAlignment = System.Windows.VerticalAlignment.Center,
+                });
+                listPanel.Children.Add(row);
+            }
+            if (entries.Count == 0)
+                listPanel.Children.Add(new TextBlock
+                {
+                    Text = Loc("StrDashboardNoData"),
+                    Foreground = new SolidColorBrush(_fgMuted), FontSize = 11,
+                });
+        }
+        RebuildList();
+
+        // Add row: node + type + interval
+        var addRow = new DockPanel { Margin = new Thickness(0, 4, 0, 0) };
+        var nodeCombo = new ComboBox { Width = 210, Margin = new Thickness(0, 0, 8, 0) };
+        foreach (var kv in _nodeNames.OrderBy(k => k.Value))
+            nodeCombo.Items.Add(new ComboBoxItem { Tag = kv.Key, Content = kv.Value });
+        if (nodeCombo.Items.Count > 0) nodeCombo.SelectedIndex = 0;
+
+        var typeCombo = new ComboBox { Width = 185, Margin = new Thickness(0, 0, 8, 0) };
+        foreach (var t in TelemetryPollingService.AllowedTypes)
+            typeCombo.Items.Add(new ComboBoxItem { Tag = t, Content = Loc(PollTypeLabelKey(t)) });
+        typeCombo.SelectedIndex = 0;
+
+        var intCombo = new ComboBox { Width = 130, Margin = new Thickness(0, 0, 8, 0) };
+        foreach (var m in new[] { 30, 60, 120, 240 })
+            intCombo.Items.Add(new ComboBoxItem { Tag = m, Content = string.Format(Loc("StrDashPollEvery"), m) });
+        intCombo.SelectedIndex = 1;
+
+        var addBtn = new Button { Content = Loc("StrDashPollAdd"), Padding = new Thickness(10, 4, 10, 4) };
+        addBtn.Click += (_, _) =>
+        {
+            if (nodeCombo.SelectedItem is not ComboBoxItem ni || ni.Tag is not uint nodeId) return;
+            string type = (typeCombo.SelectedItem as ComboBoxItem)?.Tag as string ?? "LocalStats";
+            int interval = (intCombo.SelectedItem as ComboBoxItem)?.Tag is int m ? m : 60;
+            interval = Math.Max(interval, TelemetryPollingService.MinIntervalMinutes(type));
+
+            if (entries.Any(x => x.NodeId == nodeId && x.Type == type))
+            {
+                MessageBox.Show(Loc("StrDashPollErrDup"), Loc("StrDashPollTitle"),
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+            var nodes = entries.Select(x => x.NodeId).Append(nodeId).Distinct().Count();
+            if (nodes > TelemetryPollingService.MaxNodes)
+            {
+                MessageBox.Show(Loc("StrDashPollErrMaxNodes"), Loc("StrDashPollTitle"),
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+            entries.Add(new TelemetryPollingService.PollEntry
+            {
+                NodeId = nodeId, Type = type, IntervalMinutes = interval,
+            });
+            RebuildList();
+        };
+        DockPanel.SetDock(addBtn, Dock.Right);
+        addRow.Children.Add(addBtn);
+        var comboRow = new StackPanel { Orientation = Orientation.Horizontal };
+        comboRow.Children.Add(nodeCombo);
+        comboRow.Children.Add(typeCombo);
+        comboRow.Children.Add(intCombo);
+        addRow.Children.Add(comboRow);
+        stack.Children.Add(addRow);
+
+        // OK / Cancel
+        var btnRow = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            HorizontalAlignment = System.Windows.HorizontalAlignment.Right,
+            Margin = new Thickness(0, 14, 0, 0),
+        };
+        var ok     = new Button { Content = "OK", Width = 80, IsDefault = true, Margin = new Thickness(0, 0, 8, 0) };
+        var cancel = new Button { Content = Loc("StrCancel"), Width = 95, IsCancel = true };
+        ok.Click += (_, _) =>
+        {
+            var err = svc.TryUpdatePlan(enabledCb.IsChecked == true, entries);
+            if (err != null)
+            {
+                MessageBox.Show(Loc(err), Loc("StrDashPollTitle"), MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            dlg.DialogResult = true;
+            dlg.Close();
+        };
+        btnRow.Children.Add(ok);
+        btnRow.Children.Add(cancel);
+        stack.Children.Add(btnRow);
+
+        dlg.Content = stack;
+        dlg.ShowDialog();
+    }
+
+    // ── Dashboard export / import (share dashboards as JSON) ─────────────────
+
+    private void ExportDashboard_Click(object sender, RoutedEventArgs e)
+    {
+        if (_current == null) return;
+        var safeName = string.Join("_", _current.Name.Split(System.IO.Path.GetInvalidFileNameChars(),
+            StringSplitOptions.RemoveEmptyEntries)).Trim();
+        if (safeName.Length == 0) safeName = "dashboard";
+        var dlg = new Microsoft.Win32.SaveFileDialog
+        {
+            Title    = Loc("StrDashboardExportTip"),
+            Filter   = "Dashboard JSON (*.json)|*.json",
+            FileName = $"{safeName}.json",
+        };
+        if (dlg.ShowDialog() != true) return;
+        try
+        {
+            System.IO.File.WriteAllText(dlg.FileName,
+                JsonSerializer.Serialize(_current, _jsonOptions), Encoding.UTF8);
+            MessageBox.Show(string.Format(Loc("StrDashboardExportDone"), dlg.FileName),
+                Loc("StrDashboardTitle"), MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"{Loc("StrDashboardExportFailed")} {ex.Message}",
+                Loc("StrDashboardTitle"), MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private void ImportDashboard_Click(object sender, RoutedEventArgs e)
+    {
+        var dlg = new Microsoft.Win32.OpenFileDialog
+        {
+            Title  = Loc("StrDashboardImportTip"),
+            Filter = "Dashboard JSON (*.json)|*.json",
+        };
+        if (dlg.ShowDialog() != true) return;
+        try
+        {
+            var imported = JsonSerializer.Deserialize<Dashboard>(
+                System.IO.File.ReadAllText(dlg.FileName), _jsonOptions);
+            if (imported == null || imported.Widgets == null)
+                throw new InvalidOperationException(Loc("StrDashboardImportInvalid"));
+
+            // Fresh widget IDs (avoid collisions with existing widgets) + unique name
+            var widgets = imported.Widgets
+                .Select(w => w with { Id = Guid.NewGuid().ToString("N")[..8] })
+                .ToList();
+            string name = string.IsNullOrWhiteSpace(imported.Name) ? "Import" : imported.Name;
+            string unique = name;
+            int n = 2;
+            while (_store.Dashboards.Any(d => d.Name == unique)) unique = $"{name} ({n++})";
+
+            var dash = new Dashboard(unique, widgets);
+            _store.Dashboards.Add(dash);
+            _current = dash;
+            SaveStore();
+            RebuildCombo();
+            RenderCurrentDashboard();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"{Loc("StrDashboardImportFailed")} {ex.Message}",
+                Loc("StrDashboardTitle"), MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    // ── Threshold alerts (Windows toasts) ────────────────────────────────────
+
+    // Last observed side of the threshold per widget+node; notify only on transitions
+    // (first observation sets the baseline silently so opening the window never spams).
+    private readonly Dictionary<string, bool> _thresholdAbove = new();
+
+    private void CheckThresholdAlerts(IEnumerable<DashboardWidget> widgets)
+    {
+        foreach (var w in widgets)
+        {
+            if (double.IsNaN(w.Threshold)) continue;
+            foreach (var nodeId in w.NodeIds)
+            {
+                List<TimeSeriesPoint> pts;
+                try { pts = GetSeries(nodeId, w.Metric, w.Days); }
+                catch { continue; }
+                if (pts.Count == 0) continue;
+                double val = pts.OrderByDescending(p => p.Timestamp).First().Value;
+                bool above = val >= w.Threshold;
+
+                string key = $"{w.Id}|{nodeId}";
+                if (_thresholdAbove.TryGetValue(key, out bool wasAbove) && wasAbove != above)
+                {
+                    ToastService.ShowMessage(
+                        w.Title,
+                        string.Format(Loc(above ? "StrDashThresholdAbove" : "StrDashThresholdBelow"),
+                            NodeLabel(nodeId), val.ToString("G4"), w.Threshold.ToString("G4")));
+                }
+                _thresholdAbove[key] = above;
+            }
+        }
+    }
+
     // ── Rendering ────────────────────────────────────────────────────────────
 
-    private void RenderCurrentDashboard()
+    private async void RenderCurrentDashboard()
     {
         foreach (var t in _clockTimers.Values) t.Stop();
         _clockTimers.Clear();
@@ -381,8 +870,23 @@ public partial class TelemetryDashboardWindow : Window
             return;
         }
         EmptyState.Visibility = Visibility.Collapsed;
-        foreach (var w in _current.Widgets)
+
+        // Prefetch all widget data off the UI thread, then build the (fast) UI
+        int gen = ++_renderGeneration;
+        var widgets = _current.Widgets.ToList();
+        StatusText.Text = Loc("StrDashboardLoading");
+        ClearDataCache();
+        await Task.Run(() =>
+        {
+            foreach (var w in widgets)
+                try { PrefetchWidgetData(w); } catch { /* builder falls back to sync query */ }
+        });
+        if (gen != _renderGeneration) return; // superseded by a newer render or window close
+
+        foreach (var w in widgets)
             WidgetPanel.Children.Add(BuildCard(w));
+
+        CheckThresholdAlerts(widgets);
 
         // Allow dropping onto empty panel space → move to end
         WidgetPanel.AllowDrop = true;
@@ -563,6 +1067,11 @@ public partial class TelemetryDashboardWindow : Window
         header.Children.Add(titleText);
 
         headerBorder.Child = header;
+        // Double-click on the header = edit (quicker than aiming for the ✎ icon)
+        headerBorder.MouseLeftButtonDown += (_, e) =>
+        {
+            if (e.ClickCount == 2 && w.Type != "clock") EditWidgetCore(w);
+        };
         dock.Children.Add(headerBorder);
 
         // Time-range presets bar — only for OxyPlot chart types
@@ -582,15 +1091,24 @@ public partial class TelemetryDashboardWindow : Window
         card.Child = dock;
         container.Children.Add(card);
 
-        // Context menu: CSV export
+        // Context menu: exports + duplicate
         var ctxMenu = new ContextMenu();
-        var exportItem = new MenuItem
-        {
-            Header = Loc("StrDashboardExportCsv"),
-            Tag    = w,
-        };
+        var exportItem = new MenuItem { Header = Loc("StrDashboardExportCsv") };
         exportItem.Click += (_, _) => ExportWidgetCsv(w);
         ctxMenu.Items.Add(exportItem);
+
+        var pngItem = new MenuItem { Header = Loc("StrDashboardExportPng") };
+        pngItem.Click += (_, _) => ExportWidgetPng(card, w);
+        ctxMenu.Items.Add(pngItem);
+
+        var copyItem = new MenuItem { Header = Loc("StrDashboardCopyImage") };
+        copyItem.Click += (_, _) => CopyWidgetImage(card);
+        ctxMenu.Items.Add(copyItem);
+
+        ctxMenu.Items.Add(new Separator());
+        var dupItem = new MenuItem { Header = Loc("StrDashboardDuplicate") };
+        dupItem.Click += (_, _) => DuplicateWidget(w);
+        ctxMenu.Items.Add(dupItem);
         container.ContextMenu = ctxMenu;
 
         // Drop target for reordering — on card so drag events fire over all card content
@@ -663,17 +1181,17 @@ public partial class TelemetryDashboardWindow : Window
                 "gauge"       => BuildGaugeContent(w),
                 "stat"        => BuildStatContent(w),
                 "clock"       => BuildClockContent(w),
-                "heatmap"     => BuildPlotContent(BuildHeatmapModel(w)),
-                "bar"         => BuildPlotContent(BuildBarModel(w)),
-                "area"        => BuildPlotContent(BuildAreaModel(w)),
-                "scatter"     => BuildPlotContent(BuildScatterModel(w)),
-                "histogram"   => BuildPlotContent(BuildHistogramModel(w)),
-                "candlestick" => BuildPlotContent(BuildCandlestickModel(w)),
-                "stateline"   => BuildPlotContent(BuildStatelineModel(w)),
+                "heatmap"     => BuildPlotContent(BuildHeatmapModel(w), w),
+                "bar"         => BuildPlotContent(BuildBarModel(w), w),
+                "area"        => BuildPlotContent(BuildAreaModel(w), w),
+                "scatter"     => BuildPlotContent(BuildScatterModel(w), w),
+                "histogram"   => BuildPlotContent(BuildHistogramModel(w), w),
+                "candlestick" => BuildPlotContent(BuildCandlestickModel(w), w),
+                "stateline"   => BuildPlotContent(BuildStatelineModel(w), w),
                 "ranking"     => BuildRankingContent(w),
                 "multistat"   => BuildMultiStatContent(w),
                 "meshhealth"  => BuildMeshHealthContent(w),
-                _             => BuildPlotContent(BuildLineModel(w)),
+                _             => BuildPlotContent(BuildLineModel(w), w),
             };
         }
         catch (Exception ex)
@@ -794,12 +1312,58 @@ public partial class TelemetryDashboardWindow : Window
 
     // ── Plot content wrapper ─────────────────────────────────────────────────
 
-    private FrameworkElement BuildPlotContent(PlotModel model) => new PlotView
+    // Widgets whose chart the user has zoomed/panned — the in-place auto-refresh
+    // restores their view instead of snapping back to the full range.
+    private readonly HashSet<string> _zoomedWidgets = new();
+
+    private FrameworkElement BuildPlotContent(PlotModel model, DashboardWidget w)
     {
-        Model      = model,
-        Background = Brushes.Transparent,
-        Margin     = new Thickness(2, 0, 2, 4),
-    };
+        var view = new PlotView
+        {
+            Model      = model,
+            Background = Brushes.Transparent,
+            Margin     = new Thickness(2, 0, 2, 4),
+        };
+
+        foreach (var ax in model.Axes)
+            ax.AxisChanged += (_, e) =>
+            {
+                if (e.ChangeType is AxisChangeTypes.Zoom or AxisChangeTypes.Pan)
+                    _zoomedWidgets.Add(w.Id);
+                else if (e.ChangeType == AxisChangeTypes.Reset)
+                    _zoomedWidgets.Remove(w.Id);
+            };
+
+        if (ModelHasData(model)) return view;
+
+        // Empty chart: overlay a "no data" hint instead of a bare coordinate system
+        var overlay = new Grid();
+        overlay.Children.Add(view);
+        overlay.Children.Add(new TextBlock
+        {
+            Text                = Loc("StrDashboardNoData"),
+            Foreground          = new SolidColorBrush(_fgMuted),
+            FontSize            = 12,
+            HorizontalAlignment = System.Windows.HorizontalAlignment.Center,
+            VerticalAlignment   = System.Windows.VerticalAlignment.Center,
+            IsHitTestVisible    = false,
+        });
+        return overlay;
+    }
+
+    private static bool ModelHasData(PlotModel model) => model.Series.Any(s => s switch
+    {
+        LineSeries ls         => ls.Points.Count > 0,   // AreaSeries derives from LineSeries
+        ScatterSeries sc      => sc.Points.Count > 0,
+        CandleStickSeries cs  => cs.Items.Count > 0,
+        RectangleBarSeries rb => rb.Items.Any(i => i.Y1 > 0),
+        HeatMapSeries hm      => hm.Data is { } d && d.Cast<double>().Any(v => !double.IsNaN(v) && v != 0),
+        _                     => true,
+    });
+
+    /// <summary>Finds the PlotModel inside a widget-content element (PlotView or overlay grid).</summary>
+    private static PlotModel? PlotModelOf(UIElement? content) =>
+        (content as PlotView ?? (content as Grid)?.Children.OfType<PlotView>().FirstOrDefault())?.Model;
 
     // ── Clock widget ──────────────────────────────────────────────────────────
 
@@ -842,13 +1406,16 @@ public partial class TelemetryDashboardWindow : Window
             var utcNow = DateTime.UtcNow;
             localTime.Text = now.ToString("HH:mm:ss");
             utcTime.Text   = $"UTC  {utcNow:HH:mm:ss}";
-            date.Text      = now.ToString("dddd, dd. MMMM yyyy");
+            date.Text      = now.ToString("D"); // long date in the user's culture
         }
         Update();
 
         var timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
         timer.Tick += (_, _) => Update();
         timer.Start();
+        // In-place refresh rebuilds this content without going through
+        // RenderCurrentDashboard — stop the previous timer or it leaks (one per cycle).
+        if (_clockTimers.TryGetValue(w.Id, out var oldTimer)) oldTimer.Stop();
         _clockTimers[w.Id] = timer;
 
         panel.Children.Add(localTime);
@@ -863,7 +1430,7 @@ public partial class TelemetryDashboardWindow : Window
     private FrameworkElement BuildGaugeContent(DashboardWidget w)
     {
         var nodeId = w.NodeIds.FirstOrDefault();
-        var series = _db.GetTimeSeries(new[] { nodeId }, w.Metric, w.Days > 0 ? w.Days : 7);
+        var series = GetSeries(nodeId, w.Metric, w.Days); // Days==0 = all, like the charts
         var last   = series.OrderByDescending(p => p.Timestamp).FirstOrDefault();
         double val = last?.Value ?? double.NaN;
 
@@ -1037,13 +1604,18 @@ public partial class TelemetryDashboardWindow : Window
         var nodeId = w.NodeIds.FirstOrDefault();
         (double min, double max, string unit) = MetricRange(w.Metric);
 
-        var pts = _db.GetTimeSeries(new[] { nodeId }, w.Metric, w.Days > 0 ? w.Days : 7)
+        var pts = GetSeries(nodeId, w.Metric, w.Days)
                      .OrderByDescending(p => p.Timestamp).ToList();
 
         double current  = pts.Count > 0 ? pts[0].Value : double.NaN;
         double previous = pts.Count > 1 ? pts[1].Value : double.NaN;
         double delta    = !double.IsNaN(current) && !double.IsNaN(previous)
             ? current - previous : double.NaN;
+
+        // Age of the value: show it, and gray out stale readings (> 24 h) so a dead
+        // node doesn't look perfectly healthy
+        DateTime? lastTs = pts.Count > 0 ? pts[0].Timestamp : null;
+        bool stale = lastTs.HasValue && (DateTime.UtcNow - lastTs.Value) > TimeSpan.FromHours(24);
 
         string nodeName   = nodeId != 0 && _nodeNames.TryGetValue(nodeId, out var nn) ? nn : "–";
         Color accentColor = _uiPalette[0];
@@ -1077,7 +1649,7 @@ public partial class TelemetryDashboardWindow : Window
             Text = double.IsNaN(current) ? "–" : $"{current:F1}",
             FontSize   = 48,
             FontWeight = System.Windows.FontWeights.Light,
-            Foreground = new SolidColorBrush(_fgMain),
+            Foreground = new SolidColorBrush(stale ? _fgMuted : _fgMain),
             HorizontalAlignment = System.Windows.HorizontalAlignment.Center,
             VerticalAlignment   = System.Windows.VerticalAlignment.Center,
         };
@@ -1098,7 +1670,9 @@ public partial class TelemetryDashboardWindow : Window
 
         var nodeLabel = new TextBlock
         {
-            Text       = nodeName,
+            Text = lastTs.HasValue
+                ? $"{nodeName} · {lastTs.Value.ToLocalTime():dd.MM HH:mm}"
+                : nodeName,
             FontSize   = 10,
             Foreground = new SolidColorBrush(_fgMuted),
             VerticalAlignment = System.Windows.VerticalAlignment.Center,
@@ -1137,13 +1711,13 @@ public partial class TelemetryDashboardWindow : Window
     {
         (double min, double max, string unit) = MetricRange(w.Metric);
         var model = MakeBaseModel();
-        AddTimeAxis(model);
+        AddTimeAxis(model, w.Days);
         AddLinearAxis(model, min, max, unit);
 
         int ci = 0;
         foreach (var nodeId in w.NodeIds)
         {
-            var pts = _db.GetTimeSeries(new[] { nodeId }, w.Metric, w.Days);
+            var pts = GetSeries(nodeId, w.Metric, w.Days);
             if (pts.Count == 0) continue;
             var oxy  = Palette[ci % Palette.Length];
             var line = new LineSeries
@@ -1152,10 +1726,12 @@ public partial class TelemetryDashboardWindow : Window
                 Color               = oxy,
                 StrokeThickness     = 1.8,
                 MarkerType          = MarkerType.None,
+                Decimator           = Decimator.Decimate, // "Gesamt" series can hold 10k+ points
                 TrackerFormatString = "{0}\n{2:dd.MM HH:mm}\n{4:F2} " + unit,
             };
+            // Timestamps are stored in UTC — plot in local time like every label in the app
             var sorted = pts.OrderBy(x => x.Timestamp)
-                            .Select(p => new DataPoint(DateTimeAxis.ToDouble(p.Timestamp), p.Value))
+                            .Select(p => new DataPoint(DateTimeAxis.ToDouble(p.Timestamp.ToLocalTime()), p.Value))
                             .ToList();
             foreach (var dp in sorted) line.Points.Add(dp);
             model.Series.Add(line);
@@ -1169,14 +1745,17 @@ public partial class TelemetryDashboardWindow : Window
                     StrokeThickness = 1.5,
                     LineStyle       = LineStyle.Dash,
                     MarkerType      = MarkerType.None,
+                    Decimator       = Decimator.Decimate,
                     TrackerFormatString = "{0} MA\n{2:dd.MM HH:mm}\n{4:F2} " + unit,
                 };
-                foreach (var dp in MovingAverage(sorted)) maLine.Points.Add(dp);
+                foreach (var dp in MovingAverage(sorted, MaWindow(sorted))) maLine.Points.Add(dp);
                 model.Series.Add(maLine);
             }
             ci++;
         }
+        AddNightBands(model);
         AddThresholdAnnotation(model, w);
+        FinalizeChart(model);
         return model;
     }
 
@@ -1186,13 +1765,13 @@ public partial class TelemetryDashboardWindow : Window
     {
         (double min, double max, string unit) = MetricRange(w.Metric);
         var model = MakeBaseModel();
-        AddTimeAxis(model);
+        AddTimeAxis(model, w.Days);
         AddLinearAxis(model, min, max, unit);
 
         int ci = 0;
         foreach (var nodeId in w.NodeIds)
         {
-            var pts = _db.GetTimeSeries(new[] { nodeId }, w.Metric, w.Days);
+            var pts = GetSeries(nodeId, w.Metric, w.Days);
             if (pts.Count == 0) continue;
             var oxy    = Palette[ci % Palette.Length];
             var series = new AreaSeries
@@ -1203,10 +1782,11 @@ public partial class TelemetryDashboardWindow : Window
                 ConstantY2      = min,
                 StrokeThickness = 1.5,
                 MarkerType      = MarkerType.None,
+                Decimator       = Decimator.Decimate,
                 TrackerFormatString = "{0}\n{2:dd.MM HH:mm}\n{4:F2} " + unit,
             };
             var sorted = pts.OrderBy(x => x.Timestamp)
-                            .Select(p => new DataPoint(DateTimeAxis.ToDouble(p.Timestamp), p.Value))
+                            .Select(p => new DataPoint(DateTimeAxis.ToDouble(p.Timestamp.ToLocalTime()), p.Value))
                             .ToList();
             foreach (var dp in sorted) series.Points.Add(dp);
             model.Series.Add(series);
@@ -1220,14 +1800,17 @@ public partial class TelemetryDashboardWindow : Window
                     StrokeThickness = 1.5,
                     LineStyle       = LineStyle.Dash,
                     MarkerType      = MarkerType.None,
+                    Decimator       = Decimator.Decimate,
                     TrackerFormatString = "{0} MA\n{2:dd.MM HH:mm}\n{4:F2} " + unit,
                 };
-                foreach (var dp in MovingAverage(sorted)) maLine.Points.Add(dp);
+                foreach (var dp in MovingAverage(sorted, MaWindow(sorted))) maLine.Points.Add(dp);
                 model.Series.Add(maLine);
             }
             ci++;
         }
+        AddNightBands(model);
         AddThresholdAnnotation(model, w);
+        FinalizeChart(model);
         return model;
     }
 
@@ -1247,16 +1830,29 @@ public partial class TelemetryDashboardWindow : Window
         });
     }
 
-    private static IEnumerable<DataPoint> MovingAverage(IList<DataPoint> points, int window = 12)
+    /// <summary>Trailing moving average over a TIME window (previously 12 data points,
+    /// which smoothed over hours or days depending on how irregular the sampling was).</summary>
+    private static IEnumerable<DataPoint> MovingAverage(IList<DataPoint> points, TimeSpan window)
     {
+        double windowX = window.TotalDays; // DataPoint.X is an OADate (days)
+        int start = 0;
+        double sum = 0;
         for (int i = 0; i < points.Count; i++)
         {
-            int start = Math.Max(0, i - window + 1);
-            double sum = 0;
-            int cnt = 0;
-            for (int j = start; j <= i; j++) { sum += points[j].Y; cnt++; }
-            yield return new DataPoint(points[i].X, sum / cnt);
+            sum += points[i].Y;
+            while (points[i].X - points[start].X > windowX) { sum -= points[start].Y; start++; }
+            yield return new DataPoint(points[i].X, sum / (i - start + 1));
         }
+    }
+
+    /// <summary>MA window: 1/24 of the visible span, clamped to [30 min, 24 h].</summary>
+    private static TimeSpan MaWindow(IList<DataPoint> sorted)
+    {
+        double spanDays = sorted[^1].X - sorted[0].X;
+        var w = TimeSpan.FromDays(Math.Max(spanDays, 0) / 24.0);
+        if (w < TimeSpan.FromMinutes(30)) w = TimeSpan.FromMinutes(30);
+        if (w > TimeSpan.FromHours(24))   w = TimeSpan.FromHours(24);
+        return w;
     }
 
     // ── Bar chart ─────────────────────────────────────────────────────────────
@@ -1292,7 +1888,7 @@ public partial class TelemetryDashboardWindow : Window
         int ci = 0;
         foreach (var nodeId in w.NodeIds)
         {
-            var pts = _db.GetTimeSeries(new[] { nodeId }, w.Metric, w.Days);
+            var pts = GetSeries(nodeId, w.Metric, w.Days);
             double val  = pts.Count > 0
                 ? pts.OrderByDescending(p => p.Timestamp).First().Value
                 : double.NaN;
@@ -1322,19 +1918,19 @@ public partial class TelemetryDashboardWindow : Window
     private PlotModel BuildHeatmapModel(DashboardWidget w)
     {
         var nodeId = w.NodeIds.FirstOrDefault();
-        int days   = w.Days > 0 ? w.Days : 14;
-        var data   = _db.GetHeatmapData(nodeId, w.Metric, days);
+        int days   = HeatmapDays(w);
+        var data   = Cached($"hm|{nodeId}|{w.Metric}|{days}",
+            () => _db.GetHeatmapData(nodeId, w.Metric, days));
 
         (double min, double max, string unit) = MetricRange(w.Metric);
 
-        // For packet_count we want 0-based scale, not min-1 fill
+        // packet_count uses a 0-based scale; other metrics keep NaN for empty cells so
+        // the color axis renders them as "no data" instead of fake minimum values.
         bool isCount = w.Metric == "packet_count";
         var clean = new double[days, 24];
         for (int d = 0; d < days; d++)
             for (int h = 0; h < 24; h++)
-                clean[d, h] = isCount
-                    ? data[d, h]
-                    : (double.IsNaN(data[d, h]) ? min - 1 : data[d, h]);
+                clean[d, h] = data[d, h];
 
         // Auto-scale packet_count based on actual max
         double colorMin = isCount ? 0 : min;
@@ -1368,6 +1964,9 @@ public partial class TelemetryDashboardWindow : Window
             Palette    = OxyPalettes.Viridis(64),
             Title      = unit,
             TextColor  = _oxyText, TitleColor = _oxyText,
+            // NaN cells ("no data") get a neutral background color clearly outside the
+            // Viridis ramp — previously they were mapped to min-1 and looked like minima
+            InvalidNumberColor = _isDark ? OxyColor.FromRgb(33, 38, 45) : OxyColor.FromRgb(230, 232, 236),
         });
 
         model.Series.Add(new HeatMapSeries
@@ -1383,13 +1982,13 @@ public partial class TelemetryDashboardWindow : Window
     {
         (double min, double max, string unit) = MetricRange(w.Metric);
         var model = MakeBaseModel();
-        AddTimeAxis(model);
+        AddTimeAxis(model, w.Days);
         AddLinearAxis(model, min, max, unit);
 
         int ci = 0;
         foreach (var nodeId in w.NodeIds)
         {
-            var pts = _db.GetTimeSeries(new[] { nodeId }, w.Metric, w.Days);
+            var pts = GetSeries(nodeId, w.Metric, w.Days);
             if (pts.Count == 0) continue;
             var oxy    = Palette[ci % Palette.Length];
             var series = new ScatterSeries
@@ -1403,10 +2002,12 @@ public partial class TelemetryDashboardWindow : Window
                 TrackerFormatString    = "{0}\n{2:dd.MM HH:mm}\n{4:F2} " + unit,
             };
             foreach (var p in pts.OrderBy(x => x.Timestamp))
-                series.Points.Add(new ScatterPoint(DateTimeAxis.ToDouble(p.Timestamp), p.Value));
+                series.Points.Add(new ScatterPoint(DateTimeAxis.ToDouble(p.Timestamp.ToLocalTime()), p.Value));
             model.Series.Add(series);
             ci++;
         }
+        AddNightBands(model);
+        FinalizeChart(model);
         return model;
     }
 
@@ -1416,7 +2017,7 @@ public partial class TelemetryDashboardWindow : Window
     {
         (double min, double max, string unit) = MetricRange(w.Metric);
         var nodeId = w.NodeIds.FirstOrDefault();
-        var pts    = _db.GetTimeSeries(new[] { nodeId }, w.Metric, w.Days);
+        var pts    = GetSeries(nodeId, w.Metric, w.Days);
 
         const int buckets = 20;
         double range = Math.Max(max - min, 1e-6);
@@ -1478,11 +2079,12 @@ public partial class TelemetryDashboardWindow : Window
     {
         (double min, double max, string unit) = MetricRange(w.Metric);
         var nodeId  = w.NodeIds.FirstOrDefault();
-        var candles = _db.GetCandlestickData(nodeId, w.Metric, w.Days);
+        var candles = Cached($"cs|{nodeId}|{w.Metric}|{w.Days}",
+            () => _db.GetCandlestickData(nodeId, w.Metric, w.Days));
 
         var model = MakeBaseModel();
         model.Legends.Clear();
-        AddTimeAxis(model);
+        AddTimeAxis(model, w.Days);
         AddLinearAxis(model, min, max, unit);
 
         if (candles.Count == 0) return model;
@@ -1496,9 +2098,10 @@ public partial class TelemetryDashboardWindow : Window
         };
         foreach (var c in candles)
             series.Items.Add(new HighLowItem(
-                DateTimeAxis.ToDouble(c.Time), c.High, c.Low, c.Open, c.Close));
+                DateTimeAxis.ToDouble(c.Time.ToLocalTime()), c.High, c.Low, c.Open, c.Close));
 
         model.Series.Add(series);
+        FinalizeChart(model);
         return model;
     }
 
@@ -1507,8 +2110,8 @@ public partial class TelemetryDashboardWindow : Window
     private PlotModel BuildStatelineModel(DashboardWidget w)
     {
         var nodeId = w.NodeIds.FirstOrDefault();
-        int days   = w.Days > 0 ? w.Days : 14;
-        var data   = _db.GetNodeActivityGrid(nodeId, days);
+        int days   = StatelineDays(w);
+        var data   = Cached($"sl|{nodeId}|{days}", () => _db.GetNodeActivityGrid(nodeId, days));
 
         var model = MakeBaseModel();
         model.Legends.Clear();
@@ -1566,17 +2169,54 @@ public partial class TelemetryDashboardWindow : Window
         return model;
     }
 
-    private void AddTimeAxis(PlotModel model)
+    private void AddTimeAxis(PlotModel model, int days)
     {
+        // Label format adapts to the range: a 1-day chart needs clock times, a
+        // month-long chart only dates (0 = "Gesamt" → dates).
+        string fmt = days == 1 ? "HH:mm"
+                   : days is > 1 and <= 7 ? "dd.MM HH:mm"
+                   : "dd.MM";
         model.Axes.Add(new DateTimeAxis
         {
             Position           = AxisPosition.Bottom,
-            StringFormat       = "dd.MM HH:mm",
+            StringFormat       = fmt,
             MajorGridlineStyle = LineStyle.Dot,
             MajorGridlineColor = _oxyGrid,
             TextColor          = _oxyText,
             TicklineColor      = _oxyTick,
         });
+    }
+
+    /// <summary>Night bands (sunset → sunrise, own position) behind the series, so
+    /// nocturnal SNR/temperature patterns are visible at a glance. Skipped for ranges
+    /// over ~a month to avoid annotation spam.</summary>
+    private void AddNightBands(PlotModel model)
+    {
+        double minX = double.PositiveInfinity, maxX = double.NegativeInfinity;
+        foreach (var s in model.Series.OfType<LineSeries>())
+            foreach (var p in s.Points) { if (p.X < minX) minX = p.X; if (p.X > maxX) maxX = p.X; }
+        foreach (var s in model.Series.OfType<ScatterSeries>())
+            foreach (var p in s.Points) { if (p.X < minX) minX = p.X; if (p.X > maxX) maxX = p.X; }
+        if (double.IsInfinity(minX) || maxX - minX > 32) return; // X is in days (OADate)
+
+        var fill = _isDark
+            ? OxyColor.FromAColor(60, OxyColor.FromRgb(0, 0, 0))
+            : OxyColor.FromAColor(16, OxyColor.FromRgb(31, 60, 110));
+
+        var day = DateTimeAxis.ToDateTime(minX).Date.AddDays(-1);
+        var end = DateTimeAxis.ToDateTime(maxX).Date.AddDays(1);
+        for (; day <= end; day = day.AddDays(1))
+        {
+            var (_, sunset)  = SunriseSunsetService.GetSunriseSunset(_db.Latitude, _db.Longitude, day);
+            var (sunrise, _) = SunriseSunsetService.GetSunriseSunset(_db.Latitude, _db.Longitude, day.AddDays(1));
+            model.Annotations.Add(new RectangleAnnotation
+            {
+                MinimumX = DateTimeAxis.ToDouble(day + sunset),
+                MaximumX = DateTimeAxis.ToDouble(day.AddDays(1) + sunrise),
+                Fill     = fill,
+                Layer    = AnnotationLayer.BelowSeries,
+            });
+        }
     }
 
     private void AddLinearAxis(PlotModel model, double min, double max, string unit)
@@ -1594,11 +2234,51 @@ public partial class TelemetryDashboardWindow : Window
         });
     }
 
+    /// <summary>Post-processing for value charts: widens the fixed Y range when data or
+    /// the threshold line fall outside it (both were silently clipped before), and drops
+    /// the legend when there is only one series — the card tooltip already names the node.</summary>
+    private static void FinalizeChart(PlotModel model)
+    {
+        var axis = model.Axes.OfType<LinearAxis>().FirstOrDefault(a => a.Position == AxisPosition.Left);
+        if (axis != null)
+        {
+            double lo = double.PositiveInfinity, hi = double.NegativeInfinity;
+            void Consider(double v) { if (double.IsNaN(v)) return; if (v < lo) lo = v; if (v > hi) hi = v; }
+            foreach (var s in model.Series)
+                switch (s)
+                {
+                    case LineSeries ls: // AreaSeries derives from LineSeries
+                        foreach (var p in ls.Points) Consider(p.Y);
+                        break;
+                    case ScatterSeries sc:
+                        foreach (var p in sc.Points) Consider(p.Y);
+                        break;
+                    case CandleStickSeries cs:
+                        foreach (var i in cs.Items) { Consider(i.Low); Consider(i.High); }
+                        break;
+                }
+            foreach (var a in model.Annotations.OfType<LineAnnotation>())
+                if (a.Type == LineAnnotationType.Horizontal) Consider(a.Y);
+            if (!double.IsPositiveInfinity(lo))
+            {
+                double pad = Math.Max((hi - lo) * 0.05, 0.1);
+                if (lo < axis.Minimum) axis.Minimum = lo - pad;
+                if (hi > axis.Maximum) axis.Maximum = hi + pad;
+            }
+        }
+        if (model.Series.Count <= 1) model.Legends.Clear();
+    }
+
     // ── Edit / Remove widget ──────────────────────────────────────────────────
 
     private void EditWidget_Click(object sender, RoutedEventArgs e)
     {
         if (sender is not Button btn || btn.Tag is not DashboardWidget w) return;
+        EditWidgetCore(w);
+    }
+
+    private void EditWidgetCore(DashboardWidget w)
+    {
         if (_current == null) return;
 
         var dlg = new AddWidgetDialog(_nodeNames, _nodeShortNames, existing: w) { Owner = this };
@@ -1660,7 +2340,14 @@ public partial class TelemetryDashboardWindow : Window
             "temperature"  => (-20.0,   60.0,  "°C"),
             "humidity"     => (0.0,    100.0,  "%"),
             "pressure"     => (950.0, 1050.0,  "hPa"),
-            "packet_count" => (0.0,   100.0,   "Pakete/h"),
+            "packet_count" => (0.0,   100.0,   Loc("StrUnitPacketsPerHour")),
+            "noise_floor"  => (-130.0, -70.0,  "dBm"),
+            // Rates derived from LocalStats counter deltas between polls
+            "rx_pph" or "tx_pph" or "rx_bad_pph" or "rx_dupe_pph" or "tx_relay_pph"
+                           => (0.0,    100.0,  Loc("StrUnitPacketsPerHour")),
+            // Cumulative since-boot counters — FinalizeChart widens the axis to the data
+            "rx_bad" or "rx_dupe" or "tx_relay" or "tx_relay_canceled" or "tx_dropped"
+                           => (0.0,    100.0,  ""),
             _              => (0.0,    100.0,  ""),
         };
 
@@ -1861,6 +2548,9 @@ public partial class TelemetryDashboardWindow : Window
 
     private void RefreshCardById(string widgetId, DashboardWidget? withWidget = null)
     {
+        // User interaction (range/MA/threshold change): drop the cycle cache so the
+        // rebuilt card queries fresh data instead of a stale snapshot.
+        ClearDataCache();
         for (int i = 0; i < WidgetPanel.Children.Count; i++)
         {
             if (WidgetPanel.Children[i] is not Grid container) continue;
@@ -1890,7 +2580,7 @@ public partial class TelemetryDashboardWindow : Window
         var rows = nodeIds
             .Select(id =>
             {
-                var pts = _db.GetTimeSeries(new[] { id }, w.Metric, w.Days > 0 ? w.Days : 7);
+                var pts = GetSeries(id, w.Metric, w.Days);
                 double val = pts.Count > 0
                     ? pts.OrderByDescending(p => p.Timestamp).First().Value
                     : double.NaN;
@@ -1981,11 +2671,11 @@ public partial class TelemetryDashboardWindow : Window
         int ci = 0;
         foreach (var id in nodeIds)
         {
-            var values = _db.GetTimeSeries(new[] { id }, w.Metric, w.Days > 0 ? w.Days : 7)
-                            .Select(p => p.Value).ToList();
-            double last = values.Count > 0
-                ? _db.GetTimeSeries(new[] { id }, w.Metric, w.Days > 0 ? w.Days : 7)
-                      .OrderByDescending(p => p.Timestamp).First().Value
+            // Single query per node (this used to hit the DB twice: values + last)
+            var pts = GetSeries(id, w.Metric, w.Days);
+            var values = pts.Select(p => p.Value).ToList();
+            double last = pts.Count > 0
+                ? pts.OrderByDescending(p => p.Timestamp).First().Value
                 : double.NaN;
             double min = values.Count > 0 ? values.Min() : double.NaN;
             double max = values.Count > 0 ? values.Max() : double.NaN;
@@ -2068,13 +2758,13 @@ public partial class TelemetryDashboardWindow : Window
     private FrameworkElement BuildMeshHealthContent(DashboardWidget w)
     {
         var nodeIds  = w.NodeIds.Count > 0 ? w.NodeIds : _nodeNames.Keys.ToList();
-        int days     = w.Days > 0 ? w.Days : 7;
+        int days     = MeshHealthDays(w);
         int shortH   = 6;
 
         var stack = new StackPanel { Margin = new Thickness(6) };
 
         // ── Global mesh health score ──────────────────────────────────────────
-        var global = _db.GetMeshHealthScore(days);
+        var global = Cached($"mhs|{days}", () => _db.GetMeshHealthScore(days));
         var globalTile = new Border
         {
             Background      = new SolidColorBrush(_isDark ? Color.FromRgb(21, 26, 35) : Color.FromRgb(245, 247, 250)),
@@ -2097,7 +2787,10 @@ public partial class TelemetryDashboardWindow : Window
         });
         var gDetails = new TextBlock
         {
-            Text       = $"   Ø Pfad: {global.AvgPathCost:F2}  |  Routen: {global.RouteChangeRate:F1}/h  |  Empfang: {global.RxScore * 100:0}%  |  Kanal: {global.ChannelUtilization:F1}%",
+            Text       = $"   {Loc("StrMeshHealthAvgPath")}: {global.AvgPathCost:F2}  |  " +
+                         $"{Loc("StrMeshHealthRoutes")}: {global.RouteChangeRate:F1}/h  |  " +
+                         $"{Loc("StrMeshHealthRx")}: {global.RxScore * 100:0}%  |  " +
+                         $"{Loc("StrMeshHealthChannel")}: {global.ChannelUtilization:F1}%",
             FontSize   = 10,
             Foreground = new SolidColorBrush(_fgSub),
             VerticalAlignment = System.Windows.VerticalAlignment.Center,
@@ -2109,7 +2802,7 @@ public partial class TelemetryDashboardWindow : Window
         // ── Per-node tiles ────────────────────────────────────────────────────
         foreach (var id in nodeIds)
         {
-            var analysis = _db.GetSignalAnalysis(id, shortH, days, _nodeNames);
+            var analysis = Cached($"sa|{id}|{days}", () => _db.GetSignalAnalysis(id, shortH, days, _nodeNames));
             string name  = NodeLabel(id);
 
             var overallState = new[] { analysis.WeatherLed, analysis.AntennaLed, analysis.NeighborLed, analysis.PathLed }
@@ -2238,32 +2931,117 @@ public partial class TelemetryDashboardWindow : Window
         return cell;
     }
 
+    // ── PNG export / clipboard / duplicate ────────────────────────────────────
+
+    /// <summary>Renders the card visual at 2× resolution (works for every widget type,
+    /// not just OxyPlot charts).</summary>
+    private static System.Windows.Media.Imaging.RenderTargetBitmap RenderCardBitmap(Border card)
+    {
+        var bmp = new System.Windows.Media.Imaging.RenderTargetBitmap(
+            (int)Math.Ceiling(card.ActualWidth * 2), (int)Math.Ceiling(card.ActualHeight * 2),
+            192, 192, PixelFormats.Pbgra32);
+        bmp.Render(card);
+        return bmp;
+    }
+
+    private void ExportWidgetPng(Border card, DashboardWidget w)
+    {
+        var safeTitle = string.Join("_", w.Title.Split(System.IO.Path.GetInvalidFileNameChars(),
+            StringSplitOptions.RemoveEmptyEntries)).Trim();
+        if (safeTitle.Length == 0) safeTitle = "widget";
+        var dlg = new Microsoft.Win32.SaveFileDialog
+        {
+            Title    = Loc("StrDashboardExportPng"),
+            Filter   = "PNG (*.png)|*.png",
+            FileName = $"{safeTitle}_{DateTime.Now:yyyyMMdd_HHmm}.png",
+        };
+        if (dlg.ShowDialog() != true) return;
+        try
+        {
+            var encoder = new System.Windows.Media.Imaging.PngBitmapEncoder();
+            encoder.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(RenderCardBitmap(card)));
+            using var fs = System.IO.File.Create(dlg.FileName);
+            encoder.Save(fs);
+            MessageBox.Show(string.Format(Loc("StrDashboardExportDone"), dlg.FileName),
+                Loc("StrDashboardTitle"), MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"{Loc("StrDashboardExportFailed")} {ex.Message}",
+                Loc("StrDashboardTitle"), MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private void CopyWidgetImage(Border card)
+    {
+        try { Clipboard.SetImage(RenderCardBitmap(card)); }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"{Loc("StrDashboardExportFailed")} {ex.Message}",
+                Loc("StrDashboardTitle"), MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private void DuplicateWidget(DashboardWidget w)
+    {
+        if (_current == null) return;
+        var idx = _store.Dashboards.IndexOf(_current);
+        var wIdx = _current.Widgets.FindIndex(x => x.Id == w.Id);
+        if (idx < 0 || wIdx < 0) return;
+        var copy = w with { Id = Guid.NewGuid().ToString("N")[..8] };
+        var newWidgets = new List<DashboardWidget>(_current.Widgets);
+        newWidgets.Insert(wIdx + 1, copy);
+        _current = _current with { Widgets = newWidgets };
+        _store.Dashboards[idx] = _current;
+        SaveStore();
+        RenderCurrentDashboard();
+    }
+
     // ── CSV Export ────────────────────────────────────────────────────────────
 
     private void ExportWidgetCsv(DashboardWidget w)
     {
         (_, _, string unit) = MetricRange(w.Metric);
+        // Widget titles may contain characters that are invalid in filenames (":", "/" …)
+        var safeTitle = string.Join("_", w.Title.Split(System.IO.Path.GetInvalidFileNameChars(),
+            StringSplitOptions.RemoveEmptyEntries)).Trim();
+        if (safeTitle.Length == 0) safeTitle = "widget";
         var dlg = new Microsoft.Win32.SaveFileDialog
         {
             Title    = Loc("StrDashboardExportCsv"),
-            Filter   = "CSV (*.csv)|*.csv",
-            FileName = $"{w.Title}_{w.Metric}_{DateTime.Now:yyyyMMdd_HHmm}.csv",
+            // Two flavours: German Excel expects ';' + decimal comma; the old comma format
+            // with current-culture numbers produced broken columns on German systems.
+            Filter   = $"{Loc("StrCsvFilterExcel")}|*.csv|{Loc("StrCsvFilterIntl")}|*.csv",
+            FileName = $"{safeTitle}_{w.Metric}_{DateTime.Now:yyyyMMdd_HHmm}.csv",
         };
         if (dlg.ShowDialog() != true) return;
+
+        bool excelDe = dlg.FilterIndex == 1;
+        char sep     = excelDe ? ';' : ',';
+        var numCulture = excelDe
+            ? System.Globalization.CultureInfo.GetCultureInfo("de-DE")
+            : System.Globalization.CultureInfo.InvariantCulture;
+        string Quote(string s) =>
+            s.IndexOf(sep) >= 0 || s.Contains('"') ? $"\"{s.Replace("\"", "\"\"")}\"" : s;
 
         try
         {
             var nodeIds = w.NodeIds.Count > 0 ? w.NodeIds : _nodeNames.Keys.ToList();
             var sb = new StringBuilder();
-            sb.AppendLine($"Timestamp,Node,{w.Metric} ({unit})");
+            sb.AppendLine(string.Join(sep, "Timestamp", "Node", Quote($"{w.Metric} ({unit})")));
 
             foreach (var id in nodeIds)
             {
-                string name = NodeLabel(id);
-                var pts = _db.GetTimeSeries(new[] { id }, w.Metric, w.Days > 0 ? w.Days : 30)
+                string name = Quote(NodeLabel(id));
+                // Export exactly the widget's range — Days==0 ("Gesamt") exports everything
+                // (this used to silently cap at 30 days)
+                var pts = _db.GetTimeSeries(new[] { id }, w.Metric, w.Days)
                              .OrderBy(p => p.Timestamp);
                 foreach (var p in pts)
-                    sb.AppendLine($"{p.Timestamp:yyyy-MM-dd HH:mm:ss},{name},{p.Value:F4}");
+                    sb.AppendLine(string.Join(sep,
+                        p.Timestamp.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss"),
+                        name,
+                        p.Value.ToString("F4", numCulture)));
             }
 
             System.IO.File.WriteAllText(dlg.FileName, sb.ToString(), Encoding.UTF8);
@@ -2274,7 +3052,7 @@ public partial class TelemetryDashboardWindow : Window
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Export fehlgeschlagen: {ex.Message}",
+            MessageBox.Show($"{Loc("StrDashboardExportFailed")} {ex.Message}",
                 Loc("StrDashboardTitle"),
                 MessageBoxButton.OK, MessageBoxImage.Error);
         }

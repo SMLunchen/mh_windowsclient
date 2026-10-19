@@ -85,6 +85,38 @@ CREATE TABLE IF NOT EXISTS traceroute_hops (
 CREATE INDEX IF NOT EXISTS idx_trhop_source ON traceroute_hops(source_node_id, timestamp);
 CREATE INDEX IF NOT EXISTS idx_trhop_dest   ON traceroute_hops(dest_node_id, timestamp);
 
+CREATE TABLE IF NOT EXISTS meta (
+    key   TEXT PRIMARY KEY,
+    value TEXT
+);
+
+CREATE TABLE IF NOT EXISTS local_stats (
+    id                    INTEGER PRIMARY KEY AUTOINCREMENT,
+    node_id               INTEGER NOT NULL,
+    timestamp             INTEGER NOT NULL,
+    noise_floor           INTEGER,
+    num_packets_tx        INTEGER,
+    num_packets_rx        INTEGER,
+    num_packets_rx_bad    INTEGER,
+    num_rx_dupe           INTEGER,
+    num_tx_relay          INTEGER,
+    num_tx_relay_canceled INTEGER,
+    num_tx_dropped        INTEGER,
+    num_online_nodes      INTEGER,
+    num_total_nodes       INTEGER
+);
+CREATE INDEX IF NOT EXISTS idx_localstats_node_time ON local_stats(node_id, timestamp);
+
+CREATE TABLE IF NOT EXISTS rf_links (
+    observer  INTEGER NOT NULL,   -- node that HEARD the transmission
+    neighbor  INTEGER NOT NULL,   -- node that was heard (direct RF, never MQTT)
+    snr       REAL,               -- SNR in dB as measured by observer, NULL = unknown
+    source    TEXT    NOT NULL,   -- 'rx' (0-hop reception) | 'traceroute' | 'neighborinfo'
+    last_seen INTEGER NOT NULL,
+    PRIMARY KEY (observer, neighbor, source)
+);
+CREATE INDEX IF NOT EXISTS idx_rflinks_neighbor ON rf_links(neighbor);
+
 CREATE TABLE IF NOT EXISTS node_positions (
     id           INTEGER PRIMARY KEY AUTOINCREMENT,
     node_id      INTEGER NOT NULL,
@@ -317,6 +349,228 @@ VALUES ($n, $ts, $bat, $v, $cu, $au, $up)";
                 cmd.Parameters.AddWithValue("$v" + i, vals[i]);
             cmd.ExecuteNonQuery();
         }
+    }
+
+    /// <summary>Stores a LocalStats telemetry reading (newer firmware: noise floor, RX/TX
+    /// packet counters, relay stats). Counters are cumulative since the node's last boot.
+    /// noise_floor 0 = not reported → NULL.</summary>
+    public void InsertLocalStats(uint nodeId, DateTime timestamp, Meshtastic.Protobufs.LocalStats ls)
+    {
+        lock (_lock)
+        {
+            using var con = Open();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = @"
+INSERT INTO local_stats (node_id, timestamp, noise_floor, num_packets_tx, num_packets_rx,
+    num_packets_rx_bad, num_rx_dupe, num_tx_relay, num_tx_relay_canceled, num_tx_dropped,
+    num_online_nodes, num_total_nodes)
+VALUES ($n, $ts, $noise, $tx, $rx, $rxbad, $dupe, $relay, $relayc, $drop, $online, $total)";
+            cmd.Parameters.AddWithValue("$n",      (long)nodeId);
+            cmd.Parameters.AddWithValue("$ts",     ToUnix(timestamp));
+            cmd.Parameters.AddWithValue("$noise",  ls.NoiseFloor != 0 ? ls.NoiseFloor : (object)DBNull.Value);
+            cmd.Parameters.AddWithValue("$tx",     (long)ls.NumPacketsTx);
+            cmd.Parameters.AddWithValue("$rx",     (long)ls.NumPacketsRx);
+            cmd.Parameters.AddWithValue("$rxbad",  (long)ls.NumPacketsRxBad);
+            cmd.Parameters.AddWithValue("$dupe",   (long)ls.NumRxDupe);
+            cmd.Parameters.AddWithValue("$relay",  (long)ls.NumTxRelay);
+            cmd.Parameters.AddWithValue("$relayc", (long)ls.NumTxRelayCanceled);
+            cmd.Parameters.AddWithValue("$drop",   (long)ls.NumTxDropped);
+            cmd.Parameters.AddWithValue("$online", (long)ls.NumOnlineNodes);
+            cmd.Parameters.AddWithValue("$total",  (long)ls.NumTotalNodes);
+            cmd.ExecuteNonQuery();
+        }
+    }
+
+    public sealed class LocalStatsReading
+    {
+        public DateTime Timestamp { get; init; }
+        public int?  NoiseFloor { get; init; }
+        public long PacketsTx { get; init; }
+        public long PacketsRx { get; init; }
+        public long PacketsRxBad { get; init; }
+        public long RxDupe { get; init; }
+        public long TxRelay { get; init; }
+        public long TxRelayCanceled { get; init; }
+        public long TxDropped { get; init; }
+        public long OnlineNodes { get; init; }
+        public long TotalNodes { get; init; }
+    }
+
+    /// <summary>Rate series (per hour) derived from a cumulative local_stats counter:
+    /// each point = (counterΔ / hoursΔ) between two consecutive readings, stamped at the
+    /// later reading. Negative deltas (counter reset after reboot) and degenerate
+    /// intervals (&lt; 1 min or &gt; 24 h apart) are skipped.</summary>
+    private List<TimeSeriesPoint> GetLocalStatsRateSeries(
+        IEnumerable<uint> nodeIds, string col, int days, string metricName)
+    {
+        long since = Since(days);
+        var result = new List<TimeSeriesPoint>();
+
+        using var con = Open();
+        foreach (var nodeId in nodeIds)
+        {
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = $"SELECT timestamp, {col} FROM local_stats " +
+                              $"WHERE node_id=$n AND timestamp>=$s AND {col} IS NOT NULL ORDER BY timestamp";
+            cmd.Parameters.AddWithValue("$n", (long)nodeId);
+            cmd.Parameters.AddWithValue("$s", since);
+
+            long prevTs = 0; double prevVal = double.NaN;
+            using var r = cmd.ExecuteReader();
+            while (r.Read())
+            {
+                long ts = r.GetInt64(0);
+                double v = r.GetDouble(1);
+                if (!double.IsNaN(prevVal))
+                {
+                    double dtHours = (ts - prevTs) / 3600.0;
+                    double delta = v - prevVal;
+                    if (dtHours >= 1.0 / 60 && dtHours <= 24 && delta >= 0)
+                        result.Add(new TimeSeriesPoint
+                        {
+                            NodeId    = nodeId,
+                            Timestamp = FromUnix(ts),
+                            Value     = delta / dtHours,
+                            Metric    = metricName,
+                        });
+                }
+                prevTs = ts; prevVal = v;
+            }
+        }
+        return result;
+    }
+
+    /// <summary>Most recent LocalStats reading of a node, or null if none stored.</summary>
+    public LocalStatsReading? GetLatestLocalStats(uint nodeId)
+    {
+        using var con = Open();
+        using var cmd = con.CreateCommand();
+        cmd.CommandText = @"
+SELECT timestamp, noise_floor, num_packets_tx, num_packets_rx, num_packets_rx_bad,
+       num_rx_dupe, num_tx_relay, num_tx_relay_canceled, num_tx_dropped,
+       num_online_nodes, num_total_nodes
+FROM local_stats WHERE node_id=$n ORDER BY timestamp DESC LIMIT 1";
+        cmd.Parameters.AddWithValue("$n", (long)nodeId);
+        using var r = cmd.ExecuteReader();
+        if (!r.Read()) return null;
+        return new LocalStatsReading
+        {
+            Timestamp       = FromUnix(r.GetInt64(0)),
+            NoiseFloor      = r.IsDBNull(1) ? null : r.GetInt32(1),
+            PacketsTx       = r.GetInt64(2),
+            PacketsRx       = r.GetInt64(3),
+            PacketsRxBad    = r.GetInt64(4),
+            RxDupe          = r.GetInt64(5),
+            TxRelay         = r.GetInt64(6),
+            TxRelayCanceled = r.GetInt64(7),
+            TxDropped       = r.GetInt64(8),
+            OnlineNodes     = r.GetInt64(9),
+            TotalNodes      = r.GetInt64(10),
+        };
+    }
+
+    /// <summary>Records an observed direct RF link: <paramref name="observer"/> heard
+    /// <paramref name="neighbor"/> at <paramref name="snr"/> dB. One row per
+    /// (observer, neighbor, source); repeats update SNR + last_seen. Evidence sources:
+    /// 'rx' = our own 0-hop non-MQTT reception, 'traceroute' = adjacent hop pair from a
+    /// traceroute reply, 'neighborinfo' = a node's own NEIGHBORINFO_APP broadcast.</summary>
+    private bool _rfStartMarkerSet;
+
+    public void UpsertRfLink(uint observer, uint neighbor, float? snr, string source, DateTime timestamp)
+    {
+        if (observer == 0 || neighbor == 0 || observer == neighbor) return;
+        lock (_lock)
+        {
+            using var con = Open();
+
+            // One-time marker: when RF-link collection began. The neighbor view uses it to
+            // decide when sparse data (1–2 partners) is trustworthy rather than just young.
+            if (!_rfStartMarkerSet)
+            {
+                using var meta = con.CreateCommand();
+                meta.CommandText = "INSERT OR IGNORE INTO meta (key, value) VALUES ('rf_links_started', $v)";
+                meta.Parameters.AddWithValue("$v", ToUnix(timestamp).ToString());
+                meta.ExecuteNonQuery();
+                _rfStartMarkerSet = true;
+            }
+
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = @"
+INSERT INTO rf_links (observer, neighbor, snr, source, last_seen)
+VALUES ($o, $n, $snr, $src, $ts)
+ON CONFLICT(observer, neighbor, source)
+DO UPDATE SET snr = COALESCE($snr, snr), last_seen = $ts";
+            cmd.Parameters.AddWithValue("$o",   (long)observer);
+            cmd.Parameters.AddWithValue("$n",   (long)neighbor);
+            cmd.Parameters.AddWithValue("$snr", snr.HasValue ? snr.Value : (object)DBNull.Value);
+            cmd.Parameters.AddWithValue("$src", source);
+            cmd.Parameters.AddWithValue("$ts",  ToUnix(timestamp));
+            cmd.ExecuteNonQuery();
+        }
+    }
+
+    public class RfNeighbor
+    {
+        public uint      NeighborId   { get; set; }
+        public string    NeighborName { get; set; } = "";
+        public float?    SnrIn        { get; set; }  // selected node heard the partner at …
+        public float?    SnrOut       { get; set; }  // partner heard the selected node at …
+        public List<string> Sources   { get; set; } = new();
+        public DateTime  LastSeen     { get; set; }
+    }
+
+    /// <summary>When RF-link collection started (first ever rf_links insert), or null.</summary>
+    public DateTime? GetRfCollectionStart()
+    {
+        using var con = Open();
+        using var cmd = con.CreateCommand();
+        cmd.CommandText = "SELECT value FROM meta WHERE key='rf_links_started'";
+        var v = cmd.ExecuteScalar() as string;
+        return long.TryParse(v, out var unix) ? FromUnix(unix) : null;
+    }
+
+    /// <summary>All direct-RF partners of <paramref name="nodeId"/> from collected link
+    /// evidence, newest first. <paramref name="days"/> &gt; 0 limits to links confirmed
+    /// within that window.</summary>
+    public List<RfNeighbor> GetRfNeighbors(uint nodeId, int days, Dictionary<uint, string> nodeNames)
+    {
+        long since = Since(days);
+        var byPartner = new Dictionary<uint, RfNeighbor>();
+
+        using var con = Open();
+        using var cmd = con.CreateCommand();
+        cmd.CommandText = @"
+SELECT observer, neighbor, snr, source, last_seen
+FROM rf_links
+WHERE (observer = $n OR neighbor = $n) AND last_seen >= $s";
+        cmd.Parameters.AddWithValue("$n", (long)nodeId);
+        cmd.Parameters.AddWithValue("$s", since);
+
+        using var r = cmd.ExecuteReader();
+        while (r.Read())
+        {
+            uint observer = (uint)r.GetInt64(0);
+            uint neighbor = (uint)r.GetInt64(1);
+            float? snr    = r.IsDBNull(2) ? null : (float)r.GetDouble(2);
+            string source = r.GetString(3);
+            var lastSeen  = FromUnix(r.GetInt64(4));
+
+            uint partner = observer == nodeId ? neighbor : observer;
+            if (!byPartner.TryGetValue(partner, out var row))
+            {
+                nodeNames.TryGetValue(partner, out var name);
+                row = new RfNeighbor { NeighborId = partner, NeighborName = name ?? $"!{partner:x8}" };
+                byPartner[partner] = row;
+            }
+
+            // observer == selected node ⇒ the selected node HEARD the partner (SnrIn)
+            if (observer == nodeId) { if (snr.HasValue) row.SnrIn = snr; }
+            else                    { if (snr.HasValue) row.SnrOut = snr; }
+            if (!row.Sources.Contains(source)) row.Sources.Add(source);
+            if (lastSeen > row.LastSeen) row.LastSeen = lastSeen;
+        }
+
+        return byPartner.Values.OrderByDescending(x => x.LastSeen).ToList();
     }
 
     public void InsertTracerouteHops(TracerouteResult result)
@@ -645,6 +899,20 @@ LIMIT 50";
         if (string.Equals(metric, "packet_count", StringComparison.OrdinalIgnoreCase))
             return QueryPacketCountSeries(nodeIds, days);
 
+        // Derived rates from cumulative LocalStats counters: delta between consecutive
+        // polls ÷ elapsed time → packets per hour. Counter resets (reboot) are skipped.
+        string? rateCol = metric.ToLowerInvariant() switch
+        {
+            "rx_pph"       => "num_packets_rx",
+            "tx_pph"       => "num_packets_tx",
+            "rx_bad_pph"   => "num_packets_rx_bad",
+            "rx_dupe_pph"  => "num_rx_dupe",
+            "tx_relay_pph" => "num_tx_relay",
+            _              => null,
+        };
+        if (rateCol != null)
+            return GetLocalStatsRateSeries(nodeIds, rateCol, days, metric);
+
         long since = Since(days);
         var result = new List<TimeSeriesPoint>();
 
@@ -657,15 +925,30 @@ LIMIT 50";
             "voltage"      => ("device_telemetry",      "voltage"),
             "channel_util" => ("device_telemetry",      "channel_utilization"),
             "air_tx_util"  => ("device_telemetry",      "air_util_tx"),
-            _ when EnvironmentMetricInfo.ByKey(metric) is { } envM => ("environment_telemetry", envM.Column),
+            // LocalStats telemetry (newer firmware)
+            "noise_floor"       => ("local_stats", "noise_floor"),
+            "rx_bad"            => ("local_stats", "num_packets_rx_bad"),
+            "rx_dupe"           => ("local_stats", "num_rx_dupe"),
+            "tx_relay"          => ("local_stats", "num_tx_relay"),
+            "tx_relay_canceled" => ("local_stats", "num_tx_relay_canceled"),
+            "tx_dropped"        => ("local_stats", "num_tx_dropped"),
+            _ when EnvironmentMetricInfo.ByKey(metric) is { } envM && !envM.Virtual
+                           => ("environment_telemetry", envM.Column),
             _              => ("packet_rx",             "rx_snr"),
         };
+
+        // SNR/RSSI describe OUR link to the node — only direct receptions count (a relayed
+        // packet's rx_snr/rssi is the last hop's, not the originator's). NULL hop count
+        // (old firmware) is treated as local, like everywhere else in the client.
+        string hopFilter = table == "packet_rx" && (col == "rx_snr" || col == "rx_rssi")
+            ? " AND (hop_count = 0 OR hop_count IS NULL)"
+            : "";
 
         using var con = Open();
         foreach (var nodeId in nodeIds)
         {
             using var cmd = con.CreateCommand();
-            cmd.CommandText = $"SELECT timestamp, {col} FROM {table} WHERE node_id=$n AND timestamp>=$s AND {col} IS NOT NULL ORDER BY timestamp";
+            cmd.CommandText = $"SELECT timestamp, {col} FROM {table} WHERE node_id=$n AND timestamp>=$s AND {col} IS NOT NULL{hopFilter} ORDER BY timestamp";
             cmd.Parameters.AddWithValue("$n", (long)nodeId);
             cmd.Parameters.AddWithValue("$s", since);
             using var r = cmd.ExecuteReader();
@@ -699,7 +982,7 @@ LIMIT 50";
     /// recent reading row. Used to render the on-map value boxes.</summary>
     public List<EnvReading> GetLatestEnvironmentPerNode()
     {
-        var cols = EnvironmentMetricInfo.All.ToList();          // fixed order = read order
+        var cols = EnvironmentMetricInfo.EnvOnly.ToList();      // fixed order = read order (no virtual metrics)
         var colList = string.Join(", ", cols.Select(m => m.Column));
         var result = new List<EnvReading>();
 
@@ -786,16 +1069,28 @@ ORDER BY bucket";
             "snr"          => ("packet_rx",             "rx_snr"),
             "rssi"         => ("packet_rx",             "rx_rssi"),
             "battery"      => ("device_telemetry",      "battery_percent"),
-            _ when EnvironmentMetricInfo.ByKey(metric) is { } envM => ("environment_telemetry", envM.Column),
+            "noise_floor"       => ("local_stats", "noise_floor"),
+            "rx_bad"            => ("local_stats", "num_packets_rx_bad"),
+            "rx_dupe"           => ("local_stats", "num_rx_dupe"),
+            "tx_relay"          => ("local_stats", "num_tx_relay"),
+            "tx_relay_canceled" => ("local_stats", "num_tx_relay_canceled"),
+            "tx_dropped"        => ("local_stats", "num_tx_dropped"),
+            _ when EnvironmentMetricInfo.ByKey(metric) is { } envM && !envM.Virtual
+                           => ("environment_telemetry", envM.Column),
             _              => ("packet_rx",             "rx_snr"),
         };
+
+        // Direct receptions only for SNR/RSSI (see GetTimeSeries)
+        string hopFilter = table == "packet_rx" && (col == "rx_snr" || col == "rx_rssi")
+            ? " AND (hop_count = 0 OR hop_count IS NULL)"
+            : "";
 
         var sums   = new double[effectiveDays, 24];
         var counts = new int[effectiveDays, 24];
 
         using var con = Open();
         using var cmd = con.CreateCommand();
-        cmd.CommandText = $"SELECT timestamp, {col} FROM {table} WHERE node_id=$n AND timestamp>=$s AND {col} IS NOT NULL ORDER BY timestamp";
+        cmd.CommandText = $"SELECT timestamp, {col} FROM {table} WHERE node_id=$n AND timestamp>=$s AND {col} IS NOT NULL{hopFilter} ORDER BY timestamp";
         cmd.Parameters.AddWithValue("$n", (long)nodeId);
         cmd.Parameters.AddWithValue("$s", since);
 
@@ -1471,13 +1766,17 @@ GROUP BY node_id";
         long since = Since(days);
         using var con = Open();
         using var cmd = con.CreateCommand();
+        // Direct receptions only (hop_count 0; NULL = unknown is treated as local, like the
+        // rest of the client) — a relayed packet's rx_snr is the LAST HOP's SNR and must not
+        // be restored as the originator's signal quality (it painted far nodes red/green).
         cmd.CommandText = @"
 SELECT node_id, rx_snr FROM packet_rx
 WHERE timestamp = (
     SELECT MAX(timestamp) FROM packet_rx p2
     WHERE p2.node_id = packet_rx.node_id AND p2.timestamp >= $s AND p2.rx_snr IS NOT NULL
+      AND (p2.hop_count = 0 OR p2.hop_count IS NULL)
 )
-AND timestamp >= $s AND rx_snr IS NOT NULL";
+AND timestamp >= $s AND rx_snr IS NOT NULL AND (hop_count = 0 OR hop_count IS NULL)";
         cmd.Parameters.AddWithValue("$s", since);
         var result = new Dictionary<uint, float>();
         using var r = cmd.ExecuteReader();

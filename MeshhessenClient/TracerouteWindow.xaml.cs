@@ -310,7 +310,8 @@ public partial class TracerouteWindow : Window
 
         try
         {
-            await _protocolService.SendTracerouteAsync(_targetNode.NodeId);
+            await _protocolService.SendTracerouteAsync(_targetNode.NodeId,
+                hfOnly: HfOnlyCheckBox.IsChecked == true);
             StatusText.Text = Loc("StrConnecting");
 
             // Auto-reset after 30 s if no result arrives

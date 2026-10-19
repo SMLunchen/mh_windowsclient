@@ -183,6 +183,13 @@ public class MeshtasticProtocolService
     // --- Buffered positions for not-yet-known nodes -----------------------
     // A Position from a node we have no NodeInfo for yet is kept here (instead of
     // being discarded) and applied to the node once it becomes known.
+    /// <summary>True when the packet reached us directly over RF: not via MQTT and
+    /// 0 hops (unknown hop count — hop_start 0 on old firmware — is treated as local,
+    /// matching the rest of the client). Relayed packets carry the LAST HOP's SNR/RSSI,
+    /// which must never be attributed to the originator's link quality.</summary>
+    private static bool IsDirectRx(MeshPacket p) =>
+        !p.ViaMqtt && (p.HopStart == 0 || p.HopLimit >= p.HopStart);
+
     private sealed class PendingPosition
     {
         public double Latitude, Longitude;
@@ -190,6 +197,7 @@ public class MeshtasticProtocolService
         public float? GroundSpeed, GroundTrack;
         public int Rssi;
         public float Snr;
+        public bool Direct;   // SNR/RSSI usable as the node's own link quality
         public DateTime AddedAt;
     }
     private readonly Dictionary<uint, PendingPosition> _pendingPositions = new(); // guarded by _dataLock
@@ -1243,18 +1251,29 @@ public class MeshtasticProtocolService
                 // Update direct-neighbor / routing metadata on every decoded packet
                 if (packet.From != _myNodeId)
                 {
+                    bool directRf = hops == 0 && !packet.ViaMqtt;
                     lock (_dataLock)
                     {
                         if (_knownNodes.TryGetValue(packet.From, out var knownNode))
                         {
                             knownNode.IsViaMqtt   = packet.ViaMqtt;
                             knownNode.HopsToReach = hops;
-                            if (hops == 0 && !packet.ViaMqtt && packet.RxSnr != 0f)
+                            if (directRf && packet.RxSnr != 0f)
                             {
                                 knownNode.DirectNeighborAt  = DateTime.Now;
                                 knownNode.DirectNeighborSnr = packet.RxSnr;
                             }
                         }
+                    }
+                    // RF-link evidence: we heard this node directly (0 hops, not MQTT)
+                    if (directRf)
+                    {
+                        try
+                        {
+                            _db?.UpsertRfLink(_myNodeId, packet.From,
+                                packet.RxSnr != 0f ? packet.RxSnr : null, "rx", DateTime.UtcNow);
+                        }
+                        catch { /* non-critical */ }
                     }
                 }
             }
@@ -1641,11 +1660,37 @@ public class MeshtasticProtocolService
         return psk; // 16 or 32 bytes
     }
 
-    // Channel hash = xor(name bytes) xor xor(key bytes) — firmware Channels::generateHash.
-    private static int ChannelHash(Channel ch, byte[] key)
+    /// <summary>The name the firmware actually hashes: an UNNAMED channel ("") is hashed
+    /// under its preset-derived default name ("ShortSlow", "LongFast", …) — see firmware
+    /// Channels::getName → DisplayFormatters::getModemPresetDisplayName (long form; note
+    /// LONG_MODERATE = "LongMod"). Hashing "" instead made our hash wrong for every
+    /// default-named channel (encrypt AND decrypt matching).</summary>
+    private string EffectiveChannelName(Channel ch)
+    {
+        var name = ch.Settings?.Name ?? "";
+        if (name.Length > 0) return name;
+        var lora = _currentLoRaConfig;
+        if (lora != null && !lora.UsePreset) return "Custom";
+        return lora?.ModemPreset switch
+        {
+            ModemPreset.ShortTurbo   => "ShortTurbo",
+            ModemPreset.ShortSlow    => "ShortSlow",
+            ModemPreset.ShortFast    => "ShortFast",
+            ModemPreset.MediumSlow   => "MediumSlow",
+            ModemPreset.MediumFast   => "MediumFast",
+            ModemPreset.LongSlow     => "LongSlow",
+            ModemPreset.LongModerate => "LongMod",
+            null                     => "LongFast",
+            // Future presets: the C# enum name matches the firmware display name
+            _                        => lora.ModemPreset.ToString(),
+        };
+    }
+
+    // Channel hash = xor(effective name bytes) xor xor(key bytes) — firmware Channels::generateHash.
+    private int ChannelHash(Channel ch, byte[] key)
     {
         byte h = 0;
-        foreach (var b in Encoding.UTF8.GetBytes(ch.Settings?.Name ?? "")) h ^= b;
+        foreach (var b in Encoding.UTF8.GetBytes(EffectiveChannelName(ch))) h ^= b;
         foreach (var b in key) h ^= b;
         return h;
     }
@@ -1853,6 +1898,10 @@ public class MeshtasticProtocolService
                 HandleTraceroutePacket(packet, data);
                 break;
 
+            case 71: // NEIGHBORINFO_APP — a node's own report of who it hears directly
+                HandleNeighborInfoPacket(packet, data);
+                break;
+
             case 8: // WAYPOINT_APP
                 HandleWaypointPacket(packet, data);
                 break;
@@ -1991,6 +2040,33 @@ public class MeshtasticProtocolService
         }
     }
 
+    /// <summary>NEIGHBORINFO_APP: the reporting node lists every node it hears DIRECTLY
+    /// over RF, with SNR. The packet may reach us over any route (relays, MQTT) — the
+    /// content still describes genuine RF links at the reporter, so it feeds rf_links.</summary>
+    private void HandleNeighborInfoPacket(MeshPacket packet, Data data)
+    {
+        try
+        {
+            var ni = NeighborInfo.Parser.ParseFrom(data.Payload);
+            if (ni.NodeId == 0) return;
+            Logger.WriteLine($"NeighborInfo from !{ni.NodeId:x8}: {ni.Neighbors.Count} direct neighbors");
+            foreach (var n in ni.Neighbors)
+            {
+                if (n.NodeId == 0) continue;
+                try
+                {
+                    _db?.UpsertRfLink(ni.NodeId, n.NodeId,
+                        n.Snr != 0f ? n.Snr : null, "neighborinfo", DateTime.UtcNow);
+                }
+                catch { /* non-critical */ }
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.WriteLine($"NeighborInfo parse failed: {ex.Message}");
+        }
+    }
+
     private void HandleTraceroutePacket(MeshPacket packet, Data data)
     {
         try
@@ -2015,6 +2091,33 @@ public class MeshtasticProtocolService
             // Persist hops for telemetry analysis
             try { _db?.InsertTracerouteHops(result); }
             catch (Exception ex) { Logger.WriteLine($"TelemetryDB traceroute insert failed: {ex.Message}"); }
+
+            // RF-link evidence: adjacent nodes in a traceroute path heard each other by
+            // definition. SNR values are proto-scaled by 4; links are only recorded when a
+            // real SNR was measured — an MQTT bridge segment inside the path carries no RF
+            // SNR, so this also keeps MQTT legs out of the RF-link table.
+            try
+            {
+                void RecordPath(List<uint> path, List<int> snrs)
+                {
+                    for (int i = 0; i + 1 < path.Count; i++)
+                    {
+                        if (i >= snrs.Count || snrs[i] <= -128) continue; // unknown SNR → skip
+                        _db?.UpsertRfLink(observer: path[i + 1], neighbor: path[i],
+                            snr: snrs[i] / 4f, source: "traceroute", timestamp: DateTime.UtcNow);
+                    }
+                }
+                var fwd = new List<uint> { result.SourceNodeId };
+                fwd.AddRange(result.RouteForward);
+                fwd.Add(result.DestinationNodeId);
+                RecordPath(fwd, result.SnrTowards);
+
+                var back = new List<uint> { result.DestinationNodeId };
+                back.AddRange(result.RouteBack);
+                back.Add(result.SourceNodeId);
+                RecordPath(back, result.SnrBack);
+            }
+            catch (Exception ex) { Logger.WriteLine($"TelemetryDB rf_link insert failed: {ex.Message}"); }
         }
         catch (Exception ex)
         {
@@ -2022,10 +2125,13 @@ public class MeshtasticProtocolService
         }
     }
 
-    public async Task SendTracerouteAsync(uint destinationId)
+    public async Task SendTracerouteAsync(uint destinationId, bool hfOnly = false)
     {
         try
         {
+            if (hfOnly && await TrySendHfOnlyTracerouteAsync(destinationId))
+                return; // crafted packet sent; falls through to the normal path on failure
+
             var routeDiscovery = new RouteDiscovery();
             var meshPacket = new MeshPacket
             {
@@ -2046,13 +2152,74 @@ public class MeshtasticProtocolService
 
             var toRadio = new ToRadio { Packet = meshPacket };
             await SendToRadioAsync(toRadio);
-            Logger.WriteLine($"Traceroute request sent to !{destinationId:x8}");
+            Logger.WriteLine($"Traceroute request sent to !{destinationId:x8}{(hfOnly ? " (HF-only fallback to normal path!)" : "")}");
         }
         catch (Exception ex)
         {
             Logger.WriteLine($"Error sending traceroute: {ex.Message}");
             throw;
         }
+    }
+
+    /// <summary>
+    /// "HF only" traceroute: sends the request as a PRE-ENCRYPTED packet so the
+    /// ok_to_mqtt bit inside the Data payload stays CLEARED. Background: for packets the
+    /// phone hands over as plaintext, the firmware force-ORs its own
+    /// lora.config_ok_to_mqtt into the bitfield (Router.cpp, perhapsEncode) — the client
+    /// cannot clear it that way. For an already-encrypted packet the firmware transmits
+    /// the payload untouched. MQTT gateways on public brokers (anything that is not a
+    /// literal RFC1918 address, i.e. also the Meshhessen broker) then refuse to uplink
+    /// the packet, so the traceroute runs over RF exclusively. Relays can still append
+    /// themselves: they hold the channel key and re-encrypt without touching the
+    /// bitfield (perhapsEncode only rewrites it for packets they originate).
+    /// Returns false when crafting isn't possible (no primary channel key, channel hash
+    /// 0, not connected) — caller falls back to the normal path.
+    /// </summary>
+    private async Task<bool> TrySendHfOnlyTracerouteAsync(uint destinationId)
+    {
+        if (_myNodeId == 0) return false;
+
+        Channel? primary;
+        lock (_dataLock)
+        {
+            primary = _tempChannels.FirstOrDefault(c => c.Role == ChannelRole.Primary)
+                   ?? _tempChannels.FirstOrDefault(c => c.Index == 0);
+        }
+        if (primary == null) return false;
+        var key = ExpandChannelKey(primary);
+        if (key == null) return false;
+        int hash = ChannelHash(primary, key);
+        // Hash 0 would be rewritten to a channel INDEX by the firmware's sendLocal — bail out
+        if (hash == 0) return false;
+
+        uint id = (uint)Random.Shared.Next(1, int.MaxValue);
+        var data = new Data
+        {
+            Portnum      = (PortNum)70, // TRACEROUTE_APP
+            Payload      = new RouteDiscovery().ToByteString(),
+            WantResponse = true,
+            // bit0 = OK_TO_MQTT (deliberately 0), bit1 = WANT_RESPONSE
+            Bitfield     = 1u << 1,
+        };
+
+        var cipher = AesCtrCrypt(key, _myNodeId, id, data.ToByteArray());
+        if (cipher == null) return false;
+
+        var meshPacket = new MeshPacket
+        {
+            From      = _myNodeId, // firmware zeroes + restores this before TX → nonce matches
+            To        = destinationId,
+            Id        = id,
+            Channel   = (uint)hash,
+            Encrypted = ByteString.CopyFrom(cipher),
+            WantAck   = false,
+            HopLimit  = 7,
+            HopStart  = 7,
+        };
+        await SendToRadioAsync(new ToRadio { Packet = meshPacket });
+        Logger.WriteLine($"Traceroute request (HF only, ok_to_mqtt=0) sent to !{destinationId:x8} " +
+            $"pktId={id:x8} chanHash=0x{hash:x2}");
+        return true;
     }
 
     public async Task SendReactionAsync(string emoji, uint replyId, uint destinationId, uint channel = 0)
@@ -2329,7 +2496,7 @@ public class MeshtasticProtocolService
                 ShortName = user.ShortName ?? "",
                 LongName = user.LongName ?? "",
                 Snr = packet.RxSnr != 0f ? packet.RxSnr.ToString("F1") : "-",
-                SnrValue = packet.RxSnr != 0f ? packet.RxSnr : null,
+                SnrValue = packet.RxSnr != 0f && IsDirectRx(packet) ? packet.RxSnr : null,
                 Rssi = packet.RxRssi != 0 ? packet.RxRssi.ToString() : "-",
                 LastSeen = FormatLastSeen(DateTime.Now),
                 LastSeenDateTime = DateTime.Now,
@@ -2391,7 +2558,11 @@ public class MeshtasticProtocolService
         node.GroundSpeed = p.GroundSpeed;
         node.GroundTrack = p.GroundTrack;
         if (p.Rssi != 0) node.Rssi = p.Rssi.ToString();
-        if (p.Snr != 0f) { node.Snr = p.Snr.ToString("F1"); node.SnrValue = p.Snr; }
+        if (p.Snr != 0f)
+        {
+            node.Snr = p.Snr.ToString("F1");
+            if (p.Direct) node.SnrValue = p.Snr; // colors/indicators: direct RX only
+        }
         Logger.WriteLine($"  Applied buffered position to now-known node !{node.NodeId:x8}: lat={p.Latitude:F6}, lon={p.Longitude:F6}");
     }
 
@@ -2432,7 +2603,11 @@ public class MeshtasticProtocolService
                     nodeInfo.LastSeen = FormatLastSeen(DateTime.Now);
                     nodeInfo.LastSeenDateTime = DateTime.Now;
                     if (packet.RxRssi != 0) nodeInfo.Rssi = packet.RxRssi.ToString();
-                    if (packet.RxSnr != 0f) { nodeInfo.Snr = packet.RxSnr.ToString("F1"); nodeInfo.SnrValue = packet.RxSnr; }
+                    if (packet.RxSnr != 0f)
+                    {
+                        nodeInfo.Snr = packet.RxSnr.ToString("F1");
+                        if (IsDirectRx(packet)) nodeInfo.SnrValue = packet.RxSnr;
+                    }
                     nodeToFire = nodeInfo;
                     shouldFireEvent = !_isInitializing;
                 }
@@ -2455,6 +2630,7 @@ public class MeshtasticProtocolService
                             GroundTrack = groundTrack,
                             Rssi        = packet.RxRssi,
                             Snr         = packet.RxSnr,
+                            Direct      = IsDirectRx(packet),
                             AddedAt     = DateTime.Now
                         };
                         bufferedUnknownPos = true;
@@ -2540,6 +2716,15 @@ public class MeshtasticProtocolService
                     _db?.InsertEnvironmentTelemetry(packet.From, DateTime.UtcNow, envMetrics);
             }
 
+            // LocalStats (newer firmware): noise floor, RX/TX counters, relay stats
+            if (telemetry?.LocalStats is { } ls)
+            {
+                _db?.InsertLocalStats(packet.From, DateTime.UtcNow, ls);
+                Logger.WriteLine($"LocalStats from !{packet.From:x8}: noise={ls.NoiseFloor} dBm, " +
+                    $"rx={ls.NumPacketsRx} (bad {ls.NumPacketsRxBad}, dupe {ls.NumRxDupe}), " +
+                    $"tx={ls.NumPacketsTx} (relay {ls.NumTxRelay})");
+            }
+
             lock (_dataLock)
             {
                 if (_knownNodes.TryGetValue(packet.From, out var nodeInfo))
@@ -2547,7 +2732,11 @@ public class MeshtasticProtocolService
                     nodeInfo.LastSeen = FormatLastSeen(DateTime.Now);
                     nodeInfo.LastSeenDateTime = DateTime.Now;
                     if (packet.RxRssi != 0) nodeInfo.Rssi = packet.RxRssi.ToString();
-                    if (packet.RxSnr != 0f) { nodeInfo.Snr = packet.RxSnr.ToString("F1"); nodeInfo.SnrValue = packet.RxSnr; }
+                    if (packet.RxSnr != 0f)
+                    {
+                        nodeInfo.Snr = packet.RxSnr.ToString("F1");
+                        if (IsDirectRx(packet)) nodeInfo.SnrValue = packet.RxSnr;
+                    }
                     // Live-update battery and voltage from telemetry payload
                     if (batteryPercent > 0)
                     {

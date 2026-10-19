@@ -1591,7 +1591,8 @@
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
-                    <ListView x:Name="ChannelsListView" Grid.Row="0">
+                    <ListView x:Name="ChannelsListView" Grid.Row="0"
+                              ContextMenuOpening="ChannelsListView_ContextMenuOpening">
                         <ListView.ContextMenu>
                             <ContextMenu>
                                 <MenuItem Header="{DynamicResource StrCopyPsk}" Click="ChannelContextMenu_CopyPsk_Click"/>

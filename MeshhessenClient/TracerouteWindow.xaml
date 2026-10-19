@@ -4,8 +4,8 @@
         xmlns:ui="http://schemas.modernwpf.com/2019"
         ui:WindowHelper.UseModernWindowStyle="True"
         Title="{DynamicResource StrTrTitle}"
-        Width="560" Height="460"
-        MinWidth="420" MinHeight="300"
+        Width="780" Height="460"
+        MinWidth="660" MinHeight="300"
         WindowStartupLocation="CenterOwner"
         ResizeMode="CanResize">
 
@@ -61,20 +61,25 @@
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
             <TextBlock x:Name="LastResultText" Grid.Column="0"
                        VerticalAlignment="Center" FontSize="11" Opacity="0.55"/>
-            <Button x:Name="ClearMapButton" Grid.Column="1"
+            <CheckBox x:Name="HfOnlyCheckBox" Grid.Column="1"
+                      Content="{DynamicResource StrTrHfOnly}"
+                      ToolTip="{DynamicResource StrTrHfOnlyTip}"
+                      VerticalAlignment="Center" Margin="0,0,12,0"/>
+            <Button x:Name="ClearMapButton" Grid.Column="2"
                     Content="{DynamicResource StrTrRemoveFromMap}"
                     Margin="0,0,8,0" Padding="10,6"
                     IsEnabled="False"
                     Click="ClearMapButton_Click"/>
-            <Button x:Name="PlotOnMapButton" Grid.Column="2"
+            <Button x:Name="PlotOnMapButton" Grid.Column="3"
                     Content="{DynamicResource StrTrShowOnMap}"
                     Margin="0,0,8,0" Padding="10,6"
                     IsEnabled="False"
                     Click="PlotOnMapButton_Click"/>
-            <Button x:Name="RequestButton" Grid.Column="3"
+            <Button x:Name="RequestButton" Grid.Column="4"
                     Content="{DynamicResource StrTrStart}"
                     Padding="10,6"
                     Click="RequestButton_Click"/>

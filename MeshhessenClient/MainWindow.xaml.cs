@@ -69,6 +69,10 @@ public partial class MainWindow : Window
     private string? _nodeSortColumn = null;
 
     // Fancy tile view
+    // Context-menu target node, captured when the menu OPENS (tile or list row).
+    // The node list re-sorts continuously as updates arrive, which can clear
+    // SelectedItem while a menu is open — resolving at menu-item click time then
+    // silently did nothing, so the captured reference takes priority.
     private Models.NodeInfo? _tileContextNode;
     private System.Windows.Threading.DispatcherTimer? _tileSortFilterTimer;
     private bool _tileSortFilterPending;
@@ -161,6 +165,7 @@ public partial class MainWindow : Window
 
     // MQTT Proxy
     private MqttProxyService? _mqttProxyService;
+    private Services.TelemetryPollingService? _pollingService;
 
     // Virtual Node
     private Services.VirtualNodeService? _virtualNodeService;
@@ -181,12 +186,28 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
 
-        // Set version from assembly
+        // Set version from assembly: title + status bar show the short 3-part version,
+        // the Info tab shows the full version incl. revision (e.g. v1.6.4.5)
         var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
         var versionStr = version != null ? $"v{version.Major}.{version.Minor}.{version.Build}" : "";
+        var fullVersionStr = version != null
+            ? "v" + version.ToString(version.Revision > 0 ? 4 : 3)
+            : "";
         Title = $"Meshhessen Client {versionStr}";
-        AboutVersionText.Text = versionStr;
+        AboutVersionText.Text = fullVersionStr;
         FooterVersionText.Text = versionStr;
+
+        // Toast click → bring the app to the front (previously clicking did nothing)
+        Services.ToastService.Initialize(
+            () => Dispatcher.BeginInvoke(() =>
+            {
+                if (WindowState == WindowState.Minimized) WindowState = WindowState.Normal;
+                Show();
+                Activate();
+                Topmost = true;  // brief topmost pulse reliably steals focus from the shell
+                Topmost = false;
+            }),
+            TryFindResource("StrToastSummaryTitle") as string ?? "{0} neue Nachrichten");
 
         Loaded += (_, _) => _ = CheckForUpdateAsync();
         _midnightTimer = new System.Threading.Timer(_ => CheckMidnight(), null,
@@ -195,6 +216,10 @@ public partial class MainWindow : Window
         // Initialize with Serial connection (default)
         _connectionService = new SerialConnectionService();
         _protocolService = new MeshtasticProtocolService(_connectionService);
+
+        // App-wide telemetry polling scheduler (plan managed in the dashboard window)
+        _pollingService = new Services.TelemetryPollingService();
+        _pollingService.AttachProtocol(_protocolService);
 
         MessageListView.ItemsSource = _messages;
         NodesListView.ItemsSource = _nodes;
@@ -1012,6 +1037,7 @@ public partial class MainWindow : Window
                 // Create new protocol service with the new connection
                 // (Protocol service subscribes to DataReceived in its constructor)
                 _protocolService = new MeshtasticProtocolService(_connectionService);
+                _pollingService?.AttachProtocol(_protocolService);
                 _protocolService.MessageReceived += OnMessageReceived;
                 _protocolService.MessageDeliveryUpdated += OnMessageDeliveryUpdated;
                 _protocolService.PkiMessageDecrypted += OnPkiMessageDecrypted;
@@ -1403,6 +1429,18 @@ public partial class MainWindow : Window
 
     private const string MeshHessenPsk = "+uTMEaOR7hkqaXv+DROOEd5BhvAIQY/CZ/Hr4soZcOU=";
     private const string MeshHessenName = "Mesh Hessen";
+
+    private void ChannelsListView_ContextMenuOpening(object sender, ContextMenuEventArgs e)
+    {
+        // Select the right-clicked row — WPF ListViews don't select on right-click, so
+        // "Copy PSK" could silently copy the PSK of a previously selected channel.
+        if (e.OriginalSource is DependencyObject d)
+        {
+            var container = ItemsControl.ContainerFromElement(ChannelsListView, d) as ListViewItem;
+            if (container?.Content is Models.ChannelInfo clicked)
+                ChannelsListView.SelectedItem = clicked;
+        }
+    }
 
     private void ChannelContextMenu_CopyPsk_Click(object sender, RoutedEventArgs e)
     {
@@ -1987,6 +2025,7 @@ public partial class MainWindow : Window
                 };
 
                 _protocolService = new MeshtasticProtocolService(_connectionService);
+                _pollingService?.AttachProtocol(_protocolService);
                 _protocolService.MessageReceived += OnMessageReceived;
                 _protocolService.MessageDeliveryUpdated += OnMessageDeliveryUpdated;
                 _protocolService.PkiMessageDecrypted += OnPkiMessageDecrypted;
@@ -2156,7 +2195,10 @@ public partial class MainWindow : Window
                 // app is not in the foreground — so it doesn't pop while the user is already reading.
                 if (_currentSettings.MessageToasts && !message.IsOwnMessage && !IsActive
                     && !message.IsEncrypted
-                    && !string.IsNullOrWhiteSpace(message.Message))
+                    && !string.IsNullOrWhiteSpace(message.Message)
+                    // History replay (reconnect backlog, store-and-forward) must not fire
+                    // per-message toasts — only genuinely fresh messages notify.
+                    && message.SortTime > DateTime.Now.AddMinutes(-3))
                 {
                     var toastTitle = isDirectMessage
                         ? message.From
@@ -3342,7 +3384,22 @@ public partial class MainWindow : Window
 
     private void NodesListView_ContextMenuOpening(object sender, ContextMenuEventArgs e)
     {
-        _tileContextNode = null; // list always uses its own selection
+        _tileContextNode = null;
+
+        // Capture the right-clicked row as the menu target. Selecting it is not enough:
+        // the list re-sorts on incoming node updates, which can clear SelectedItem while
+        // the menu is still open — menu items resolving the selection at click time then
+        // silently did nothing ("Node Info"/"Telemetrie" sometimes not opening).
+        if (e.OriginalSource is DependencyObject d)
+        {
+            var container = ItemsControl.ContainerFromElement(NodesListView, d) as ListViewItem;
+            if (container?.Content is NodeInfo clickedNode)
+            {
+                NodesListView.SelectedItem = clickedNode;
+                _tileContextNode = clickedNode; // survives list rebuilds (object reference)
+            }
+        }
+
         if (SelectedNodeForMenu is NodeInfo node)
         {
             PinNodeMenuItem.Header      = node.IsPinned    ? Loc("StrUnpin")       : Loc("StrPin");

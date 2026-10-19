@@ -56,8 +56,23 @@ public class NodeInfo
     public static bool ShowSignalColors { get; set; } = true;
     public static bool FancyColorful    { get; set; } = true;
 
+    // Role is stored as the C# proto enum name ("ClientMute", "Router") but was
+    // historically matched as SCREAMING_SNAKE ("CLIENT_MUTE") — normalize so both
+    // spellings work (fixes IsInfrastructure never matching PascalCase values).
+    private static string NormalizeRole(string role)
+    {
+        if (string.IsNullOrEmpty(role)) return string.Empty;
+        var sb = new System.Text.StringBuilder(role.Length + 4);
+        for (int i = 0; i < role.Length; i++)
+        {
+            if (i > 0 && char.IsUpper(role[i]) && char.IsLower(role[i - 1])) sb.Append('_');
+            sb.Append(char.ToUpperInvariant(role[i]));
+        }
+        return sb.ToString();
+    }
+
     public bool IsInfrastructure =>
-        Role is "ROUTER" or "ROUTER_CLIENT" or "REPEATER" or "ROUTER_LATE";
+        NormalizeRole(Role) is "ROUTER" or "ROUTER_CLIENT" or "REPEATER" or "ROUTER_LATE";
 
     public string TimeAgoDisplay => LastSeenDateTime switch
     {
@@ -136,7 +151,7 @@ public class NodeInfo
     public string AltitudeDisplay =>
         HasAltitude ? $"↑ {Altitude} m" : string.Empty;
 
-    public string RoleDisplay => Role switch
+    public string RoleDisplay => NormalizeRole(Role) switch
     {
         "CLIENT"         => "Client",
         "CLIENT_MUTE"    => "Client Mute",
@@ -149,15 +164,17 @@ public class NodeInfo
         "CLIENT_HIDDEN"  => "Hidden",
         "LOST_AND_FOUND" => "L&F",
         "ROUTER_LATE"    => "Router Late",
-        "CLIENT_BASE"    => "Base",
+        "CLIENT_BASE"    => "Client Base",
         _                => Role,
     };
 
-    // Avatar background: node colour → HF-only signal quality colour → neutral
-    // MQTT-forwarded packets are excluded: their RxSnr is the gateway's SNR, not ours
+    // Avatar background: node colour → HF-only signal quality colour → neutral.
+    // MQTT and multi-hop packets are excluded (same gate as TileColor): a relayed
+    // packet's RxSnr is the last hop's SNR, not this node's link quality.
     public string AvatarColor =>
         !string.IsNullOrEmpty(ColorHex) ? ColorHex :
-        (ShowSignalColors && !IsViaMqtt && !string.IsNullOrEmpty(SignalQualityColor)) ? SignalQualityColor :
+        (ShowSignalColors && !IsViaMqtt && HopsToReach is null or 0 &&
+         !string.IsNullOrEmpty(SignalQualityColor)) ? SignalQualityColor :
         "#546E7A";
 
     // Status dot colour based on how recently the node was last heard

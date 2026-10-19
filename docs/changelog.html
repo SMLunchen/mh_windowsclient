@@ -172,10 +172,41 @@
 <div class="section active" id="de">
 <main>
 
-  <!-- ── v1.6.4.5 ── -->
+  <!-- ── v1.6.4.6 ── -->
   <div class="version-entry current">
     <div class="version-header">
-      <span class="version-tag tag-latest">v1.6.4.5</span>
+      <span class="version-tag tag-latest">v1.6.4.6</span>
+      <span class="version-date">2026-10-19</span>
+      Node-Info neu, Dashboard-Dark-Mode-Fix
+    </div>
+    <p class="version-desc">Großes Update: Telemetrie-Dashboard stark ausgebaut (Zoom, Nachtbänder, Schwellwert-Alarme, Export/Import, Vollbild), Toast-Benachrichtigungen überarbeitet, Node-Info-Fenster neu, Dashboard-Dark-Mode-Fix und zuverlässige Rechtsklick-Menüs.</p>
+
+    <div class="cl-section fixed">
+      <h3>🐛 Behoben / ✨ Verbessert</h3>
+      <div class="cl-group">
+        <ul class="cl-list">
+          <li><strong>Telemetrie-Dashboard ausgebaut:</strong> Zoom/Pan bleibt beim Auto-Refresh erhalten · Zeitachsen in Lokalzeit (vorher UTC) · Tag/Nacht-Schattierung · Schwellwert-Alarme als Windows-Toast · Dashboard-Export/-Import als JSON · Vollbild (F11) · Fensterposition &amp; letztes Dashboard werden gemerkt · Widget duplizieren, als PNG speichern, Bild kopieren · CSV wahlweise für deutsches Excel · flüssigeres Rendering und keine UI-Freezes mehr beim Laden (Hintergrund-Prefetch) · zwei Timer-Lecks behoben.</li>
+          <li><strong>Toast-Benachrichtigungen:</strong> Klick holt die App jetzt in den Vordergrund (vorher passierte nichts); viele gleichzeitig eintreffende Nachrichten werden zu einem Sammel-Toast gebündelt statt minutenlang einzeln aufzupoppen; nachgeladene alte Nachrichten benachrichtigen gar nicht mehr.</li>
+          <li><strong>Telemetrie-Nachbarn = echte HF-Nachbarn:</strong> Die Nachbar-Tabelle zeigt nur noch direkte Funkverbindungen (eigener 0-Hop-Empfang, Traceroute-Teilstrecken mit per-Hop-SNR, NeighborInfo-Pakete) statt aller gehörten Nodes inkl. MQTT — mit SNR in beide Richtungen; die Liste füllt sich mit der Zeit (bis dahin automatischer Fallback auf die alte Ansicht).</li>
+          <li><strong>SNR-Farben repariert:</strong> Multi-Hop- und MQTT-Nodes bekamen die SNR-Farbe des letzten Relays (rote „Nachbarn" in der Node-Liste) — SNR-Farben und -Zeitreihen basieren jetzt ausschließlich auf Direktempfang.</li>
+          <li><strong>Funk-Overlays auf der Karte:</strong> Die Umweltdaten-Heatmap kann jetzt auch <strong>SNR</strong>, <strong>RSSI</strong> und <strong>Noise Floor</strong> als interpolierte Fläche anzeigen.</li>
+          <li><strong>LocalStats-Telemetrie</strong> (neuere Firmware) wird erfasst: Noise Floor, RX fehlerhaft/Duplikate, TX Relay u. v. m. — im Telemetriefenster, als Dashboard-Metriken und als Karten-Overlay.</li>
+          <li><strong>Automatische Telemetrie-Abfragen:</strong> Das Dashboard kann bis zu 4 Nodes aktiv nach LocalStats/Umweltdaten fragen (mesh-schonend: LocalStats max. 1×/h, anderes max. alle 30 min) — aus den Zähler-Deltas entstehen automatisch Raten in Pakete/h.</li>
+          <li><strong>Traceroute „Nur HF":</strong> Neuer Haken — die Anfrage wird mit gelöschtem OK-to-MQTT-Bit gesendet (vorverschlüsseltes Paket), MQTT-Gateways leiten sie nicht weiter, die Route läuft rein über Funk.</li>
+          <li><strong>Node-Info-Fenster neu gestaltet</strong> (Issue #46): Avatar in Node-Farbe, Rollen-Badge und Info-Karten (Gerät / Status / Position) — zeigt jetzt auch <strong>Rolle</strong>, <strong>Akku</strong> und <strong>Signal</strong>; vollständig lokalisiert und theme-fest.</li>
+          <li><strong>Dashboard im Dark-Mode lesbar</strong> (Issue #47): Die Toolbar-Buttons fielen auf schwarzen Text zurück — die Styles sind jetzt theme-abhängig.</li>
+          <li><strong>Node-Liste &amp; Kanal-Liste: Rechtsklick-Menü</strong> zielt zuverlässig auf die geklickte Zeile — vorher öffnete „Node Info" manchmal nichts oder den falschen Node, und „PSK kopieren" konnte den PSK eines anderen Kanals kopieren.</li>
+          <li><strong>Rollen-Erkennung repariert</strong>: Router/Repeater wurden intern nie als Infrastruktur erkannt (Schreibweisen-Mismatch); Anzeige-Namen jetzt für beide Schreibweisen, <code>CLIENT_BASE</code> als „Client Base".</li>
+          <li><strong>Info-Tab</strong> zeigt die volle Versionsnummer (v1.6.4.6), Statusbar behält die Kurzversion.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── v1.6.4.5 ── -->
+  <div class="version-entry">
+    <div class="version-header">
+      <span class="version-tag">v1.6.4.5</span>
       <span class="version-date">2026-10-03</span>
       Remote Admin über Multi-Hop &amp; MQTT
     </div>
@@ -1243,10 +1274,41 @@
 <div class="section" id="en">
 <main>
 
-  <!-- ── v1.6.4.5 (EN) ── -->
+  <!-- ── v1.6.4.6 (EN) ── -->
   <div class="version-entry current">
     <div class="version-header">
-      <span class="version-tag tag-latest">v1.6.4.5</span>
+      <span class="version-tag tag-latest">v1.6.4.6</span>
+      <span class="version-date">2026-10-19</span>
+      New node info, dashboard dark-mode fix
+    </div>
+    <p class="version-desc">Big update: telemetry dashboard greatly expanded (zoom, night shading, threshold alerts, export/import, fullscreen), toast notifications reworked, new node info window, dashboard dark-mode fix and reliable right-click menus.</p>
+
+    <div class="cl-section fixed">
+      <h3>🐛 Fixed / ✨ Improved</h3>
+      <div class="cl-group">
+        <ul class="cl-list">
+          <li><strong>Telemetry dashboard expanded:</strong> zoom/pan survives auto-refresh · time axes in local time (was UTC) · day/night shading · threshold alerts as Windows toasts · dashboard export/import as JSON · fullscreen (F11) · window placement &amp; last dashboard remembered · duplicate widget, save as PNG, copy image · CSV flavour for German Excel · smoother rendering and no more UI freezes while loading (background prefetch) · two timer leaks fixed.</li>
+          <li><strong>Toast notifications:</strong> clicking now brings the app to the front (previously nothing happened); many messages arriving at once are bundled into a single summary toast instead of popping up individually for minutes; reloaded old messages no longer notify at all.</li>
+          <li><strong>Telemetry neighbors = real RF neighbors:</strong> the neighbor table now shows only direct radio links (own 0-hop reception, traceroute hop pairs with per-hop SNR, NeighborInfo packets) instead of every heard node incl. MQTT — with SNR in both directions; the list fills over time (automatic fallback to the old view until then).</li>
+          <li><strong>SNR colors fixed:</strong> multi-hop and MQTT nodes were painted with the last relay's SNR color (red "neighbors" in the node list) — SNR colors and time series are now based exclusively on direct reception.</li>
+          <li><strong>Radio overlays on the map:</strong> the environment heatmap can now also render <strong>SNR</strong>, <strong>RSSI</strong> and <strong>noise floor</strong> as an interpolated surface.</li>
+          <li><strong>LocalStats telemetry</strong> (newer firmware) is captured: noise floor, RX bad/duplicates, TX relay and more — in the telemetry window, as dashboard metrics and as a map overlay.</li>
+          <li><strong>Automatic telemetry polling:</strong> the dashboard can actively poll up to 4 nodes for LocalStats/environment data (mesh-friendly: LocalStats at most 1×/h, others every 30 min max) — counter deltas automatically yield packets/h rates.</li>
+          <li><strong>Traceroute "RF only":</strong> new checkbox — the request is sent with the OK-to-MQTT bit cleared (pre-encrypted packet), MQTT gateways won't uplink it, the route runs purely over RF.</li>
+          <li><strong>Node info window redesigned</strong> (issue #46): avatar in node colour, role badge and info cards (device / status / position) — now also shows <strong>role</strong>, <strong>battery</strong> and <strong>signal</strong>; fully localized and theme-aware.</li>
+          <li><strong>Dashboard readable in dark mode</strong> (issue #47): the toolbar buttons fell back to black text — the styles are now theme-aware.</li>
+          <li><strong>Node list &amp; channel list: right-click menu</strong> reliably targets the clicked row — previously "Node Info" sometimes opened nothing or the wrong node, and "Copy PSK" could copy another channel's PSK.</li>
+          <li><strong>Role detection fixed</strong>: routers/repeaters were never recognized as infrastructure internally (spelling mismatch); display names now work for both spellings, <code>CLIENT_BASE</code> shows as "Client Base".</li>
+          <li><strong>Info tab</strong> shows the full version number (v1.6.4.6), the status bar keeps the short version.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── v1.6.4.5 (EN) ── -->
+  <div class="version-entry">
+    <div class="version-header">
+      <span class="version-tag">v1.6.4.5</span>
       <span class="version-date">2026-10-03</span>
       Remote admin over multi-hop &amp; MQTT
     </div>

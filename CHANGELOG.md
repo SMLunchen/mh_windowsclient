@@ -11,6 +11,76 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
 
+## [1.6.4.6] - 2026-10-19
+
+### 📡 Funk-Analyse: Nachbarn, Overlays, LocalStats, HF-only-Traceroute
+- **Nachbar-Ansicht dynamisch (zeitbasiert):** Das Telemetriefenster wechselt automatisch von der alten „gehörte Nodes"-Liste auf die echten HF-Nachbarn — sofort ab 3 belegten Links, bei 1–2 Links sobald die Link-Sammlung insgesamt eine Woche läuft (abgelegene Nodes haben legitim wenige Nachbarn — das ist dann ein Befund, kein Datenmangel). Nur Nodes ganz ohne Link-Beweise bleiben bei der alten Liste. Der Sammlungs-Start wird in der DB markiert.
+- **SNR-Farben zeigten Falsches an (rote Nodes in der Liste):** Drei Lücken behoben — (1) der Farbwert `SnrValue` wurde von *jedem* Paket gesetzt, auch Multi-Hop (= SNR des letzten Relays!) und MQTT; jetzt nur noch bei Direktempfang. (2) Die Avatar-Farbe der Listenansicht prüfte die Hop-Zahl nicht (die Kachel-Ansicht tat es). (3) Der SNR-Restore aus der Datenbank beim Start lud Werte ohne Hop-Filter — genau die vermuteten „Alt-Daten". Multi-Hop-/MQTT-Nodes sind jetzt neutral grau.
+- **SNR-/RSSI-Zeitreihen generell nur noch aus Direktempfang** (Hop 0): betrifft Dashboard-Charts, Telemetrie-Plots und Heatmaps — vorher mischten sich Relay-SNRs in die Kurven ferner Nodes.
+- **Umwelt-Overlay-Karte kann jetzt Funkqualität:** Die Metrik-Auswahl enthält zusätzlich **SNR (Empfang)**, **RSSI (Empfang)** und **Noise Floor** — als interpolierte Fläche im Wetterdienst-Stil über dem Gebiet, aus den Direktempfangs-Daten bzw. den Noise-Floor-Meldungen der Nodes.
+- **LocalStats-Telemetrie wird erfasst** (neuere Firmware): Noise Floor, RX gesamt/fehlerhaft/Duplikate, TX gesamt/verworfen, Relay gesendet/abgebrochen, Nodes online/gesamt. Sichtbar im Telemetriefenster (neuer Abschnitt, erscheint sobald der Node meldet — aktiv abfragbar über „Info anfordern → LocalStats"), als Dashboard-Metriken (Noise Floor, RX fehlerhaft, RX Duplikate, TX Relay u. a.) und als Karten-Overlay (Noise Floor).
+- **Kanal-Hash für unbenannte Kanäle korrigiert:** Die Firmware hasht bei Kanälen ohne Namen den Preset-Namen („ShortSlow", „LongFast", „LongMod" …) — der Client hashte den Leerstring. Dadurch war das Hash-Byte für jeden Default-benannten Kanal falsch: Der HF-only-Traceroute wurde vom Empfänger verworfen, und die clientseitige Kanal-Entschlüsselung (ChanDec-Fallback) konnte Pakete solcher Kanäle nie per Hash zuordnen. Traceroute-Fenster außerdem verbreitert (Start-Button/Statuszeile waren abgeschnitten).
+- **Automatische Telemetrie-Abfragen (Polling-Plan):** Neuer „📥 Abfragen"-Button im Dashboard. Ausgewählte Nodes werden aktiv nach Werten gefragt, die sie nicht von selbst senden (LocalStats, Umwelt-/Geräte-/Luftqualitäts-/Strom-Metriken). Mesh-schonende Limits fest verdrahtet: max. 4 Nodes, LocalStats höchstens 1×/Stunde, andere Werte höchstens alle 30 min, nie mehr als eine Abfrage pro Minute (Scheduler verteilt automatisch). Läuft app-weit, solange verbunden — auch bei geschlossenem Dashboard; Plan in `telemetry_polling.json`, Zeitstempel überleben Neustarts (kein Abfrage-Burst nach Start).
+- **Delta-Raten aus LocalStats-Zählern:** Aus den kumulativen Zählern (RX, TX, fehlerhaft, Duplikate, Relay) werden zwischen den Abfragen automatisch Raten in Pakete/h abgeleitet — Reboot-Resets werden erkannt und übersprungen. Als Dashboard-Metriken (RX-Rate, TX-Rate, RX fehlerhaft/h …) und live im Telemetriefenster (≈-Wert neben den Zählern).
+- **Traceroute „Nur HF":** Neuer Haken im Traceroute-Fenster. Die Anfrage wird dann als **vorverschlüsseltes Paket** mit gelöschtem OK-to-MQTT-Bit gesendet — die Firmware erzwingt das Bit nur bei Klartext-Paketen von der App, bei vorverschlüsselten lässt sie die Payload unangetastet. MQTT-Gateways (auf öffentlichen Brokern, auch Meshhessen) leiten das Paket dann nicht ins Internet weiter: Die Route läuft ausschließlich über Funk. Relays können sich weiterhin eintragen (Kanal-Schlüssel). Falls das Paket nicht gebaut werden kann (kein Kanal-Schlüssel o. ä.), fällt der Client automatisch auf den normalen Traceroute zurück.
+
+### 📡 Telemetrie: Nachbarn = echte HF-Nachbarn
+- **Die „Nachbarn"-Tabelle im Telemetriefenster zeigt jetzt nur noch direkte HF-Verbindungen** des gewählten Nodes — vorher listete sie schlicht alle *gehörten* Absender (inkl. Multi-Hop und MQTT) und schrieb dabei dem Ursprungs-Node die SNR der *letzten Relay-Teilstrecke* zu.
+- **Drei Beweisquellen speisen eine neue Link-Datenbank (`rf_links`):** (1) eigener **Direktempfang** (0 Hops, kein MQTT), (2) **Traceroute-Teilstrecken** — benachbarte Nodes im Pfad haben sich per Definition direkt gehört, inkl. der per-Hop-SNR aus `snr_towards`/`snr_back` (MQTT-Brücken-Segmente ohne Funk-SNR werden verworfen), (3) **NeighborInfo-Pakete** (Portnum 71, wurde bisher gar nicht ausgewertet) — ein Node meldet darin selbst, wen er direkt hört. Die Liste füllt sich dadurch mit der Zeit, auch für entfernte Nodes.
+- **Beide Richtungen sichtbar:** „Hört mit (SNR)" (der gewählte Node hört den Partner) und „Wird gehört mit (SNR)" (der Partner hört ihn), dazu Quelle(n) und letzter Nachweis; der Zeitraum-Filter des Fensters gilt mit.
+- Die Nachbar-LED der Signal-Analyse und die Mesh-Health-Bewertung bleiben bewusst unverändert (basieren weiter auf den Empfangs-Trends).
+
+### 🔔 Toast-Benachrichtigungen überarbeitet
+- **Klick auf einen Toast holt die Anwendung in den Vordergrund** — bisher passierte beim Anklicken schlicht nichts (die Aktivierung war nie verdrahtet).
+- **Nachrichten-Fluten werden gebündelt:** Trafen viele Nachrichten auf einmal ein (z. B. nachgeladener Chat-Verlauf), erschien pro Nachricht ein eigener Toast, sekundenweise nacheinander, nicht abbrechbar. Jetzt: Nachrichten innerhalb eines kurzen Sammel-Fensters werden zu **einem** Sammel-Toast zusammengefasst („N neue Nachrichten" mit Absender-Liste), und alle Toasts teilen sich einen Tag — ein neuer **ersetzt** den vorherigen im Info-Center statt sich zu stapeln.
+- **Nachgeladene/alte Nachrichten toasten gar nicht mehr:** Nachrichten, die älter als ein paar Minuten sind (Backlog-Replay, Store-and-Forward), erzeugen keine Einzel-Benachrichtigungen.
+
+### ✨ Telemetrie-Dashboard — Charts & Bedienung (Ausbau-Paket)
+
+#### Charts
+- **Zoom bleibt beim Auto-Refresh erhalten:** Charts lassen sich per Mausrad/Ziehen zoomen und pannen — bisher sprang die Ansicht bei jedem Refresh-Zyklus auf den Gesamtbereich zurück. Die Nutzer-Ansicht wird jetzt über den Refresh hinweg wiederhergestellt (Reset wie in OxyPlot üblich mit Taste „A").
+- **Zeitachsen zeigen Lokalzeit statt UTC** — die Timestamps kamen als UTC aus der DB und wurden unkonvertiert geplottet (1–2 h Versatz). Betrifft Linien-, Flächen-, Scatter- und Candlestick-Charts sowie Stat-Zeitstempel und CSV-Export.
+- **Tag/Nacht-Schattierung:** Linien-, Flächen- und Scatter-Charts hinterlegen die Nachtstunden (Sonnenuntergang→-aufgang, eigene Position) dezent — nächtliche SNR-/Temperaturmuster sind sofort erkennbar (bei Zeiträumen bis ~1 Monat).
+- **Downsampling:** Linien-/Flächen-Serien nutzen OxyPlots Decimator — „Gesamt"-Charts mit zehntausenden Punkten rendern flüssig.
+- **Adaptive Zeitachse:** 1 Tag → `HH:mm`, bis 7 Tage → `dd.MM HH:mm`, darüber → `dd.MM` statt immer demselben gequetschten Format.
+- **Gleitender Durchschnitt ist jetzt zeitbasiert** (Fenster = 1/24 des sichtbaren Bereichs, 30 min–24 h) statt „letzte 12 Messpunkte", was je nach Messdichte mal Stunden, mal Tage glättete.
+- **Leere Charts** zeigen einen „Keine Daten"-Hinweis statt eines nackten Koordinatensystems.
+- **Stat-Widget:** zeigt den Zeitstempel des Werts; Werte älter als 24 h werden ausgegraut — ein toter Node sieht nicht mehr kerngesund aus.
+
+#### Bedienung & Fenster
+- **Node-Liste: Kontextmenü-Aktionen (Telemetrie, Node-Info, …) schlagen nicht mehr sporadisch fehl.** Zusätzlich zum Rechtsklick-Selektions-Fix (unten): Die Node-Liste sortiert sich bei eintreffenden Updates laufend neu und konnte die Auswahl **zwischen Menü-Öffnen und Klick** wieder verwerfen; der Menüpunkt tat dann still nichts. Der geklickte Node wird jetzt beim Öffnen als Objektreferenz eingefangen (wie in der Kachel-Ansicht) und übersteht Listen-Neuaufbauten.
+- **Schwellwert-Alarme als Windows-Toast:** Über-/unterschreitet der letzte Messwert eines Nodes den Widget-Schwellwert, kommt eine Benachrichtigung (nur bei Zustandswechsel, kein Spam beim Öffnen).
+- **Dashboard-Export/-Import als JSON** (Toolbar) — Dashboards lassen sich in der Community teilen; beim Import werden Widget-IDs neu vergeben und Namenskonflikte aufgelöst.
+- **Vollbild-Modus** per F11 oder ⛶-Button (Esc beendet) — fürs Mesh-Monitoring am Wandmonitor.
+- **Fensterposition, -größe und zuletzt aktives Dashboard werden gemerkt** und beim nächsten Öffnen wiederhergestellt.
+- **Widget duplizieren** (Kontextmenü) — erspart beim Aufbau ähnlicher Widgets den Dialog.
+- **Widget als PNG speichern / Bild kopieren** (Kontextmenü, 2×-Auflösung) — funktioniert für alle Widget-Typen.
+- **CSV-Export in zwei Varianten:** „Excel (Semikolon, Dezimal-Komma)" und „international (Komma, Dezimal-Punkt)" — vorher erzeugte der Export auf deutschen Systemen kaputte Spalten (Dezimal-Komma in Komma-CSV); Felder werden jetzt korrekt ge-quotet.
+- **Doppelklick auf den Karten-Header** öffnet den Bearbeiten-Dialog.
+- **Theme-Wechsel zur Laufzeit:** Wechselt Windows zwischen Hell/Dunkel, färbt sich das offene Dashboard sofort um (vorher bis zum Neuöffnen im alten Look).
+
+### 🐛 Behoben / ✨ Verbessert — Telemetrie-Dashboard (Komplett-Review)
+- **Timer-Leck beim Schließen:** Auto-Refresh- und Uhr-Timer liefen nach dem Schließen des Dashboards für die restliche App-Laufzeit weiter (inkl. DB-Abfragen alle 30 s) und hielten das Fenster im Speicher — jedes Öffnen/Schließen stapelte einen weiteren Satz. Beim Schließen werden jetzt alle Timer gestoppt.
+- **Timer-Leck beim Auto-Refresh:** Der In-Place-Refresh erzeugte für Uhr-Widgets bei jedem Zyklus einen neuen Sekunden-Timer, ohne den alten zu stoppen (~120 verwaiste Timer/Stunde). Der alte Timer wird jetzt vor dem Ersetzen gestoppt.
+- **UI blockiert nicht mehr beim Laden:** Alle Widget-Datenabfragen (SQLite) laufen jetzt in einem Hintergrund-Prefetch; der UI-Aufbau bedient sich aus dem Cache. Vorher fror die Oberfläche beim Öffnen und bei jedem Auto-Refresh spürbar ein, sobald DB und Widget-Anzahl wuchsen. Überholende Refreshes werden über einen Generationszähler verworfen.
+- **„Gesamt" bedeutet jetzt überall dasselbe:** Gauge/Stat/Ranking/MultiStat interpretierten Zeitraum 0 still als 7 Tage, der CSV-Export als 30 Tage — jetzt heißt „Gesamt" konsistent „alle Daten" (Heatmap/Stateline als Raster-Widgets: 30/14 Tage, Mesh-Health: 7-Tage-Analysefenster, jeweils dokumentiert).
+- **Y-Achsen schneiden keine Ausreißer mehr ab:** Liegen Messwerte oder die Schwellwert-Linie außerhalb des festen Achsenbereichs (z. B. Temperatur über 60 °C), wird die Achse automatisch aufgeweitet statt die Daten unsichtbar abzuschneiden.
+- **Heatmap: „keine Daten" ≠ „Minimum":** Leere Zellen wurden bisher auf den Minimalwert gemappt und sahen aus wie echte Messwerte — sie erscheinen jetzt in neutralem Grau außerhalb der Farbskala.
+- **Auto-Refresh-Intervall wird gespeichert** (dashboards.json) statt bei jedem Öffnen auf 30 s zurückzuspringen.
+- **MultiStat:** doppelte DB-Abfrage pro Node entfernt.
+- **CSV-Export:** Widget-Titel mit Sonderzeichen (`:`, `/` …) ließen den Datei-Dialog abstürzen — Dateiname wird jetzt bereinigt.
+- **i18n nachgezogen:** Mesh-Health-Detailzeile („Ø Pfad/Routen/Empfang/Kanal"), „Export fehlgeschlagen" und die Einheit „Pakete/h" waren hartkodiert deutsch; das Uhr-Datum folgt jetzt der Systemsprache.
+- **Kosmetik:** Der Refresh-Punkt leuchtet, während tatsächlich geladen wird (vorher davor); Charts mit nur einer Serie zeigen keine überflüssige Legende mehr über den Daten.
+
+### 🐛 Behoben / ✨ Verbessert
+- **Node-Liste: Rechtsklick-Menü zielt jetzt zuverlässig auf die geklickte Zeile.** WPF-ListViews selektieren beim Rechtsklick nicht — „Node Info" & Co. arbeiteten daher mit einer veralteten oder fehlenden Auswahl und öffneten manchmal gar nichts (oder den falschen Node). Die rechtsgeklickte Zeile wird jetzt beim Öffnen des Menüs selektiert (gleicher Fix wie im Nachrichten-Chat). Alle übrigen Kontextmenüs wurden auditiert: Dasselbe Problem steckte auch in der **Kanal-Liste**, wo „PSK kopieren" still den PSK eines anderen (zuvor selektierten) Kanals kopieren konnte — ebenfalls behoben. Kachel-Ansicht, DM-Sidebar, Karte, Nachrichten-Chat und DM-Fenster waren bereits korrekt.
+- **Dashboard: Toolbar-Texte im Dark-Mode lesbar (Issue #47).** Die Buttons „Neu/Umbenennen/Löschen/Aktualisieren" und die Stift-Icons nutzten eigene Templates ohne `Foreground` und fielen damit auf das WPF-Standard-Schwarz zurück — im Dark-Mode unlesbar. Die Styles beziehen Vorder- und Rahmenfarbe jetzt aus theme-abhängigen Ressourcen, die das Fenster beim Start passend zu Hell/Dunkel setzt.
+- **Node-Info-Fenster komplett überarbeitet (Issue #46).** Neues Layout mit Avatar in Node-Farbe, Rollen-Badge und Info-Karten (Gerät / Status / Position) statt der alten Label-Tabelle. Zeigt jetzt auch **Rolle**, **Akku** (inkl. 🔌 bei externer Versorgung) und **Signal** (SNR/RSSI bzw. Hops/MQTT). Alle Beschriftungen sind lokalisiert (de/en) und theme-fest — vorher waren sie hartkodiert englisch.
+- **Info-Tab zeigt die volle Versionsnummer** (z. B. v1.6.4.6) — Titelzeile und Statusbar behalten die Kurzversion (v1.6.4).
+- **Node-Rolle wurde intern nie als Infrastruktur erkannt:** Die Rolle wird als C#-Enum-Name gespeichert („RouterLate"), die Prüfungen verglichen aber mit „ROUTER_LATE" — `IsInfrastructure` und die hübschen Rollen-Namen griffen daher für die gespeicherte Schreibweise nicht. Beide Schreibweisen werden jetzt normalisiert (mit Unit-Tests abgesichert). Die Rolle `CLIENT_BASE` wird als „Client Base" angezeigt.
+
+---
+
 ## [1.6.4.5] - 2026-10-03
 
 ### 🐛 Behoben / ✨ Verbessert
