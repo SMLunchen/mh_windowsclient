@@ -185,6 +185,8 @@
       <h3>🐛 Behoben / ✨ Verbessert</h3>
       <div class="cl-group">
         <ul class="cl-list">
+          <li><strong>⛰ 3D-Gelände auf der Vektorkarte:</strong> Neuer Haken im Layer-Popup — echtes Höhenmodell (SRTM) mit Schummerung, Strg+Ziehen zum Neigen. Einmal angesehene Gebiete funktionieren auch offline. Bei gedrehter/geneigter Karte erscheint ein Nordpfeil (Klick = einnorden).</li>
+          <li><strong>⛰ Höhenprofil pro Funkstrecke:</strong> Rechtsklick auf einen Nachbarn im Telemetriefenster oder einen Hop im Traceroute-Fenster zeigt das Geländeprofil mit Sichtlinie und Fresnel-Zone — inklusive Einschätzung, ob die Strecke frei ist oder Gelände im Weg steht.</li>
           <li><strong>Traceroute: ehrliche MQTT-Badges.</strong> Hops bekommen das MQTT-Badge nur noch, wenn für die Teilstrecke keine Funk-Messung vorliegt — vorher wurde jeder Hop markiert, sobald die Antwort über MQTT ankam. Das Kopf-Badge „via MQTT" sagt jetzt nur noch: die <em>Antwort</em> hat uns über MQTT erreicht — das bestimmt der Ziel-Node, auch bei „Nur HF"-Anfragen.</li>
           <li><strong>Nachbar-Datenbank bereinigt:</strong> MQTT-gebrückte Traceroute-Teilstrecken landeten als falsche „0-dB-Funklinks" in der Nachbar-Datenbank — neue Links werden gefiltert, Altdaten beim Start automatisch bereinigt.</li>
           <li><strong>Kaputte Symbole repariert:</strong> Der ✕-Button der Traceroute-Legende und weitere Symbole (📡, 🚨, 🔔, 📍, Pfeile) zeigten durch einen alten Encoding-Fehler nur „?" — wiederhergestellt und mit einem automatischen Test gegen Wiederholung abgesichert.</li>
@@ -1309,6 +1311,8 @@
       <h3>🐛 Fixed / ✨ Improved</h3>
       <div class="cl-group">
         <ul class="cl-list">
+          <li><strong>⛰ 3D terrain on the vector map:</strong> new checkbox in the layer popup — a real elevation model (SRTM) with hillshading, Ctrl+drag to tilt. Areas viewed once keep working offline. A north arrow appears while the map is rotated/tilted (click to re-north).</li>
+          <li><strong>⛰ Elevation profile per radio link:</strong> right-click a neighbor in the telemetry window or a hop in the traceroute window to see the terrain profile with line of sight and Fresnel zone — including a verdict whether the path is clear or terrain is in the way.</li>
           <li><strong>Traceroute: honest MQTT badges.</strong> Hops only get the MQTT badge when no radio measurement exists for that segment — previously every hop was marked as soon as the reply arrived via MQTT. The header badge "via MQTT" now only means: the <em>reply</em> reached us via MQTT — that's up to the target node, even for "RF only" requests.</li>
           <li><strong>Neighbor database cleaned up:</strong> MQTT-bridged traceroute segments used to end up as fake "0 dB RF links" in the neighbor database — new links are filtered, old data is cleaned automatically at startup.</li>
           <li><strong>Broken glyphs repaired:</strong> the traceroute legend's ✕ button and other symbols (📡, 🚨, 🔔, 📍, arrows) only showed "?" due to an old encoding mishap — restored, with an automated test guarding against a repeat.</li>

@@ -984,7 +984,28 @@
     <sys:String x:Key="StrTriExpertTarget">Target node</sys:String>
     <sys:String x:Key="StrTriExpertAnchors">Neighbors (anchors)</sys:String>
     <sys:String x:Key="StrTriExpertWatts">= {0} W</sys:String>
-    <sys:String x:Key="StrTriExpertHint">Preset from the hardware model — adjust to the actual configuration (e.g. RAK WisMesh 1 W: default 27 dBm = 0.5 W, overridable to 30 dBm = 1 W). Antenna gain unknown? Leave 1 dBi.</sys:String>
+    <sys:String x:Key="StrTriExpertHeightUnit">m</sys:String>
+    <sys:String x:Key="StrTriModelClamped">⚠ The fit runs into the physical parameter bounds (degenerate) — its circles would be unusable.</sys:String>
+    <sys:String x:Key="StrTriExpertColTx">TX power</sys:String>
+    <sys:String x:Key="StrTriExpertColAnt">Antenna</sys:String>
+    <sys:String x:Key="StrTriExpertColH">Height AGL</sys:String>
+    <sys:String x:Key="StrTriExpertColExact">Pos. exact</sys:String>
+    <sys:String x:Key="StrTriExpertExactTip">Position is EXACTLY known: the reported position blur (precision_bits) is ignored. The 📍 button lets you set/verify the position by clicking on the map.</sys:String>
+    <sys:String x:Key="StrTriExpertPickTip">Mark the exact position by clicking on the map (Esc cancels)</sys:String>
+    <sys:String x:Key="StrTriPickHint">📍 Click the exact position of "{0}" on the map — Esc cancels.</sys:String>
+    <sys:String x:Key="StrTriExpertHeightTip">Antenna height above ground (m) — feeds the terrain/Fresnel analysis (default 2.5 m).</sys:String>
+    <sys:String x:Key="StrTerrain3D">⛰ 3D terrain</sys:String>
+    <sys:String x:Key="StrTerrain3DTooltip">Elevation model on the vector map: 3D terrain with hillshading (Ctrl+drag to tilt). Coverage up to 52° N.</sys:String>
+    <sys:String x:Key="StrLinkProfileTitle">Elevation profile</sys:String>
+    <sys:String x:Key="StrLinkProfileMenu">⛰ Link elevation profile</sys:String>
+    <sys:String x:Key="StrLinkProfileTerrain">Terrain (4/3 earth)</sys:String>
+    <sys:String x:Key="StrLinkProfileLos">Line of sight</sys:String>
+    <sys:String x:Key="StrLinkProfileFresnel">60 % Fresnel zone</sys:String>
+    <sys:String x:Key="StrLinkProfileClear">Line of sight clear (incl. 60 % Fresnel zone) — smallest margin {0} m.</sys:String>
+    <sys:String x:Key="StrLinkProfileBlocked">Terrain in the way: ≈ {0} dB extra loss (knife edge), tightest spot at {1} km. Assumption: antennas 2.5 m above ground (expert dialog overrides).</sys:String>
+    <sys:String x:Key="StrLinkProfileNoData">No elevation data available for this path (offline without cache, or outside DEM coverage, &gt; 52° N).</sys:String>
+    <sys:String x:Key="StrLinkProfileNoPos">No position known for one of the two nodes.</sys:String>
+    <sys:String x:Key="StrTriExpertHint">Preset from the hardware model — adjust to the actual configuration (e.g. RAK WisMesh 1 W: default 27 dBm = 0.5 W, overridable to 30 dBm = 1 W). Antenna gain unknown? Leave 1 dBi. The height above ground (default 2.5 m) feeds the terrain/Fresnel analysis.</sys:String>
     <sys:String x:Key="StrTriModelMsg">Which distance model should be used?&#x0a;&#x0a;YES — self-calibrated from {0} links of your mesh:&#x0a;        RSSI@1 km = {1} dBm, exponent n = {2}&#x0a;        fit quality: R² = {3}, spread σ = {4} dB&#x0a;&#x0a;NO — default model:&#x0a;        RSSI@1 km = −90.0 dBm, exponent n = 2.50&#x0a;&#x0a;{5}</sys:String>
     <sys:String x:Key="StrTriModelRecFitted">Recommendation: self-calibrated (usable distance correlation).</sys:String>
     <sys:String x:Key="StrTriModelRecDefault">Recommendation: default model — the fit has almost no distance correlation (R² &lt; 0.2) and would produce unreliable distances.</sys:String>

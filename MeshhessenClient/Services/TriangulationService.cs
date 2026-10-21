@@ -10,9 +10,13 @@ public static class TriangulationService
     /// (e.g. from Meshtastic precision_bits truncation): within that radius the cost
     /// function applies no penalty (dead zone) and the anchor is down-weighted.
     /// <paramref name="WeightScale"/> boosts hard information (a reported-position prior
-    /// outranks RF distance guesses).</summary>
+    /// outranks RF distance guesses). <paramref name="SigmaKm"/> = expected 1-σ error of
+    /// <paramref name="DistKm"/> itself (from the model's dB spread); 0 = derive a
+    /// default (30 % of the distance). Residuals are normalized by it, so a 5 km circle
+    /// is allowed to miss by kilometers where a 1 km circle is not.</summary>
     public readonly record struct Anchor(
-        double Lat, double Lon, double DistKm, double PosErrKm = 0, double WeightScale = 1);
+        double Lat, double Lon, double DistKm, double PosErrKm = 0, double WeightScale = 1,
+        double SigmaKm = 0);
 
     // ── Expert mode: TX power / antenna gain of the target node ──────────────
 
@@ -66,6 +70,120 @@ public static class TriangulationService
         return kept.Count % 2 == 1 ? kept[mid] : (kept[mid - 1] + kept[mid]) / 2.0;
     }
 
+    // ── Terrain: line-of-sight / Fresnel analysis (DEM-backed) ────────────────
+
+    /// <summary>Default antenna height above ground (m) — mesh nodes typically hang
+    /// 2–3 m up (balcony/roof edge); overridable per node in the expert dialog.</summary>
+    public const double DefaultAntennaHeightM = 2.5;
+
+    /// <summary>Terrain context for <see cref="Estimate"/>: elevation sampler
+    /// (m a.s.l., null = no data), antenna heights above ground (parallel to the
+    /// anchor list) and the path-loss exponent that converts diffraction loss into
+    /// the model's signal-distance space.</summary>
+    public sealed class TerrainContext
+    {
+        public required Func<double, double, double?> ElevationAt { get; init; }
+        public required double[] AnchorHeightM { get; init; }
+        public double TargetHeightM { get; init; } = DefaultAntennaHeightM;
+        public double Exponent { get; init; } = 2.5;
+        public double FreqMhz { get; init; } = 868.0;
+    }
+
+    /// <summary>Knife-edge diffraction loss in dB for Fresnel parameter v
+    /// (ITU-R P.526 approximation). ≤ −0.78 means the path is effectively clear
+    /// (≈ 60 % first-Fresnel-zone clearance) → 0 dB.</summary>
+    public static double KnifeEdgeLossDb(double v) =>
+        v <= -0.78 ? 0 : 6.9 + 20 * Math.Log10(Math.Sqrt((v - 0.1) * (v - 0.1) + 1) + v - 0.1);
+
+    /// <summary>Worst (maximum) Fresnel parameter v along the path between two
+    /// antennas: terrain samples plus 4/3-earth bulge against the straight LOS line.
+    /// Samples without elevation data are skipped; −10 = clear/no data.</summary>
+    public static double PathFresnelV(Func<double, double, double?> elev,
+        double lat1, double lon1, double h1AglM,
+        double lat2, double lon2, double h2AglM,
+        double freqMhz = 868.0, int samples = 24)
+    {
+        double? e1 = elev(lat1, lon1), e2 = elev(lat2, lon2);
+        if (e1 == null || e2 == null) return -10;
+
+        double dKm = HaversineKm(lat1, lon1, lat2, lon2);
+        double dM = dKm * 1000.0;
+        if (dM < 50) return -10; // effectively co-located
+
+        double ht1 = e1.Value + h1AglM, ht2 = e2.Value + h2AglM;
+        double lambda = 299.792458 / freqMhz; // m
+        const double EffEarthM = 4.0 / 3.0 * 6371000.0;
+
+        double vMax = -10;
+        for (int s = 1; s < samples; s++)
+        {
+            double t = (double)s / samples;
+            double? te = elev(lat1 + (lat2 - lat1) * t, lon1 + (lon2 - lon1) * t);
+            if (te == null) continue;
+            double d1 = dM * t, d2 = dM * (1 - t);
+            double bulge = d1 * d2 / (2 * EffEarthM);
+            double los = ht1 + (ht2 - ht1) * t;
+            double hObs = te.Value + bulge - los;
+            double v = hObs * Math.Sqrt(2 * dM / (lambda * d1 * d2));
+            if (v > vMax) vMax = v;
+        }
+        return vMax;
+    }
+
+    /// <summary>EXCESS diffraction loss (dB) of the real terrain over the "typical
+    /// link" baseline, where the ground runs straight between the two endpoints'
+    /// ground elevations. The empirical path-loss model (fitted from real links) ALREADY
+    /// contains the usual near-ground/Fresnel drag of a flat path — charging absolute
+    /// obstruction would double-count it. Only genuine terrain in the way (a ridge
+    /// between the endpoints) yields a positive value. 0 = clear or no data.</summary>
+    public static double PathExcessLossDb(Func<double, double, double?> elev,
+        double lat1, double lon1, double h1AglM,
+        double lat2, double lon2, double h2AglM,
+        double freqMhz = 868.0, int samples = 24)
+    {
+        double? e1 = elev(lat1, lon1), e2 = elev(lat2, lon2);
+        if (e1 == null || e2 == null) return 0;
+
+        double dKm = HaversineKm(lat1, lon1, lat2, lon2);
+        double dM = dKm * 1000.0;
+        if (dM < 50) return 0;
+
+        double ht1 = e1.Value + h1AglM, ht2 = e2.Value + h2AglM;
+        double lambda = 299.792458 / freqMhz;
+        const double EffEarthM = 4.0 / 3.0 * 6371000.0;
+
+        double vReal = -10, vBase = -10;
+        for (int s = 1; s < samples; s++)
+        {
+            double t = (double)s / samples;
+            double? te = elev(lat1 + (lat2 - lat1) * t, lon1 + (lon2 - lon1) * t);
+            if (te == null) continue;
+            double d1 = dM * t, d2 = dM * (1 - t);
+            double bulge = d1 * d2 / (2 * EffEarthM);
+            double los = ht1 + (ht2 - ht1) * t;
+            double k = Math.Sqrt(2 * dM / (lambda * d1 * d2));
+
+            double vR = (te.Value + bulge - los) * k;
+            if (vR > vReal) vReal = vR;
+
+            double baseGround = e1.Value + (e2.Value - e1.Value) * t; // straight ground line
+            double vB = (baseGround + bulge - los) * k;
+            if (vB > vBase) vBase = vB;
+        }
+        return Math.Max(0, KnifeEdgeLossDb(vReal) - KnifeEdgeLossDb(vBase));
+    }
+
+    /// <summary>Haversine distance in km.</summary>
+    public static double HaversineKm(double lat1, double lon1, double lat2, double lon2)
+    {
+        const double R = 6371.0;
+        double dLat = (lat2 - lat1) * Math.PI / 180, dLon = (lon2 - lon1) * Math.PI / 180;
+        double a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2)
+                 + Math.Cos(lat1 * Math.PI / 180) * Math.Cos(lat2 * Math.PI / 180)
+                 * Math.Sin(dLon / 2) * Math.Sin(dLon / 2);
+        return R * 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
+    }
+
     /// <summary>Half-cell position error (km) of a precision_bits-truncated Meshtastic
     /// position: 2^(32−bits) · 1e-7° · 111.32 km/° / 2. 32 (or unknown/0) = exact;
     /// 16 bits ≈ ±0.37 km, 13 bits ≈ ±2.9 km.</summary>
@@ -79,7 +197,10 @@ public static class TriangulationService
     /// <summary>Path-loss model + its residual spread. <paramref name="SigmaDb"/> is the
     /// RMSE of the fit residuals (dB) — it propagates into a multiplicative distance
     /// uncertainty via <see cref="DistanceFactor"/>. The default assumes ±6 dB.</summary>
-    public sealed record Calibration(double P1Km, double Exponent, int Samples, double SigmaDb = 6.0, double R2 = 0)
+    /// <summary><paramref name="Clamped"/>: the raw fit ran into the physical parameter
+    /// bounds (n or P1km) — a strong sign the data does not support the model shape;
+    /// the model dialog then recommends (and defaults to) the standard model.</summary>
+    public sealed record Calibration(double P1Km, double Exponent, int Samples, double SigmaDb = 6.0, double R2 = 0, bool Clamped = false)
     {
         public static readonly Calibration Default = new(-90.0, 2.5, 0);
         public bool IsFitted => Samples > 0;
@@ -136,9 +257,11 @@ public static class TriangulationService
         double r2 = ssTot > 1e-9 ? 1 - ssRes / ssTot : 0;
 
         double rmse = Math.Sqrt(ssRes / valid.Count);
-        double n    = Math.Clamp(-b / 10.0, 1.8, 4.5);
+        double nRaw = -b / 10.0;
+        double n    = Math.Clamp(nRaw, 1.8, 4.5);
         double p1   = Math.Clamp(a, -110.0, -70.0);
-        return new Calibration(p1, n, valid.Count, Math.Clamp(rmse, 3.0, 12.0), r2);
+        bool clamped = Math.Abs(n - nRaw) > 1e-9 || Math.Abs(p1 - a) > 1e-9;
+        return new Calibration(p1, n, valid.Count, Math.Clamp(rmse, 3.0, 12.0), r2, clamped);
     }
 
     /// <summary>Weighted least-squares trilateration: minimizes Σ wᵢ·(|p−aᵢ|−dᵢ)² in a
@@ -159,7 +282,27 @@ public static class TriangulationService
         public bool HasAlternative => AltLat.HasValue && AltLon.HasValue;
     }
 
-    public static EstimateResult Estimate(IReadOnlyList<Anchor> anchors)
+    /// <summary>Geographic bounding box of Estimate's grid scan (each anchor padded by
+    /// distance + position error) — preload the terrain grid over exactly this region.</summary>
+    public static (double MinLat, double MinLon, double MaxLat, double MaxLon) SearchBounds(
+        IReadOnlyList<Anchor> anchors)
+    {
+        double lat0 = anchors.Average(a => a.Lat);
+        double kx = 111.320 * Math.Cos(lat0 * Math.PI / 180.0);
+        double ky = 110.574;
+        double minLat = anchors.Min(a => a.Lat - (a.DistKm + a.PosErrKm) / ky);
+        double maxLat = anchors.Max(a => a.Lat + (a.DistKm + a.PosErrKm) / ky);
+        double minLon = anchors.Min(a => a.Lon - (a.DistKm + a.PosErrKm) / kx);
+        double maxLon = anchors.Max(a => a.Lon + (a.DistKm + a.PosErrKm) / kx);
+        return (minLat, minLon, maxLat, maxLon);
+    }
+
+    /// <summary>Diffraction loss is capped: SRTM-90 terrain analysis is too coarse to
+    /// justify more than ~25 dB of claimed obstruction loss for a link that evidently
+    /// exists (we measured its signal).</summary>
+    public const double MaxDiffractionDb = 25.0;
+
+    public static EstimateResult Estimate(IReadOnlyList<Anchor> anchors, TerrainContext? terrain = null)
     {
         if (anchors.Count == 0) throw new ArgumentException("no anchors");
         if (anchors.Count == 1)
@@ -176,16 +319,48 @@ public static class TriangulationService
             Y: (a.Lat - refLat) * ky,
             D: a.DistKm,
             E: Math.Max(a.PosErrKm, 0),
-            W: Math.Max(a.WeightScale, 0.01) / (Math.Max(a.DistKm, 0.5) + Math.Max(a.PosErrKm, 0)))).ToList();
+            // 1-σ error of the distance estimate itself: explicit from the model's dB
+            // spread, else 30 % of the distance (never below 0.3 km)
+            S: a.SigmaKm > 0 ? a.SigmaKm : Math.Max(0.3 * a.DistKm, 0.3),
+            W: Math.Max(a.WeightScale, 0.01))).ToList();
 
-        double F(double px, double py) => pts.Sum(p =>
+        // Huber threshold (in σ units): residuals beyond it count linearly, so ONE
+        // inconsistent anchor (model garbage, unknown relay, wrong position) can no
+        // longer dominate the quadratic cost and drag the estimate kilometers away.
+        const double HuberK = 1.5;
+
+        double F(double px, double py)
         {
-            double r = Math.Sqrt((px - p.X) * (px - p.X) + (py - p.Y) * (py - p.Y));
-            // Dead zone of the anchor's own position error: within ±E no penalty —
-            // a truncated anchor position must not drag the estimate around.
-            double e = Math.Max(Math.Abs(r - p.D) - p.E, 0);
-            return p.W * e * e;
-        });
+            double sum = 0;
+            double cellLat = refLat + py / ky, cellLon = refLon + px / kx;
+            for (int i = 0; i < pts.Count; i++)
+            {
+                var p = pts[i];
+                double r = Math.Sqrt((px - p.X) * (px - p.X) + (py - p.Y) * (py - p.Y));
+
+                // Terrain: a path with a ridge in the way needs extra (diffraction)
+                // loss, so the SAME measured signal maps to a LARGER model distance —
+                // scale r into signal-distance space before comparing with D. Only the
+                // EXCESS over a flat path counts (the fitted model already contains the
+                // usual near-ground drag). Skip the reported-position prior (D≈0).
+                if (terrain != null && p.D >= 0.05)
+                {
+                    double loss = Math.Min(PathExcessLossDb(terrain.ElevationAt,
+                        cellLat, cellLon, terrain.TargetHeightM,
+                        anchors[i].Lat, anchors[i].Lon, terrain.AnchorHeightM[i],
+                        terrain.FreqMhz), MaxDiffractionDb);
+                    if (loss > 0) r *= Math.Pow(10, loss / (10 * terrain.Exponent));
+                }
+
+                // Dead zone of the anchor's own position error: within ±E no penalty —
+                // a truncated anchor position must not drag the estimate around.
+                // Then normalize by the distance estimate's own σ and apply Huber.
+                double e = Math.Max(Math.Abs(r - p.D) - p.E, 0) / p.S;
+                double c = e <= HuberK ? e * e : HuberK * (2 * e - HuberK);
+                sum += p.W * c;
+            }
+            return sum;
+        }
 
         (double X, double Y, double F) Descend(double sx, double sy)
         {

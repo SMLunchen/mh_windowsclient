@@ -4412,31 +4412,46 @@ public partial class MainWindow : Window
 
     // ── Node position triangulation from RF-link neighbors ────────────────────
 
-    // Expert TX parameters remembered per node for this session (dialog prefills)
-    private static readonly Dictionary<uint, (double Tx, double Ant)> _expertTxCache = new();
+    // Expert link-budget parameters remembered per node for this session (dialog prefills):
+    // TX power (dBm), antenna gain (dBi), antenna height above ground (m), and whether
+    // the node's position is EXACTLY known (overrides the reported precision_bits blur)
+    private static readonly Dictionary<uint, (double Tx, double Ant, double H, bool Exact)> _expertTxCache = new();
 
     private static bool TryParseNum(string s, out double v) =>
         double.TryParse(s.Replace(',', '.'), System.Globalization.NumberStyles.Any,
             System.Globalization.CultureInfo.InvariantCulture, out v);
 
+    // Exactly-known node positions picked by hand on the map (session cache)
+    private static readonly Dictionary<uint, (double Lat, double Lon)> _exactPosCache = new();
+
     /// <summary>Expert-mode dialog: one row per node — the TARGET plus every anchor
     /// neighbor whose link gets analyzed — asking TX power (hardware preset,
-    /// overridable) and antenna gain (default 1 dBi). Returns null on cancel.</summary>
-    private Dictionary<uint, (double Tx, double Ant)>? AskExpertLinkBudgets(
-        NodeInfo target, List<uint> anchorIds)
+    /// overridable), antenna gain (default 1 dBi), antenna height above ground
+    /// (default 2.5 m, feeds the terrain/Fresnel analysis) and whether the position
+    /// is EXACTLY known (ignores the reported precision_bits blur). The 📍 button
+    /// opens a small modal MAP POPUP to mark/verify the position by hand — the dialog
+    /// stays open; picked coordinates land in <paramref name="exactPos"/>.
+    /// Null on cancel.</summary>
+    private Dictionary<uint, (double Tx, double Ant, double H, bool Exact)>? AskExpertLinkBudgets(
+        NodeInfo target, List<uint> anchorIds, Dictionary<uint, (double Lat, double Lon)> exactPos)
     {
         var ci = System.Globalization.CultureInfo.CurrentCulture;
         var nodeById = _allNodes.ToDictionary(n => n.NodeId, n => n);
 
+        // Positions picked in earlier runs of this session prefill the dialog
+        foreach (var id in anchorIds.Append(target.NodeId))
+            if (_exactPosCache.TryGetValue(id, out var p))
+                exactPos[id] = p;
+
         var dlg = new Window
         {
             Title = Loc("StrTriExpertTitle"),
-            Width = 620,
-            MinWidth = 620,
+            Width = 900,
+            MinWidth = 760,
             SizeToContent = SizeToContent.Height,
-            MaxHeight = 640,
+            MaxHeight = 760,
             Owner = this,
-            ResizeMode = ResizeMode.NoResize,
+            ResizeMode = ResizeMode.CanResize,
             WindowStartupLocation = WindowStartupLocation.CenterOwner,
         };
         var outer = new StackPanel { Margin = new Thickness(16) };
@@ -4448,22 +4463,49 @@ public partial class MainWindow : Window
         });
 
         var rowsPanel = new StackPanel();
-        var boxes = new Dictionary<uint, (TextBox Tx, TextBox Ant)>();
+        var boxes = new Dictionary<uint, (TextBox Tx, TextBox Ant, TextBox H, CheckBox Exact, Action RefreshPick)>();
+
+        static Grid MakeRowGrid()
+        {
+            var grid = new Grid { Margin = new Thickness(0, 3, 0, 3) };
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) }); // name
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(78) });  // TX
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(42) });  // dBm
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(66) });  // antenna
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(34) });  // dBi
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(66) });  // height
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(30) });  // m
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(56) });  // exact checkbox
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(36) });  // pick button
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(72) });  // watts
+            return grid;
+        }
+
+        // Column header row
+        var header = MakeRowGrid();
+        void AddHeader(string resKey, int col, int span = 2)
+        {
+            var tb = new TextBlock { FontSize = 11, Opacity = 0.65, TextTrimming = TextTrimming.CharacterEllipsis };
+            tb.SetResourceReference(TextBlock.TextProperty, resKey);
+            Grid.SetColumn(tb, col);
+            Grid.SetColumnSpan(tb, span);
+            header.Children.Add(tb);
+        }
+        AddHeader("StrTriExpertColTx", 1);
+        AddHeader("StrTriExpertColAnt", 3);
+        AddHeader("StrTriExpertColH", 5);
+        AddHeader("StrTriExpertColExact", 7);
+        rowsPanel.Children.Add(header);
 
         void AddRow(uint id, string name, string? hw, bool isTarget)
         {
-            double presetTx = _expertTxCache.TryGetValue(id, out var cached)
-                ? cached.Tx : Services.TriangulationService.TxPresetDbm(hw);
-            double presetAnt = _expertTxCache.TryGetValue(id, out var cached2)
-                ? cached2.Ant : Services.TriangulationService.ReferenceAntennaDbi;
+            bool hasCached = _expertTxCache.TryGetValue(id, out var cached);
+            double presetTx  = hasCached ? cached.Tx  : Services.TriangulationService.TxPresetDbm(hw);
+            double presetAnt = hasCached ? cached.Ant : Services.TriangulationService.ReferenceAntennaDbi;
+            double presetH   = hasCached ? cached.H   : Services.TriangulationService.DefaultAntennaHeightM;
+            bool presetExact = hasCached && cached.Exact;
 
-            var grid = new Grid { Margin = new Thickness(0, 3, 0, 3) };
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(70) });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(42) });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(60) });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(34) });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(78) });
+            var grid = MakeRowGrid();
 
             var nameText = new TextBlock
             {
@@ -4476,22 +4518,93 @@ public partial class MainWindow : Window
             Grid.SetColumn(nameText, 0);
             grid.Children.Add(nameText);
 
-            var txBox = new TextBox { Text = presetTx.ToString("0.#", ci) };
+            // MinWidth 0 on all boxes: ModernWPF's TextBox style defaults to MinWidth 64,
+            // which overflowed and clipped inside these fixed columns.
+            var txBox = new TextBox { Text = presetTx.ToString("0.#", ci), MinWidth = 0 };
             Grid.SetColumn(txBox, 1);
             grid.Children.Add(txBox);
             var dbmLbl = new TextBlock { Text = "dBm", VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(4, 0, 4, 0), Opacity = 0.65 };
             Grid.SetColumn(dbmLbl, 2);
             grid.Children.Add(dbmLbl);
 
-            var antBox = new TextBox { Text = presetAnt.ToString("0.#", ci) };
+            var antBox = new TextBox { Text = presetAnt.ToString("0.#", ci), MinWidth = 0 };
             Grid.SetColumn(antBox, 3);
             grid.Children.Add(antBox);
             var dbiLbl = new TextBlock { Text = "dBi", VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(4, 0, 4, 0), Opacity = 0.65 };
             Grid.SetColumn(dbiLbl, 4);
             grid.Children.Add(dbiLbl);
 
+            // Antenna height above ground — feeds the terrain/Fresnel path analysis
+            var hBox = new TextBox { Text = presetH.ToString("0.#", ci), MinWidth = 0, ToolTip = Loc("StrTriExpertHeightTip") };
+            Grid.SetColumn(hBox, 5);
+            grid.Children.Add(hBox);
+            var mLbl = new TextBlock { Text = Loc("StrTriExpertHeightUnit"), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(4, 0, 4, 0), Opacity = 0.65 };
+            Grid.SetColumn(mLbl, 6);
+            grid.Children.Add(mLbl);
+
+            // "Position exactly known": overrides the reported precision_bits blur;
+            // the 📍 button lets the user mark/verify the position in a small map popup.
+            // MinWidth 0: ModernWPF's CheckBox style defaults to MinWidth 120, which
+            // clipped the glyph box completely inside this narrow column.
+            var exactCb = new CheckBox
+            {
+                IsChecked = presetExact || exactPos.ContainsKey(id),
+                MinWidth = 0,
+                VerticalAlignment = VerticalAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                ToolTip = Loc("StrTriExpertExactTip"),
+            };
+            Grid.SetColumn(exactCb, 7);
+            grid.Children.Add(exactCb);
+
+            var pickBtn = new Button
+            {
+                Content = "📍",
+                FontSize = 12,
+                Padding = new Thickness(2, 0, 2, 0),
+                Margin = new Thickness(2, 0, 2, 0),
+            };
+            void RefreshPick()
+            {
+                bool has = exactPos.ContainsKey(id);
+                pickBtn.ToolTip = has && exactPos.TryGetValue(id, out var pp)
+                    ? $"{pp.Lat.ToString("0.00000", ci)}, {pp.Lon.ToString("0.00000", ci)}"
+                    : Loc("StrTriExpertPickTip");
+                pickBtn.FontWeight = has ? FontWeights.Bold : FontWeights.Normal;
+                pickBtn.Opacity = has ? 1.0 : 0.7;
+            }
+            pickBtn.Click += (_, _) =>
+            {
+                // Reference marker = best currently known position of this node
+                (double Lat, double Lon)? reference = exactPos.TryGetValue(id, out var cur) ? cur
+                    : nodeById.TryGetValue(id, out var nn) && nn is { Latitude: not null, Longitude: not null }
+                        ? (nn.Latitude.Value, nn.Longitude.Value)
+                    : id == _myNodeId && (_currentSettings.MyLatitude != 0 || _currentSettings.MyLongitude != 0)
+                        ? (_currentSettings.MyLatitude, _currentSettings.MyLongitude)
+                    : null;
+                var center = reference ?? (_currentSettings.MyLatitude, _currentSettings.MyLongitude);
+                var pick = new MapPickWindow(CreateRasterTileSource(), center.Lat, center.Lon,
+                    string.Format(Loc("StrTriPickHint"), name), reference) { Owner = dlg };
+                if (pick.ShowDialog() == true)
+                {
+                    exactPos[id] = pick.Picked;
+                    _exactPosCache[id] = pick.Picked;
+                    exactCb.IsChecked = true;
+                }
+                RefreshPick();
+            };
+            exactCb.Unchecked += (_, _) =>
+            {
+                exactPos.Remove(id);
+                _exactPosCache.Remove(id);
+                RefreshPick();
+            };
+            Grid.SetColumn(pickBtn, 8);
+            grid.Children.Add(pickBtn);
+            RefreshPick();
+
             var wattsHint = new TextBlock { VerticalAlignment = VerticalAlignment.Center, Opacity = 0.55, FontSize = 11 };
-            Grid.SetColumn(wattsHint, 5);
+            Grid.SetColumn(wattsHint, 9);
             grid.Children.Add(wattsHint);
             void UpdateWatts() => wattsHint.Text = TryParseNum(txBox.Text, out var d)
                 ? string.Format(Loc("StrTriExpertWatts"), Services.TriangulationService.DbmToWatts(d).ToString("0.###", ci))
@@ -4500,7 +4613,7 @@ public partial class MainWindow : Window
             UpdateWatts();
 
             rowsPanel.Children.Add(grid);
-            boxes[id] = (txBox, antBox);
+            boxes[id] = (txBox, antBox, hBox, exactCb, RefreshPick);
         }
 
         // Target first (bold), then all anchor neighbors
@@ -4546,15 +4659,19 @@ public partial class MainWindow : Window
 
         if (dlg.ShowDialog() != true) return null;
 
-        var result = new Dictionary<uint, (double Tx, double Ant)>();
-        foreach (var (id, (txBox, antBox)) in boxes)
+        var result = new Dictionary<uint, (double Tx, double Ant, double H, bool Exact)>();
+        foreach (var (id, (txBox, antBox, hBox, exactCb, _)) in boxes)
         {
             double tx = TryParseNum(txBox.Text, out var t) ? Math.Clamp(t, 0, 40)
                 : Services.TriangulationService.ReferenceTxDbm;
             double ant = TryParseNum(antBox.Text, out var a2) ? Math.Clamp(a2, -10, 20)
                 : Services.TriangulationService.ReferenceAntennaDbi;
-            result[id] = (tx, ant);
-            _expertTxCache[id] = (tx, ant);
+            double hgt = TryParseNum(hBox.Text, out var h2) ? Math.Clamp(h2, 0, 200)
+                : Services.TriangulationService.DefaultAntennaHeightM;
+            bool exact = exactCb.IsChecked == true;
+            result[id] = (tx, ant, hgt, exact);
+            _expertTxCache[id] = (tx, ant, hgt, exact);
+            if (!exact) exactPos.Remove(id); // unchecked at OK time → no position override
         }
         return result;
     }
@@ -4565,7 +4682,7 @@ public partial class MainWindow : Window
     /// <paramref name="expertMode"/>: asks for TX power/antenna gain of the target AND
     /// every anchor neighbor — applied as link-budget deltas to the model reference
     /// (22 dBm + 1 dBi each end), direction-aware per link.</summary>
-    private void TriangulateNodeOnMap(NodeInfo targetNode, bool expertMode = false)
+    private async void TriangulateNodeOnMap(NodeInfo targetNode, bool expertMode = false)
     {
         if (_db == null) return;
         try
@@ -4589,15 +4706,21 @@ public partial class MainWindow : Window
             var cal = ComputePathLossCalibration(posById);
             if (cal.IsFitted)
             {
-                string recommendation = cal.R2 >= 0.2
-                    ? Loc("StrTriModelRecFitted")
-                    : Loc("StrTriModelRecDefault");
+                // Recommend the fitted model only when it explains the data (R²) AND the
+                // raw fit stayed inside physical bounds — a clamped fit (e.g. n stuck at
+                // 1.8) is degenerate and produces absurd circles. The ENTER default
+                // follows the recommendation, so a casual confirm picks the sane model.
+                bool recommendFitted = cal.R2 >= 0.2 && !cal.Clamped;
+                string recommendation =
+                    (cal.Clamped ? Loc("StrTriModelClamped") + " " : "") +
+                    Loc(recommendFitted ? "StrTriModelRecFitted" : "StrTriModelRecDefault");
                 var choice = MessageBox.Show(
                     string.Format(Loc("StrTriModelMsg"),
                         cal.Samples, cal.P1Km.ToString("0.0"), cal.Exponent.ToString("0.00"),
                         cal.R2.ToString("0.00"), cal.SigmaDb.ToString("0.0"), recommendation),
                     Loc("StrTriTitle"),
-                    MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
+                    MessageBoxButton.YesNoCancel, MessageBoxImage.Question,
+                    recommendFitted ? MessageBoxResult.Yes : MessageBoxResult.No);
                 if (choice == MessageBoxResult.Cancel) return;
                 if (choice == MessageBoxResult.No)
                     cal = Services.TriangulationService.Calibration.Default;
@@ -4606,7 +4729,8 @@ public partial class MainWindow : Window
             // Anchors: positioned partners with signal evidence. SNR → pseudo-RSSI via the
             // anchor's measured noise floor (LocalStats) or −105 dBm default; for our own
             // node the directly measured RSSI wins.
-            double targetNf = _db.GetLatestLocalStats(targetNode.NodeId)?.NoiseFloor ?? -105;
+            double? targetNfRaw = _db.GetLatestLocalStats(targetNode.NodeId)?.NoiseFloor;
+            double targetNf = targetNfRaw ?? -105;
 
             // Pass 1: usable partners (position + any signal evidence). Signal values are
             // TRIMMED MEDIANS over the measurement history of the last 30 days (packet_rx
@@ -4650,46 +4774,85 @@ public partial class MainWindow : Window
                 return;
             }
 
-            // Expert mode: ask for TX power + antenna gain of the TARGET and of EVERY
-            // anchor neighbor — the analyzed links run between them, so both ends'
-            // budgets matter. Defaults: reference values (identical to normal mode).
-            var budgets = new Dictionary<uint, (double Tx, double Ant)>();
+            // Expert mode: ask for TX power + antenna gain + antenna height of the TARGET
+            // and of EVERY anchor neighbor — the analyzed links run between them, so both
+            // ends' budgets matter. "Position exakt" overrides the reported precision_bits
+            // blur, optionally with hand-picked map coordinates (exactPos).
+            // Defaults: reference values (identical to normal mode).
+            var budgets = new Dictionary<uint, (double Tx, double Ant, double H, bool Exact)>();
+            var exactPos = new Dictionary<uint, (double Lat, double Lon)>();
             if (expertMode)
             {
-                var asked = AskExpertLinkBudgets(targetNode, usable.Select(u => u.Id).ToList());
+                var asked = AskExpertLinkBudgets(targetNode, usable.Select(u => u.Id).ToList(), exactPos);
                 if (asked == null) return; // canceled
                 budgets = asked;
             }
-            (double Tx, double Ant) BudgetOf(uint id) => budgets.TryGetValue(id, out var b)
+            (double Tx, double Ant, double H, bool Exact) BudgetOf(uint id) => budgets.TryGetValue(id, out var b)
                 ? b
-                : (Services.TriangulationService.ReferenceTxDbm, Services.TriangulationService.ReferenceAntennaDbi);
-            var (tTx, tAnt) = BudgetOf(targetNode.NodeId);
+                : (Services.TriangulationService.ReferenceTxDbm,
+                   Services.TriangulationService.ReferenceAntennaDbi,
+                   Services.TriangulationService.DefaultAntennaHeightM,
+                   false);
+            var (tTx, tAnt, tHgt, _) = BudgetOf(targetNode.NodeId);
 
             // Pass 2: per-direction pseudo-RSSI, adjusted to the reference link budget.
             // SnrOut/own RSSI = the TARGET transmitted (target TX+ant, anchor rx-ant);
             // SnrIn = the ANCHOR transmitted (anchor TX+ant, target rx-ant).
             var anchors = new List<(double Lat, double Lon, double DistKm, double PosErrKm, string Name)>();
+            var anchorHeights = new List<double>();  // antenna heights, parallel to anchors
+            var anchorSigmaMul = new List<double>(); // evidence-quality σ multiplier, parallel
+            var anchorEvid = new List<string>();     // evidence tag for the log, parallel
             foreach (var u in usable)
             {
-                var (aTx, aAnt) = BudgetOf(u.Id);
+                var (aTx, aAnt, aHgt, aExact) = BudgetOf(u.Id);
                 var cands = new List<double>();
+                double sigmaMul;
+                string evid;
                 if (u.OwnRssi is int r)
-                    cands.Add(Services.TriangulationService.AdjustedRssi(r, tTx, tAnt, aAnt));
-                if (cands.Count == 0)
                 {
-                    double anchorNf = _db.GetLatestLocalStats(u.Id)?.NoiseFloor ?? -105;
+                    // Directly measured RSSI — the sharpest evidence we have
+                    cands.Add(Services.TriangulationService.AdjustedRssi(r, tTx, tAnt, aAnt));
+                    sigmaMul = 1.0;
+                    evid = "rssi";
+                }
+                else
+                {
+                    // SNR-derived pseudo-RSSI is soft evidence: SNR saturates on strong
+                    // links and the noise-floor conversion may rest on the −105 default.
+                    // Such circles get a wider σ, so one lying single-direction link can
+                    // no longer veto the correct side of a mirror ambiguity.
+                    var anchorNfRaw = _db.GetLatestLocalStats(u.Id)?.NoiseFloor;
+                    bool nfDefaulted = false;
                     if (u.SnrOut.HasValue)
+                    {
                         cands.Add(Services.TriangulationService.AdjustedRssi(
-                            u.SnrOut.Value + anchorNf, tTx, tAnt, aAnt));
+                            u.SnrOut.Value + (anchorNfRaw ?? -105), tTx, tAnt, aAnt));
+                        nfDefaulted |= anchorNfRaw == null;
+                    }
                     if (u.SnrIn.HasValue)
+                    {
                         cands.Add(Services.TriangulationService.AdjustedRssi(
                             u.SnrIn.Value + targetNf, aTx, aAnt, tAnt));
+                        nfDefaulted |= targetNfRaw == null;
+                    }
+                    bool both = u.SnrOut.HasValue && u.SnrIn.HasValue;
+                    sigmaMul = both ? 1.3 : 1.7;
+                    evid = both ? "snr2" : "snr1";
+                    if (nfDefaulted) { sigmaMul += 0.3; evid += "+nf?"; }
                 }
                 if (cands.Count == 0) continue;
 
-                anchors.Add((u.Pos.Lat, u.Pos.Lon,
+                // "Position exakt": hand-picked coordinates replace the reported ones,
+                // and the precision_bits dead zone collapses to a point.
+                var (aLat, aLon, aErr) = exactPos.TryGetValue(u.Id, out var xp)
+                    ? (xp.Lat, xp.Lon, 0.0)
+                    : (u.Pos.Lat, u.Pos.Lon, aExact ? 0.0 : u.Pos.ErrKm);
+                anchors.Add((aLat, aLon,
                     Services.TriangulationService.SignalDistanceKm(cands.Average(), cal),
-                    u.Pos.ErrKm, u.Name));
+                    aErr, u.Name));
+                anchorHeights.Add(aHgt);
+                anchorSigmaMul.Add(sigmaMul);
+                anchorEvid.Add(evid);
             }
 
             if (anchors.Count < 2)
@@ -4701,29 +4864,70 @@ public partial class MainWindow : Window
 
             // If the target itself reports a (possibly deliberately truncated) position,
             // use it as a prior: distance 0 with the truncation cell as dead zone — the
-            // RF anchors then only refine WITHIN the reported cell.
-            if (targetNode.Latitude.HasValue && targetNode.Longitude.HasValue)
+            // RF anchors then only refine WITHIN the reported cell. "Position exakt"
+            // (optionally hand-picked) tightens the prior to a near-point.
+            bool tExact = BudgetOf(targetNode.NodeId).Exact;
+            bool tPicked = exactPos.TryGetValue(targetNode.NodeId, out var tXp);
+            if (tPicked || (targetNode.Latitude.HasValue && targetNode.Longitude.HasValue))
             {
-                double targetErr = Services.TriangulationService.PrecisionBitsToKm(
+                var (pLat, pLon) = tPicked
+                    ? (tXp.Lat, tXp.Lon)
+                    : (targetNode.Latitude!.Value, targetNode.Longitude!.Value);
+                double targetErr = tExact ? 0 : Services.TriangulationService.PrecisionBitsToKm(
                     targetNode.PositionPrecisionBits ?? 32);
-                anchors.Add((targetNode.Latitude.Value, targetNode.Longitude.Value, 0,
-                    Math.Max(targetErr, 0.2), Loc("StrTriReportedPos")));
+                anchors.Add((pLat, pLon, 0,
+                    tExact ? 0.05 : Math.Max(targetErr, 0.2), Loc("StrTriReportedPos")));
+                anchorHeights.Add(0); // prior is no RF link — terrain analysis skips it
+                anchorSigmaMul.Add(1.0);
+                anchorEvid.Add("prior");
             }
 
-            var est = Services.TriangulationService.Estimate(
-                anchors.Select(a => new Services.TriangulationService.Anchor(
-                    a.Lat, a.Lon, a.DistKm, a.PosErrKm,
-                    // The reported-position prior (DistKm 0) is hard information: the node
-                    // IS inside that cell — RF guesses only refine within/near it.
-                    WeightScale: a.DistKm < 0.05 ? 5 : 1)).ToList());
             double bandFactor = Services.TriangulationService.DistanceFactor(cal);
+            var anchorList = anchors.Select((a, i) => new Services.TriangulationService.Anchor(
+                a.Lat, a.Lon, a.DistKm, a.PosErrKm,
+                // The reported-position prior (DistKm 0) is hard information: the node
+                // IS inside that cell — RF guesses only refine within/near it.
+                WeightScale: a.DistKm < 0.05 ? 5 : 1,
+                // 1-σ of the distance estimate from the model's dB spread, scaled by the
+                // evidence quality: residuals are normalized by it, so wide/soft circles
+                // are allowed to miss proportionally.
+                SigmaKm: a.DistKm < 0.05 ? 0 : (bandFactor - 1) * a.DistKm * anchorSigmaMul[i])).ToList();
+
+            // Terrain model (DEM): load the height grid over the search region and let
+            // the estimator penalize candidate cells whose paths to the anchors are
+            // terrain-obstructed (Fresnel/knife-edge; antenna heights from the expert
+            // dialog, default 2.5 m above ground). Degrades silently to the flat model
+            // when no terrain data is available (offline without cache, out of coverage).
+            Services.TriangulationService.TerrainContext? terrain = null;
+            try
+            {
+                Services.TerrainService.Instance.OfflineMode = _currentSettings.MapMode == "offline";
+                var bounds = Services.TriangulationService.SearchBounds(anchorList);
+                var grid = await Services.TerrainService.Instance.LoadGridAsync(
+                    bounds.MinLat, bounds.MinLon, bounds.MaxLat, bounds.MaxLon);
+                if (grid != null)
+                    terrain = new Services.TriangulationService.TerrainContext
+                    {
+                        ElevationAt = grid.ElevationAt,
+                        AnchorHeightM = anchorHeights.ToArray(),
+                        TargetHeightM = tHgt,
+                        Exponent = cal.Exponent,
+                    };
+            }
+            catch (Exception tex)
+            {
+                Services.Logger.WriteLine($"[Triangulation] terrain unavailable: {tex.Message}");
+            }
+
+            var est = Services.TriangulationService.Estimate(anchorList, terrain);
             DrawTriangulationLayer(targetNode, anchors, est, bandFactor);
             Services.Logger.WriteLine($"[Triangulation] !{targetNode.NodeId:x8}: {anchors.Count} anchors → " +
                 $"est {est.Lat:F5},{est.Lon:F5} ±{est.UncertaintyKm:0.0}km" +
                 $"{(est.HasAlternative ? $" ALT {est.AltLat:F5},{est.AltLon:F5}" : "")} " +
                 $"(model: {(cal.IsFitted ? $"self-calibrated P1km={cal.P1Km:0.0}dBm n={cal.Exponent:0.00} σ={cal.SigmaDb:0.0}dB R²={cal.R2:0.00} from {cal.Samples} links" : "default")}; " +
-                $"{(expertMode ? $"expert budgets: {string.Join(", ", budgets.Select(b => $"!{b.Key:x8}={b.Value.Tx:0.#}dBm/{b.Value.Ant:0.#}dBi"))}; " : "")}" +
-                $"circles: {string.Join(", ", anchors.Select(a => $"{a.Name}={a.DistKm:0.0}km"))})");
+                $"terrain: {(terrain != null ? "DEM active" : "flat (no data)")}; " +
+                $"{(expertMode ? $"expert budgets: {string.Join(", ", budgets.Select(b => $"!{b.Key:x8}={b.Value.Tx:0.#}dBm/{b.Value.Ant:0.#}dBi/{b.Value.H:0.#}m{(b.Value.Exact ? "/exact" : "")}{(exactPos.ContainsKey(b.Key) ? "/picked" : "")}"))}; " : "")}" +
+                $"circles: {string.Join(", ", anchors.Select((a, i) => $"{a.Name}={a.DistKm:0.0}km[{anchorEvid[i]}]"))})");
         }
         catch (Exception ex)
         {
@@ -5409,8 +5613,43 @@ public partial class MainWindow : Window
         };
         win.TriangulateRequested += (_, n) => TriangulateNodeOnMap(n);
         win.TriangulateExpertRequested += (_, n) => TriangulateNodeOnMap(n, expertMode: true);
+        win.LinkProfileRequested += (_, neighborId) => ShowLinkProfile(node, neighborId);
         win.Show();
         win.Activate();
+    }
+
+    /// <summary>Opens the terrain/Fresnel elevation profile between a node and one of
+    /// its RF neighbors (telemetry window context menu). Antenna heights come from the
+    /// expert-dialog cache when the user entered them, else 2.5 m above ground.</summary>
+    private void ShowLinkProfile(NodeInfo node, uint neighborId)
+    {
+        (double Lat, double Lon)? PosOf(uint id)
+        {
+            var ni = _allNodes.FirstOrDefault(x => x.NodeId == id);
+            if (ni is { Latitude: not null, Longitude: not null })
+                return (ni.Latitude.Value, ni.Longitude.Value);
+            if (id == _myNodeId && (_currentSettings.MyLatitude != 0 || _currentSettings.MyLongitude != 0))
+                return (_currentSettings.MyLatitude, _currentSettings.MyLongitude);
+            return null;
+        }
+        var pA = PosOf(node.NodeId);
+        var pB = PosOf(neighborId);
+        if (pA == null || pB == null)
+        {
+            MessageBox.Show(Loc("StrLinkProfileNoPos"), Loc("StrLinkProfileTitle"),
+                MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+        double HOf(uint id) => _expertTxCache.TryGetValue(id, out var b)
+            ? b.H : Services.TriangulationService.DefaultAntennaHeightM;
+        string nameB = neighborId == _myNodeId
+            ? Loc("StrMe")
+            : _allNodes.FirstOrDefault(x => x.NodeId == neighborId)?.Name ?? $"!{neighborId:x8}";
+
+        Services.TerrainService.Instance.OfflineMode = _currentSettings.MapMode == "offline";
+        new LinkProfileWindow(node.Name, pA.Value.Lat, pA.Value.Lon,
+            nameB, pB.Value.Lat, pB.Value.Lon, HOf(node.NodeId), HOf(neighborId))
+        { Owner = this }.Show();
     }
 
     private void NodeContextMenu_Telemetry_Click(object sender, RoutedEventArgs e)
@@ -5710,17 +5949,17 @@ public partial class MainWindow : Window
         var lines = new[]
         {
             "- - - - - - - - - - - - - - - - - - - -",
-            $"SENDESTELLE {myShortName.ToUpper()} – OSTEREI",
+            $"SENDESTELLE {myShortName.ToUpper()} — OSTEREI",
             "AM-SENDELEISTUNG WIRD JETZT REDUZIERT",
             "Ionosphäre aktiv: AM-Signale reichen nachts",
             "hunderte km weit (Skywave-Propagation).",
-            "FCC-Nachtpflicht seit 1934 – LoRa: unaffected",
+            "FCC-Nachtpflicht seit 1934 · LoRa: unaffected",
             "- - - - - - - - - - - - - - - - - - - -"
         };
         var msg = new MessageItem
         {
             Time        = "00:00",
-            From        = "? SENDESTELLE OSTEREI",
+            From        = "⚡ SENDESTELLE OSTEREI",
             Message     = string.Join("\n", lines),
             ChannelName = "SYSTEM",
             IsOwnMessage = false
@@ -5758,12 +5997,8 @@ public partial class MainWindow : Window
 
     private static void BeepMorse(string text)
     {
-        const int Freq      = 700;
-        const int Dot       = 50;
-        const int Dash      = 150;
-        const int ElemGap   = 50;
-        const int LetterGap = 150;
-        const int WordGap   = 350;
+        // PARIS convention: dot = 1200 / WPM ms → 60 ms = 20 WPM; standard 1:3:7 timing.
+        const int Dot = 1200 / 20, Dash = 3 * Dot, ElemGap = Dot, LetterGap = 3 * Dot, WordGap = 7 * Dot;
 
         var table = new Dictionary<char, string>
         {
@@ -5778,31 +6013,33 @@ public partial class MainWindow : Window
             {'8',"---.."}, {'9',"----."}
         };
 
-        bool firstLetter = true;
-        foreach (char c in text)
+        // Keying plan (tone?, ms). The gap before a letter is flushed lazily, so the
+        // plan never starts or ends with silence and space runs collapse into one gap.
+        var plan = new List<(bool Tone, int Ms)>();
+        int pendingGap = 0;
+        foreach (char c in text.ToUpperInvariant())
         {
-            if (c == ' ') { System.Threading.Thread.Sleep(WordGap); firstLetter = true; continue; }
+            if (c == ' ') { if (plan.Count > 0) pendingGap = WordGap; continue; }
             if (!table.TryGetValue(c, out var code)) continue;
 
-            if (!firstLetter) System.Threading.Thread.Sleep(LetterGap);
-            firstLetter = false;
-
+            if (pendingGap > 0) { plan.Add((false, pendingGap)); pendingGap = 0; }
             bool firstElem = true;
             foreach (char sym in code)
             {
-                if (!firstElem) System.Threading.Thread.Sleep(ElemGap);
+                if (!firstElem) plan.Add((false, ElemGap));
                 firstElem = false;
-                PlaySineTone(Freq, sym == '.' ? Dot : Dash);
+                plan.Add((true, sym == '.' ? Dot : Dash));
             }
+            pendingGap = LetterGap;
         }
-    }
+        if (plan.Count == 0) return;
+        plan.Add((false, 100)); // tail: device close must not clip the last element
 
-    private static void PlaySineTone(int freqHz, int durationMs)
-    {
-        const int SampleRate = 44100;
-        const int FadeMs     = 8; // Fade-in/out in ms – eliminiert Knackgeräusche
-        int totalSamples = SampleRate * durationMs / 1000;
-        int fadeSamples  = SampleRate * FadeMs / 1000;
+        // Render the WHOLE transmission into ONE WAV and play it in a single shot —
+        // one SoundPlayer per dot/dash (previous version) added 10–50 ms of random
+        // device-startup latency between symbols and wrecked the rhythm.
+        const int Freq = 700, SampleRate = 44100, FadeMs = 8;
+        int totalSamples = plan.Sum(p => SampleRate * p.Ms / 1000);
 
         using var ms = new System.IO.MemoryStream();
         using var bw = new System.IO.BinaryWriter(ms);
@@ -5818,15 +6055,23 @@ public partial class MainWindow : Window
         bw.Write(System.Text.Encoding.ASCII.GetBytes("data"));
         bw.Write(totalSamples * 2);
 
-        for (int i = 0; i < totalSamples; i++)
+        foreach (var (tone, msDur) in plan)
         {
-            // Lineare Hüllkurve: sanftes Ein- und Ausblenden
-            double env = 1.0;
-            if (i < fadeSamples)                        env = (double)i / fadeSamples;
-            else if (i >= totalSamples - fadeSamples)   env = (double)(totalSamples - i) / fadeSamples;
-
-            double sample = Math.Sin(2 * Math.PI * freqHz * i / SampleRate) * env * 0.75;
-            bw.Write((short)(sample * 32767));
+            int n = SampleRate * msDur / 1000;
+            if (!tone)
+            {
+                for (int i = 0; i < n; i++) bw.Write((short)0);
+                continue;
+            }
+            int fade = Math.Min(SampleRate * FadeMs / 1000, n / 2); // Knack-Schutz
+            for (int i = 0; i < n; i++)
+            {
+                double env = 1.0;
+                if (i < fade)           env = (double)i / fade;
+                else if (i >= n - fade) env = (double)(n - i) / fade;
+                double sample = Math.Sin(2 * Math.PI * Freq * i / SampleRate) * env * 0.75;
+                bw.Write((short)(sample * 32767));
+            }
         }
 
         ms.Position = 0;

@@ -84,27 +84,8 @@ public partial class MainWindow
 
             var tileDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "maptiles");
             var sourceFolder = _currentSettings.MapSource;  // "osm", "osmtopo", oder "osmdark"
-            var schema = new GlobalSphericalMercator(YAxis.TMS, 0, 18, "OSM");
 
-            BruTile.ITileProvider tileProvider = _currentSettings.MapMode switch
-            {
-                "online-osm" => new Services.CachingHttpTileProvider(
-                    tileDir, "osm_online",
-                    "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
-                    useHttpCacheHeaders: true),
-                "online-own" => new Services.CachingHttpTileProvider(
-                    tileDir, sourceFolder,
-                    GetMeshhessenUrlForSource(sourceFolder),
-                    useHttpCacheHeaders: false),
-                "online-custom" => new Services.CachingHttpTileProvider(
-                    tileDir, sourceFolder,
-                    GetUrlForSource(sourceFolder),
-                    useHttpCacheHeaders: false),
-                _ => new LocalFileTileProvider(tileDir, sourceFolder)
-            };
-
-            var tileSource = new TileSource(tileProvider, schema);
-            _map.Layers.Add(new TileLayer(tileSource) { Name = "OSM" });
+            _map.Layers.Add(new TileLayer(CreateRasterTileSource()) { Name = "OSM" });
 
             // Environment heatmap: interpolated field image + contour/border lines (below data overlays)
             _envFillLayer = new MemoryLayer("EnvFill") { Features = _envFillFeatures, Style = null };
@@ -166,6 +147,34 @@ public partial class MainWindow
         {
             Services.Logger.WriteLine($"ERROR initializing map: {ex.Message}");
         }
+    }
+
+    /// <summary>Tile source matching the CURRENT raster map settings — shared by the
+    /// main raster map and auxiliary map popups (e.g. the exact-position picker).</summary>
+    private BruTile.ITileSource CreateRasterTileSource()
+    {
+        var tileDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "maptiles");
+        var sourceFolder = _currentSettings.MapSource;  // "osm", "osmtopo", oder "osmdark"
+        var schema = new GlobalSphericalMercator(YAxis.TMS, 0, 18, "OSM");
+
+        BruTile.ITileProvider tileProvider = _currentSettings.MapMode switch
+        {
+            "online-osm" => new Services.CachingHttpTileProvider(
+                tileDir, "osm_online",
+                "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+                useHttpCacheHeaders: true),
+            "online-own" => new Services.CachingHttpTileProvider(
+                tileDir, sourceFolder,
+                GetMeshhessenUrlForSource(sourceFolder),
+                useHttpCacheHeaders: false),
+            "online-custom" => new Services.CachingHttpTileProvider(
+                tileDir, sourceFolder,
+                GetUrlForSource(sourceFolder),
+                useHttpCacheHeaders: false),
+            _ => new LocalFileTileProvider(tileDir, sourceFolder)
+        };
+
+        return new TileSource(tileProvider, schema);
     }
 
     private void UpdateMapCopyright()
@@ -327,6 +336,7 @@ public partial class MainWindow
                 $"initMap({styleUrl}, {_currentSettings.MyLongitude.ToString(ci)}, {_currentSettings.MyLatitude.ToString(ci)}, 8, {attribution}, {lang})");
             PushMyPositionToVectorMap();
             PushOverlaysToVectorMap();
+            PushTerrainToVectorMap();
             PushNodePinsToVectorMap();
             PushWaypointsToVectorMap();
             PushNeighborLinesToVectorMap();
@@ -413,6 +423,51 @@ public partial class MainWindow
                 cb.Unchecked += MapOverlayCheck_Changed;
                 panel.Children.Add(cb);
             }
+
+            // 3D terrain (raster-dem) — vector-map-only feature, so only in the map popup
+            if (panel == MapLayersPopupPanel)
+            {
+                panel.Children.Add(new Separator { Margin = new Thickness(0, 2, 0, 6) });
+                var t3dText = new TextBlock { FontSize = 12 };
+                t3dText.SetResourceReference(TextBlock.TextProperty, "StrTerrain3D");
+                var t3d = new CheckBox { Tag = Terrain3DKey, Margin = new Thickness(0, 0, 0, 4), Content = t3dText };
+                t3d.SetResourceReference(FrameworkElement.ToolTipProperty, "StrTerrain3DTooltip");
+                t3d.Checked += Terrain3DCheck_Changed;
+                t3d.Unchecked += Terrain3DCheck_Changed;
+                panel.Children.Add(t3d);
+            }
+        }
+    }
+
+    private const string Terrain3DKey = "__terrain3d";
+
+    private void Terrain3DCheck_Changed(object sender, RoutedEventArgs e)
+    {
+        if (_currentSettings is null || sender is not System.Windows.Controls.CheckBox box) return;
+        bool on = box.IsChecked == true;
+        if (on == _currentSettings.Terrain3D) return;
+        _currentSettings = _currentSettings with { Terrain3D = on };
+        Services.SettingsService.Save(_currentSettings);
+        Services.Logger.WriteLine($"[VectorMap] 3D terrain {(on ? "enabled" : "disabled")}");
+        PushTerrainToVectorMap();
+    }
+
+    /// <summary>Enables/disables the raster-dem terrain (3D + hillshade) on the map
+    /// page. The style deliberately carries no terrain block (would force 3D on old
+    /// clients) — the client attaches the source at runtime; tiles go through the
+    /// regular interceptor, so caching/offline semantics apply like any other tile.</summary>
+    private async void PushTerrainToVectorMap()
+    {
+        if (!_vectorMapReady) return;
+        try
+        {
+            var url = $"https://{Services.VectorTileCacheService.DefaultVectorHost}/terrain/{{z}}/{{x}}/{{y}}";
+            await VectorMapView.CoreWebView2.ExecuteScriptAsync(
+                $"setTerrainMode({(_currentSettings.Terrain3D ? "true" : "false")}, {JsonSerializer.Serialize(url)})");
+        }
+        catch (Exception ex)
+        {
+            Services.Logger.WriteLine($"[VectorMap] setTerrainMode error: {ex.Message}");
         }
     }
 
@@ -424,7 +479,9 @@ public partial class MainWindow
             if (panel == null) continue;
             foreach (var cb in panel.Children.OfType<System.Windows.Controls.CheckBox>())
                 if (cb.Tag is string key)
-                    cb.IsChecked = active.Contains(key);   // no-op change -> handler early-returns
+                    cb.IsChecked = key == Terrain3DKey
+                        ? _currentSettings?.Terrain3D == true
+                        : active.Contains(key);            // no-op change -> handler early-returns
         }
     }
 

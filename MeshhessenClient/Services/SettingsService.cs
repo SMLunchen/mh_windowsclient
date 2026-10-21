@@ -62,6 +62,7 @@ public record AppSettings
     public string VectorStyleTopoUrl { get; init; } = "https://vectortile.meshhessenclient.de/styles/opentopo.json";
     public string VectorStyleDarkUrl { get; init; } = "https://vectortile.meshhessenclient.de/styles/dark.json";
     public string MapOverlays { get; init; } = string.Empty;   // CSV of active vector overlay keys (MapOverlayRegistry)
+    public bool Terrain3D { get; init; } = false;              // 3D terrain + hillshading on the vector map (raster-dem)
 
     // ── Environment data on the map (opt-in) ──────────────────────────────────
     public bool ShowEnvironmentData { get; init; } = false;    // master switch (Settings); unlocks the map controls
@@ -242,6 +243,7 @@ public static class SettingsService
                 VectorStyleTopoUrl = values.TryGetValue("VectorStyleTopoUrl", out var vst) && !string.IsNullOrWhiteSpace(vst) ? vst : defaults.VectorStyleTopoUrl,
                 VectorStyleDarkUrl = values.TryGetValue("VectorStyleDarkUrl", out var vsd) && !string.IsNullOrWhiteSpace(vsd) ? vsd : defaults.VectorStyleDarkUrl,
                 MapOverlays = values.TryGetValue("MapOverlays", out var mov) ? mov : defaults.MapOverlays,
+                Terrain3D = values.TryGetValue("Terrain3D", out var t3d) && bool.TryParse(t3d, out var t3dBool) ? t3dBool : defaults.Terrain3D,
                 ShowEnvironmentData = values.TryGetValue("ShowEnvironmentData", out var sed) && bool.TryParse(sed, out var sedBool) && sedBool,
                 EnvBoxMode = values.TryGetValue("EnvBoxMode", out var ebm) && !string.IsNullOrEmpty(ebm) ? ebm : defaults.EnvBoxMode,
                 EnvShowHeatmap = values.TryGetValue("EnvShowHeatmap", out var esh) && bool.TryParse(esh, out var eshBool) && eshBool,
@@ -311,6 +313,7 @@ public static class SettingsService
                 $"VectorStyleTopoUrl={settings.VectorStyleTopoUrl}",
                 $"VectorStyleDarkUrl={settings.VectorStyleDarkUrl}",
                 $"MapOverlays={settings.MapOverlays}",
+                $"Terrain3D={settings.Terrain3D}",
                 $"ShowEnvironmentData={settings.ShowEnvironmentData}",
                 $"EnvBoxMode={settings.EnvBoxMode}",
                 $"EnvShowHeatmap={settings.EnvShowHeatmap}",

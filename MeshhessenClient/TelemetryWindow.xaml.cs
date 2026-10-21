@@ -45,8 +45,53 @@ public partial class TelemetryWindow : Window
         _db.Latitude  = lat;
         _db.Longitude = lon;
 
+        // Context menu on the neighbor grid: elevation profile of the clicked link.
+        // WPF DataGrids do NOT select on right-click (same bug class as the node list),
+        // so the clicked row is resolved by a visual-tree walk when the menu opens and
+        // pinned by id — SelectedItem may be null or stale at menu-click time.
+        var profileItem = new System.Windows.Controls.MenuItem();
+        profileItem.SetResourceReference(System.Windows.Controls.MenuItem.HeaderProperty, "StrLinkProfileMenu");
+        profileItem.Click += (_, _) =>
+        {
+            if (_contextNeighborId != 0)
+                LinkProfileRequested?.Invoke(this, _contextNeighborId);
+        };
+        NeighborGrid.ContextMenu = new System.Windows.Controls.ContextMenu { Items = { profileItem } };
+        NeighborGrid.ContextMenuOpening += (_, e) =>
+        {
+            _contextNeighborId = 0;
+            var dep = e.OriginalSource as System.Windows.DependencyObject;
+            while (dep != null && dep is not System.Windows.Controls.DataGridRow)
+                dep = dep is System.Windows.Media.Visual or System.Windows.Media.Media3D.Visual3D
+                    ? System.Windows.Media.VisualTreeHelper.GetParent(dep)
+                    : LogicalTreeHelper.GetParent(dep);
+            if (dep is System.Windows.Controls.DataGridRow { Item: NeighborRow row } gridRow
+                && row.NeighborId != 0)
+            {
+                _contextNeighborId = row.NeighborId;
+                gridRow.IsSelected = true;
+            }
+            else
+            {
+                e.Handled = true; // empty area or legacy row (no id) → no menu
+            }
+        };
+
         Loaded += (_, _) => Refresh();
+
+        // Win32 quirk: when the ACTIVE owned window is destroyed, Windows picks the
+        // next window to activate — with ownerless sibling windows around (dashboard,
+        // plot windows) this sometimes minimized the whole client to the taskbar.
+        // Activating the owner BEFORE destruction keeps it in front.
+        Closing += (_, _) => { try { Owner?.Activate(); } catch { } };
     }
+
+    // Neighbor pinned at context-menu open (right-click does not select in DataGrids)
+    private uint _contextNeighborId;
+
+    /// <summary>Raised from the neighbor grid's context menu: show the terrain/Fresnel
+    /// elevation profile of the link between this node and the given neighbor.</summary>
+    public event EventHandler<uint>? LinkProfileRequested;
 
     private void OnRangeChanged(object sender, RoutedEventArgs e)
     {
@@ -371,6 +416,7 @@ public partial class TelemetryWindow : Window
     // ── View model for DataGrid ────────────────────────────────────────────
     private class NeighborRow
     {
+        public uint   NeighborId     { get; }  // 0 = legacy row (no link profile)
         public string NeighborName   { get; }
         public string SnrInDisplay   { get; }  // selected node hears the partner at …
         public string SnrOutDisplay  { get; }  // partner hears the selected node at …
@@ -379,6 +425,7 @@ public partial class TelemetryWindow : Window
 
         public NeighborRow(TelemetryDatabaseService.RfNeighbor n, Func<string, string> loc)
         {
+            NeighborId    = n.NeighborId;
             NeighborName  = n.NeighborName;
             SnrInDisplay  = n.SnrIn.HasValue  ? $"{n.SnrIn:F1} dB"  : "–";
             SnrOutDisplay = n.SnrOut.HasValue ? $"{n.SnrOut:F1} dB" : "–";

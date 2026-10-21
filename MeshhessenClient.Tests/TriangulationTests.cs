@@ -172,6 +172,118 @@ public class TriangulationTests
         Assert.Equal(-95, TrimmedMedian(values)!.Value, precision: 6);
     }
 
+    // ── Robust estimation & degenerate fits ──────────────────────────────────
+
+    [Fact]
+    public void One_outlier_anchor_cannot_drag_the_estimate()
+    {
+        // Two consistent 2 km circles tangent at their midpoint (~50.0, 8.028) plus one
+        // wildly wrong anchor 26 km east whose circle claims 3 km. With quadratic cost
+        // the outlier dominated and pulled the estimate kilometers east — the Huber
+        // tails cap its influence, the consistent pair must win.
+        var consistent = new List<Anchor>
+        {
+            new(50.0, 8.000, 2.0),
+            new(50.0, 8.056, 2.0),
+        };
+        var withOutlier = new List<Anchor>(consistent) { new(50.0, 8.400, 3.0) };
+
+        var clean = Estimate(consistent);
+        var robust = Estimate(withOutlier);
+        double kx = 111.32 * Math.Cos(50 * Math.PI / 180);
+        double shiftKm = Math.Sqrt(
+            Math.Pow((robust.Lat - clean.Lat) * 110.574, 2) +
+            Math.Pow((robust.Lon - clean.Lon) * kx, 2));
+        Assert.True(shiftKm < 1.5, $"outlier shifted the estimate by {shiftKm:0.0} km");
+    }
+
+    [Fact]
+    public void Fit_running_into_parameter_bounds_is_flagged_as_clamped()
+    {
+        // Nearly distance-independent RSSI → raw slope n < 1.8 → clamped fit.
+        var flat = new List<(double DistKm, double Rssi)>();
+        for (int i = 0; i < 20; i++)
+            flat.Add((0.5 + i * 0.8, -95 + (i % 2)));  // 16 km spread, ~1 dB wiggle
+        var cal = FitCalibration(flat);
+        if (cal.IsFitted) Assert.True(cal.Clamped, "degenerate fit must be flagged");
+
+        // A clean n=2.5 synthetic stays unclamped.
+        var good = new List<(double, double)>();
+        for (int i = 0; i < 20; i++)
+        {
+            double d = 0.5 + i * 0.7;
+            good.Add((d, -90 - 25 * Math.Log10(d)));
+        }
+        var calGood = FitCalibration(good);
+        Assert.True(calGood.IsFitted);
+        Assert.False(calGood.Clamped);
+    }
+
+    // ── Terrain: Fresnel/knife-edge path analysis ────────────────────────────
+
+    [Fact]
+    public void Knife_edge_loss_is_zero_when_clear_and_grows_with_v()
+    {
+        Assert.Equal(0, KnifeEdgeLossDb(-1), precision: 6);
+        Assert.Equal(0, KnifeEdgeLossDb(-0.79), precision: 6);
+        Assert.Equal(6.0, KnifeEdgeLossDb(0), 0.1);     // grazing LOS ≈ 6 dB
+        Assert.True(KnifeEdgeLossDb(1) > KnifeEdgeLossDb(0));
+        Assert.True(KnifeEdgeLossDb(3) > KnifeEdgeLossDb(1));
+    }
+
+    [Fact]
+    public void Flat_terrain_has_no_excess_loss()
+    {
+        // The empirical model already contains the usual near-ground drag: a perfectly
+        // flat 10 km path must contribute ZERO excess loss, even though its absolute
+        // Fresnel zone is ground-obstructed at 2.5 m antenna height.
+        double? Flat(double lat, double lon) => 100;
+        double excess = PathExcessLossDb(Flat, 50.0, 8.0, 2.5, 50.0, 8.14, 2.5);
+        Assert.Equal(0, excess, precision: 6);
+        // sanity: the ABSOLUTE analysis does see the ground-dragged Fresnel zone
+        Assert.True(PathFresnelV(Flat, 50.0, 8.0, 2.5, 50.0, 8.14, 2.5) > -0.78);
+    }
+
+    [Fact]
+    public void Ridge_between_endpoints_yields_excess_loss()
+    {
+        // 200 m ridge mid-path between two 100 m endpoints → real terrain pokes far
+        // above the straight baseline → positive excess diffraction loss.
+        double? Ridge(double lat, double lon) =>
+            lon is > 8.06 and < 8.08 ? 300 : 100;
+        double excess = PathExcessLossDb(Ridge, 50.0, 8.0, 2.5, 50.0, 8.14, 2.5);
+        Assert.True(excess > 6, $"expected clearly positive excess loss, got {excess:0.0} dB");
+        Assert.Equal(0, PathExcessLossDb(Ridge, 50.0, 8.09, 2.5, 50.0, 8.14, 2.5), precision: 6);
+    }
+
+    [Fact]
+    public void No_elevation_data_means_no_penalty()
+    {
+        Assert.Equal(0, PathExcessLossDb((_, _) => null, 50.0, 8.0, 2.5, 50.0, 8.14, 2.5), precision: 6);
+    }
+
+    [Fact]
+    public void Terrain_breaks_the_mirror_ambiguity_toward_the_clear_side()
+    {
+        // Two anchors on a west–east line, target distance equal from both → classic
+        // mirror ambiguity north/south. A 400 m plateau north of the line blocks the
+        // northern candidate's paths — the estimate must land on the clear south side.
+        var anchors = new List<Anchor>
+        {
+            new(50.0, 8.00, 6.0),
+            new(50.0, 8.14, 6.0),
+        };
+        double? Plateau(double lat, double lon) => lat > 50.02 ? 400 : 100;
+        var terrain = new TerrainContext
+        {
+            ElevationAt = Plateau,
+            AnchorHeightM = new[] { 2.5, 2.5 },
+            TargetHeightM = 2.5,
+        };
+        var est = Estimate(anchors, terrain);
+        Assert.True(est.Lat < 50.0, $"estimate should be south of the anchor line, got {est.Lat:F4}");
+    }
+
     // ── Expert mode: link-budget adjustment ──────────────────────────────────
 
     [Fact]

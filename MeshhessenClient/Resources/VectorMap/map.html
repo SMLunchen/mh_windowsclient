@@ -159,8 +159,22 @@ function initMap(styleUrl, lon, lat, zoom, attribution, lang) {
     compact: false,
     customAttribution: attribution || ''
   }), 'bottom-right');
-  map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  map.addControl(new maplibregl.NavigationControl({ showCompass: true, visualizePitch: true }), 'top-right');
   map.addControl(new maplibregl.ScaleControl({ maxWidth: 120, unit: 'metric' }), 'bottom-left');
+
+  // North arrow: only show the compass once the map is rotated or tilted
+  // (clicking it re-norths the map, which hides it again)
+  function updateCompassVis() {
+    try {
+      const el = document.querySelector('.maplibregl-ctrl-compass');
+      if (!el) return;
+      const show = Math.abs(map.getBearing()) > 0.5 || map.getPitch() > 0.5;
+      el.style.display = show ? '' : 'none';
+    } catch (e) { }
+  }
+  map.on('rotate', updateCompassVis);
+  map.on('pitch', updateCompassVis);
+  map.on('load', updateCompassVis);
 
   map.on('load', function () { post('ready'); });
   map.on('error', function (e) {
@@ -173,6 +187,7 @@ function initMap(styleUrl, lon, lat, zoom, attribution, lang) {
   map.on('styledata', function () {
     applyOverlays();
     restoreLineLayers();
+    applyTerrain();
     if (envSurf && !map.getLayer(ENV_IMG_LYR)) updateEnvSurface();
   });
 
@@ -635,6 +650,46 @@ function onEmergencyClick(e) {
 
 function setStyle(styleUrl) {
   if (map) map.setStyle(styleUrl);
+}
+
+// ── 3D terrain (raster-dem) ──────────────────────────────────────────────
+// The style deliberately ships WITHOUT a terrain block (old clients would be
+// forced into 3D); the host app enables it at runtime. Outside DEM coverage
+// (>52°N) the server answers 204 → MapLibre renders flat, no error spam.
+let terrainCfg = null; // { url, ex } while enabled
+
+function setTerrainMode(on, tileUrl, exaggeration) {
+  terrainCfg = on ? { url: tileUrl, ex: (typeof exaggeration === 'number' ? exaggeration : 1.3) } : null;
+  applyTerrain();
+}
+
+function applyTerrain() {
+  if (!map) return;
+  try {
+    if (terrainCfg) {
+      if (!map.getSource('terrain-dem'))
+        map.addSource('terrain-dem', {
+          type: 'raster-dem', tiles: [terrainCfg.url], tileSize: 256,
+          encoding: 'mapbox', minzoom: 5, maxzoom: 10
+        });
+      map.setTerrain({ source: 'terrain-dem', exaggeration: terrainCfg.ex });
+      if (!map.getLayer('terrain-hillshade'))
+        map.addLayer({ id: 'terrain-hillshade', type: 'hillshade', source: 'terrain-dem',
+          paint: { 'hillshade-exaggeration': 0.35 } }, firstSymbolLayerId());
+    } else {
+      try { map.setTerrain(null); } catch (e) { }
+      if (map.getLayer('terrain-hillshade')) map.removeLayer('terrain-hillshade');
+    }
+  } catch (e) { }
+}
+
+function firstSymbolLayerId() {
+  try {
+    const layers = (map.getStyle() || {}).layers || [];
+    for (let i = 0; i < layers.length; i++)
+      if (layers[i].type === 'symbol') return layers[i].id;
+  } catch (e) { }
+  return undefined;
 }
 
 function setCenter(lon, lat, zoom) {

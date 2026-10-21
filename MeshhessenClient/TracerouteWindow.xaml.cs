@@ -298,6 +298,23 @@ public partial class TracerouteWindow : Window
             grid.Children.Add(badgeStack);
 
             rowBorder.Child = grid;
+
+            // Context menu: terrain/Fresnel elevation profile of the segment INTO this
+            // hop — needs positions at both ends (previous hop → this hop).
+            if (i > 0 && hop.HasPosition && hops[i - 1].HasPosition)
+            {
+                var prev = hops[i - 1];
+                var profileItem = new MenuItem();
+                profileItem.SetResourceReference(MenuItem.HeaderProperty, "StrLinkProfileMenu");
+                profileItem.Click += (_, _) =>
+                    new LinkProfileWindow(
+                        prev.IsSource ? Loc("StrMe") : prev.NodeName,
+                        prev.Latitude!.Value, prev.Longitude!.Value,
+                        hop.NodeName, hop.Latitude!.Value, hop.Longitude!.Value)
+                    { Owner = this }.Show();
+                rowBorder.ContextMenu = new ContextMenu { Items = { profileItem } };
+            }
+
             HopsPanel.Children.Add(rowBorder);
 
             // Connector arrow between hops (not after last)
