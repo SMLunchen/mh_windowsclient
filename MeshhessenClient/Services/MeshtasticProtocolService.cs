@@ -198,6 +198,7 @@ public class MeshtasticProtocolService
         public int Rssi;
         public float Snr;
         public bool Direct;   // SNR/RSSI usable as the node's own link quality
+        public int PrecisionBits;
         public DateTime AddedAt;
     }
     private readonly Dictionary<uint, PendingPosition> _pendingPositions = new(); // guarded by _dataLock
@@ -2095,14 +2096,15 @@ public class MeshtasticProtocolService
             // RF-link evidence: adjacent nodes in a traceroute path heard each other by
             // definition. SNR values are proto-scaled by 4; links are only recorded when a
             // real SNR was measured — an MQTT bridge segment inside the path carries no RF
-            // SNR, so this also keeps MQTT legs out of the RF-link table.
+            // SNR (sentinel −128, or raw 0 = rx_snr of a non-RF reception), so this also
+            // keeps MQTT legs out of the RF-link table.
             try
             {
                 void RecordPath(List<uint> path, List<int> snrs)
                 {
                     for (int i = 0; i + 1 < path.Count; i++)
                     {
-                        if (i >= snrs.Count || snrs[i] <= -128) continue; // unknown SNR → skip
+                        if (i >= snrs.Count || Models.TracerouteResult.IsNonRfSnr(snrs[i])) continue;
                         _db?.UpsertRfLink(observer: path[i + 1], neighbor: path[i],
                             snr: snrs[i] / 4f, source: "traceroute", timestamp: DateTime.UtcNow);
                     }
@@ -2397,6 +2399,8 @@ public class MeshtasticProtocolService
                     nodeInfo.Latitude = protoNodeInfo.Position.LatitudeI / 1e7;
                     nodeInfo.Longitude = protoNodeInfo.Position.LongitudeI / 1e7;
                     nodeInfo.Altitude = protoNodeInfo.Position.Altitude;
+                    if (protoNodeInfo.Position.PrecisionBits > 0)
+                        nodeInfo.PositionPrecisionBits = (int)protoNodeInfo.Position.PrecisionBits;
                     Logger.WriteLine($"  Node {nodeInfo.Id}: GPS lat={nodeInfo.Latitude:F6}, lon={nodeInfo.Longitude:F6}, alt={nodeInfo.Altitude}m");
                 }
                 else
@@ -2557,6 +2561,7 @@ public class MeshtasticProtocolService
         node.Altitude    = p.Altitude;
         node.GroundSpeed = p.GroundSpeed;
         node.GroundTrack = p.GroundTrack;
+        if (p.PrecisionBits > 0) node.PositionPrecisionBits = p.PrecisionBits;
         if (p.Rssi != 0) node.Rssi = p.Rssi.ToString();
         if (p.Snr != 0f)
         {
@@ -2594,6 +2599,8 @@ public class MeshtasticProtocolService
                         nodeInfo.Altitude    = position.Altitude;
                         nodeInfo.GroundSpeed = groundSpeed;
                         nodeInfo.GroundTrack = groundTrack;
+                        if (position.PrecisionBits > 0)
+                            nodeInfo.PositionPrecisionBits = (int)position.PrecisionBits;
                         Logger.WriteLine($"  Position updated: lat={nodeInfo.Latitude:F6}, lon={nodeInfo.Longitude:F6}");
                     }
                     else
@@ -2628,10 +2635,11 @@ public class MeshtasticProtocolService
                             Altitude    = position.Altitude,
                             GroundSpeed = groundSpeed,
                             GroundTrack = groundTrack,
-                            Rssi        = packet.RxRssi,
-                            Snr         = packet.RxSnr,
-                            Direct      = IsDirectRx(packet),
-                            AddedAt     = DateTime.Now
+                            Rssi          = packet.RxRssi,
+                            Snr           = packet.RxSnr,
+                            Direct        = IsDirectRx(packet),
+                            PrecisionBits = (int)position.PrecisionBits,
+                            AddedAt       = DateTime.Now
                         };
                         bufferedUnknownPos = true;
                         Logger.WriteLine($"  Node !{packet.From:x8} unknown — position buffered until NodeInfo arrives ({_pendingPositions.Count} pending)");

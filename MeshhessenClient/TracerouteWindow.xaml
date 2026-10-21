@@ -39,7 +39,8 @@
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                     <TextBlock x:Name="HopCountText" FontSize="11" Margin="0,0,8,0" Opacity="0.7"/>
                     <Border x:Name="MqttIndicator" Background="#FF8000" CornerRadius="3"
-                            Padding="5,1" Visibility="Collapsed">
+                            Padding="5,1" Visibility="Collapsed"
+                            ToolTip="{DynamicResource StrTrViaMqttTip}">
                         <TextBlock Text="via MQTT" FontSize="10" Foreground="White" FontWeight="Bold"/>
                     </Border>
                 </StackPanel>

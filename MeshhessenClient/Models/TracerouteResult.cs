@@ -20,4 +20,13 @@ public class TracerouteResult
     public List<uint> RouteBack { get; set; } = new();
     // SNR values for each return hop
     public List<int> SnrBack { get; set; } = new();
+
+    /// <summary>True when a raw q4-scaled traceroute SNR means "no RF measurement":
+    /// −128 is the firmware's explicit unknown-sentinel (inserted for hops that never
+    /// recorded themselves), and 0 is what a relay appends when the packet reached it
+    /// WITHOUT radio — rx_snr of an MQTT-downlinked or API-injected packet is 0, and
+    /// the firmware passes it unfiltered (TraceRouteModule: appendMyIDandSNR(r, p.rx_snr)).
+    /// A genuine 0.0 dB reading (|SNR| &lt; 0.125 dB before q4 rounding) is sacrificed —
+    /// far rarer and far cheaper than treating an MQTT bridge as a real RF link.</summary>
+    public static bool IsNonRfSnr(int snrScaled) => snrScaled <= -128 || snrScaled == 0;
 }

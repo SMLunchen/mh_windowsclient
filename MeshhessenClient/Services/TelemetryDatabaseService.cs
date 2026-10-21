@@ -117,6 +117,15 @@ CREATE TABLE IF NOT EXISTS rf_links (
 );
 CREATE INDEX IF NOT EXISTS idx_rflinks_neighbor ON rf_links(neighbor);
 
+CREATE TABLE IF NOT EXISTS rf_link_obs (
+    observer  INTEGER NOT NULL,   -- node that HEARD the transmission
+    neighbor  INTEGER NOT NULL,   -- node that was heard
+    snr       REAL    NOT NULL,   -- one SNR measurement (dB)
+    source    TEXT    NOT NULL,   -- 'traceroute' | 'neighborinfo' ('rx' history lives in packet_rx)
+    timestamp INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_rflinkobs_pair ON rf_link_obs(observer, neighbor, timestamp);
+
 CREATE TABLE IF NOT EXISTS node_positions (
     id           INTEGER PRIMARY KEY AUTOINCREMENT,
     node_id      INTEGER NOT NULL,
@@ -146,6 +155,18 @@ CREATE TABLE IF NOT EXISTS waypoints (
 
         // Extend environment_telemetry with the full sensor set (migration for existing DBs).
         EnsureEnvironmentColumns(con);
+
+        // Cleanup (idempotent): SNR 0 in traceroute evidence means "no RF measurement"
+        // (rx_snr of an MQTT-downlinked packet is 0; the firmware appends it unfiltered).
+        // Earlier versions recorded such bridge segments as real 0 dB links — delete them;
+        // the pair may never have heard each other over RF at all. For other sources the
+        // LINK is real (own 0-hop reception / NeighborInfo), only the value is bogus → NULL.
+        using var fix = con.CreateCommand();
+        fix.CommandText = @"
+DELETE FROM rf_links WHERE source = 'traceroute' AND snr = 0;
+UPDATE rf_links SET snr = NULL WHERE snr = 0;
+DELETE FROM rf_link_obs WHERE snr = 0;";
+        fix.ExecuteNonQuery();
     }
 
     /// <summary>Adds any environment metric column from <see cref="EnvironmentMetricInfo"/>
@@ -479,6 +500,9 @@ FROM local_stats WHERE node_id=$n ORDER BY timestamp DESC LIMIT 1";
     public void UpsertRfLink(uint observer, uint neighbor, float? snr, string source, DateTime timestamp)
     {
         if (observer == 0 || neighbor == 0 || observer == neighbor) return;
+        // SNR exactly 0 = "no measurement" in Meshtastic evidence (proto3 default /
+        // rx_snr of a non-RF reception) — keep the link row, drop the bogus value.
+        if (snr == 0f) snr = null;
         lock (_lock)
         {
             using var con = Open();
@@ -506,6 +530,22 @@ DO UPDATE SET snr = COALESCE($snr, snr), last_seen = $ts";
             cmd.Parameters.AddWithValue("$src", source);
             cmd.Parameters.AddWithValue("$ts",  ToUnix(timestamp));
             cmd.ExecuteNonQuery();
+
+            // Measurement HISTORY (one row per observation) for robust medians — only
+            // for sources without their own history table ('rx' is already in packet_rx).
+            if (snr.HasValue && source != "rx")
+            {
+                using var obs = con.CreateCommand();
+                obs.CommandText = @"
+INSERT INTO rf_link_obs (observer, neighbor, snr, source, timestamp)
+VALUES ($o, $n, $snr, $src, $ts)";
+                obs.Parameters.AddWithValue("$o",   (long)observer);
+                obs.Parameters.AddWithValue("$n",   (long)neighbor);
+                obs.Parameters.AddWithValue("$snr", snr.Value);
+                obs.Parameters.AddWithValue("$src", source);
+                obs.Parameters.AddWithValue("$ts",  ToUnix(timestamp));
+                obs.ExecuteNonQuery();
+            }
         }
     }
 
@@ -517,6 +557,87 @@ DO UPDATE SET snr = COALESCE($snr, snr), last_seen = $ts";
         public float?    SnrOut       { get; set; }  // partner heard the selected node at …
         public List<string> Sources   { get; set; } = new();
         public DateTime  LastSeen     { get; set; }
+    }
+
+    /// <summary>Earliest packet ever recorded from this node (local time), or null.
+    /// Persistent "first seen" across client restarts — the in-memory node list only
+    /// knows the current session.</summary>
+    public DateTime? GetFirstSeen(uint nodeId)
+    {
+        using var con = Open();
+        using var cmd = con.CreateCommand();
+        cmd.CommandText = "SELECT MIN(timestamp) FROM packet_rx WHERE node_id=$n";
+        cmd.Parameters.AddWithValue("$n", (long)nodeId);
+        var v = cmd.ExecuteScalar();
+        return v is long unix and > 0 ? FromUnix(unix) : null;
+    }
+
+    /// <summary>Raw RF-link rows with a known SNR, recent first (for path-loss
+    /// self-calibration against links whose both ends have GPS positions).</summary>
+    public List<(uint Observer, uint Neighbor, float Snr)> GetRfLinkSnrRows(int days)
+    {
+        long since = Since(days);
+        var result = new List<(uint, uint, float)>();
+        using var con = Open();
+        using var cmd = con.CreateCommand();
+        cmd.CommandText = "SELECT observer, neighbor, snr FROM rf_links WHERE snr IS NOT NULL AND last_seen >= $s";
+        cmd.Parameters.AddWithValue("$s", since);
+        using var r = cmd.ExecuteReader();
+        while (r.Read())
+            result.Add(((uint)r.GetInt64(0), (uint)r.GetInt64(1), (float)r.GetDouble(2)));
+        return result;
+    }
+
+    /// <summary>All individual SNR measurements for the direction "<paramref name="observer"/>
+    /// heard <paramref name="neighbor"/>" within the window: traceroute/NeighborInfo
+    /// observations from rf_link_obs, plus — when WE are the observer — every direct
+    /// (0-hop) reception from packet_rx. Feed into a trimmed median for a robust value.</summary>
+    public List<double> GetRfLinkSnrSamples(uint observer, uint neighbor, uint myNodeId, int days)
+    {
+        long since = Since(days);
+        var samples = new List<double>();
+        using var con = Open();
+        using (var cmd = con.CreateCommand())
+        {
+            cmd.CommandText = "SELECT snr FROM rf_link_obs WHERE observer=$o AND neighbor=$n AND timestamp>=$s";
+            cmd.Parameters.AddWithValue("$o", (long)observer);
+            cmd.Parameters.AddWithValue("$n", (long)neighbor);
+            cmd.Parameters.AddWithValue("$s", since);
+            using var r = cmd.ExecuteReader();
+            while (r.Read()) samples.Add(r.GetDouble(0));
+        }
+        if (observer == myNodeId && myNodeId != 0)
+        {
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = @"
+SELECT rx_snr FROM packet_rx
+WHERE node_id=$n AND timestamp>=$s AND rx_snr IS NOT NULL
+  AND (hop_count = 0 OR hop_count IS NULL)";
+            cmd.Parameters.AddWithValue("$n", (long)neighbor);
+            cmd.Parameters.AddWithValue("$s", since);
+            using var r = cmd.ExecuteReader();
+            while (r.Read()) samples.Add(r.GetDouble(0));
+        }
+        return samples;
+    }
+
+    /// <summary>All direct-reception (0-hop) RSSI measurements of a node within the
+    /// window — the raw series behind a robust median for triangulation.</summary>
+    public List<double> GetDirectRssiSamples(uint nodeId, int days)
+    {
+        long since = Since(days);
+        var samples = new List<double>();
+        using var con = Open();
+        using var cmd = con.CreateCommand();
+        cmd.CommandText = @"
+SELECT rx_rssi FROM packet_rx
+WHERE node_id=$n AND timestamp>=$s AND rx_rssi IS NOT NULL AND rx_rssi != 0
+  AND (hop_count = 0 OR hop_count IS NULL)";
+        cmd.Parameters.AddWithValue("$n", (long)nodeId);
+        cmd.Parameters.AddWithValue("$s", since);
+        using var r = cmd.ExecuteReader();
+        while (r.Read()) samples.Add(r.GetInt64(0));
+        return samples;
     }
 
     /// <summary>When RF-link collection started (first ever rf_links insert), or null.</summary>
@@ -542,7 +663,8 @@ DO UPDATE SET snr = COALESCE($snr, snr), last_seen = $ts";
         cmd.CommandText = @"
 SELECT observer, neighbor, snr, source, last_seen
 FROM rf_links
-WHERE (observer = $n OR neighbor = $n) AND last_seen >= $s";
+WHERE (observer = $n OR neighbor = $n) AND last_seen >= $s
+ORDER BY last_seen ASC"; // newest row read last → deterministically wins the SNR columns
         cmd.Parameters.AddWithValue("$n", (long)nodeId);
         cmd.Parameters.AddWithValue("$s", since);
 

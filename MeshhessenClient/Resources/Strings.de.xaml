@@ -717,6 +717,7 @@
     <sys:String x:Key="StrNiPki">PKI-Schlüssel</sys:String>
     <sys:String x:Key="StrNiBattery">Akku</sys:String>
     <sys:String x:Key="StrNiSignal">Signal</sys:String>
+    <sys:String x:Key="StrNiFirstSeen">Zuerst gesehen</sys:String>
     <sys:String x:Key="StrNiLastSeen">Zuletzt gesehen</sys:String>
     <sys:String x:Key="StrNiCoordinates">Koordinaten</sys:String>
     <sys:String x:Key="StrNiAltitude">Höhe</sys:String>
@@ -837,6 +838,9 @@
     <sys:String x:Key="StrTrHop">Hop</sys:String>
     <sys:String x:Key="StrTrSnr">SNR</sys:String>
     <sys:String x:Key="StrTrNoData">Keine Daten</sys:String>
+    <sys:String x:Key="StrTrLegendRemoveTip">Traceroute von Karte entfernen</sys:String>
+    <sys:String x:Key="StrTrViaMqttTip">Die Antwort hat diesen Client über MQTT erreicht. Das sagt nichts über den Hinweg aus — Hops mit Funk-SNR waren echte Funkstrecken.</sys:String>
+    <sys:String x:Key="StrTrMqttBridgeTip">Für diese Teilstrecke liegt keine Funk-Messung vor — sie lief über eine MQTT-Brücke (oder wurde ohne Funkempfang eingespeist).</sys:String>
     <sys:String x:Key="StrTrUnknownNode">Unbekannter Node</sys:String>
 
     <!-- Waypoint Dialog -->
@@ -966,6 +970,24 @@
     <sys:String x:Key="StrEnvSnr">SNR (Empfang)</sys:String>
     <sys:String x:Key="StrEnvRssi">RSSI (Empfang)</sys:String>
     <sys:String x:Key="StrEnvNoiseFloor">Noise Floor</sys:String>
+    <sys:String x:Key="StrTriButton">📍 Standort triangulieren</sys:String>
+    <sys:String x:Key="StrTriButtonTip">Schätzt die Position dieses Nodes aus seinen HF-Nachbarn und deren Signalstärke (Triangulationskreise auf der Karte). Grobe Schätzung — Gelände dominiert LoRa-Links.</sys:String>
+    <sys:String x:Key="StrTriTitle">Standort-Triangulation</sys:String>
+    <sys:String x:Key="StrTriTooFewMsg">Zu wenige Anker: Es werden mindestens 2 HF-Nachbarn mit bekannter Position und Signalwert benötigt. Traceroutes und NeighborInfo-Pakete füllen die Link-Datenbank mit der Zeit.</sys:String>
+    <sys:String x:Key="StrTriLegend">Triangulation</sys:String>
+    <sys:String x:Key="StrTriAltLabel">Alternative</sys:String>
+    <sys:String x:Key="StrTriReportedPos">gemeldete Position</sys:String>
+    <sys:String x:Key="StrTriExpertButton">📍 Triangulation (Experte)</sys:String>
+    <sys:String x:Key="StrTriExpertButtonTip">Wie Triangulation, aber mit bekannter Sendeleistung und Antennengewinn des Ziel-Nodes und aller Nachbarn — verbessert die Distanzschätzung.</sys:String>
+    <sys:String x:Key="StrTriExpertTitle">Triangulation — Link-Budget</sys:String>
+    <sys:String x:Key="StrTriExpertIntro">Link-Budget pro Node: Die analysierten Funkstrecken laufen zwischen dem Ziel-Node und seinen Nachbarn — Sendeleistung und Antennengewinn beider Enden fließen als Abweichung von der Modell-Referenz (22 dBm + 1 dBi) richtungsabhängig in die Distanzschätzung ein.</sys:String>
+    <sys:String x:Key="StrTriExpertTarget">Ziel-Node</sys:String>
+    <sys:String x:Key="StrTriExpertAnchors">Nachbarn (Anker)</sys:String>
+    <sys:String x:Key="StrTriExpertWatts">= {0} W</sys:String>
+    <sys:String x:Key="StrTriExpertHint">Voreinstellung anhand des Hardware-Modells — bitte an die tatsächliche Konfiguration anpassen (z. B. RAK WisMesh 1 W: Standard 27 dBm = 0,5 W, überschreibbar auf 30 dBm = 1 W). Antennengewinn unbekannt? 1 dBi stehen lassen.</sys:String>
+    <sys:String x:Key="StrTriModelMsg">Welches Distanzmodell soll verwendet werden?&#x0a;&#x0a;JA — Selbstkalibriert aus {0} Links eures Meshs:&#x0a;        RSSI@1 km = {1} dBm, Exponent n = {2}&#x0a;        Fit-Qualität: R² = {3}, Streuung σ = {4} dB&#x0a;&#x0a;NEIN — Standardmodell:&#x0a;        RSSI@1 km = −90,0 dBm, Exponent n = 2,50&#x0a;&#x0a;{5}</sys:String>
+    <sys:String x:Key="StrTriModelRecFitted">Empfehlung: Selbstkalibriert (brauchbare Distanz-Korrelation).</sys:String>
+    <sys:String x:Key="StrTriModelRecDefault">Empfehlung: Standardmodell — der Fit hat kaum Distanz-Korrelation (R² &lt; 0,2) und würde unzuverlässige Distanzen liefern.</sys:String>
     <sys:String x:Key="StrTrHfOnly">Nur HF</sys:String>
     <sys:String x:Key="StrTrHfOnlyTip">Sendet die Anfrage mit gelöschtem OK-to-MQTT-Bit (vorverschlüsseltes Paket): MQTT-Gateways leiten sie nicht ins Internet weiter — die Route läuft ausschließlich über Funk. Antwort-Pfad kann weiterhin MQTT nutzen, wenn der Ziel-Node OK-to-MQTT gesetzt hat.</sys:String>
     <sys:String x:Key="StrTtNeighborLegacy">Noch wenig direkte Link-Daten für diesen Node — zeigt vorerst alle gehörten Nodes (alte Methode, inkl. Multi-Hop). Die Ansicht wechselt automatisch auf echte HF-Nachbarn: sofort ab 3 belegten Links, bei 1–2 Links sobald die Link-Sammlung eine Woche läuft (Traceroutes, NeighborInfo und Direktempfang füllen sie).</sys:String>

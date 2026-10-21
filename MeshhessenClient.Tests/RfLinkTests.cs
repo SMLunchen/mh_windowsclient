@@ -1,3 +1,4 @@
+using MeshhessenClient.Models;
 using MeshhessenClient.Services;
 
 namespace MeshhessenClient.Tests;
@@ -83,6 +84,77 @@ public class RfLinkTests : IDisposable
         Assert.NotNull(start);
         // FromUnix returns local time — compare in UTC
         Assert.True(Math.Abs((start!.Value.ToUniversalTime() - first).TotalSeconds) < 2);
+    }
+
+    [Fact]
+    public void Newest_source_wins_the_snr_snapshot()
+    {
+        // Two evidence sources for the same direction: the value of the NEWEST row must
+        // win deterministically (used to depend on arbitrary table order).
+        _db.UpsertRfLink(1, 2, 9.0f, "neighborinfo", DateTime.UtcNow.AddHours(-2));
+        _db.UpsertRfLink(1, 2, 3.0f, "traceroute", DateTime.UtcNow);
+
+        var partner = Assert.Single(_db.GetRfNeighbors(1, 0, Names));
+        Assert.Equal(3.0f, partner.SnrIn);
+    }
+
+    [Fact]
+    public void Snr_history_accumulates_per_observation()
+    {
+        // traceroute/neighborinfo upserts overwrite the snapshot but append to history
+        _db.UpsertRfLink(1, 2, 4.0f, "traceroute", DateTime.UtcNow.AddHours(-3));
+        _db.UpsertRfLink(1, 2, 6.0f, "traceroute", DateTime.UtcNow.AddHours(-2));
+        _db.UpsertRfLink(1, 2, 8.0f, "neighborinfo", DateTime.UtcNow);
+        _db.UpsertRfLink(2, 1, -1.0f, "traceroute", DateTime.UtcNow); // other direction
+        _db.UpsertRfLink(1, 2, null, "traceroute", DateTime.UtcNow);  // no SNR → no history row
+
+        var samples = _db.GetRfLinkSnrSamples(1, 2, myNodeId: 99, days: 0);
+        Assert.Equal(3, samples.Count);
+        Assert.Equal(6.0, TriangulationService.TrimmedMedian(samples)!.Value, precision: 6);
+        Assert.Single(_db.GetRfLinkSnrSamples(2, 1, myNodeId: 99, days: 0));
+    }
+
+    [Fact]
+    public void Own_receptions_feed_the_sample_series_only_direct_ones()
+    {
+        const uint me = 42, remote = 7;
+        _db.InsertPacketRx(remote, 100, DateTime.UtcNow.AddMinutes(-30), 5.0f, -90, 0, false);
+        _db.InsertPacketRx(remote, 101, DateTime.UtcNow.AddMinutes(-20), 7.0f, -80, null, false); // old firmware = direct
+        _db.InsertPacketRx(remote, 102, DateTime.UtcNow.AddMinutes(-10), 1.0f, -120, 2, false);   // relayed → excluded
+
+        // "me heard remote": packet_rx counts only when the observer IS our node
+        Assert.Equal(2, _db.GetRfLinkSnrSamples(me, remote, myNodeId: me, days: 0).Count);
+        Assert.Empty(_db.GetRfLinkSnrSamples(remote, me, myNodeId: me, days: 0));
+
+        var rssi = _db.GetDirectRssiSamples(remote, 0);
+        Assert.Equal(2, rssi.Count);
+        Assert.DoesNotContain(-120.0, rssi);
+    }
+
+    [Fact]
+    public void Snr_zero_means_no_measurement()
+    {
+        // Raw 0 in traceroute/NeighborInfo evidence = rx_snr of a non-RF reception
+        // (MQTT downlink / API): the link row is kept, the bogus value is not.
+        _db.UpsertRfLink(1, 2, 0f, "neighborinfo", DateTime.UtcNow);
+        var partner = Assert.Single(_db.GetRfNeighbors(1, 0, Names));
+        Assert.Null(partner.SnrIn);
+        Assert.Empty(_db.GetRfLinkSnrSamples(1, 2, myNodeId: 99, days: 0));
+
+        // A later real measurement fills the value; a 0 afterwards must not wipe it
+        _db.UpsertRfLink(1, 2, 4.5f, "neighborinfo", DateTime.UtcNow);
+        _db.UpsertRfLink(1, 2, 0f, "neighborinfo", DateTime.UtcNow);
+        Assert.Equal(4.5f, Assert.Single(_db.GetRfNeighbors(1, 0, Names)).SnrIn);
+    }
+
+    [Fact]
+    public void Non_rf_snr_detection_covers_sentinel_and_zero()
+    {
+        Assert.True(TracerouteResult.IsNonRfSnr(-128)); // firmware unknown-sentinel
+        Assert.True(TracerouteResult.IsNonRfSnr(0));    // rx_snr of a non-RF reception
+        Assert.False(TracerouteResult.IsNonRfSnr(1));   // 0.25 dB — smallest real reading
+        Assert.False(TracerouteResult.IsNonRfSnr(-127)); // clamped real reading
+        Assert.False(TracerouteResult.IsNonRfSnr(-26)); // −6.5 dB
     }
 
     [Fact]

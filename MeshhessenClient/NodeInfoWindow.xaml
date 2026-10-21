@@ -122,6 +122,7 @@
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
                 <TextBlock Grid.Row="0" Text="{DynamicResource StrNiBattery}" Style="{StaticResource NiLabel}"/>
@@ -130,8 +131,11 @@
                 <TextBlock Grid.Row="1" Text="{DynamicResource StrNiSignal}" Style="{StaticResource NiLabel}"/>
                 <TextBlock Grid.Row="1" Grid.Column="1" x:Name="SignalText" Style="{StaticResource NiValue}"/>
 
-                <TextBlock Grid.Row="2" Text="{DynamicResource StrNiLastSeen}" Style="{StaticResource NiLabel}"/>
-                <TextBlock Grid.Row="2" Grid.Column="1" x:Name="LastSeenText" Style="{StaticResource NiValue}"/>
+                <TextBlock Grid.Row="2" Text="{DynamicResource StrNiFirstSeen}" Style="{StaticResource NiLabel}"/>
+                <TextBlock Grid.Row="2" Grid.Column="1" x:Name="FirstSeenText" Style="{StaticResource NiValue}"/>
+
+                <TextBlock Grid.Row="3" Text="{DynamicResource StrNiLastSeen}" Style="{StaticResource NiLabel}"/>
+                <TextBlock Grid.Row="3" Grid.Column="1" x:Name="LastSeenText" Style="{StaticResource NiValue}"/>
             </Grid>
         </Border>
 

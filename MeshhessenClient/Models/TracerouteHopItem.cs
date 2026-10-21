@@ -9,9 +9,12 @@ public class TracerouteHopItem
     public string NodeId { get; set; } = string.Empty;
     public string NodeName { get; set; } = string.Empty;
     public string Distance { get; set; } = "?";
-    public string SnrDisplay { get; set; } = "-";   // e.g. "12.5 dB" or "MQTT"
+    public string SnrDisplay { get; set; } = "-";   // e.g. "12.5 dB", or "—" for a bridged segment
     public string RssiDisplay { get; set; } = "-";
-    public bool IsViaMqtt { get; set; } = false;
+    // True only when the link INTO this hop has no RF SNR (sentinel −128): the segment
+    // was bridged (MQTT). NOT the result packet's via_mqtt flag — that one only says how
+    // the REPLY reached us and belongs to the window header, not to individual hops.
+    public bool IsMqttBridge { get; set; } = false;
     public bool HasPosition { get; set; } = false;
     public double? Latitude { get; set; }
     public double? Longitude { get; set; }
@@ -35,7 +38,7 @@ public class TracerouteHopItem
     {
         get
         {
-            if (IsViaMqtt) return "MQTT";
+            if (IsMqttBridge) return "MQTT";
             if (!HasPosition) return "?";
             return string.Empty;
         }

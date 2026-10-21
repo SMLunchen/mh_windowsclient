@@ -254,6 +254,38 @@ public partial class TelemetryWindow : Window
         }
     }
 
+    /// <summary>Raised when the (hidden) triangulate button is clicked — the main window
+    /// estimates the node's position from its RF neighbors and plots it on the map.</summary>
+    public event EventHandler<Models.NodeInfo>? TriangulateRequested;
+
+    /// <summary>Expert variant: the main window first asks for the target's TX power and
+    /// antenna gain, which adjust the link budget in the distance model.</summary>
+    public event EventHandler<Models.NodeInfo>? TriangulateExpertRequested;
+
+    private int _footerClicks;
+    private DateTime _footerClickAt;
+
+    // Easter egg: triple-click the "analysis of last X days" footer to reveal the
+    // triangulation button (position estimation from RF neighbors + signal strength).
+    private void FooterInfoText_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        var now = DateTime.UtcNow;
+        if ((now - _footerClickAt).TotalSeconds > 1.5) _footerClicks = 0;
+        _footerClickAt = now;
+        if (++_footerClicks >= 3)
+        {
+            _footerClicks = 0;
+            TriangulateButton.Visibility = Visibility.Visible;
+            TriangulateExpertButton.Visibility = Visibility.Visible;
+        }
+    }
+
+    private void TriangulateButton_Click(object sender, RoutedEventArgs e) =>
+        TriangulateRequested?.Invoke(this, _node);
+
+    private void TriangulateExpertButton_Click(object sender, RoutedEventArgs e) =>
+        TriangulateExpertRequested?.Invoke(this, _node);
+
     private void OpenPlotWindow_Click(object sender, RoutedEventArgs e)
     {
         var win = new PlotWindow(_db, _nodeNames, preselectedNodeId: _node.NodeId) { Owner = this };

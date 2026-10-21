@@ -448,7 +448,7 @@ function clearLines() {
 function removeLineLayers(key) {
   if (!map) return;
   const src = 'ln-' + key;
-  ['-outline', '-line', '-dash', '-circle', '-arrow', '-label'].forEach(function (sfx) {
+  ['-fill', '-outline', '-line', '-dash', '-circle', '-arrow', '-label'].forEach(function (sfx) {
     try { if (map.getLayer(src + sfx)) map.removeLayer(src + sfx); } catch (e) { }
   });
   try { if (map.getSource(src)) map.removeSource(src); } catch (e) { }
@@ -477,6 +477,15 @@ function addLineLayers(key, fc) {
   const src = 'ln-' + key;
   try {
     map.addSource(src, { type: 'geojson', data: fc });
+    // Filled polygons (e.g. triangulation uncertainty region) — below all line layers
+    map.addLayer({
+      id: src + '-fill', type: 'fill', source: src,
+      filter: ['all', ['==', ['geometry-type'], 'Polygon'], ['has', 'fill']],
+      paint: {
+        'fill-color': ['coalesce', ['get', 'fill'], '#000'],
+        'fill-opacity': ['coalesce', ['get', 'fillOpacity'], 0.1]
+      }
+    });
     map.addLayer({
       id: src + '-outline', type: 'line', source: src,
       filter: ['==', ['get', 'outline'], 1],

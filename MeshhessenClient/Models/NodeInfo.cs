@@ -20,6 +20,9 @@ public class NodeInfo
     public double? Latitude { get; set; }
     public double? Longitude { get; set; }
     public int? Altitude { get; set; }
+    /// <summary>Position precision_bits as reported (32 = full precision; lower = the
+    /// node deliberately truncates its position, e.g. 13 bits ≈ ±3 km). Null = unknown.</summary>
+    public int? PositionPrecisionBits { get; set; }
     public float? GroundSpeed { get; set; }  // m/s
     public float? GroundTrack { get; set; }  // degrees 0–360 (0=North, clockwise)
     public string ColorHex { get; set; } = string.Empty;  // Empty = no color, otherwise #RRGGBB

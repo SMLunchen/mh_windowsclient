@@ -172,10 +172,32 @@
 <div class="section active" id="de">
 <main>
 
-  <!-- ── v1.6.4.6 ── -->
+  <!-- ── v1.6.4.7 ── -->
   <div class="version-entry current">
     <div class="version-header">
-      <span class="version-tag tag-latest">v1.6.4.6</span>
+      <span class="version-tag tag-latest">v1.6.4.7</span>
+      <span class="version-date">2026-10-21</span>
+      Traceroute-Ehrlichkeit &amp; Symbol-Fixes
+    </div>
+    <p class="version-desc">Ehrliche MQTT-Kennzeichnung im Traceroute, bereinigte Nachbar-Datenbank, reparierte Symbole und „Zuerst/Zuletzt gesehen" im Node-Info-Fenster.</p>
+
+    <div class="cl-section fixed">
+      <h3>🐛 Behoben / ✨ Verbessert</h3>
+      <div class="cl-group">
+        <ul class="cl-list">
+          <li><strong>Traceroute: ehrliche MQTT-Badges.</strong> Hops bekommen das MQTT-Badge nur noch, wenn für die Teilstrecke keine Funk-Messung vorliegt — vorher wurde jeder Hop markiert, sobald die Antwort über MQTT ankam. Das Kopf-Badge „via MQTT" sagt jetzt nur noch: die <em>Antwort</em> hat uns über MQTT erreicht — das bestimmt der Ziel-Node, auch bei „Nur HF"-Anfragen.</li>
+          <li><strong>Nachbar-Datenbank bereinigt:</strong> MQTT-gebrückte Traceroute-Teilstrecken landeten als falsche „0-dB-Funklinks" in der Nachbar-Datenbank — neue Links werden gefiltert, Altdaten beim Start automatisch bereinigt.</li>
+          <li><strong>Kaputte Symbole repariert:</strong> Der ✕-Button der Traceroute-Legende und weitere Symbole (📡, 🚨, 🔔, 📍, Pfeile) zeigten durch einen alten Encoding-Fehler nur „?" — wiederhergestellt und mit einem automatischen Test gegen Wiederholung abgesichert.</li>
+          <li><strong>Node-Info zeigt „Zuerst/Zuletzt gesehen":</strong> „Zuerst gesehen" kommt aus der Telemetrie-Datenbank (frühestes je empfangenes Paket) und überlebt Client-Neustarts.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── v1.6.4.6 ── -->
+  <div class="version-entry">
+    <div class="version-header">
+      <span class="version-tag">v1.6.4.6</span>
       <span class="version-date">2026-10-19</span>
       Node-Info neu, Dashboard-Dark-Mode-Fix
     </div>
@@ -1274,10 +1296,32 @@
 <div class="section" id="en">
 <main>
 
-  <!-- ── v1.6.4.6 (EN) ── -->
+  <!-- ── v1.6.4.7 (EN) ── -->
   <div class="version-entry current">
     <div class="version-header">
-      <span class="version-tag tag-latest">v1.6.4.6</span>
+      <span class="version-tag tag-latest">v1.6.4.7</span>
+      <span class="version-date">2026-10-21</span>
+      Traceroute honesty &amp; glyph fixes
+    </div>
+    <p class="version-desc">Honest MQTT badges in traceroutes, a cleaned-up neighbor database, repaired symbols and "first/last seen" in the node info window.</p>
+
+    <div class="cl-section fixed">
+      <h3>🐛 Fixed / ✨ Improved</h3>
+      <div class="cl-group">
+        <ul class="cl-list">
+          <li><strong>Traceroute: honest MQTT badges.</strong> Hops only get the MQTT badge when no radio measurement exists for that segment — previously every hop was marked as soon as the reply arrived via MQTT. The header badge "via MQTT" now only means: the <em>reply</em> reached us via MQTT — that's up to the target node, even for "RF only" requests.</li>
+          <li><strong>Neighbor database cleaned up:</strong> MQTT-bridged traceroute segments used to end up as fake "0 dB RF links" in the neighbor database — new links are filtered, old data is cleaned automatically at startup.</li>
+          <li><strong>Broken glyphs repaired:</strong> the traceroute legend's ✕ button and other symbols (📡, 🚨, 🔔, 📍, arrows) only showed "?" due to an old encoding mishap — restored, with an automated test guarding against a repeat.</li>
+          <li><strong>Node info shows "first/last seen":</strong> "first seen" comes from the telemetry database (earliest packet ever received) and survives client restarts.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── v1.6.4.6 (EN) ── -->
+  <div class="version-entry">
+    <div class="version-header">
+      <span class="version-tag">v1.6.4.6</span>
       <span class="version-date">2026-10-19</span>
       New node info, dashboard dark-mode fix
     </div>

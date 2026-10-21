@@ -6,7 +6,7 @@ namespace MeshhessenClient;
 
 public partial class NodeInfoWindow : Window
 {
-    public NodeInfoWindow(NodeInfo node)
+    public NodeInfoWindow(NodeInfo node, DateTime? firstSeen = null)
     {
         InitializeComponent();
 
@@ -39,6 +39,7 @@ public partial class NodeInfoWindow : Window
                          : node.HasBattery ? $"{(int)node.BatteryValue!.Value} %"
                          : "–";
         SignalText.Text  = BuildSignalText(node);
+        FirstSeenText.Text = firstSeen.HasValue ? firstSeen.Value.ToString("dd.MM.yyyy HH:mm") : "–";
         LastSeenText.Text = string.IsNullOrEmpty(node.LastSeen) || node.LastSeen == "-"
             ? "–" : node.LastSeen;
 

@@ -105,11 +105,13 @@ public partial class TracerouteWindow : Window
         for (int i = 0; i < result.RouteForward.Count; i++)
         {
             uint nodeId = result.RouteForward[i];
-            var hop = MakeHopItem(i + 1, nodeId, result.IsViaMqtt);
+            var hop = MakeHopItem(i + 1, nodeId);
 
-            // SNR towards: index i is SNR from previous node to this one
+            // SNR towards: index i is SNR from previous node to this one.
+            // Sentinel −128 = no RF SNR: the segment was bridged (MQTT), badge it —
+            // only then. The reply's via_mqtt flag says nothing about these hops.
             if (i < result.SnrTowards.Count)
-                hop.SnrDisplay = FormatSnr(result.SnrTowards[i]);
+                ApplySegmentSnr(hop, result.SnrTowards[i]);
 
             // Distance from previous hop
             TracerouteHopItem prevHop = hops[^1];
@@ -119,13 +121,13 @@ public partial class TracerouteWindow : Window
         }
 
         // --- Destination ---
-        var destHop = MakeHopItem(hops.Count, _targetNode.NodeId, result.IsViaMqtt);
+        var destHop = MakeHopItem(hops.Count, _targetNode.NodeId);
         destHop.IsDestination = true;
         destHop.NodeName = _targetNode.LongName;
 
         // Last SNR towards: after all relays, the final link is from last relay to dest
         if (result.SnrTowards.Count > result.RouteForward.Count)
-            destHop.SnrDisplay = FormatSnr(result.SnrTowards[result.RouteForward.Count]);
+            ApplySegmentSnr(destHop, result.SnrTowards[result.RouteForward.Count]);
 
         destHop.Distance = CalcDistance(hops[^1], destHop);
         hops.Add(destHop);
@@ -133,14 +135,28 @@ public partial class TracerouteWindow : Window
         return hops;
     }
 
-    private TracerouteHopItem MakeHopItem(int index, uint nodeId, bool resultIsViaMqtt)
+    private static void ApplySegmentSnr(TracerouteHopItem hop, int snrScaled)
+    {
+        // −128 (firmware unknown-sentinel) AND raw 0 (rx_snr of a non-RF reception)
+        // both mean "no radio measurement" → bridged segment, no dB value to show.
+        if (TracerouteResult.IsNonRfSnr(snrScaled))
+        {
+            hop.IsMqttBridge = true;
+            hop.SnrDisplay = "—";
+        }
+        else
+        {
+            hop.SnrDisplay = FormatSnr(snrScaled);
+        }
+    }
+
+    private TracerouteHopItem MakeHopItem(int index, uint nodeId)
     {
         var hop = new TracerouteHopItem
         {
             HopIndex = index,
             NodeId = $"!{nodeId:x8}",
             NodeName = $"!{nodeId:x8}",
-            IsViaMqtt = resultIsViaMqtt,
         };
 
         if (_nodePositions.TryGetValue(nodeId, out var pos))
@@ -252,15 +268,17 @@ public partial class TracerouteWindow : Window
             Grid.SetColumn(snrStack, 3);
             grid.Children.Add(snrStack);
 
-            // Badges column
+            // Badges column — the MQTT badge marks only hops whose incoming segment has
+            // no RF measurement (bridged), not every hop of a via-MQTT-received result.
             var badgeStack = new StackPanel { VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(4, 0, 0, 0) };
-            if (hop.IsViaMqtt)
+            if (hop.IsMqttBridge)
             {
                 badgeStack.Children.Add(new Border
                 {
                     Background = new SolidColorBrush(Color.FromRgb(0xFF, 0x80, 0x00)),
                     CornerRadius = new CornerRadius(3),
                     Padding = new Thickness(4, 1, 4, 1),
+                    ToolTip = Loc("StrTrMqttBridgeTip"),
                     Child = new TextBlock { Text = "MQTT", FontSize = 9, Foreground = Brushes.White, FontWeight = FontWeights.Bold }
                 });
             }
@@ -271,7 +289,7 @@ public partial class TracerouteWindow : Window
                     Background = new SolidColorBrush(Color.FromRgb(0x88, 0x88, 0x88)),
                     CornerRadius = new CornerRadius(3),
                     Padding = new Thickness(4, 1, 4, 1),
-                    Margin = new Thickness(0, hop.IsViaMqtt ? 2 : 0, 0, 0),
+                    Margin = new Thickness(0, hop.IsMqttBridge ? 2 : 0, 0, 0),
                     ToolTip = Loc("StrTrNoData"),
                     Child = new TextBlock { Text = "?", FontSize = 9, Foreground = Brushes.White, FontWeight = FontWeights.Bold }
                 });

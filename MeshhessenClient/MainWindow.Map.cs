@@ -797,6 +797,13 @@ public partial class MainWindow
         properties = props
     };
 
+    private static object PolygonFeatureGeo(IEnumerable<double[]> ringLonLat, object props) => new
+    {
+        type = "Feature",
+        geometry = new { type = "Polygon", coordinates = new[] { ringLonLat.ToArray() } },
+        properties = props
+    };
+
     private static object FeatureCollection(List<object> features) =>
         new { type = "FeatureCollection", features };
 
@@ -1136,7 +1143,7 @@ public partial class MainWindow
             else if (hitWaypoint != null)
             {
                 var wp = hitWaypoint;
-                var wpNameItem = new MenuItem { Header = $"?? {wp.Name}", IsEnabled = false };
+                var wpNameItem = new MenuItem { Header = $"📍 {wp.Name}", IsEnabled = false };
                 menu.Items.Add(wpNameItem);
                 menu.Items.Add(new Separator());
                 var deleteWpItem = new MenuItem { Header = Loc("StrDeleteWaypoint") };
@@ -1234,7 +1241,7 @@ public partial class MainWindow
                         string type = seg.IsMqtt ? "? MQTT" : "LoRa";
                         string from = seg.FromId == _myNodeId ? Loc("StrMe") : (_allNodes.FirstOrDefault(n => n.NodeId == seg.FromId)?.ShortName ?? $"!{seg.FromId:x4}");
                         string to   = seg.ToId   == _myNodeId ? Loc("StrMe") : (_allNodes.FirstOrDefault(n => n.NodeId == seg.ToId  )?.ShortName ?? $"!{seg.ToId  :x4}");
-                        MapStatusText.Text = $"{type}: {from} ? {to}{snrInfo} – {Loc("StrLegendSnrHint")}";
+                        MapStatusText.Text = $"{type}: {from} → {to}{snrInfo} — {Loc("StrLegendSnrHint")}";
                         return;
                     }
                 }
@@ -1390,7 +1397,9 @@ public partial class MainWindow
 
     private void ShowNodeInfoDialog(NodeInfo node)
     {
-        var win = new NodeInfoWindow(node) { Owner = this };
+        DateTime? firstSeen = null;
+        try { firstSeen = _db?.GetFirstSeen(node.NodeId); } catch { /* non-critical */ }
+        var win = new NodeInfoWindow(node, firstSeen) { Owner = this };
         win.ShowDialog();
     }
 

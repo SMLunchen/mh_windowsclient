@@ -3720,7 +3720,7 @@ public partial class MainWindow : Window
                 _alertNodeId = nodeId;
 
                 // Update notification text
-                AlertNotificationText.Text = $"?? Notruf von {nodeName}!";
+                AlertNotificationText.Text = $"🚨 Notruf von {nodeName}!";
 
                 // Check if we have position for this node
                 var node = _nodes.FirstOrDefault(n => n.NodeId == nodeId);
@@ -3908,8 +3908,6 @@ public partial class MainWindow : Window
         var features = new List<IFeature>();
         MPoint? lastKnownPoint = null;
 
-        const int MqttSentinelRaw = -128; // raw SnrTowards = -128 ? -32 dB = MQTT hop
-
         for (int i = 0; i < orderedIds.Count - 1; i++)
         {
             uint fromId = orderedIds[i];
@@ -3917,8 +3915,10 @@ public partial class MainWindow : Window
 
             bool hasFrom = positions.TryGetValue(fromId, out var fromPos);
             bool hasTo   = positions.TryGetValue(toId,   out var toPos);
-            bool isMqtt  = result.IsViaMqtt
-                         || (result.SnrTowards.Count > i && result.SnrTowards[i] == MqttSentinelRaw);
+            // Per-SEGMENT honesty: only a missing RF measurement marks a bridged leg.
+            // The result's via_mqtt flag says how the REPLY reached us, nothing about
+            // the forward hops — it used to paint every segment as MQTT.
+            bool isMqtt  = result.SnrTowards.Count > i && TracerouteResult.IsNonRfSnr(result.SnrTowards[i]);
 
             if (hasFrom && hasTo)
             {
@@ -3931,7 +3931,7 @@ public partial class MainWindow : Window
 
                 if (isMqtt)
                 {
-                    // ? Zickzack-Blitzlinie für MQTT-Hops (statt gerader Linie)
+                    // ⚡ Zickzack-Blitzlinie für MQTT-Hops (statt gerader Linie)
                     var zigCoords = BuildMqttZigzag(mFrom, mTo);
                     var zigGeom = new NetTopologySuite.Geometries.LineString(zigCoords);
 
@@ -4102,7 +4102,6 @@ public partial class MainWindow : Window
             orderedIds.AddRange(result.RouteForward);
             orderedIds.Add(result.DestinationNodeId);
 
-            const int MqttSentinelRaw = -128;
             var features = new List<object>();
             var colorCss = CssColor(color);
             (double Lat, double Lon)? lastKnown = null;
@@ -4124,8 +4123,9 @@ public partial class MainWindow : Window
                 bool hasFrom = positions.TryGetValue(fromId, out var fromPos);
                 bool hasTo = positions.TryGetValue(toId, out var toPos);
 
-                bool isMqtt = result.IsViaMqtt
-                            || (result.SnrTowards.Count > i && result.SnrTowards[i] == MqttSentinelRaw);
+                // Per-segment honesty (see raster variant): only a missing RF measurement
+                // marks a bridged leg, never the reply packet's via_mqtt flag.
+                bool isMqtt = result.SnrTowards.Count > i && TracerouteResult.IsNonRfSnr(result.SnrTowards[i]);
                 float? segSnr = (!isMqtt && result.SnrTowards.Count > i) ? result.SnrTowards[i] / 4f : null;
 
                 if (hasFrom && hasTo)
@@ -4410,6 +4410,585 @@ public partial class MainWindow : Window
             ClearTracerouteFromMap(key);
     }
 
+    // ── Node position triangulation from RF-link neighbors ────────────────────
+
+    // Expert TX parameters remembered per node for this session (dialog prefills)
+    private static readonly Dictionary<uint, (double Tx, double Ant)> _expertTxCache = new();
+
+    private static bool TryParseNum(string s, out double v) =>
+        double.TryParse(s.Replace(',', '.'), System.Globalization.NumberStyles.Any,
+            System.Globalization.CultureInfo.InvariantCulture, out v);
+
+    /// <summary>Expert-mode dialog: one row per node — the TARGET plus every anchor
+    /// neighbor whose link gets analyzed — asking TX power (hardware preset,
+    /// overridable) and antenna gain (default 1 dBi). Returns null on cancel.</summary>
+    private Dictionary<uint, (double Tx, double Ant)>? AskExpertLinkBudgets(
+        NodeInfo target, List<uint> anchorIds)
+    {
+        var ci = System.Globalization.CultureInfo.CurrentCulture;
+        var nodeById = _allNodes.ToDictionary(n => n.NodeId, n => n);
+
+        var dlg = new Window
+        {
+            Title = Loc("StrTriExpertTitle"),
+            Width = 620,
+            MinWidth = 620,
+            SizeToContent = SizeToContent.Height,
+            MaxHeight = 640,
+            Owner = this,
+            ResizeMode = ResizeMode.NoResize,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+        };
+        var outer = new StackPanel { Margin = new Thickness(16) };
+        outer.Children.Add(new TextBlock
+        {
+            Text = Loc("StrTriExpertIntro"),
+            TextWrapping = TextWrapping.Wrap,
+            Margin = new Thickness(0, 0, 0, 10),
+        });
+
+        var rowsPanel = new StackPanel();
+        var boxes = new Dictionary<uint, (TextBox Tx, TextBox Ant)>();
+
+        void AddRow(uint id, string name, string? hw, bool isTarget)
+        {
+            double presetTx = _expertTxCache.TryGetValue(id, out var cached)
+                ? cached.Tx : Services.TriangulationService.TxPresetDbm(hw);
+            double presetAnt = _expertTxCache.TryGetValue(id, out var cached2)
+                ? cached2.Ant : Services.TriangulationService.ReferenceAntennaDbi;
+
+            var grid = new Grid { Margin = new Thickness(0, 3, 0, 3) };
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(70) });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(42) });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(60) });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(34) });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(78) });
+
+            var nameText = new TextBlock
+            {
+                Text = $"{name}  ·  {(string.IsNullOrEmpty(hw) ? "?" : hw)}",
+                VerticalAlignment = VerticalAlignment.Center,
+                FontWeight = isTarget ? FontWeights.SemiBold : FontWeights.Normal,
+                TextTrimming = TextTrimming.CharacterEllipsis,
+                Margin = new Thickness(0, 0, 8, 0),
+            };
+            Grid.SetColumn(nameText, 0);
+            grid.Children.Add(nameText);
+
+            var txBox = new TextBox { Text = presetTx.ToString("0.#", ci) };
+            Grid.SetColumn(txBox, 1);
+            grid.Children.Add(txBox);
+            var dbmLbl = new TextBlock { Text = "dBm", VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(4, 0, 4, 0), Opacity = 0.65 };
+            Grid.SetColumn(dbmLbl, 2);
+            grid.Children.Add(dbmLbl);
+
+            var antBox = new TextBox { Text = presetAnt.ToString("0.#", ci) };
+            Grid.SetColumn(antBox, 3);
+            grid.Children.Add(antBox);
+            var dbiLbl = new TextBlock { Text = "dBi", VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(4, 0, 4, 0), Opacity = 0.65 };
+            Grid.SetColumn(dbiLbl, 4);
+            grid.Children.Add(dbiLbl);
+
+            var wattsHint = new TextBlock { VerticalAlignment = VerticalAlignment.Center, Opacity = 0.55, FontSize = 11 };
+            Grid.SetColumn(wattsHint, 5);
+            grid.Children.Add(wattsHint);
+            void UpdateWatts() => wattsHint.Text = TryParseNum(txBox.Text, out var d)
+                ? string.Format(Loc("StrTriExpertWatts"), Services.TriangulationService.DbmToWatts(d).ToString("0.###", ci))
+                : "";
+            txBox.TextChanged += (_, _) => UpdateWatts();
+            UpdateWatts();
+
+            rowsPanel.Children.Add(grid);
+            boxes[id] = (txBox, antBox);
+        }
+
+        // Target first (bold), then all anchor neighbors
+        rowsPanel.Children.Add(new TextBlock { Text = Loc("StrTriExpertTarget"), FontSize = 11, Opacity = 0.65, Margin = new Thickness(0, 0, 0, 2) });
+        AddRow(target.NodeId, target.Name, target.HardwareModel, isTarget: true);
+        rowsPanel.Children.Add(new TextBlock { Text = Loc("StrTriExpertAnchors"), FontSize = 11, Opacity = 0.65, Margin = new Thickness(0, 10, 0, 2) });
+        foreach (var id in anchorIds)
+        {
+            nodeById.TryGetValue(id, out var n);
+            string name = id == _myNodeId ? Loc("StrMe") : n?.Name ?? $"!{id:x8}";
+            AddRow(id, name, n?.HardwareModel, isTarget: false);
+        }
+
+        outer.Children.Add(new ScrollViewer
+        {
+            Content = rowsPanel,
+            MaxHeight = 380,
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+        });
+
+        outer.Children.Add(new TextBlock
+        {
+            Text = Loc("StrTriExpertHint"),
+            TextWrapping = TextWrapping.Wrap,
+            FontSize = 11,
+            Opacity = 0.65,
+            Margin = new Thickness(0, 10, 0, 0),
+        });
+
+        var btnRow = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            HorizontalAlignment = HorizontalAlignment.Right,
+            Margin = new Thickness(0, 14, 0, 0),
+        };
+        var ok = new Button { Content = "OK", Width = 80, IsDefault = true, Margin = new Thickness(0, 0, 8, 0) };
+        var cancel = new Button { Content = Loc("StrCancel"), Width = 95, IsCancel = true };
+        ok.Click += (_, _) => { dlg.DialogResult = true; dlg.Close(); };
+        btnRow.Children.Add(ok);
+        btnRow.Children.Add(cancel);
+        outer.Children.Add(btnRow);
+        dlg.Content = outer;
+
+        if (dlg.ShowDialog() != true) return null;
+
+        var result = new Dictionary<uint, (double Tx, double Ant)>();
+        foreach (var (id, (txBox, antBox)) in boxes)
+        {
+            double tx = TryParseNum(txBox.Text, out var t) ? Math.Clamp(t, 0, 40)
+                : Services.TriangulationService.ReferenceTxDbm;
+            double ant = TryParseNum(antBox.Text, out var a2) ? Math.Clamp(a2, -10, 20)
+                : Services.TriangulationService.ReferenceAntennaDbi;
+            result[id] = (tx, ant);
+            _expertTxCache[id] = (tx, ant);
+        }
+        return result;
+    }
+
+    /// <summary>Estimates a node's position from its RF-link neighbors (rf_links) and
+    /// plots anchor circles + the estimated position on both maps. The layer registers
+    /// under the traceroute legend, so it is removable like any remote traceroute.
+    /// <paramref name="expertMode"/>: asks for TX power/antenna gain of the target AND
+    /// every anchor neighbor — applied as link-budget deltas to the model reference
+    /// (22 dBm + 1 dBi each end), direction-aware per link.</summary>
+    private void TriangulateNodeOnMap(NodeInfo targetNode, bool expertMode = false)
+    {
+        if (_db == null) return;
+        try
+        {
+            var names = _allNodes.ToDictionary(n => n.NodeId, n => n.Name);
+            var partners = _db.GetRfNeighbors(targetNode.NodeId, 0, names);
+
+            // Position + per-node position error (precision_bits truncation → km radius)
+            var posById = new Dictionary<uint, (double Lat, double Lon, double ErrKm)>();
+            foreach (var n in _allNodes)
+                if (n.Latitude.HasValue && n.Longitude.HasValue)
+                    posById[n.NodeId] = (n.Latitude.Value, n.Longitude.Value,
+                        Services.TriangulationService.PrecisionBitsToKm(n.PositionPrecisionBits ?? 32));
+            if (!posById.ContainsKey(_myNodeId) &&
+                (_currentSettings.MyLatitude != 0 || _currentSettings.MyLongitude != 0))
+                posById[_myNodeId] = (_currentSettings.MyLatitude, _currentSettings.MyLongitude, 0);
+
+            // Self-calibrate the path-loss model from links whose BOTH ends have GPS —
+            // but let the user choose: early link data is survivorship-biased (only
+            // working links get recorded), so the fit can be worse than the default.
+            var cal = ComputePathLossCalibration(posById);
+            if (cal.IsFitted)
+            {
+                string recommendation = cal.R2 >= 0.2
+                    ? Loc("StrTriModelRecFitted")
+                    : Loc("StrTriModelRecDefault");
+                var choice = MessageBox.Show(
+                    string.Format(Loc("StrTriModelMsg"),
+                        cal.Samples, cal.P1Km.ToString("0.0"), cal.Exponent.ToString("0.00"),
+                        cal.R2.ToString("0.00"), cal.SigmaDb.ToString("0.0"), recommendation),
+                    Loc("StrTriTitle"),
+                    MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
+                if (choice == MessageBoxResult.Cancel) return;
+                if (choice == MessageBoxResult.No)
+                    cal = Services.TriangulationService.Calibration.Default;
+            }
+
+            // Anchors: positioned partners with signal evidence. SNR → pseudo-RSSI via the
+            // anchor's measured noise floor (LocalStats) or −105 dBm default; for our own
+            // node the directly measured RSSI wins.
+            double targetNf = _db.GetLatestLocalStats(targetNode.NodeId)?.NoiseFloor ?? -105;
+
+            // Pass 1: usable partners (position + any signal evidence). Signal values are
+            // TRIMMED MEDIANS over the measurement history of the last 30 days (packet_rx
+            // for our own receptions, rf_link_obs for traceroute/NeighborInfo evidence) —
+            // not whatever single value was measured last; fallback to the rf_links
+            // snapshot where no history exists yet.
+            const int medianDays = 30;
+            var usable = new List<(uint Id, string Name,
+                (double Lat, double Lon, double ErrKm) Pos, float? SnrIn, float? SnrOut, int? OwnRssi)>();
+            foreach (var p in partners)
+            {
+                if (!posById.TryGetValue(p.NeighborId, out var pos)) continue;
+
+                float? snrIn = (float?)Services.TriangulationService.TrimmedMedian(
+                    _db.GetRfLinkSnrSamples(targetNode.NodeId, p.NeighborId, _myNodeId, medianDays)) ?? p.SnrIn;
+                float? snrOut = (float?)Services.TriangulationService.TrimmedMedian(
+                    _db.GetRfLinkSnrSamples(p.NeighborId, targetNode.NodeId, _myNodeId, medianDays)) ?? p.SnrOut;
+
+                int? ownRssi = null;
+                if (p.NeighborId == _myNodeId)
+                {
+                    ownRssi = Services.TriangulationService.TrimmedMedian(
+                        _db.GetDirectRssiSamples(targetNode.NodeId, medianDays)) is double med
+                        ? (int)Math.Round(med) : null;
+                    if (ownRssi == null)
+                    {
+                        var c = _db.GetDirectNeighborContact(targetNode.NodeId);
+                        if (c.Rssi is int r && r != 0) ownRssi = r;
+                    }
+                }
+                if (ownRssi == null && !snrIn.HasValue && !snrOut.HasValue) continue;
+                usable.Add((p.NeighborId,
+                    names.TryGetValue(p.NeighborId, out var nm) ? nm : $"!{p.NeighborId:x8}",
+                    pos, snrIn, snrOut, ownRssi));
+            }
+
+            if (usable.Count < 2)
+            {
+                MessageBox.Show(Loc("StrTriTooFewMsg"), Loc("StrTriTitle"),
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            // Expert mode: ask for TX power + antenna gain of the TARGET and of EVERY
+            // anchor neighbor — the analyzed links run between them, so both ends'
+            // budgets matter. Defaults: reference values (identical to normal mode).
+            var budgets = new Dictionary<uint, (double Tx, double Ant)>();
+            if (expertMode)
+            {
+                var asked = AskExpertLinkBudgets(targetNode, usable.Select(u => u.Id).ToList());
+                if (asked == null) return; // canceled
+                budgets = asked;
+            }
+            (double Tx, double Ant) BudgetOf(uint id) => budgets.TryGetValue(id, out var b)
+                ? b
+                : (Services.TriangulationService.ReferenceTxDbm, Services.TriangulationService.ReferenceAntennaDbi);
+            var (tTx, tAnt) = BudgetOf(targetNode.NodeId);
+
+            // Pass 2: per-direction pseudo-RSSI, adjusted to the reference link budget.
+            // SnrOut/own RSSI = the TARGET transmitted (target TX+ant, anchor rx-ant);
+            // SnrIn = the ANCHOR transmitted (anchor TX+ant, target rx-ant).
+            var anchors = new List<(double Lat, double Lon, double DistKm, double PosErrKm, string Name)>();
+            foreach (var u in usable)
+            {
+                var (aTx, aAnt) = BudgetOf(u.Id);
+                var cands = new List<double>();
+                if (u.OwnRssi is int r)
+                    cands.Add(Services.TriangulationService.AdjustedRssi(r, tTx, tAnt, aAnt));
+                if (cands.Count == 0)
+                {
+                    double anchorNf = _db.GetLatestLocalStats(u.Id)?.NoiseFloor ?? -105;
+                    if (u.SnrOut.HasValue)
+                        cands.Add(Services.TriangulationService.AdjustedRssi(
+                            u.SnrOut.Value + anchorNf, tTx, tAnt, aAnt));
+                    if (u.SnrIn.HasValue)
+                        cands.Add(Services.TriangulationService.AdjustedRssi(
+                            u.SnrIn.Value + targetNf, aTx, aAnt, tAnt));
+                }
+                if (cands.Count == 0) continue;
+
+                anchors.Add((u.Pos.Lat, u.Pos.Lon,
+                    Services.TriangulationService.SignalDistanceKm(cands.Average(), cal),
+                    u.Pos.ErrKm, u.Name));
+            }
+
+            if (anchors.Count < 2)
+            {
+                MessageBox.Show(Loc("StrTriTooFewMsg"), Loc("StrTriTitle"),
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            // If the target itself reports a (possibly deliberately truncated) position,
+            // use it as a prior: distance 0 with the truncation cell as dead zone — the
+            // RF anchors then only refine WITHIN the reported cell.
+            if (targetNode.Latitude.HasValue && targetNode.Longitude.HasValue)
+            {
+                double targetErr = Services.TriangulationService.PrecisionBitsToKm(
+                    targetNode.PositionPrecisionBits ?? 32);
+                anchors.Add((targetNode.Latitude.Value, targetNode.Longitude.Value, 0,
+                    Math.Max(targetErr, 0.2), Loc("StrTriReportedPos")));
+            }
+
+            var est = Services.TriangulationService.Estimate(
+                anchors.Select(a => new Services.TriangulationService.Anchor(
+                    a.Lat, a.Lon, a.DistKm, a.PosErrKm,
+                    // The reported-position prior (DistKm 0) is hard information: the node
+                    // IS inside that cell — RF guesses only refine within/near it.
+                    WeightScale: a.DistKm < 0.05 ? 5 : 1)).ToList());
+            double bandFactor = Services.TriangulationService.DistanceFactor(cal);
+            DrawTriangulationLayer(targetNode, anchors, est, bandFactor);
+            Services.Logger.WriteLine($"[Triangulation] !{targetNode.NodeId:x8}: {anchors.Count} anchors → " +
+                $"est {est.Lat:F5},{est.Lon:F5} ±{est.UncertaintyKm:0.0}km" +
+                $"{(est.HasAlternative ? $" ALT {est.AltLat:F5},{est.AltLon:F5}" : "")} " +
+                $"(model: {(cal.IsFitted ? $"self-calibrated P1km={cal.P1Km:0.0}dBm n={cal.Exponent:0.00} σ={cal.SigmaDb:0.0}dB R²={cal.R2:0.00} from {cal.Samples} links" : "default")}; " +
+                $"{(expertMode ? $"expert budgets: {string.Join(", ", budgets.Select(b => $"!{b.Key:x8}={b.Value.Tx:0.#}dBm/{b.Value.Ant:0.#}dBi"))}; " : "")}" +
+                $"circles: {string.Join(", ", anchors.Select(a => $"{a.Name}={a.DistKm:0.0}km"))})");
+        }
+        catch (Exception ex)
+        {
+            Services.Logger.WriteLine($"[Triangulation] failed: {ex.Message}");
+        }
+    }
+
+    /// <summary>Fits the path-loss model from rf_links whose both endpoints have a GPS
+    /// position (last 30 days): each gives a (true distance, pseudo-RSSI) ground-truth
+    /// pair. Falls back to the desk default when the data is too thin (see
+    /// <see cref="Services.TriangulationService.FitCalibration"/>).</summary>
+    private Services.TriangulationService.Calibration ComputePathLossCalibration(
+        Dictionary<uint, (double Lat, double Lon, double ErrKm)> posById)
+    {
+        try
+        {
+            var samples = new List<(double DistKm, double Rssi)>();
+            var noiseCache = new Dictionary<uint, double>();
+            double NoiseOf(uint id)
+            {
+                if (!noiseCache.TryGetValue(id, out var nf))
+                    noiseCache[id] = nf = _db!.GetLatestLocalStats(id)?.NoiseFloor ?? -105;
+                return nf;
+            }
+
+            foreach (var (observer, neighbor, snr) in _db!.GetRfLinkSnrRows(30))
+            {
+                if (!posById.TryGetValue(observer, out var a) ||
+                    !posById.TryGetValue(neighbor, out var b)) continue;
+                // Truncated positions make unusable ground truth — calibrate on precise ones only
+                if (a.ErrKm > 0.5 || b.ErrKm > 0.5) continue;
+                double kx = 111.320 * Math.Cos(((a.Lat + b.Lat) / 2) * Math.PI / 180.0);
+                double dx = (b.Lon - a.Lon) * kx, dy = (b.Lat - a.Lat) * 110.574;
+                double distKm = Math.Sqrt(dx * dx + dy * dy);
+                samples.Add((distKm, snr + NoiseOf(observer)));
+            }
+
+            return Services.TriangulationService.FitCalibration(samples);
+        }
+        catch (Exception ex)
+        {
+            Services.Logger.WriteLine($"[Triangulation] calibration failed: {ex.Message}");
+            return Services.TriangulationService.Calibration.Default;
+        }
+    }
+
+    private void DrawTriangulationLayer(NodeInfo target,
+        List<(double Lat, double Lon, double DistKm, double PosErrKm, string Name)> anchors,
+        Services.TriangulationService.EstimateResult est,
+        double bandFactor)
+    {
+        double estLat = est.Lat, estLon = est.Lon;
+        string layerKey = $"tri_{target.NodeId:x8}";
+        string displayName = $"📍 {target.Name} ({Loc("StrTriLegend")})";
+
+        if (_tracerouteLayers.TryGetValue(layerKey, out var old))
+        {
+            _map?.Layers.Remove(old);
+            _tracerouteLayers.Remove(layerKey);
+        }
+        if (!_tracerouteColors.TryGetValue(layerKey, out var color))
+        {
+            color = TracerouteColorPalette[_tracerouteColorIndex % TracerouteColorPalette.Length];
+            _tracerouteColorIndex++;
+        }
+
+        var features = new List<IFeature>();
+        var vec = new List<object>();
+        var ringColor = new Mapsui.Styles.Color(color.R, color.G, color.B, 170);
+        var bandColor = new Mapsui.Styles.Color(color.R, color.G, color.B, 80);
+        double minX = double.MaxValue, maxX = double.MinValue, minY = double.MaxValue, maxY = double.MinValue;
+
+        // Circle around (lat,lon) with radius in km; Mercator metres stretch by 1/cos(lat)
+        (Coordinate[] Coords, List<double[]> Geo) Circle(double lat, double lon, double radKm)
+        {
+            double radM = radKm * 1000.0 / Math.Cos(lat * Math.PI / 180.0);
+            var c = SphericalMercator.FromLonLat(lon, lat);
+            var coords = new Coordinate[65];
+            var geo = new List<double[]>(65);
+            for (int i = 0; i <= 64; i++)
+            {
+                double ang = i * 2 * Math.PI / 64;
+                double px = c.x + radM * Math.Cos(ang), py = c.y + radM * Math.Sin(ang);
+                coords[i] = new Coordinate(px, py);
+                var ll = SphericalMercator.ToLonLat(px, py);
+                geo.Add(new[] { ll.lon, ll.lat });
+                minX = Math.Min(minX, px); maxX = Math.Max(maxX, px);
+                minY = Math.Min(minY, py); maxY = Math.Max(maxY, py);
+            }
+            return (coords, geo);
+        }
+
+        foreach (var a in anchors)
+        {
+            bool isPrior = a.DistKm < 0.05; // target's own reported position cell
+
+            if (!isPrior)
+            {
+                var (coords, geo) = Circle(a.Lat, a.Lon, a.DistKm);
+                var ring = new GeometryFeature(new NetTopologySuite.Geometries.LineString(coords));
+                ring.Styles.Add(new VectorStyle
+                {
+                    Line = new Mapsui.Styles.Pen(ringColor, 1.6) { PenStyle = PenStyle.Dash },
+                    Fill = null,
+                });
+                features.Add(ring);
+                vec.Add(LineFeatureCoords(geo, new { color = CssColor(ringColor), width = 1.6, dash = 1 }));
+            }
+
+            // Uncertainty band: model spread plus the anchor's own position error
+            // (for the reported-position prior this IS the truncation cell)
+            double bandKm = isPrior
+                ? a.PosErrKm
+                : a.DistKm * bandFactor + a.PosErrKm;
+            if (bandKm > 0.05)
+            {
+                var (bandCoords, bandGeo) = Circle(a.Lat, a.Lon, bandKm);
+                var band = new GeometryFeature(new NetTopologySuite.Geometries.LineString(bandCoords));
+                band.Styles.Add(new VectorStyle
+                {
+                    Line = new Mapsui.Styles.Pen(bandColor, 1.0) { PenStyle = PenStyle.Dot },
+                    Fill = null,
+                });
+                features.Add(band);
+                vec.Add(LineFeatureCoords(bandGeo, new { color = CssColor(bandColor), width = 1.0, dash = 1 }));
+            }
+
+            // Label at the top of the main circle (or the cell for the prior)
+            string lblText = isPrior
+                ? $"{a.Name}: ±{a.PosErrKm:0.#} km"
+                : $"{a.Name}: {a.DistKm:0.#} km" + (a.PosErrKm >= 0.5 ? $" (±{a.PosErrKm:0.#})" : "");
+            double lblRadKm = isPrior ? a.PosErrKm : a.DistKm;
+            double radMMain = lblRadKm * 1000.0 / Math.Cos(a.Lat * Math.PI / 180.0);
+            var cm = SphericalMercator.FromLonLat(a.Lon, a.Lat);
+            var lbl = new PointFeature(new MPoint(cm.x, cm.y + radMMain));
+            lbl.Styles.Add(new LabelStyle
+            {
+                Text = lblText,
+                ForeColor = new Mapsui.Styles.Color(color.R, color.G, color.B, 255),
+                BackColor = new Mapsui.Styles.Brush(new Mapsui.Styles.Color(255, 255, 255, 170)),
+                Font = new Mapsui.Styles.Font { FontFamily = "Segoe UI", Size = 9 },
+                HorizontalAlignment = LabelStyle.HorizontalAlignmentEnum.Center,
+                VerticalAlignment = LabelStyle.VerticalAlignmentEnum.Bottom,
+            });
+            features.Add(lbl);
+            var top = SphericalMercator.ToLonLat(cm.x, cm.y + radMMain);
+            vec.Add(PointFeatureGeo(top.lon, top.lat,
+                new { color = CssColor(ringColor), radius = 2, label = lblText }));
+        }
+
+        // ── Target visuals — deliberately distinct from the HF anchor circles ──
+        // Anchors: thin dashed/dotted rings in the layer color. Target: SOLID, thicker
+        // outline with fill for the uncertainty region, and a TRIANGLE marker for the
+        // estimate so it can't be confused with node pins or anchor circles.
+
+        // Uncertainty region around the estimate (from the cost-landscape scan) — with
+        // one-sided anchor geometry this grows large and shows how little the data pins
+        // the position down.
+        {
+            var (uCoords, uGeo) = Circle(estLat, estLon, est.UncertaintyKm);
+            var uPoly = new GeometryFeature(new NetTopologySuite.Geometries.Polygon(
+                new NetTopologySuite.Geometries.LinearRing(uCoords)));
+            uPoly.Styles.Add(new VectorStyle
+            {
+                Line = new Mapsui.Styles.Pen(new Mapsui.Styles.Color(color.R, color.G, color.B, 230), 2.6),
+                Fill = new Mapsui.Styles.Brush(new Mapsui.Styles.Color(color.R, color.G, color.B, 28)),
+            });
+            features.Add(uPoly);
+            // Vector map: filled polygon + solid outline (anchors are dashed → distinct)
+            vec.Add(PolygonFeatureGeo(uGeo,
+                new { fill = CssColor(new Mapsui.Styles.Color(color.R, color.G, color.B, 255)), fillOpacity = 0.11 }));
+            vec.Add(LineFeatureCoords(uGeo,
+                new { color = CssColor(new Mapsui.Styles.Color(color.R, color.G, color.B, 230)), width = 2.6 }));
+        }
+
+        // Estimated position: large triangle + white halo + bold label
+        var e = SphericalMercator.FromLonLat(estLon, estLat);
+        var estMarker = new PointFeature(new MPoint(e.x, e.y));
+        estMarker.Styles.Add(new SymbolStyle
+        {
+            SymbolType = SymbolType.Triangle,
+            Fill = new Mapsui.Styles.Brush(new Mapsui.Styles.Color(color.R, color.G, color.B, 255)),
+            Outline = new Mapsui.Styles.Pen(Mapsui.Styles.Color.White, 2.5),
+            SymbolScale = 1.0,
+        });
+        string estLabel = $"📍 ~{target.Name} (±{est.UncertaintyKm:0.#} km)";
+        estMarker.Styles.Add(new LabelStyle
+        {
+            Text = estLabel,
+            ForeColor = Mapsui.Styles.Color.Black,
+            BackColor = new Mapsui.Styles.Brush(new Mapsui.Styles.Color(255, 255, 255, 220)),
+            Font = new Mapsui.Styles.Font { FontFamily = "Segoe UI Emoji", Size = 11, Bold = true },
+            HorizontalAlignment = LabelStyle.HorizontalAlignmentEnum.Center,
+            VerticalAlignment = LabelStyle.VerticalAlignmentEnum.Top,
+            Offset = new Offset(0, 16),
+        });
+        features.Add(estMarker);
+        // Vector map: the tintable SDF arrow icon pointing north = triangle marker
+        vec.Add(PointFeatureGeo(estLon, estLat, new
+        {
+            color = CssColor(new Mapsui.Styles.Color(color.R, color.G, color.B, 255)),
+            bearing = 0.0,
+            iconSize = 1.25,
+            label = estLabel,
+        }));
+
+        // Ambiguous solution? Show the alternative candidate too (smaller triangle,
+        // semi-transparent)
+        if (est.HasAlternative)
+        {
+            var ae = SphericalMercator.FromLonLat(est.AltLon!.Value, est.AltLat!.Value);
+            minX = Math.Min(minX, ae.x); maxX = Math.Max(maxX, ae.x);
+            minY = Math.Min(minY, ae.y); maxY = Math.Max(maxY, ae.y);
+            var altMarker = new PointFeature(new MPoint(ae.x, ae.y));
+            altMarker.Styles.Add(new SymbolStyle
+            {
+                SymbolType = SymbolType.Triangle,
+                Fill = new Mapsui.Styles.Brush(new Mapsui.Styles.Color(color.R, color.G, color.B, 150)),
+                Outline = new Mapsui.Styles.Pen(Mapsui.Styles.Color.White, 1.5),
+                SymbolScale = 0.7,
+            });
+            string altLabel = $"📍 {target.Name}? ({Loc("StrTriAltLabel")})";
+            altMarker.Styles.Add(new LabelStyle
+            {
+                Text = altLabel,
+                ForeColor = new Mapsui.Styles.Color(60, 60, 60, 255),
+                BackColor = new Mapsui.Styles.Brush(new Mapsui.Styles.Color(255, 255, 255, 170)),
+                Font = new Mapsui.Styles.Font { FontFamily = "Segoe UI Emoji", Size = 9 },
+                HorizontalAlignment = LabelStyle.HorizontalAlignmentEnum.Center,
+                VerticalAlignment = LabelStyle.VerticalAlignmentEnum.Top,
+                Offset = new Offset(0, 12),
+            });
+            features.Add(altMarker);
+            vec.Add(PointFeatureGeo(est.AltLon.Value, est.AltLat.Value, new
+            {
+                color = CssColor(new Mapsui.Styles.Color(color.R, color.G, color.B, 150)),
+                bearing = 0.0,
+                iconSize = 0.8,
+                label = altLabel,
+            }));
+        }
+
+        var layer = new MemoryLayer($"Triangulation_{layerKey}") { Features = features, Style = null };
+        _tracerouteLayers[layerKey] = layer;
+        _tracerouteNames[layerKey] = displayName;
+        _tracerouteColors[layerKey] = color;
+        _map?.Layers.Add(layer);
+        UpdateTracerouteLegend();
+        PushVectorLines(layerKey, FeatureCollection(vec));
+
+        // Switch to the map tab and fit the circles into view
+        MainTabs.SelectedIndex = 3;
+        var center = new MPoint((minX + maxX) / 2, (minY + maxY) / 2);
+        double extent = Math.Max(maxX - minX, maxY - minY);
+        _map?.Navigator.CenterOnAndZoomTo(center, Math.Max(extent * 1.3 / 800.0, 10.0));
+        if (UseVectorMap)
+        {
+            var ci = System.Globalization.CultureInfo.InvariantCulture;
+            var sw = SphericalMercator.ToLonLat(minX, minY);
+            var ne = SphericalMercator.ToLonLat(maxX, maxY);
+            ExecVectorScript($"fitBounds({sw.lon.ToString(ci)}, {sw.lat.ToString(ci)}, {ne.lon.ToString(ci)}, {ne.lat.ToString(ci)})");
+        }
+        MapControl.Refresh();
+    }
+
     private void MapLegendClose_Click(object sender, RoutedEventArgs e)
     {
         MapLegendBorder.Visibility = Visibility.Collapsed;
@@ -4450,7 +5029,7 @@ public partial class MainWindow : Window
             if (isLive)
                 row.Children.Add(new TextBlock
                 {
-                    Text = "??",
+                    Text = "📡",
                     FontSize = 10,
                     Margin = new Thickness(0, 0, 3, 0),
                     VerticalAlignment = VerticalAlignment.Center,
@@ -4470,7 +5049,7 @@ public partial class MainWindow : Window
             // Clear button
             var clearBtn = new Button
             {
-                Content = "?",
+                Content = "✕",
                 FontSize = 10,
                 Padding = new Thickness(4, 1, 4, 1),
                 Margin = new Thickness(8, 0, 0, 0),
@@ -4478,7 +5057,7 @@ public partial class MainWindow : Window
                 BorderThickness = new Thickness(0),
                 Foreground = Brushes.White,
                 Cursor = Cursors.Hand,
-                ToolTip = "Traceroute von Karte entfernen",
+                ToolTip = Loc("StrTrLegendRemoveTip"),
             };
             string capturedKey = layerKey;
             clearBtn.Click += (_, _) => ClearTracerouteFromMap(capturedKey);
@@ -4574,7 +5153,7 @@ public partial class MainWindow : Window
             var mpt = new MPoint(pt.x, pt.y);
 
             // Icon: use emoji char if available, else ??
-            string iconText = wp.Icon > 0 ? char.ConvertFromUtf32((int)wp.Icon) : "??";
+            string iconText = wp.Icon > 0 ? char.ConvertFromUtf32((int)wp.Icon) : "📍";
 
             var pin = new PointFeature(mpt);
             pin.Styles.Add(new SymbolStyle
@@ -4828,6 +5407,8 @@ public partial class MainWindow : Window
         {
             Owner = this
         };
+        win.TriangulateRequested += (_, n) => TriangulateNodeOnMap(n);
+        win.TriangulateExpertRequested += (_, n) => TriangulateNodeOnMap(n, expertMode: true);
         win.Show();
         win.Activate();
     }
@@ -4868,14 +5449,7 @@ public partial class MainWindow : Window
     {
         var node = GetNodeFromSelectedMessage();
         if (node == null || _db == null) return;
-        var nodeNames = _allNodes.ToDictionary(n => n.NodeId, n => n.Name);
-        var win = new TelemetryWindow(node, _db, nodeNames, _currentSettings.MyLatitude, _currentSettings.MyLongitude,
-            _currentSettings.SignalWeatherWindowHours, _currentSettings.SignalAntennaWindowDays)
-        {
-            Owner = this
-        };
-        win.Show();
-        win.Activate();
+        OpenTelemetryForNode(node);
     }
 
     // -----------------------------------------------------------------------
@@ -4907,7 +5481,7 @@ public partial class MainWindow : Window
             {
                 Dispatcher.Invoke(() =>
                 {
-                    UpdateHintRun.Text = $"?? Update verfügbar: {tagName}";
+                    UpdateHintRun.Text = $"🔔 Update verfügbar: {tagName}";
                     UpdateHintLink.NavigateUri = new Uri(htmlUrl);
                     UpdateBanner.Visibility = Visibility.Visible;
                     Services.Logger.WriteLine($"Update available: {tagName} ? {htmlUrl}");
