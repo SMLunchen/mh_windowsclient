@@ -8,25 +8,26 @@
   <meta name="description" content="Kostenloser Windows-Client für Meshtastic-Geräte (WPF/.NET 8). Offline-Karte (OSM), Telemetrie-Analyse, Traceroute, PKI-Entschlüsselung – USB/Serial, TCP/WiFi, Bluetooth. Kein Cloud-Zwang, keine Installation. Von der Meshhessen Community in Hessen." />
   <meta name="keywords" content="Meshtastic Windows, Meshtastic Windows App, Windows App für Meshtastic-Geräte, Meshhessen Client, Meshtastic PC Software, Meshtastic Desktop, Meshtastic USB Windows, Meshtastic Serial, Meshtastic Bluetooth Windows, Meshtastic BLE, Meshtastic Offline Karte, Meshtastic Telemetrie Analyse, Meshtastic Traceroute, Meshtastic Hessen, Meshtastic Deutschland, Meshhessen, LILYGO T-Beam, T-Deck, RAK4631, Heltec, LoRa Mesh Windows, Meshtastic PKI Entschlüsselung, Meshtastic WPF, Meshtastic .NET, SNR RSSI Analyse, Mesh Health, Kanalauslastung" />
   <meta name="author" content="Meshhessen Community" />
-  <link rel="canonical" href="https://smlunchen.github.io/mh_windowsclient/" />
+  <link rel="canonical" href="https://meshhessenclient.de/" />
   <link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
 
   <!-- hreflang -->
-  <link rel="alternate" hreflang="de" href="https://smlunchen.github.io/mh_windowsclient/#de" />
-  <link rel="alternate" hreflang="en" href="https://smlunchen.github.io/mh_windowsclient/#en" />
+  <link rel="alternate" hreflang="de" href="https://meshhessenclient.de/?lang=de" />
+  <link rel="alternate" hreflang="en" href="https://meshhessenclient.de/?lang=en" />
+  <link rel="alternate" hreflang="x-default" href="https://meshhessenclient.de/" />
 
   <!-- Open Graph -->
   <meta property="og:type" content="website" />
   <meta property="og:title" content="Meshhessen Client – Windows App für Meshtastic-Geräte" />
   <meta property="og:description" content="Kostenloser Windows-Client für Meshtastic-Geräte. Offline-Karte, Telemetrie, Traceroute, PKI – USB/Serial/TCP/BLE. Keine Installation, keine Cloud." />
-  <meta property="og:url" content="https://smlunchen.github.io/mh_windowsclient/" />
-  <meta property="og:image" content="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map.png" />
+  <meta property="og:url" content="https://meshhessenclient.de/" />
+  <meta property="og:image" content="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map-with-dem-elevation-profile.png" />
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Meshhessen Client – Windows App für Meshtastic-Geräte" />
   <meta name="twitter:description" content="Kostenloser Windows-Client für Meshtastic-Geräte. Offline-Karte, Telemetrie, Traceroute, PKI – USB/Serial/TCP/BLE." />
-  <meta name="twitter:image" content="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map.png" />
+  <meta name="twitter:image" content="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map-with-dem-elevation-profile.png" />
 
   <!-- JSON-LD Structured Data -->
   <script type="application/ld+json">
@@ -38,11 +39,11 @@
     "applicationCategory": "CommunicationApplication",
     "operatingSystem": "Windows 10, Windows 11",
     "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" },
-    "url": "https://smlunchen.github.io/mh_windowsclient/",
+    "url": "https://meshhessenclient.de/",
     "downloadUrl": "https://github.com/SMLunchen/mh_windowsclient/releases/latest",
     "author": { "@type": "Organization", "name": "Meshhessen Community", "url": "https://www.meshhessen.de" },
     "softwareVersion": "1.6.4.7",
-    "screenshot": "https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map.png",
+    "screenshot": "https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map-with-dem-elevation-profile.png",
     "keywords": "Meshtastic, Windows, LoRa, Mesh, Telemetrie, Traceroute, Offline-Karte, PKI"
   }
   </script>
@@ -85,6 +86,30 @@
       color: #e6edf3;
     }
     .btn.secondary:hover { background: #30363d; }
+
+    /* ── Hero ── */
+    .claim { font-size: 1.45rem; font-weight: 700; color: #e6edf3; margin-bottom: 0.5rem; }
+    .chips { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; margin-bottom: 1.1rem; }
+    .chip { background: #21262d; border: 1px solid #30363d; border-radius: 20px; padding: 0.25rem 0.9rem; font-size: 0.85rem; color: #c9d1d9; }
+    .hero-shot { margin: 0 0 1.6rem; }
+    .hero-shot img { width: 100%; border-radius: 10px; border: 1px solid #30363d; display: block; }
+    .hero-shot .caption { color: #8b949e; font-size: 0.85rem; text-align: center; display: block; margin-top: 0.4rem; }
+
+    /* ── Feature highlight rows ── */
+    .feature-row { display: grid; grid-template-columns: 1.1fr 1fr; gap: 1.4rem; align-items: center; margin: 1.8rem 0; }
+    .feature-row.swap .feature-shot { order: 2; }
+    .feature-row .feature-shot img { width: 100%; border-radius: 8px; border: 1px solid #30363d; display: block; }
+    .feature-row h3 { margin-top: 0; font-size: 1.2rem; }
+    .feature-row p { font-size: 0.97rem; }
+    @media (max-width: 760px) {
+      .feature-row, .feature-row.swap { grid-template-columns: 1fr; }
+      .feature-row.swap .feature-shot { order: 0; }
+    }
+    .doc-links { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 0.5rem 1rem; list-style: none; margin-top: 0.8rem; padding: 0; }
+    .doc-links a { display: block; padding: 0.55rem 0.9rem; background: #161b22; border: 1px solid #30363d; border-radius: 8px; color: #e6edf3; }
+    .doc-links a:hover { border-color: #58a6ff; text-decoration: none; }
+    .dev-badge { display: inline-block; margin-left: 0.5rem; padding: 0.1rem 0.6rem; border-radius: 12px; font-size: 0.78rem; background: #3a2d10; color: #e3b341; border: 1px solid #9e6a03; }
+    .dl-note { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 0.8rem 1rem; font-size: 0.92rem; margin-top: 0.8rem; }
 
     /* ── Language switcher ── */
     .lang-bar {
@@ -283,23 +308,31 @@
 <body>
 
 <header>
-  <h1>Meshhessen Client</h1>
-  <p class="subtitle">
-    Kostenloser Windows-Client für Meshtastic-Geräte –
-    Offline-Karte, Telemetrie-Analyse, Traceroute und PKI-Entschlüsselung.
-    Keine Cloud, keine Installation.
+  <h1>📡 Meshhessen Client</h1>
+  <p class="claim" id="hero-claim">Dein Mesh. Deine Karte. Deine Kontrolle.</p>
+  <p class="subtitle" id="hero-sub">
+    Meshtastic auf deinem Windows-PC: Nachrichten senden, Funkstrecken analysieren,
+    Nodes verwalten – und auch ohne Internet den Überblick behalten.
+    Aus Hessen, für jedes Meshtastic-Mesh.
   </p>
-  <div class="badges">
+  <div class="chips" id="hero-chips">
+    <span class="chip">✔ Kostenlos &amp; Open Source</span>
+    <span class="chip">📴 Offline-fähig</span>
+    <span class="chip">🔌 USB · WLAN · Bluetooth</span>
+    <span class="chip">🪟 Windows 10/11</span>
+  </div>
+  <div>
+    <a class="btn" id="hero-dl" href="https://github.com/SMLunchen/mh_windowsclient/releases/latest">⬇ Für Windows herunterladen</a>
+    <a class="btn secondary" id="hero-manual" href="handbuch/">📖 Handbuch</a>
+    <a class="btn secondary" href="https://github.com/SMLunchen/mh_windowsclient">GitHub</a>
+    <a class="btn secondary" href="https://www.meshhessen.de">meshhessen.de</a>
+  </div>
+  <div class="badges" style="margin-top:1rem;">
     <img src="https://img.shields.io/badge/Windows-10%2F11-blue" alt="Windows 10/11" />
     <img src="https://img.shields.io/badge/.NET-8.0-purple" alt=".NET 8.0" />
     <img src="https://img.shields.io/github/v/release/SMLunchen/mh_windowsclient" alt="Release" />
     <img src="https://img.shields.io/github/license/SMLunchen/mh_windowsclient" alt="License" />
     <img src="https://img.shields.io/github/stars/SMLunchen/mh_windowsclient" alt="Stars" />
-  </div>
-  <div>
-    <a class="btn" href="https://github.com/SMLunchen/mh_windowsclient/releases/latest">⬇ Download (EXE)</a>
-    <a class="btn secondary" href="https://github.com/SMLunchen/mh_windowsclient">GitHub Repository</a>
-    <a class="btn secondary" href="https://www.meshhessen.de">meshhessen.de</a>
   </div>
   <div class="lang-bar">
     <button class="lang-btn active" onclick="setLang('de')" id="btn-de">🇩🇪 Deutsch</button>
@@ -311,13 +344,99 @@
 <div class="section active" id="de">
 <main>
 
+  <div class="hero-shot">
+    <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map-with-dem-elevation-profile.png" target="_blank" rel="noopener">
+      <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map-with-dem-elevation-profile.png"
+           alt="Meshhessen Client – 3D-Gelände (SRTM-Höhenmodell) mit Meshtastic-Nodes auf der Vektorkarte" />
+    </a>
+    <span class="caption">⛰ 3D-Gelände mit Node-Positionen auf der Vektorkarte – einer von vielen Blicken auf dein Mesh</span>
+  </div>
+
   <div class="whats-new">
     <span class="vbadge">v1.6.4.7</span>
     <span class="summary">🛰️ Traceroute: ehrliche MQTT-Badges pro Teilstrecke · 🔗 Nachbar-Datenbank von falschen 0-dB-Links bereinigt · ✕ kaputte Symbole repariert · ℹ️ Node-Info zeigt „Zuerst/Zuletzt gesehen" (Node-Info-Rework &amp; Dashboard-Dark-Mode-Fix seit 1.6.4.6).</span>
-    <a href="changelog.html">Changelog ansehen →</a>
+    <a href="changelog.html?lang=de">Changelog ansehen →</a>
   </div>
 
-  <h2>Features</h2>
+  <h2>Was du damit machst</h2>
+
+  <div class="feature-row">
+    <div class="feature-shot">
+      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/vector_in_action.png" target="_blank" rel="noopener"><img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/vector_in_action.png" alt="Meshhessen Client – Vektorkarte mit Meshtastic Node-Positionen" loading="lazy" /></a>
+    </div>
+    <div>
+      <h3>🗺️ Dein gesamtes Mesh auf einer Karte</h3>
+      <p>Offline-Karten (Raster + gestochen scharfe Vektorkarte), Node-Positionen, Traceroutes, Nachbar-Linien, Umwelt-Heatmaps, ⛰ 3D-Gelände und zuschaltbare Fach-Layer wie den 🚒 Feuerwehr-Layer. Einmal betrachtete Gebiete funktionieren auch ohne Internet.</p>
+    </div>
+  </div>
+
+  <div class="feature-row swap">
+    <div class="feature-shot">
+      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/elevation-profile.png" target="_blank" rel="noopener"><img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/elevation-profile.png" alt="Meshhessen Client – Höhenprofil einer Funkstrecke mit Fresnel-Zone" loading="lazy" /></a>
+    </div>
+    <div>
+      <h3>📡 Verstehe, wie gut dein Mesh wirklich funkt</h3>
+      <p><strong>Echte HF-Nachbarn</strong> statt „irgendwann mal via MQTT gehört", SNR in beide Richtungen – und per Rechtsklick das <strong>Höhenprofil jeder Funkstrecke</strong> mit Sichtlinie und Fresnel-Zone. Unterscheide echte Funkverbindungen von MQTT-Strecken und finde heraus, ob ein Berg im Weg steht.</p>
+    </div>
+  </div>
+
+  <div class="feature-row">
+    <div class="feature-shot">
+      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/telemetry-dashboard.png" target="_blank" rel="noopener"><img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/telemetry-dashboard.png" alt="Meshhessen Client – Telemetrie-Dashboard mit Widgets und Schwellwert-Alarmen" loading="lazy" /></a>
+    </div>
+    <div>
+      <h3>📊 Erkenne Probleme, bevor Verbindungen ausfallen</h3>
+      <p>Frei konfigurierbares Telemetrie-Dashboard mit 11 Widget-Typen, Schwellwert-Alarmen als Windows-Toast, Tag/Nacht-Schattierung und Vollbild für Wandmonitore. Dazu Node-Statistiken und LED-Ampeln für Signal, Nachbarn, Pfad-Stabilität und Mesh-Health.</p>
+    </div>
+  </div>
+
+  <div class="feature-row swap">
+    <div class="feature-shot">
+      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/new-chat-layout.png" target="_blank" rel="noopener"><img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/new-chat-layout.png" alt="Meshhessen Client – Kanal-Chat und Direktnachrichten" loading="lazy" /></a>
+    </div>
+    <div>
+      <h3>💬 Kommuniziere direkt über dein Funknetz</h3>
+      <p>Kanalnachrichten, Direktnachrichten, Reaktionen und optionale Nachrichten-Historie – bequem am PC, ohne Cloud-Zwang. Inklusive client-seitiger PKI-Entschlüsselung und 🚨 SOS/Alert-Bell. Entfernte Nodes verwaltest du per Fernkonfiguration gleich mit.</p>
+    </div>
+  </div>
+
+  <h2>Für deinen Einsatzzweck</h2>
+  <div class="grid">
+    <div class="card" style="--card-accent:#58a6ff">
+      <h3>📶 Mesh-Betreiber</h3>
+      <p>Antennenstandorte analysieren, Signalverläufe vergleichen und instabile Funkstrecken mit Höhenprofil und Fresnel-Zone identifizieren.</p>
+    </div>
+    <div class="card" style="--card-accent:#3fb950">
+      <h3>🏕️ Outdoor &amp; Offline</h3>
+      <p>Karten herunterladen, Standorte darstellen und unabhängig von einer Internetverbindung arbeiten – auch auf dem T-Deck per SD-Karten-Assistent.</p>
+    </div>
+    <div class="card" style="--card-accent:#e3b341">
+      <h3>🚒 Übungen &amp; Notfunk</h3>
+      <p>Lageübersicht, Nachrichten, Feuerwehr-/Rettungs-Layer und Kiosk-Modus auf einer Oberfläche – als Unterstützung für Ausbildung und Übungen. Kein zertifiziertes BOS- oder Alarmierungssystem.</p>
+    </div>
+    <div class="card" style="--card-accent:#bc8cff">
+      <h3>🔬 Technikbegeisterte</h3>
+      <p>Geräte vollständig konfigurieren, Telemetrie auswerten, entfernte Nodes administrieren und Apps über den Virtual Node anbinden.</p>
+    </div>
+  </div>
+
+  <h2>📚 Dokumentation &amp; Hilfe</h2>
+  <p>Schritt-für-Schritt-Anleitungen zu allen Themen — als durchsuchbares <a href="handbuch/">📖 Handbuch</a> (Deutsch &amp; Englisch):</p>
+  <ul class="doc-links">
+    <li><a href="handbuch/de/schnellstart/">🚀 Schnellstart &amp; Verbindung</a></li>
+    <li><a href="handbuch/de/karte/">🗺️ Karte &amp; Offline-Nutzung</a></li>
+    <li><a href="handbuch/de/nachrichten/">📨 Nachrichten &amp; Kommunikation</a></li>
+    <li><a href="handbuch/de/telemetrie/">📊 Telemetrie &amp; Funkanalyse</a></li>
+    <li><a href="handbuch/de/traceroute/">📡 Traceroute</a></li>
+    <li><a href="handbuch/de/node-verwaltung/">🔧 Node-Verwaltung &amp; Fernkonfiguration</a></li>
+    <li><a href="handbuch/de/tools/">🧰 Virtual Node · T-Deck · Kiosk</a></li>
+    <li><a href="handbuch/de/technik/">🏗️ Technik &amp; Protokoll</a></li>
+    <li><a href="handbuch/de/glossar/">📖 Glossar (SNR, Airtime, MQTT …)</a></li>
+    <li><a href="#telemetrie">📊 Messwerte verstehen (Telemetrie-Hilfe)</a></li>
+    <li><a href="changelog.html?lang=de">📝 Changelog</a></li>
+  </ul>
+
+  <h2>Alle Funktionen im Überblick</h2>
   <div class="grid">
     <div class="card" style="--card-accent:#58a6ff">
       <span class="badge-new">NEU</span>
@@ -456,7 +575,7 @@
   <div class="telem-grid">
     <div class="telem-card">
       <h3>SNR – Signal-Rausch-Abstand</h3>
-      <p>Gibt an, wie stark das Nutzsignal gegenüber dem Rauschen ist. LoRa kann theoretisch bis ca. −20 dB empfangen, praktisch ist oberhalb von −10 dB aber mit erheblichen Paketverlusten zu rechnen.</p>
+      <p>Gibt an, wie stark das Nutzsignal gegenüber dem Rauschen ist. LoRa dekodiert dank Spreizung auch Signale unterhalb des Rauschpegels – wie weit, hängt vom Modem-Preset ab (kurze Presets ≈ −7 dB, Long Slow bis ≈ −20 dB). Die folgenden Schwellen sind eine praxisnahe Orientierung für die hierzulande üblichen Presets, keine festen Grenzen:</p>
       <ul>
         <li><span class="led-green">▲ &gt; 5 dB</span> – Sehr gut, stabile Verbindung</li>
         <li><span class="led-green">● 0 – 5 dB</span> – Gut, zuverlässige Verbindung</li>
@@ -598,7 +717,7 @@
     </li>
     <li>
       <strong>Hohe Kanalauslastung (&gt; 25 %):</strong>
-      Modem-Preset auf <em>Short Slow</em> setzen (höhere Spreading Factor = weniger Airtime).
+      Modem-Preset auf <em>Short Slow</em> setzen (höhere Datenrate durch niedrigeren Spreading Factor = kürzere Airtime pro Paket).
       Position-Update-Rate in der Firmware reduzieren (z.B. auf alle 10–30 Minuten).
       Telemetrie-Intervalle (Gerät, Umwelt) erhöhen.
       Unnötige Broadcasts (z.B. häufige Nachrichten) minimieren.
@@ -606,12 +725,12 @@
     <li>
       <strong>Pfad-Instabilität (häufige Pfadwechsel):</strong>
       Relay-Nodes an schlechten Standorten identifizieren und verbessern.
-      Fixed-Position für Relay-Nodes setzen – verbessert die Routing-Stabilität erheblich.
+      Für stationäre Relay-Nodes eine feste Position setzen – spart GPS-Strom und verhindert springende Kartenpositionen (das Next-Hop-Routing steuert es nicht direkt).
       SNR der betroffenen Zwischenverbindungen über Traceroute analysieren.
     </li>
     <li>
       <strong>Hoher Nachtabfall der Batterie:</strong>
-      Deep-Sleep in der Firmware aktivieren (wenn Standort stationär).
+      Stromsparoptionen rollenabhängig prüfen: Clients/Tracker profitieren von Power-Saving/Deep-Sleep, Router sollen dauerhaft empfangsbereit bleiben.
       Display-Timeout reduzieren. Netzteil / Solar-Panel prüfen.
       Ladecontroller auf korrekte Funktion überprüfen.
     </li>
@@ -627,168 +746,55 @@
   <div class="screenshots">
     <div class="screenshot-item">
       <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map-with-dem-elevation-profile.png" target="_blank" rel="noopener">
-        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map-with-dem-elevation-profile.png"
-             alt="Meshhessen Client – 3D-Gelände (SRTM-Höhenmodell) mit Schummerung auf der Meshtastic-Vektorkarte" loading="lazy" />
+        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map-with-dem-elevation-profile.png" alt="Meshhessen Client – 3D-Gelände (SRTM-Höhenmodell) auf der Meshtastic-Vektorkarte" loading="lazy" />
       </a>
-      <span class="caption">NEU: ⛰ 3D-Gelände – SRTM-Höhenmodell mit Schummerung (Strg+Ziehen)</span>
+      <span class="caption">⛰ 3D-Gelände – SRTM-Höhenmodell mit Schummerung</span>
     </div>
     <div class="screenshot-item">
       <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/elevation-profile.png" target="_blank" rel="noopener">
-        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/elevation-profile.png"
-             alt="Meshhessen Client – Höhenprofil einer Meshtastic-Funkstrecke: SRTM-Gelände, Sichtlinie und Fresnel-Zone" loading="lazy" />
+        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/elevation-profile.png" alt="Meshhessen Client – Höhenprofil einer Meshtastic-Funkstrecke mit Fresnel-Zone" loading="lazy" />
       </a>
-      <span class="caption">NEU: ⛰ Höhenprofil pro Funkstrecke – Gelände, Sichtlinie &amp; Fresnel-Zone</span>
+      <span class="caption">⛰ Höhenprofil pro Funkstrecke – Sichtlinie &amp; Fresnel-Zone</span>
     </div>
     <div class="screenshot-item">
       <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/telemetry-dashboard.png" target="_blank" rel="noopener">
-        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/telemetry-dashboard.png"
-             alt="Meshhessen Client – Telemetrie-Dashboard mit konfigurierbaren Widgets: Gauges, Heatmaps, Mesh-Health und Schwellwert-Alarmen" loading="lazy" />
+        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/telemetry-dashboard.png" alt="Meshhessen Client – Telemetrie-Dashboard mit konfigurierbaren Widgets" loading="lazy" />
       </a>
-      <span class="caption">📊 Telemetrie-Dashboard – Widgets, Schwellwert-Alarme, Vollbild</span>
+      <span class="caption">📊 Telemetrie-Dashboard – Widgets, Alarme, Vollbild</span>
     </div>
     <div class="screenshot-item">
       <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map-environment-overlay-temp.png" target="_blank" rel="noopener">
-        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map-environment-overlay-temp.png"
-             alt="Meshhessen Client – Temperatur-Heatmap-Overlay mit Isothermen auf der Meshtastic-Karte" loading="lazy" />
+        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map-environment-overlay-temp.png" alt="Meshhessen Client – Temperatur-Heatmap-Overlay mit Isothermen" loading="lazy" />
       </a>
-      <span class="caption">Umwelt-Overlay: Temperatur-Heatmap mit Isothermen &amp; Legende</span>
-    </div>
-    <div class="screenshot-item">
-      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map-environment-overlay-noisefloor.png" target="_blank" rel="noopener">
-        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map-environment-overlay-noisefloor.png"
-             alt="Meshhessen Client – Noise-Floor-Heatmap-Overlay: Funkqualität als Fläche auf der Meshtastic-Karte" loading="lazy" />
-      </a>
-      <span class="caption">Funk-Overlay: Noise Floor als Fläche (auch SNR/RSSI)</span>
-    </div>
-    <div class="screenshot-item">
-      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/mouse-over-telemetry-environment-map.png" target="_blank" rel="noopener">
-        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/mouse-over-telemetry-environment-map.png"
-             alt="Meshhessen Client – Mouse-Over-Messwert-Boxen des Umwelt-Overlays an den Meshtastic-Nodes" loading="lazy" />
-      </a>
-      <span class="caption">Umwelt-Overlay: Messwert-Boxen per Mouse-Over</span>
+      <span class="caption">🌡️ Umwelt-Overlay – Heatmap im Wetterdienst-Stil</span>
     </div>
     <div class="screenshot-item">
       <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/vector_in_action.png" target="_blank" rel="noopener">
-        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/vector_in_action.png"
-             alt="Meshhessen Client – Vektorkarte (MapLibre GL) mit Meshtastic Node-Positionen unter Windows" loading="lazy" />
+        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/vector_in_action.png" alt="Meshhessen Client – Vektorkarte mit Meshtastic Node-Positionen" loading="lazy" />
       </a>
-      <span class="caption">Vektorkarte – scharf in jeder Zoomstufe</span>
+      <span class="caption">🗺️ Vektorkarte – scharf in jeder Zoomstufe</span>
     </div>
     <div class="screenshot-item">
       <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/vector_w_hydrant.png" target="_blank" rel="noopener">
-        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/vector_w_hydrant.png"
-             alt="Meshhessen Client – Vektorkarte mit Feuerwehr-Layer: Hydranten, Wachen und Rettungspunkte" loading="lazy" />
+        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/vector_w_hydrant.png" alt="Meshhessen Client – Vektorkarte mit Feuerwehr-Layer: Hydranten und Rettungspunkte" loading="lazy" />
       </a>
-      <span class="caption">NEU: 🚒 Feuerwehr-Layer – Hydranten, Wachen, Rettungspunkte</span>
+      <span class="caption">🚒 Feuerwehr-/Rettungs-Layer</span>
     </div>
     <div class="screenshot-item">
-      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/hydrant_unterflur.png" target="_blank" rel="noopener">
-        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/hydrant_unterflur.png"
-             alt="Meshhessen Client – Hydranten-Detail-Popup: Unterflurhydrant mit Bauart und Wasserquelle" loading="lazy" />
+      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/new-chat-layout.png" target="_blank" rel="noopener">
+        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/new-chat-layout.png" alt="Meshhessen Client – Kanal-Chat und Direktnachrichten unter Windows" loading="lazy" />
       </a>
-      <span class="caption">Klick auf Hydrant → Details (hier: Unterflur)</span>
+      <span class="caption">💬 Nachrichten – Kanal-Chat &amp; DMs</span>
     </div>
     <div class="screenshot-item">
-      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/raster_wo_hydrant.png" target="_blank" rel="noopener">
-        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/raster_wo_hydrant.png"
-             alt="Meshhessen Client – klassische Rasterkarte ohne Feuerwehr-Layer (Vergleichsbild)" loading="lazy" />
+      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/nodelist_new_tiles.png" target="_blank" rel="noopener">
+        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/nodelist_new_tiles.png" alt="Meshhessen Client – Node-Kachelansicht mit Telemetrie und Signalqualität" loading="lazy" />
       </a>
-      <span class="caption">Zum Vergleich: derselbe Ausschnitt als Rasterkarte</span>
-    </div>
-    <div class="screenshot-item">
-      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/vector_w_neighborlinks.png" target="_blank" rel="noopener">
-        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/vector_w_neighborlinks.png"
-             alt="Meshhessen Client – Nachbar-Linien mit SNR-Farbverlauf auf der Vektorkarte (0-Hop HF)" loading="lazy" />
-      </a>
-      <span class="caption">Nachbar-Linien (SNR-Farbverlauf) auf der Vektorkarte</span>
-    </div>
-    <div class="screenshot-item">
-      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/kiosk_settings.png" target="_blank" rel="noopener">
-        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/kiosk_settings.png"
-             alt="Meshhessen Client – Kiosk- und Trainingsmodus: sperrbare Oberfläche mit Passwortschutz" loading="lazy" />
-      </a>
-      <span class="caption">Kiosk-/Trainingsmodus – Einstellungen</span>
-    </div>
-    <div class="screenshot-item">
-      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map.png" target="_blank" rel="noopener">
-        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map.png"
-             alt="Meshhessen Client – Offline-Karte mit Meshtastic Node-Positionen unter Windows" loading="lazy" />
-      </a>
-      <span class="caption">Offline-Karte mit Node-Positionen (OSM)</span>
-    </div>
-    <div class="screenshot-item">
-      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/nodes.png" target="_blank" rel="noopener">
-        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/nodes.png"
-             alt="Meshhessen Client – Meshtastic Node-Übersicht mit SNR, RSSI, Batterie und LED-Ampeln" loading="lazy" />
-      </a>
-      <span class="caption">Node-Übersicht mit SNR, Batterie und LED-Ampeln</span>
-    </div>
-    <div class="screenshot-item">
-      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/messaging.png" target="_blank" rel="noopener">
-        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/messaging.png"
-             alt="Meshhessen Client – Meshtastic Nachrichten, Kanal-Chat und Direktnachrichten (DM) unter Windows" loading="lazy" />
-      </a>
-      <span class="caption">Kanal-Chat und Direktnachrichten (DMs)</span>
-    </div>
-    <div class="screenshot-item">
-      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/channel_list.png" target="_blank" rel="noopener">
-        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/channel_list.png"
-             alt="Meshhessen Client – Meshtastic Kanal-Liste (Multi-Channel) unter Windows" loading="lazy" />
-      </a>
-      <span class="caption">Kanal-Liste (Multi-Channel)</span>
-    </div>
-    <div class="screenshot-item">
-      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node-telemetry.png" target="_blank" rel="noopener">
-        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node-telemetry.png"
-             alt="Meshhessen Client – Meshtastic Telemetrie-Übersicht: Signal, Airtime, Routing und Nachbarn" loading="lazy" />
-      </a>
-      <span class="caption">Telemetrie-Übersicht pro Node</span>
-    </div>
-    <div class="screenshot-item">
-      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node_power.png" target="_blank" rel="noopener">
-        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node_power.png"
-             alt="Meshhessen Client – Meshtastic Batterie- und Spannungsanalyse mit Tag/Nacht-Profil" loading="lazy" />
-      </a>
-      <span class="caption">Batterie &amp; Spannung – Tag/Nacht-Profil</span>
-    </div>
-    <div class="screenshot-item">
-      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node_airtime.png" target="_blank" rel="noopener">
-        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node_airtime.png"
-             alt="Meshhessen Client – Meshtastic Airtime-Analyse: TX-Airtime, RX-Airtime und Kanalauslastung" loading="lazy" />
-      </a>
-      <span class="caption">Airtime-Analyse (TX/RX, Kanalauslastung)</span>
-    </div>
-    <div class="screenshot-item">
-      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node_neighbors.png" target="_blank" rel="noopener">
-        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node_neighbors.png"
-             alt="Meshhessen Client – Echte HF-Nachbarn mit SNR in beide Richtungen und Höhenprofil-Kontextmenü" loading="lazy" />
-      </a>
-      <span class="caption">Echte HF-Nachbarn (SNR beide Richtungen, Rechtsklick → Höhenprofil)</span>
-    </div>
-    <div class="screenshot-item">
-      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node_routing.png" target="_blank" rel="noopener">
-        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node_routing.png"
-             alt="Meshhessen Client – Meshtastic Routing-Statistik: Hop-Anzahl und Pfad-Stabilität" loading="lazy" />
-      </a>
-      <span class="caption">Routing-Statistik (Hops, Pfad-Stabilität)</span>
-    </div>
-    <div class="screenshot-item">
-      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/alert_bell.png" target="_blank" rel="noopener">
-        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/alert_bell.png"
-             alt="Meshhessen Client – Alert Bell SOS-Notruf Signalisierung für Meshtastic-Geräte unter Windows" loading="lazy" />
-      </a>
-      <span class="caption">Alert Bell / SOS-Notruf</span>
-    </div>
-    <div class="screenshot-item">
-      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/tile_downloader.png" target="_blank" rel="noopener">
-        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/tile_downloader.png"
-             alt="Meshhessen Client – Offline-Karten-Tile-Downloader für Meshtastic-Geräte unter Windows" loading="lazy" />
-      </a>
-      <span class="caption">Offline-Tile-Downloader</span>
+      <span class="caption">📋 Node-Kachelansicht (Fancy View)</span>
     </div>
   </div>
+  <p style="margin-top:0.6rem;">Mehr Bilder gibt es in den <a href="handbuch/de/karte/">Doku-Kapiteln</a> und der <a href="https://github.com/SMLunchen/mh_windowsclient#readme">Projektübersicht</a> auf GitHub.</p>
 
-  <!-- ── Supported devices ── -->
   <h2>Unterstützte Geräte</h2>
   <p class="devices">
     Funktioniert mit allen Meshtastic-kompatiblen Geräten:
@@ -800,14 +806,14 @@
   <h2>Download &amp; Installation</h2>
   <ol class="dl-steps">
     <li>
-      <a href="https://dotnet.microsoft.com/en-us/download/dotnet/8.0">.NET 8 Desktop Runtime</a> herunterladen und installieren
-    </li>
-    <li>
       <a href="https://github.com/SMLunchen/mh_windowsclient/releases/latest">Neueste <code>MeshhessenClient.exe</code></a> herunterladen
     </li>
     <li>Meshtastic-Gerät per USB anstecken</li>
-    <li>Doppelklick auf <code>MeshhessenClient.exe</code> – fertig. Keine Installation nötig.</li>
+    <li>Doppelklick auf <code>MeshhessenClient.exe</code> – die App startet ohne Installer (portabel, alles bleibt im EXE-Ordner).</li>
   </ol>
+
+  <p class="dl-note">✅ <strong>Keine Runtime nötig:</strong> Die EXE bringt die komplette .NET-Laufzeitumgebung bereits mit (self-contained) – herunterladen, starten, fertig.<br />
+  💡 <strong>Windows SmartScreen:</strong> Beim ersten Start kann Windows vor einem „unbekannten Herausgeber" warnen – normal bei unsignierten Open-Source-Downloads. <strong>„Weitere Informationen → Trotzdem ausführen"</strong> startet die App. Zum Verifizieren die SHA-256-Prüfsumme aus dem GitHub-Release vergleichen: <code>Get-FileHash MeshhessenClient.exe</code> (PowerShell).</p>
 
   <div class="disclaimer">
     Der Meshhessen Client ist ein inoffizieller Community-Client für Meshtastic-Geräte und steht in keiner
@@ -822,13 +828,99 @@
 <div class="section" id="en">
 <main>
 
+  <div class="hero-shot">
+    <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map-with-dem-elevation-profile.png" target="_blank" rel="noopener">
+      <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map-with-dem-elevation-profile.png"
+           alt="Meshhessen Client – 3D terrain (SRTM elevation model) with Meshtastic nodes on the vector map" />
+    </a>
+    <span class="caption">⛰ 3D terrain with node positions on the vector map – one of many views of your mesh</span>
+  </div>
+
   <div class="whats-new">
     <span class="vbadge">v1.6.4.7</span>
     <span class="summary">🛰️ Traceroute: honest per-segment MQTT badges · 🔗 neighbor database cleaned of fake 0 dB links · ✕ broken glyphs repaired · ℹ️ node info shows "first/last seen" (node-info rework &amp; dashboard dark-mode fix since 1.6.4.6).</span>
-    <a href="changelog.html">View changelog →</a>
+    <a href="changelog.html?lang=en">View changelog →</a>
   </div>
 
-  <h2>Features</h2>
+  <h2>What you do with it</h2>
+
+  <div class="feature-row">
+    <div class="feature-shot">
+      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/vector_in_action.png" target="_blank" rel="noopener"><img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/vector_in_action.png" alt="Meshhessen Client – vector map with Meshtastic node positions" loading="lazy" /></a>
+    </div>
+    <div>
+      <h3>🗺️ Your whole mesh on one map</h3>
+      <p>Offline maps (raster + razor-sharp vector), node positions, traceroutes, neighbor lines, environment heatmaps, ⛰ 3D terrain and optional special layers like the 🚒 fire service layer. Areas viewed once keep working without internet.</p>
+    </div>
+  </div>
+
+  <div class="feature-row swap">
+    <div class="feature-shot">
+      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/elevation-profile.png" target="_blank" rel="noopener"><img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/elevation-profile.png" alt="Meshhessen Client – elevation profile of a radio link with Fresnel zone" loading="lazy" /></a>
+    </div>
+    <div>
+      <h3>📡 Understand how well your mesh really performs</h3>
+      <p><strong>Real RF neighbors</strong> instead of "heard via MQTT at some point", SNR in both directions – and a right-click <strong>elevation profile for every radio link</strong> with line of sight and Fresnel zone. Tell genuine radio links from MQTT paths and find out whether a hill is in the way.</p>
+    </div>
+  </div>
+
+  <div class="feature-row">
+    <div class="feature-shot">
+      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/telemetry-dashboard.png" target="_blank" rel="noopener"><img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/telemetry-dashboard.png" alt="Meshhessen Client – telemetry dashboard with widgets and threshold alerts" loading="lazy" /></a>
+    </div>
+    <div>
+      <h3>📊 Spot problems before links fail</h3>
+      <p>Freely configurable telemetry dashboard with 11 widget types, threshold alerts as Windows toasts, day/night shading and fullscreen for wall monitors. Plus node statistics and LED health indicators for signal, neighbors, path stability and mesh health.</p>
+    </div>
+  </div>
+
+  <div class="feature-row swap">
+    <div class="feature-shot">
+      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/new-chat-layout.png" target="_blank" rel="noopener"><img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/new-chat-layout.png" alt="Meshhessen Client – channel chat and direct messages" loading="lazy" /></a>
+    </div>
+    <div>
+      <h3>💬 Communicate right over your radio network</h3>
+      <p>Channel messages, direct messages, reactions and optional message history – comfortably on your PC, no cloud required. Including client-side PKI decryption and 🚨 SOS/alert bell. Remote nodes are managed via remote admin, too.</p>
+    </div>
+  </div>
+
+  <h2>For your use case</h2>
+  <div class="grid">
+    <div class="card" style="--card-accent:#58a6ff">
+      <h3>📶 Mesh operators</h3>
+      <p>Analyze antenna sites, compare signal trends and identify unstable radio links with elevation profile and Fresnel zone.</p>
+    </div>
+    <div class="card" style="--card-accent:#3fb950">
+      <h3>🏕️ Outdoor &amp; offline</h3>
+      <p>Download maps ahead of time, display positions and work fully independent of an internet connection – T-Deck included via the SD-card assistant.</p>
+    </div>
+    <div class="card" style="--card-accent:#e3b341">
+      <h3>🚒 Exercises &amp; emergency comms</h3>
+      <p>Situation overview, messages, fire/rescue layers and kiosk mode on a single surface – as support for training and exercises. Not a certified public-safety or alerting system.</p>
+    </div>
+    <div class="card" style="--card-accent:#bc8cff">
+      <h3>🔬 Tinkerers</h3>
+      <p>Fully configure devices, analyze telemetry, administer remote nodes and connect apps via the Virtual Node.</p>
+    </div>
+  </div>
+
+  <h2>📚 Documentation &amp; Help</h2>
+  <p>Step-by-step guides for every topic — as a searchable <a href="handbuch/">📖 manual</a> (English &amp; German):</p>
+  <ul class="doc-links">
+    <li><a href="handbuch/en/getting-started/">🚀 Getting started &amp; connection</a></li>
+    <li><a href="handbuch/en/map/">🗺️ Map &amp; offline use</a></li>
+    <li><a href="handbuch/en/messaging/">📨 Messaging &amp; communication</a></li>
+    <li><a href="handbuch/en/telemetry/">📊 Telemetry &amp; radio analysis</a></li>
+    <li><a href="handbuch/en/traceroute/">📡 Traceroute</a></li>
+    <li><a href="handbuch/en/node-management/">🔧 Node management &amp; remote admin</a></li>
+    <li><a href="handbuch/en/tools/">🧰 Virtual Node · T-Deck · kiosk</a></li>
+    <li><a href="handbuch/en/technical/">🏗️ Technology &amp; protocol</a></li>
+    <li><a href="handbuch/en/glossary/">📖 Glossary (SNR, airtime, MQTT …)</a></li>
+    <li><a href="#telemetry">📊 Understanding the metrics (telemetry help)</a></li>
+    <li><a href="changelog.html?lang=en">📝 Changelog</a></li>
+  </ul>
+
+  <h2>All features at a glance</h2>
   <div class="grid">
     <div class="card" style="--card-accent:#58a6ff">
       <span class="badge-new">NEW</span>
@@ -966,7 +1058,7 @@
   <div class="telem-grid">
     <div class="telem-card">
       <h3>SNR – Signal-to-Noise Ratio</h3>
-      <p>Indicates how much stronger the signal is compared to background noise. LoRa can theoretically receive down to approx. −20 dB, but below −10 dB expect significant packet loss.</p>
+      <p>Shows how strong the signal is relative to the noise. Thanks to spreading, LoRa decodes signals below the noise floor – how far depends on the modem preset (short presets ≈ −7 dB, Long Slow down to ≈ −20 dB). The thresholds below are a practical orientation for the presets common around here, not hard limits:</p>
       <ul>
         <li><span class="led-green">▲ &gt; 5 dB</span> – Excellent, stable link</li>
         <li><span class="led-green">● 0 – 5 dB</span> – Good, reliable link</li>
@@ -1107,18 +1199,18 @@
     </li>
     <li>
       <strong>High channel utilization (&gt; 25 %):</strong>
-      Switch modem preset to <em>Short Slow</em> (higher spreading factor = less airtime per packet).
+      Switch modem preset to <em>Short Slow</em> (higher data rate via a lower spreading factor = shorter airtime per packet).
       Reduce position update rate in firmware (e.g. every 10–30 minutes).
       Increase telemetry intervals (device, environment). Minimize unnecessary broadcasts.
     </li>
     <li>
       <strong>Path instability (frequent path changes):</strong>
       Identify relay nodes at poor locations using traceroute SNR analysis.
-      Set a fixed position for relay nodes – greatly improves routing stability.
+      Set a fixed position for stationary relay nodes – saves GPS power and stops map positions from jumping (it does not directly control next-hop routing).
     </li>
     <li>
       <strong>High night-time battery drop:</strong>
-      Enable deep sleep in firmware (if node location is stationary).
+      Review power-saving options per device role: clients/trackers benefit from power saving/deep sleep, routers should stay receive-ready.
       Reduce display timeout. Check solar panel alignment and cleanliness.
       Verify charge controller operation.
     </li>
@@ -1134,161 +1226,55 @@
   <div class="screenshots">
     <div class="screenshot-item">
       <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map-with-dem-elevation-profile.png" target="_blank" rel="noopener">
-        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map-with-dem-elevation-profile.png"
-             alt="Meshhessen Client – 3D terrain (SRTM elevation model) with hillshading on the Meshtastic vector map" loading="lazy" />
+        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map-with-dem-elevation-profile.png" alt="Meshhessen Client – 3D terrain (SRTM elevation model) on the Meshtastic vector map" loading="lazy" />
       </a>
-      <span class="caption">NEW: ⛰ 3D terrain – SRTM elevation model with hillshading (Ctrl+drag)</span>
+      <span class="caption">⛰ 3D terrain – SRTM elevation model with hillshading</span>
     </div>
     <div class="screenshot-item">
       <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/elevation-profile.png" target="_blank" rel="noopener">
-        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/elevation-profile.png"
-             alt="Meshhessen Client – elevation profile of a Meshtastic radio link: SRTM terrain, line of sight and Fresnel zone" loading="lazy" />
+        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/elevation-profile.png" alt="Meshhessen Client – elevation profile of a Meshtastic radio link with Fresnel zone" loading="lazy" />
       </a>
-      <span class="caption">NEW: ⛰ elevation profile per radio link – terrain, line of sight &amp; Fresnel zone</span>
+      <span class="caption">⛰ Elevation profile per radio link – line of sight &amp; Fresnel zone</span>
     </div>
     <div class="screenshot-item">
       <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/telemetry-dashboard.png" target="_blank" rel="noopener">
-        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/telemetry-dashboard.png"
-             alt="Meshhessen Client – telemetry dashboard with configurable widgets: gauges, heatmaps, mesh health and threshold alerts" loading="lazy" />
+        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/telemetry-dashboard.png" alt="Meshhessen Client – telemetry dashboard with configurable widgets" loading="lazy" />
       </a>
-      <span class="caption">📊 Telemetry dashboard – widgets, threshold alerts, fullscreen</span>
+      <span class="caption">📊 Telemetry dashboard – widgets, alerts, fullscreen</span>
     </div>
     <div class="screenshot-item">
       <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map-environment-overlay-temp.png" target="_blank" rel="noopener">
-        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map-environment-overlay-temp.png"
-             alt="Meshhessen Client – temperature heatmap overlay with isotherms on the Meshtastic map" loading="lazy" />
+        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map-environment-overlay-temp.png" alt="Meshhessen Client – temperature heatmap overlay with isotherms" loading="lazy" />
       </a>
-      <span class="caption">Environment overlay: temperature heatmap with isotherms &amp; legend</span>
-    </div>
-    <div class="screenshot-item">
-      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map-environment-overlay-noisefloor.png" target="_blank" rel="noopener">
-        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map-environment-overlay-noisefloor.png"
-             alt="Meshhessen Client – noise floor heatmap overlay: radio quality as a surface on the Meshtastic map" loading="lazy" />
-      </a>
-      <span class="caption">Radio overlay: noise floor as a surface (SNR/RSSI too)</span>
+      <span class="caption">🌡️ Environment overlay – weather-service-style heatmap</span>
     </div>
     <div class="screenshot-item">
       <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/vector_in_action.png" target="_blank" rel="noopener">
-        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/vector_in_action.png"
-             alt="Meshhessen Client – vector map (MapLibre GL) with Meshtastic node positions on Windows" loading="lazy" />
+        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/vector_in_action.png" alt="Meshhessen Client – vector map with Meshtastic node positions" loading="lazy" />
       </a>
-      <span class="caption">Vector map – razor-sharp at any zoom</span>
+      <span class="caption">🗺️ Vector map – razor-sharp at any zoom</span>
     </div>
     <div class="screenshot-item">
       <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/vector_w_hydrant.png" target="_blank" rel="noopener">
-        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/vector_w_hydrant.png"
-             alt="Meshhessen Client – vector map with fire service layer: hydrants, stations and rescue points" loading="lazy" />
+        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/vector_w_hydrant.png" alt="Meshhessen Client – vector map with fire service layer: hydrants and rescue points" loading="lazy" />
       </a>
-      <span class="caption">NEW: 🚒 fire service layer – hydrants, stations, rescue points</span>
+      <span class="caption">🚒 Fire service / rescue layer</span>
     </div>
     <div class="screenshot-item">
-      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/hydrant_unterflur.png" target="_blank" rel="noopener">
-        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/hydrant_unterflur.png"
-             alt="Meshhessen Client – hydrant detail popup: underground hydrant with type and water source" loading="lazy" />
+      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/new-chat-layout.png" target="_blank" rel="noopener">
+        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/new-chat-layout.png" alt="Meshhessen Client – channel chat and direct messages on Windows" loading="lazy" />
       </a>
-      <span class="caption">Click a hydrant → details (here: underground)</span>
+      <span class="caption">💬 Messaging – channel chat &amp; DMs</span>
     </div>
     <div class="screenshot-item">
-      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/raster_wo_hydrant.png" target="_blank" rel="noopener">
-        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/raster_wo_hydrant.png"
-             alt="Meshhessen Client – classic raster map without fire service layer (comparison)" loading="lazy" />
+      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/nodelist_new_tiles.png" target="_blank" rel="noopener">
+        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/nodelist_new_tiles.png" alt="Meshhessen Client – node tile view with telemetry and signal quality" loading="lazy" />
       </a>
-      <span class="caption">For comparison: the same area as raster map</span>
-    </div>
-    <div class="screenshot-item">
-      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/vector_w_neighborlinks.png" target="_blank" rel="noopener">
-        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/vector_w_neighborlinks.png"
-             alt="Meshhessen Client – neighbor lines with SNR gradient on the vector map (0-hop RF)" loading="lazy" />
-      </a>
-      <span class="caption">Neighbor lines (SNR gradient) on the vector map</span>
-    </div>
-    <div class="screenshot-item">
-      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/kiosk_settings.png" target="_blank" rel="noopener">
-        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/kiosk_settings.png"
-             alt="Meshhessen Client – kiosk / training mode: lockable UI with password protection" loading="lazy" />
-      </a>
-      <span class="caption">Kiosk / training mode – settings</span>
-    </div>
-    <div class="screenshot-item">
-      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map.png" target="_blank" rel="noopener">
-        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map.png"
-             alt="Meshhessen Client – Offline map with Meshtastic node positions on Windows" loading="lazy" />
-      </a>
-      <span class="caption">Offline map with node positions (OSM)</span>
-    </div>
-    <div class="screenshot-item">
-      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/nodes.png" target="_blank" rel="noopener">
-        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/nodes.png"
-             alt="Meshhessen Client – Meshtastic node list with SNR, RSSI, battery and LED indicators" loading="lazy" />
-      </a>
-      <span class="caption">Node list with SNR, battery and LED indicators</span>
-    </div>
-    <div class="screenshot-item">
-      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/messaging.png" target="_blank" rel="noopener">
-        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/messaging.png"
-             alt="Meshhessen Client – Meshtastic channel chat and direct messages on Windows" loading="lazy" />
-      </a>
-      <span class="caption">Channel chat and direct messages (DMs)</span>
-    </div>
-    <div class="screenshot-item">
-      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/channel_list.png" target="_blank" rel="noopener">
-        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/channel_list.png"
-             alt="Meshhessen Client – Meshtastic multi-channel list on Windows" loading="lazy" />
-      </a>
-      <span class="caption">Multi-channel list</span>
-    </div>
-    <div class="screenshot-item">
-      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node-telemetry.png" target="_blank" rel="noopener">
-        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node-telemetry.png"
-             alt="Meshhessen Client – Meshtastic telemetry overview: signal, airtime, routing and neighbors" loading="lazy" />
-      </a>
-      <span class="caption">Telemetry overview per node</span>
-    </div>
-    <div class="screenshot-item">
-      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node_power.png" target="_blank" rel="noopener">
-        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node_power.png"
-             alt="Meshhessen Client – Meshtastic battery and voltage analysis with day/night profile" loading="lazy" />
-      </a>
-      <span class="caption">Battery &amp; voltage – day/night profile</span>
-    </div>
-    <div class="screenshot-item">
-      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node_airtime.png" target="_blank" rel="noopener">
-        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node_airtime.png"
-             alt="Meshhessen Client – Meshtastic airtime analysis: TX airtime, RX airtime and channel utilization" loading="lazy" />
-      </a>
-      <span class="caption">Airtime analysis (TX/RX, channel utilization)</span>
-    </div>
-    <div class="screenshot-item">
-      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node_neighbors.png" target="_blank" rel="noopener">
-        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node_neighbors.png"
-             alt="Meshhessen Client – Meshtastic neighbor analysis: direct links and SNR trends" loading="lazy" />
-      </a>
-      <span class="caption">Real RF neighbors (SNR both directions, right-click → elevation profile)</span>
-    </div>
-    <div class="screenshot-item">
-      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node_routing.png" target="_blank" rel="noopener">
-        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node_routing.png"
-             alt="Meshhessen Client – Meshtastic routing statistics: hop count and path stability" loading="lazy" />
-      </a>
-      <span class="caption">Routing statistics (hops, path stability)</span>
-    </div>
-    <div class="screenshot-item">
-      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/alert_bell.png" target="_blank" rel="noopener">
-        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/alert_bell.png"
-             alt="Meshhessen Client – Alert Bell SOS emergency alert for Meshtastic devices on Windows" loading="lazy" />
-      </a>
-      <span class="caption">Alert Bell / SOS emergency alert</span>
-    </div>
-    <div class="screenshot-item">
-      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/tile_downloader.png" target="_blank" rel="noopener">
-        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/tile_downloader.png"
-             alt="Meshhessen Client – Offline map tile downloader for Meshtastic devices on Windows" loading="lazy" />
-      </a>
-      <span class="caption">Offline tile downloader</span>
+      <span class="caption">📋 Node tile view (Fancy View)</span>
     </div>
   </div>
+  <p style="margin-top:0.6rem;">More pictures live in the <a href="handbuch/en/map/">documentation chapters</a> and the <a href="https://github.com/SMLunchen/mh_windowsclient#readme">project overview</a> on GitHub.</p>
 
-  <!-- ── Supported devices ── -->
   <h2>Supported Devices</h2>
   <p class="devices">
     Works with all Meshtastic-compatible devices:
@@ -1300,14 +1286,14 @@
   <h2>Download &amp; Installation</h2>
   <ol class="dl-steps">
     <li>
-      Download and install the <a href="https://dotnet.microsoft.com/en-us/download/dotnet/8.0">.NET 8 Desktop Runtime</a>
-    </li>
-    <li>
       Download the latest <a href="https://github.com/SMLunchen/mh_windowsclient/releases/latest"><code>MeshhessenClient.exe</code></a>
     </li>
     <li>Plug in your Meshtastic device via USB</li>
-    <li>Double-click <code>MeshhessenClient.exe</code> – done. No installation required.</li>
+    <li>Double-click <code>MeshhessenClient.exe</code> – the app runs without an installer (portable, everything stays in the EXE folder).</li>
   </ol>
+
+  <p class="dl-note">✅ <strong>No runtime required:</strong> the EXE ships with the complete .NET runtime (self-contained) – download, run, done.<br />
+  💡 <strong>Windows SmartScreen:</strong> on first launch Windows may warn about an "unknown publisher" – normal for unsigned open-source downloads. <strong>"More info → Run anyway"</strong> starts the app. To verify, compare the SHA-256 checksum from the GitHub release: <code>Get-FileHash MeshhessenClient.exe</code> (PowerShell).</p>
 
   <div class="disclaimer">
     The Meshhessen Client is an unofficial community client for Meshtastic devices and is not affiliated
@@ -1336,22 +1322,75 @@
 </footer>
 
 <script>
+  const heroTexts = {
+    de: {
+      claim: 'Dein Mesh. Deine Karte. Deine Kontrolle.',
+      sub: 'Meshtastic auf deinem Windows-PC: Nachrichten senden, Funkstrecken analysieren, Nodes verwalten – und auch ohne Internet den Überblick behalten. Aus Hessen, für jedes Meshtastic-Mesh.',
+      chips: ['✔ Kostenlos & Open Source', '📴 Offline-fähig', '🔌 USB · WLAN · Bluetooth', '🪟 Windows 10/11'],
+      dl: '⬇ Für Windows herunterladen',
+      manual: '📖 Handbuch'
+    },
+    en: {
+      claim: 'Your mesh. Your map. Your control.',
+      sub: 'Meshtastic on your Windows PC: send messages, analyze radio links, manage nodes – and keep the full picture even without internet. From Hesse, for every Meshtastic mesh.',
+      chips: ['✔ Free & open source', '📴 Offline-capable', '🔌 USB · WiFi · Bluetooth', '🪟 Windows 10/11'],
+      dl: '⬇ Download for Windows',
+      manual: '📖 Manual'
+    }
+  };
+
   function setLang(lang) {
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
     document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
     document.getElementById(lang).classList.add('active');
     document.getElementById('btn-' + lang).classList.add('active');
+    const t = heroTexts[lang];
+    document.getElementById('hero-claim').textContent = t.claim;
+    document.getElementById('hero-sub').textContent = t.sub;
+    document.getElementById('hero-dl').textContent = t.dl;
+    document.getElementById('hero-manual').textContent = t.manual;
+    document.getElementById('hero-chips').innerHTML =
+      t.chips.map(c => '<span class="chip">' + c + '</span>').join('');
     // update html lang attribute for accessibility/SEO
     document.documentElement.lang = lang;
-    history.replaceState(null, '', '#' + lang);
+    const url = new URL(location.href);
+    url.searchParams.set('lang', lang);
+    history.replaceState(null, '', url);
   }
 
-  // Auto-detect from hash on load
+  // Language from ?lang= (legacy #de/#en still honored); real #anchors stay intact
   (function() {
+    const params = new URLSearchParams(location.search);
+    let lang = params.get('lang');
     const hash = location.hash.replace('#', '');
-    if (hash === 'en') setLang('en');
-    else setLang('de');
+    if (!lang && (hash === 'en' || hash === 'de')) lang = hash;
+    setLang(lang === 'en' ? 'en' : 'de');
+    if (hash && hash !== 'en' && hash !== 'de') {
+      const el = document.getElementById(hash);
+      if (el) el.scrollIntoView();
+    }
   })();
+
+  // Version reality check: the what's-new box describes the version at the top of
+  // the changelog — if that is NOT the published GitHub release yet, say so instead
+  // of silently showing mismatching numbers and notes.
+  fetch('https://api.github.com/repos/SMLunchen/mh_windowsclient/releases/latest')
+    .then(r => r.ok ? r.json() : null)
+    .then(rel => {
+      if (!rel || !rel.tag_name) return;
+      document.querySelectorAll('.vbadge').forEach(el => {
+        const page = el.textContent.trim();
+        if (page === rel.tag_name) return;
+        const en = el.closest('#en') !== null;
+        const note = document.createElement('span');
+        note.className = 'dev-badge';
+        note.textContent = en
+          ? '🚧 in development · latest release: ' + rel.tag_name
+          : '🚧 in Entwicklung · aktuelles Release: ' + rel.tag_name;
+        el.insertAdjacentElement('afterend', note);
+      });
+    })
+    .catch(() => {});
 </script>
 
 <img src="https://stats.meshhessenclient.de/logo.gif" width="1" height="1" style="position:absolute;visibility:hidden" alt="">

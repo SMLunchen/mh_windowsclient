@@ -1,950 +1,153 @@
-# Meshhessen Client – Windows-Client für Meshtastic-Geräte (WPF · .NET 8)
+# 📡 Meshhessen Client
 
-Der **Meshhessen Client** ist ein **kostenloser, nativer Windows-Client für Meshtastic-Geräte** (WPF/.NET 8) für Windows 10/11. Verbinde dein **Meshtastic-Gerät** (LILYGO T-Beam, T-Deck, RAK4631, Heltec u.a.) per **USB/Serial, TCP/WiFi oder Bluetooth** mit deinem Windows-PC – vollständig **offline-fähig**, keine Cloud, keine Installation. Entwickelt von und für die [Meshhessen Community](https://www.meshhessen.de).
+**Dein Mesh. Deine Karte. Deine Kontrolle.**
+
+Der kostenlose, native **Windows-Client für Meshtastic-Geräte**: Nachrichten senden, Funkstrecken analysieren, Nodes verwalten — und auch ganz ohne Internet den Überblick behalten. Entwickelt von der [Meshhessen Community](https://www.meshhessen.de), gebaut für jedes Meshtastic-Mesh — egal wo.
 
 ![Windows](https://img.shields.io/badge/Windows-10%2F11-blue)
 ![.NET](https://img.shields.io/badge/.NET-8.0-purple)
-![Status](https://img.shields.io/badge/Status-v1.6.4.7-yellow)
+![Release](https://img.shields.io/github/v/release/SMLunchen/mh_windowsclient)
 ![License](https://img.shields.io/github/license/SMLunchen/mh_windowsclient)
 ![Stars](https://img.shields.io/github/stars/SMLunchen/mh_windowsclient)
 
-> **English summary:** Free Windows app for Meshtastic devices – offline map (OSM/OpenTopo), telemetry, traceroute, PKI decryption, full device configuration, USB/Serial/TCP/BLE support, remote admin, favorites, telemetry dashboard & **Virtual Node TCP proxy**. No installation, no cloud. By the Meshhessen community (Hesse, Germany). [→ English version below](#meshhessen-client--windows-client-for-meshtastic-devices-wpf--net-8)
-
-
-## 🚀 Schnellstart
-
-
-1. [**.NET 8 Desktop Runtime**](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) herunterladen und installieren
-2. **Download:** Neueste `MeshhessenClient.exe` aus den [Releases](../../releases) herunterladen
-3. **Gerät anschließen:** Meshtastic-Device per USB anstecken
-4. **Starten:** Doppelklick auf `MeshhessenClient.exe` – keine Installation nötig
-5. **Verbinden:** Verbindungstyp wählen (Serial, TCP oder Bluetooth) → „Verbinden" klicken
-6. **Loslegen:** 3–10 Sekunden warten bis Kanäle geladen sind, dann Nachrichten senden
-
-> Die App ist vollständig offline-fähig. Keine Cloud, keine Registrierung, keine Telemetrie zum Entwickler.
-
-
-## ✨ Features
-
-### 📨 Nachrichten & Kommunikation
+> **English summary:** Free Windows app for Meshtastic devices – offline maps (raster + vector incl. 3D terrain), radio-link analysis with elevation profiles & Fresnel zones, telemetry dashboards, traceroute, PKI decryption, full device & remote configuration, Virtual-Node TCP proxy. No installer, no cloud. [→ English version below](#-meshhessen-client-1)
 
-* **Nachrichten** senden und empfangen (Broadcast & Direct Messages)
-* **Multi-Channel** – alle Kanäle deines Geräts automatisch geladen
-* **Direktnachrichten (DMs)** mit separatem Chat-Fenster im Tabbed-Layout
-* **PKI-Entschlüsselung** – client-seitige Entschlüsselung von PKI-verschlüsselten DMs (X25519 + AES-256-CTR); Private Key wird automatisch vom verbundenen Gerät geladen
-* **Node-Public-Key-Datenbank** – lokale CSV-Datei (`node_keys.csv`) zum Verwalten von Public Keys für PKI-Entschlüsselung
-* **Tap-Back Reaktionen** – auf Nachrichten mit Emoji reagieren (32 Emojis, wie Android-App)
-  * Rechtsklick auf Nachricht → Emoji-Picker
-  * Reaktionen werden direkt an Sender/Kanal übermittelt und angezeigt
-  * Funktioniert in Kanal-Chat und DMs
-* **Antwort-Funktion** – auf einzelne Nachrichten antworten (Protokoll-Level)
-  * Zitat-Block mit farblicher Hervorhebung der Originalnachricht
-  * Funktioniert in Kanal-Chat und DMs
-* **Nachrichten auswählbar & kopierbar** – Texte markieren, in Zwischenablage kopieren, Links anklicken
-  * Rechtsklick auf beliebige Nachricht → „Nachricht kopieren" im Kontextmenü
-  * Kopiert immer die angeklickte Nachricht (nicht die zuletzt selektierte)
-  * Kontextmenü auch bei Nachrichten von unbekannten Sendern
-* **🚨 Alert Bell Support** – Senden und Empfangen von Notrufen
-  * 🚨 SOS-Button in Chat und DMs
-  * Visuell: rote blinkende Umrandung + Notification-Bar mit „Zur Karte springen"-Button
-* **Persistente Nachrichten-Datenbank** – Kanal- und DM-Nachrichten dauerhaft in lokaler SQLite-DB speichern (optional, aktivierbar in Einstellungen)
-  * Letzten 24 Stunden beim Verbinden automatisch geladen; ältere Nachrichten per Hochscrollen nachladen
-  * **DM-History:** Alle Konversationen der letzten 24 h erscheinen beim Öffnen des DM-Fensters automatisch
-  * **Pro-Kanal-Löschung** direkt im Kanäle-Tab: „Nachrichten-DB leeren"-Spalte mit Zeitraum-Dialog (Alle / 30 / 90 / 365 Tage)
-  * Bestätigung vor dem Löschen einer DM-Konversation (kein versehentliches Wischen)
-  * Aufbewahrungsdauer konfigurierbar (30 / 90 / 365 Tage)
-
-Nachrichtenansicht mit Kanal-Chat und Direktnachrichten:
-<img width="1443" height="813" alt="Meshhessen Client – Meshtastic Nachrichten, Kanal-Chat und Direktnachrichten (DM) unter Windows" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/messaging.png" />
-
-Kanal-Liste mit allen Meshtastic-Kanälen:
-<img width="1443" height="814" alt="Meshhessen Client – Meshtastic Kanal-Liste (Multi-Channel) unter Windows" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/channel_list.png" />
-
-Alert Bell / SOS-Notruf Anzeige:
-<img width="1446" height="816" alt="Meshhessen Client – Alert Bell SOS-Notruf Signalisierung für Meshtastic-Geräte unter Windows" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/alert_bell.png" />
-
-### 📊 Telemetrie & Statistik
-
-* **Persistente Telemetrie-Datenbank** – empfangene Paket- und Gerätedaten werden lokal in einer SQLite-Datenbank gespeichert
-* **Telemetrie-Dashboard** – frei konfigurierbares Widget-Dashboard mit benannten Dashboards (📊-Button in der Toolbar):
-  * **11 Widget-Typen:** Linie, Fläche, Balken, Scatter, Gauge, Stat-Wert, Heatmap, Histogramm, Candlestick, State-Timeline, Uhrzeit
-  * Multi-Node-Support, alle Metriken: SNR, RSSI, Batterie, Spannung, Kanal-/TX-Auslastung, Temperatur, Luftfeuchtigkeit, Luftdruck, Pakete/h
-  * Widgets per Drag-and-Drop anordnen, frei skalierbar (Resize-Griff), editierbar, duplizierbar, Auto-Refresh
-  * **Zoom/Pan in Charts** (bleibt über den Auto-Refresh erhalten), Tag/Nacht-Schattierung, Schwellwert-Linien mit **Windows-Toast-Alarm** bei Über-/Unterschreitung
-  * **Export:** CSV (wahlweise für deutsches Excel), Widget als PNG, Bild in Zwischenablage, ganze Dashboards als JSON teilen (Export/Import)
-  * **Vollbild-Modus (F11)** für Wandmonitore; Fensterposition und zuletzt aktives Dashboard werden gemerkt
-  * **Automatische Telemetrie-Abfragen (📥):** bis zu 4 Nodes werden aktiv nach LocalStats/Umwelt-/Gerätedaten gefragt (mesh-schonend: LocalStats max. 1×/h, anderes max. alle 30 min); aus den Zähler-Deltas entstehen Raten in Pakete/h
-  * Dark & Light Mode, Theme-adaptiv, folgt Windows-Theme-Wechseln live (OxyPlot + WPF)
-  * Persistenz in `dashboards.json`
-  * **Unabhängiges Fenster** – kann auf einem zweiten Monitor platziert werden
-* **Node-Statistik-Fenster** – detaillierte Auswertung pro Node:
-  * Tag/Nacht-Auswertung der Empfangsqualität
-  * Zeitreihen-Graphen für SNR, RSSI, Paketrate und Gerätedaten (Batterie, Spannung)
-  * **Echte HF-Nachbarn** – belegt durch Direktempfang, Traceroute-Teilstrecken und NeighborInfo-Pakete, mit SNR in beide Richtungen (füllt sich mit der Zeit; bis dahin automatisch die klassische „gehört"-Liste)
-  * **⛰ Höhenprofil pro Funkstrecke** – Rechtsklick auf einen Nachbarn (oder einen Traceroute-Hop): SRTM-Geländeprofil mit Sichtlinie und 60-%-Fresnel-Zone (4/3-Erdkrümmung, 868 MHz) samt Einschätzung, ob die Strecke frei ist oder Gelände im Weg steht
-  * **LocalStats** (neuere Firmware): Noise Floor, RX fehlerhaft/Duplikate, TX Relay u. v. m. (Routing-Tab)
-* **LED-Indikatoren** im Hauptfenster zeigen auf einen Blick den Status des verbundenen Nodes:
-  * 📶 **Signal** – Empfangsqualität (SNR/RSSI-Trend)
-  * 👥 **Nachbarn** – Anzahl und Stabilität direkter Nachbar-Nodes
-  * 🛤️ **Pfad-Stabilität** – Stabilität des Traceroute-Pfads
-  * 🌐 **Mesh-Health** – Gesamtzustand des sichtbaren Meshes; 
-  * 🌤️ **Wetter** – für Nodes mit Umweltsensor
-
-**📊 Telemetrie-Dashboard** – frei konfigurierbare Widgets (Linie, Gauge, Heatmap, Histogramm, Ranking, Mesh-Health, Candlestick …) mit Schwellwert-Alarmen, Auto-Refresh, Polling-Plan und Vollbild für Wandmonitore:
-<img alt="Meshhessen Client – Telemetrie-Dashboard mit konfigurierbaren Widgets: Gauges, Heatmaps, Mesh-Health und Schwellwert-Alarmen" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/telemetry-dashboard.png" />
-
-**Neu: ⛰ Höhenprofil pro Funkstrecke** – Rechtsklick auf einen Nachbarn oder Traceroute-Hop: SRTM-Gelände mit Sichtlinie und 60-%-Fresnel-Zone, samt Einschätzung, ob die Strecke frei ist oder Gelände im Weg steht:
-<img alt="Meshhessen Client – Höhenprofil einer Meshtastic-Funkstrecke: SRTM-Gelände, Sichtlinie und Fresnel-Zone" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/elevation-profile.png" />
-
-<details>
-<summary>📊 <b>Mehr Screenshots:</b> LED-Ampel, Graphen, Statistik-Fenster, Nachbarn, Airtime, Routing</summary>
-
-Telemetrie-LED-Ampel im Hauptfenster:
-<img width="516" height="162" alt="Meshhessen Client – Meshtastic Telemetrie-LEDs für Signal, Nachbarn, Mesh-Health und Wetter" src="https://github.com/user-attachments/assets/a580cf69-ab10-4890-a17a-1c5086c19700" />
-
-Telemetrie-Zeitreihen-Graph (SNR, RSSI, Batterie):
-<img width="902" height="604" alt="Meshhessen Client – Meshtastic Telemetrie-Graph SNR RSSI Batterie Zeitreihe OxyPlot" src="https://github.com/user-attachments/assets/a42d6a79-5b90-4f7a-8456-c74099c55c41" />
-
-Node-Telemetrie-Statistik-Fenster:
-<img width="1278" height="889" alt="Meshhessen Client – Meshtastic Node-Telemetrie Tag/Nacht-Auswertung Statistik Windows" src="https://github.com/user-attachments/assets/4821c996-c524-499a-8fba-f738fb051f88" />
-
-Node-Telemetrie-Übersicht (Signal):
-
-![Meshhessen Client – Meshtastic Node-Telemetrie-Übersicht: Signal-Analyse, Routing, Airtime und Nachbar-Statistik](https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node-telemetry.png)
-
-Echte HF-Nachbarn mit SNR in beide Richtungen – Rechtsklick öffnet das Höhenprofil des Links:
-
-![Meshhessen Client – Echte HF-Nachbarn mit SNR in beide Richtungen und Höhenprofil-Kontextmenü](https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node_neighbors.png)
-
-Airtime-Auswertung pro Node (TX/RX-Sendezeit, Kanalauslastung):
-
-![Meshhessen Client – Meshtastic Airtime-Analyse: TX-Airtime, RX-Airtime und Kanalauslastung pro Node](https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node_airtime.png)
-
-Batterie & Spannungs-Analyse (Tag/Nacht-Profil, Nachtabfall):
-
-![Meshhessen Client – Meshtastic Batterie-Analyse: Spannungs-Verlauf, Tag/Nacht-Profil und Nachtabfall](https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node_power.png)
-
-Routing-Statistik (Hop-Anzahl, Pfad-Stabilität, Pfadwechsel-Rate):
-
-![Meshhessen Client – Meshtastic Routing-Statistik: Hop-Anzahl, Pfad-Stabilität und Pfadwechsel-Rate](https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node_routing.png)
-</details>
-
-### 🗺️ Karte
-
-* **Drei Kartentypen:** OSM Standard, OSM Dark Mode, OpenTopoMap (topografisch)
-* **NEU: Vektorkarten** (umschaltbar in den Einstellungen, Raster bleibt Standard):
-  * Gestochen scharf in jeder Zoomstufe (MapLibre GL), deutlich kleinere Offline-Daten, Kartenstil-Updates ohne Client-Update
-  * **🚒 Feuerwehr-/Rettungs-Layer** zuschaltbar – alle Objekttypen im Abschnitt „Feuerwehr-/Rettungs-Layer" direkt unter dieser Liste
-  * Layer-Auswahl in den Einstellungen und über den 🗂️-Button direkt auf der Karte; solange ein Layer aus ist, wird kein Byte dafür geladen
-  * **Automatischer Offline-Cache:** online betrachtete Gebiete sind ohne Internet weiter nutzbar; zusätzlich **Vektor-Offlinepaket-Downloader** (Bundesland/eigene Bounding-Box, Topo-Extras und Zusatz-Layer als Opt-in)
-  * Voller Funktionsumfang: Node-Pins, Traceroutes, Nachbar-Linien, Positionsverläufe und Rechtsklick-Menü auch auf der Vektorkarte
-  * **⛰ 3D-Gelände** – echtes Höhenmodell (SRTM, 90 m) mit Schummerung, zuschaltbar über das 🗂️-Layer-Popup; Strg+Ziehen neigt die Karte, bei gedrehter/geneigter Ansicht erscheint ein Nordpfeil (Klick = einnorden); einmal betrachtete Gebiete funktionieren auch offline
-  * Benötigt die Microsoft-WebView2-Runtime (auf Windows 11 vorinstalliert); ohne sie fällt der Client automatisch auf Raster zurück
-
-### 🚒 Feuerwehr-/Rettungs-Layer (Vektorkarte)
-
-Zuschaltbarer Fach-Layer für Feuerwehr, Rettungsdienst und Katastrophenschutz – gedacht als Unterstützung im Einsatz- und Übungsfall (z. B. „Wo ist der nächste Hydrant / Rettungspunkt?"). Die Daten kommen **live aus OpenStreetMap** (tägliche Updates auf dem Meshhessen-Server) – die Abdeckung hängt also vom lokalen Mapping-Stand ab. Farbkonvention wie im Feuerwehrplan: **rot** = Löschmittel/Meldung, **blau** = Löschwasser-Vorrat, **grün** = Rettung, **orange** = Katastrophenschutz.
-
-| Symbol | Objekttyp | sichtbar ab Zoom |
-|---|---|---|
-| 🔴 H (gefüllt = Überflur, Ring = **Unterflur**) | Hydrant | 15 |
-| 🔴 Flamme + Name | Feuerwache | 13 |
-| 🔴 Kreuz + Name | Rettungswache | 13 |
-| 🔴 Sirene | Sirene | 13 |
-| 🔴 Leiter | Anleiterstelle | 14 |
-| 🔴 E / F / M / C / K | Einspeisung / Feuerlöscher / Feuermelder / Löschschlauch / Feuerwehrschlüsseldepot (FSD) | 16 |
-| 🔵 S | Saugstelle | 14 |
-| 🔵 T | Löschwasserbehälter | 14 |
-| 🔵 L | Löschteich | 13 |
-| 🔵 N | Notrufsäule | 15 |
-| 🟢 Kreuz + **Nummer** | Rettungspunkt | 13 |
-| 🟢 Sammelplatz | Sammelplatz / Evakuierungspunkt | 13 |
-| 🟢 Herz (AED) | Defibrillator | 15 |
-| 🟢 Kreuz | Erste-Hilfe-Kasten | 16 |
-| 🟢 Rettungsring | Rettungsring / Wasserrettung | 14–16 |
-| 🟠 Kreuz | Katastrophenschutz-Anlaufstelle | 13 |
-| 🔴 Kreuz | Bergrettung | 13 |
-| Helipad | Hubschrauberlandeplatz | 13 |
-
-* **Klick auf ein Objekt** öffnet ein Detail-Popup mit allen in OSM gepflegten Attributen: Bauart (z. B. Unterflur/Überflur/Wandhydrant), Kupplungen, Durchfluss, Druck, Wasserquelle, Wasservolumen, Betreiber, Öffnungszeiten, Standortbeschreibung (bei Defis z. B. „Foyer, 1. OG") und Erfassungsdatum
-* Icons überlappen bewusst („im Einsatz will man jeden Punkt sehen") und verdrängen keine Kartenbeschriftung
-* **Offline nutzbar:** online betrachtete Gebiete landen automatisch im Cache; im Vektor-Offlinepaket-Downloader lässt sich der Layer gezielt für ein Gebiet mitladen
-* Solange der Layer ausgeschaltet ist, wird **kein einziges Byte** dafür übertragen
-* Die Architektur ist für weitere Fach-Layer vorbereitet (z. B. THW, Krankenhäuser)
-
-<details>
-<summary>🚒 <b>Screenshots:</b> Raster vs. Vektor mit Feuerwehr-Layer, Hydranten-Details</summary>
-
-Vergleich: klassische Rasterkarte – ohne zuschaltbare Fach-Layer:
-<img alt="Meshhessen Client – klassische Rasterkarte ohne Feuerwehr-Layer (Vergleichsbild)" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/raster_wo_hydrant.png" />
-
-Derselbe Ausschnitt als Vektorkarte mit aktivem 🚒 Feuerwehr-/Rettungs-Layer (Klick zeigt Details):
-<img alt="Meshhessen Client – Vektorkarte mit Feuerwehr-Layer: Hydranten, Wachen und Rettungspunkte auf der Meshtastic-Karte" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/vector_w_hydrant.png" />
-
-Klick auf einen Hydranten zeigt die Details – hier ein Unterflurhydrant (Ring-Symbol) mit Wasserquelle:
-<img alt="Meshhessen Client – Hydranten-Detail-Popup auf der Vektorkarte: Unterflurhydrant mit Bauart und Wasserquelle" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/hydrant_unterflur.png" />
-</details>
-
-* **Vier Karten-Modi** (umschaltbar in Einstellungen):
-  * **Offline** (Standard) – vorher heruntergeladene Tiles vom Meshhessen-Server, kein Internet, nur Deutschland
-  * **Online – Meshhessen-Server** – Tiles werden on-demand von `tile.meshhessenclient.de` geladen und dauerhaft lokal gespeichert; alle drei Stile, nur Deutschland
-  * **Online – eigener Tile-Server** – wie oben, aber mit den selbst konfigurierten Tile-URLs aus den Einstellungen; öffentliche OSM-/OpenTopoMap-Server sind hier nicht zulässig (Tile-Usage-Policy)
-  * **Online – OpenStreetMap** – weltweite Abdeckung über `tile.openstreetmap.org`; nur Standardkarte; OSM-Tile-Policy-konform (kein Bulk-Download, Tiles lokal gecacht)
-* **Node-Positionen** als farbige Pins auf der Karte
-* **Node-Pfade** – GPS-Positionsverläufe aufzeichnen und auf der Karte anzeigen
-* **Direkte Nachbar-Linien** – aktivierbar im Legenden-Feld: zieht Linien von der eigenen Position zu allen Nodes, die wir **direkt über HF (0 Hops, kein MQTT)** empfangen haben
-  * Farbverlauf wählbar nach **SNR** (rot → gelb → grün) oder **Alter** der letzten direkten Verbindung (cyan → violett)
-  * Option **„Dauerhaft"** zeigt alle je direkt gehörten Nachbarn (statt nur der letzten 24 h); historische 0-Hop-Kontakte kommen aus der Telemetrie-DB
-  * Dunkler Umriss unter jeder Linie für gute Sichtbarkeit auch auf der Topo-Karte
-* **Wegpunkte (Waypoints)** – empfangene Wegpunkte werden auf der Karte angezeigt; Wegpunkte per Karte-Rechtsklick erstellen und senden
-* **Umwelt- & Funk-Overlay** (🌡️-Button) – Messwert-Boxen an den Nodes und interpolierte Heatmap im Wetterdienst-Stil; neben allen Umweltmetriken (Temperatur, Feuchte, IAQ, Wind, Regen …) jetzt auch **SNR, RSSI und Noise Floor** als Flächen-Overlay
-
-Die Vektorkarte (MapLibre GL) – gestochen scharf in jeder Zoomstufe, mit Node-Pins:
-<img alt="Meshhessen Client – Vektorkarte (MapLibre GL) mit Meshtastic Node-Positionen unter Windows" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/vector_in_action.png" />
-
-**Neu: ⛰ 3D-Gelände** – echtes Höhenmodell (SRTM) mit Schummerung auf der Vektorkarte, per Strg+Ziehen geneigt:
-<img alt="Meshhessen Client – 3D-Gelände (SRTM-Höhenmodell) mit Schummerung auf der Meshtastic-Vektorkarte" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/map-with-dem-elevation-profile.png" />
-
-<details>
-<summary>🌡️ <b>Umwelt- & Funk-Overlay</b> – interpolierte Heatmap im Wetterdienst-Stil (3 Metriken zum Durchschalten)</summary>
-
-<details>
-<summary>🌡 Temperatur – Isothermen, Zonen-Beschriftung und Legende</summary>
-<img alt="Meshhessen Client – Temperatur-Heatmap-Overlay mit Isothermen auf der Meshtastic-Karte" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/map-environment-overlay-temp.png" />
-</details>
-
-<details>
-<summary>⏲ Luftdruck – dieselbe Fläche, eine Metrik weiter</summary>
-<img alt="Meshhessen Client – Luftdruck-Heatmap-Overlay auf der Meshtastic-Karte" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/map-environment-overlay-pressure.png" />
-</details>
-
-<details>
-<summary>📡 Noise Floor – Funkqualität als Flächen-Overlay (auch SNR/RSSI möglich)</summary>
-<img alt="Meshhessen Client – Noise-Floor-Heatmap-Overlay: Funkqualität als Fläche auf der Meshtastic-Karte" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/map-environment-overlay-noisefloor.png" />
-</details>
-
-<details>
-<summary>🖱 Mouse-Over – Messwert-Boxen direkt an den Nodes</summary>
-<img alt="Meshhessen Client – Mouse-Over-Messwert-Boxen des Umwelt-Overlays an den Meshtastic-Nodes" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/mouse-over-telemetry-environment-map.png" />
-</details>
-
-</details>
-
-<details>
-<summary>🗺️ <b>Mehr Screenshots:</b> Offline-Karte, Nachbar-Linien, GPS-Tracks, Tile-Downloader</summary>
-
-Direkte HF-Nachbarn mit SNR-Farbverlauf auf der Vektorkarte:
-<img alt="Meshhessen Client – Nachbar-Linien mit SNR-Farbverlauf auf der Vektorkarte (0-Hop HF)" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/vector_w_neighborlinks.png" />
-
-Offline-Karte mit Node-Positionen und Entfernungsanzeige:
-<img width="1250" height="813" alt="Meshhessen Client – Windows-App für Meshtastic-Geräte: Offline-Karte mit Node-Positionen (OSM)" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/map.png" />
-
-Direkte HF-Nachbarn als Linien auf der Rasterkarte (Farbverlauf nach SNR oder Alter):
-<img alt="Meshhessen Client – Direkte Meshtastic-Nachbarn als farbige Linien auf der Karte (0-Hop HF, SNR-Farbverlauf)" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/map_neighbor_lines.png" />
-
-Node-Standort-Verlauf (GPS-Track) auf der Karte:
-<img width="967" height="411" alt="Meshhessen Client – Meshtastic Node-Standort-Verlauf GPS-Track auf Karte" src="https://github.com/user-attachments/assets/0415083a-9f22-44fc-b767-be66b69892cd" />
-
-Offline-Tile-Downloader für Deutschland und Umgebung:
-<img width="567" height="883" alt="Meshhessen Client – Offline-Karten-Tile-Downloader für Meshtastic-Geräte unter Windows (OSM, OpenTopoMap)" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/tile_downloader.png" />
-</details>
-
-### 📡 Traceroute
-
-* **Traceroute starten** – direkt aus dem Node-Kontextmenü (Nodes-Liste, Karte, Nachrichtenliste)
-* **„Nur HF"-Modus** – sendet die Anfrage mit gelöschtem OK-to-MQTT-Bit (vorverschlüsseltes Paket): MQTT-Gateways leiten sie nicht weiter, die Route läuft ausschließlich über Funk
-* **Eigenes Fenster** pro Ziel-Node mit:
-  * Hop-Tabelle: Node-Name, Entfernung, SNR (in dB), MQTT-Indikator (⚡ Blitz-Symbol)
-  * Live-Status (Warten / Empfangen)
-* **Karte:** Route mit Linien plotten
-  * Durchgezogene Linie wo Positionen bekannt
-  * Gestrichelte Linie wo Positionen fehlen
-  * Richtungspfeile auf Segmenten
-  * Klick auf Segment → SNR-Popup für diesen Hop
-  * Fallback auf eingestellte Kartenposition wenn eigene GPS fehlt
-* **Mehrere Traceroutes gleichzeitig** auf der Karte – jede bekommt eine eindeutige Farbe
-* **Speichern & Laden** – Traceroutes werden automatisch in `traceroutes/` gespeichert (JSON)
-  * Pfade unterschiedlicher Zeitpunkte vergleichen
-  * Mehrere Dateien gleichzeitig laden
-  * Historische Traceroutes direkt aus der Datenbank laden
-* **Zeitreihenfilter** – Traceroutes nach Zeitraum filtern (3d / 7d / 14d / 30d / 90d / Alle)
-* **Deduplizierung** – nur neueste Traceroute pro Node-Paar anzeigen (optional)
-* **Karten-Legende** – zeigt alle aktiven Traces mit Farbe und ✕-Button zum Entfernen
-
-<details>
-<summary>📡 <b>Screenshots:</b> Hop-Tabelle & Pfad auf der Karte</summary>
-
-Traceroute-Fenster mit Hop-Tabelle:
-<img width="780" height="868" alt="Meshhessen Client – Traceroute für Meshtastic-Geräte: Hop-Tabelle, Entfernung und SNR unter Windows" src="https://github.com/user-attachments/assets/10880a3d-9d94-4b07-84bc-ad64af56dab1" />
-
-Traceroute-Pfad auf der Karte:
-<img width="1278" height="889" alt="Meshhessen Client – Meshtastic Traceroute-Pfad auf Offline-Karte visualisiert" src="https://github.com/user-attachments/assets/800925ef-0d4e-41ad-a7f2-56cdd06da6b7" />
-</details>
-
-### 🖧 Virtual Node (Tools-Tab)
-
-* **TCP-Proxy-Server** – verbinde Meshtastic-Apps (Android/iOS) direkt mit dem Meshhessen Client, als wäre er ein echtes Meshtastic-Gerät
-* **Konfigurierbar im Tools-Tab:** Port (Standard: 4404), ein-/ausschalten, Admin-Befehle blockieren
-* **Automatischer Start** sobald eine Verbindung mit dem physischen Node besteht (wenn aktiviert)
-* **Config-Replay:** verbindende Apps erhalten sofort alle Kanäle, Node-Liste und Gerätekonfig
-* **Bidirektionale Sichtbarkeit:** Nachrichten aus der App erscheinen in verbundenen Apps – und umgekehrt
-* **Multi-Client:** mehrere Apps gleichzeitig verbindbar; Status und verbundene IPs werden im Tools-Tab angezeigt
-
-### 🔧 T-Deck Karten-Assistent (Tools-Tab)
-
-* **SD-Karte vorbereiten** – geführter 6-Schritt-Assistent zum Bespielen einer SD-Karte mit Offline-Karten für das Meshtastic T-Deck
-* **Schritt 1 – Willkommen:** Erklärt den Workflow; Hinweis: nur Deutschland verfügbar
-* **Schritt 2 – Laufwerk:** Zeigt alle Wechseldatenträger mit Größe, freiem Speicher und Dateisystem
-* **Schritt 3 – Formatierung:**
-  * Empfiehlt **exFAT mit 4096-Byte-Zuordnungseinheiten** (T-Deck-optimal; kleine Tiles ≈100 Bytes → kleine AU spart erheblich Speicher)
-  * Formatierung per UAC-elevated PowerShell direkt aus dem Client; zwei Bestätigungsdialoge
-* **Schritt 4 – Bereich:** Nach Bundesland (Checkboxen), ganz Deutschland, oder **Freestyle** (eigenes Rechteck auf interaktiver Mapsui-Karte zeichnen)
-* **Schritt 5 – Zoom & Kartentyp:** Zoom 8–17, Warnhinweise bei hohen Stufen; OSM / OSM Dark / OpenTopoMap
-* **Schritt 6 – Transfer:** Additiv – SD-Tile vorhanden → skip; lokal vorhanden → kopieren; sonst → vom Tile-Server laden + lokal cachen
-* **SD-Verzeichnisstruktur:** `{Laufwerk}:\maps\OSM\{z}\{x}\{y}.png` (T-Deck-kompatibel, Langklick auf Faltkartenicon schaltet zwischen Kartendiensten um)
-* **ZIP-Export** – lokale Tiles als ZIP exportieren (nach Kartentyp filterbar)
-* Vollständig mehrsprachig (Deutsch/Englisch)
-
-### 🔧 Node-Verwaltung
-
-* **Knoten-Übersicht** – alle Nodes im Mesh mit SNR, Batterie, Entfernung, Hop-Anzahl
-  * **Kachelansicht (Fancy View)** – optional in Einstellungen → Darstellung aktivierbar: tauscht die Tabelle gegen eine responsive Kachel-Oberfläche (Spaltenanzahl wächst/schrumpft mit der Fensterbreite)
-    * Pro Kachel: ShortName-Badge in Node-Farbe, 🔑/🔓 PKI-Status, voller Name, „vor X min", ⭐-Favoritenstern, 📡 Infrastruktur- und ☁ MQTT-Symbol
-    * Strom (extern versorgt oder Batterie + Spannung), Entfernung + Höhe, Hops, RSSI/SNR mit Farbverlauf, Umwelt-Telemetrie (🌡/💧/🌬), Hardware-Modell · Geräterolle · Node-ID
-    * Eigener Node immer ganz oben, virtualisiertes Scrolling auch bei 1000+ Nodes
-  * **SNR/RSSI nur bei direktem Empfang** – Signalwerte werden nur angezeigt, wenn wir den Node direkt (0 Hops, kein MQTT) hören; bei Relay-Nodes zeigt die Spalte stattdessen die Hop-Anzahl
-  * **Erweiterte Filter** – nach „zuletzt gesehen" (5 Min bis 60 Tage), MQTT-Nodes ausblenden, nur Favoriten, SNR-Einfärbung an/aus; Sortier-Dropdown im Kachelmodus
-* **Informationen anfordern** – Rechtsklick-Untermenü (Liste, Kachel, Karte) fordert wie die Android-App gezielt Daten von einem Node an: Benutzer-Info, Position, Geräte-/Umwelt-/Luftqualität-/Strom-/Host-Metriken, Signalqualität/Mesh-Statistik, PAX-Zähler
-* **Firmware-Version & Hardware-Modell** – werden automatisch beim Verbinden abgefragt und im Node-Info-Fenster angezeigt
-* **PKI-Schlüssel-Indikator** – 🔑-Spalte zeigt, ob der Public Key des Nodes bekannt ist
-* **Node-Farben** – Nodes individuell einfärben (Karte + Listen)
-* **Node-Notizen** – Freitext-Notizen pro Node
-* **Nodes anpinnen** – Nodes in der Liste oben fixieren (unabhängig von Sortierung); der eigene Node ist ebenfalls anheftbar
-* **Per-Node-Stationsname** – pro verbundenem Node ein eigener Stationsname; ✏-Button neben dem Verbinden-Button; Auflösung global → node-spezifisch → ShortName
-* **Favoriten** – Nodes als Favoriten markieren (★-Symbol, Rechtsklick-Menü); wird mit dem Gerät synchronisiert (`set_favorite_node` / `remove_favorite_node`); Favoriten erscheinen oben in der Liste
-* **Fernverwaltung** – vollständige Remote-Admin-Oberfläche für Favoriten-Nodes:
-  * Alle Konfigurations-Reiter: Besitzer, Gerät, Position, LoRa, Bluetooth, Netzwerk, Anzeige, Kanäle, **Sicherheit**, Steuerung
-  * **Sicherheits-Reiter:** Public Key (read-only, Base64), Admin-Schlüssel 1–3 (Base64), Flags (Admin Channel, Managed Mode, Serial, Debug Log)
-  * **Favoriten remote verwalten:** Knoten auf dem Remote-Gerät als Favorit setzen oder entfernen
-  * Session-Schlüssel-Handshake, konfigurierbarer Timeout, per-Channel Retry + Neu-laden
-  * **Lazy Loading:** Beim Öffnen wählen ob alles sofort oder seitenweise geladen wird; „↻ Tab neu laden"-Button für gezielten Reload einzelner Reiter
-* **Node-Konfiguration** – vollständige Gerätekonfiguration direkt aus dem Client, alle Module auf einer Seite:
-  * **Gerät & LoRa:** Region, Modem-Preset, TX-Power, Hop-Limit, Geräterolle, Rebroadcast-Modus
-  * **Position:** GPS-Modus, Smart-Broadcast, feste Position mit Koordinaten-Eingabe; „Von Karte wählen" öffnet ein eigenes Kartenfenster (honoriert Offline-/Online-Einstellungen); „Eigener Kartenpin" übernimmt die per Rechtsklick gesetzte Position
-  * **Netzwerk:** WLAN SSID/PSK, DHCP/statische IP, Ethernet, NTP-Server, Syslog
-  * **Display:** Screen-Timeout, Carousel, Kompass, 12h-Uhr, metrisch/imperial, Display-Modus, OLED-Typ
-  * **MQTT:** Server, Credentials, TLS, JSON-Modus, Root-Topic, Proxy-Modus, Map-Reporting mit Genauigkeitsstufe (Bits 10–19), MQTT-Proxy-Client-Funktion
-  * **Telemetrie:** Geräte-, Umgebungs-, Luftqualitäts- und Energiemetrik-Intervalle
-  * **Bluetooth:** Aktivieren, Pairing-Modus, fixer PIN
-  * **Security:** Public/Private Key anzeigen & generieren, Admin-Schlüssel, Managed Mode
-  * **Kanäle:** Alle 8 Kanäle – Rolle, Name, Uplink, Downlink, Positions-Genauigkeit (Bits 10–19, ~23 km bis ~45 m)
-  * **Weitere Module:** Nachbar-Info, Store & Forward, Externe Benachrichtigung, Canned Messages, Range Test, Serial
-* **BT-PIN ändern** – Bluetooth-PIN direkt aus dem Client setzen
-
-Node-Übersicht als Tabelle – mit Avatar, Signal-LEDs, Filtern und Sortierung:
-<img alt="Meshhessen Client – Node-Übersicht als Tabelle mit Avatar, SNR, RSSI, Batterie und Signal-LEDs" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/nodelist_new.png" />
-
-Node-Übersicht als Kachelansicht (Fancy View) – mit Telemetrie, Strom und Signalqualität pro Kachel:
-<img alt="Meshhessen Client – Node-Kachelansicht (Fancy View) mit Telemetrie, Batterie und Signalqualität pro Node" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/nodelist_new_tiles.png" />
-
-### ⚙️ Verbindung & System
-
-* **Multi-Verbindung** – USB/Serial, TCP/WiFi und Bluetooth (BLE)
-* **Letzte Verbindung merken** – Verbindungsart (Serial / BT / WiFi) und zuletzt genutztes BT-Gerät werden gespeichert und beim nächsten Start automatisch vorausgewählt
-* **Auto-Reconnect** – nach Einstellungsänderungen die einen Neustart erfordern
-* **Update-Check** – beim Start wird automatisch nach neuen Versionen gesucht; bei verfügbarem Update erscheint ein klickbarer Hinweis in der Statusleiste (offline-fähig: kein Fehler wenn kein Internet)
-* **Multi-Sprache** – Deutsch und Englisch (umschaltbar in Einstellungen)
-* **Dark Mode** & ModernWPF Fluent-Design
-* **Automatisches Logging** aller Nachrichten (`logs/`)
-* **Debug-Tab** mit Live-Log fürs Troubleshooting
-* **Meshhessen-Schnellkonfiguration** – One-Click für Short Slow + EU868 + Meshhessen-Kanal
-* **Kiosk-/Trainingsmodus** – für geteilte Stationen (Vereinslokal, Schulung, Veranstaltung):
-  * In den Einstellungen aktivieren, Passwort setzen und wählen, was im gesperrten Zustand ausgeblendet wird: Tabs (Nodes, Kanäle, Einstellungen, Info, Tools, Debug), Node-Konfiguration, Fernverwaltung, Telemetrie-Dashboard, SOS-Button, Meshhessen-Schnellkonfiguration
-  * **🔒-Schloss in der Fußleiste** zum Sperren/Entsperren (erscheint nur, wenn ein Passwort gesetzt ist); Entsperren per Passwort, App startet im Kiosk-Modus immer gesperrt
-  * Bei aktiver Sperre werden zusätzlich **Admin-Befehle von Virtual-Node-Clients blockiert** (unabhängig von der VNode-Einstellung)
-  * ⚠️ **Versehens-Schutz, kein Angriffs-Schutz** – das Passwort wird als PBKDF2-Hash gespeichert, aber wer die INI-Datei bearbeiten kann, kann den Modus deaktivieren
-  * **Passwort vergessen?** Client beenden und in `meshhessen-client.ini` die Zeile `KioskModeEnabled=True` auf `False` setzen (oder die Zeile `KioskPasswordHash=…` leeren und neu setzen)
-
-<details>
-<summary>🔒 <b>Screenshot:</b> Kiosk-Einstellungen</summary>
-
-Kiosk-/Trainingsmodus – sperrbare Oberfläche für geteilte Stationen (Einstellungen):
-<img alt="Meshhessen Client – Kiosk- und Trainingsmodus: sperrbare Oberfläche mit Passwortschutz für geteilte Stationen" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/kiosk_settings.png" />
-</details>
-
-
-## 💬 Die Meshhessen Community
-
-Der Meshhessen Client ist ein Gemeinschaftsprojekt der Meshtastic-Community in Hessen. Unser regionales LoRa-Mesh wächst stetig – mach mit!
-
-* 🌐 **Website:** [www.meshhessen.de](https://www.meshhessen.de)
-* 📡 **Netz:** Wachsendes Mesh-Netzwerk in Hessen und Umgebung – Airtime ist kein All-you-can-eat → Short Slow! ;)
-* 🤝 **Mitmachen:** Eigenen Node aufstellen, Reichweite erweitern, Community wachsen lassen
-
-
-## ⚠️ Bekannte Einschränkungen
-
-* ~~Keine persistente Message-History~~ → jetzt optional via Nachrichten-Datenbank (aktivierbar in Einstellungen)
-* Getestet mit Firmware 2.x
-* T-Deck: Channels werden nicht immer in der Config-Sequenz mitgesendet (Retry-Workaround aktiv) – Das T-Deck ist fast schon mit sich selbst überfordert, daher dauert dort alles etwas länger…
-* ~~Heltec-Boards brechen lokale Konfiguration nach 4–5/17 Configs ab~~ → behoben durch sequentielles Laden (senden → warten → nächste)
-
-
-## 🗺️ Karte einrichten
-
-**Kartentypen:** OSM Standard (hell), OSM Dark Mode, OpenTopoMap (topografisch) – wählbar in Einstellungen.
-
-### Karten-Modus wählen
-
-In den Einstellungen unter **Karte / Tiles** stehen drei Modi zur Verfügung:
-
-| Modus | Beschreibung | Abdeckung |
-|----|----|----|
-| **Offline** (Standard) | Vorher heruntergeladene Tiles. Kein Internet erforderlich. | Nur Deutschland |
-| **Online – Meshhessen-Server** | Tiles werden bei Bedarf geladen und dauerhaft lokal gespeichert. Alle drei Kartenstile. | Nur Deutschland |
-| **Online – OpenStreetMap** | Weltweite Abdeckung. Nur Standardkarte. Tiles werden lokal gecacht (mind. 7 Tage). OSM-Policy-konform. | Weltweit |
-
-> Der OSM-Online-Modus ist für Gebiete außerhalb Deutschlands gedacht. Der OSM-Tile-Server ist spendenfinanziert – bitte sparsam nutzen.
-
-### Tiles herunterladen (Offline- und Meshhessen-Online-Modus)
-
-> ⚠️ **Wichtig:** Tile-Download ist nur für den Meshhessen-Tile-Server (`tile.meshhessenclient.de`) vorgesehen – Bulk-Downloads verstoßen gegen die OSM-Tile-Policy.
-
-1. Einstellungen öffnen → Karten-Modus **Offline** wählen → Kartenstil wählen
-2. **„Tiles herunterladen"** klicken
-3. Bereich (Bounding Box) und Zoom-Level eingeben – z.B. Hessen: `49.3,7.7,51.7,10.2`, Zoom `1-14`
-4. Download starten
-5. Tiles werden unter `maptiles/` gespeichert und sind dauerhaft offline verfügbar
-6. Tiles sind portabel – per USB übertragbar
-
-**Karte nutzen:**
-
-* Tab **„🗺️ Karte"** öffnen
-* Rechtsklick auf Karte → eigenen Standort setzen
-* Node-Pins erscheinen automatisch sobald GPS-Daten empfangen werden
-* Rechtsklick auf Node → Farbe setzen, DM senden, Notiz bearbeiten, Traceroute starten, Telemetrie öffnen
-
-
-## 📝 Nachrichten-Logs
-
-Alle Nachrichten werden automatisch geloggt unter `[EXE-Verzeichnis]/logs/`:
-
-* `Channel_0_Primary.log` – Kanalverläufe
-* `DM_DEADBEEF_Alice.log` – Direktnachrichten
-
-
-## 🏗️ Technischer Überblick
-
-| Komponente | Technologie |
-|----|----|
-| UI | WPF .NET 8, ModernWPF (Fluent) |
-| Protokoll | Meshtastic Protobuf über Serial/TCP/BLE |
-| Karte | Mapsui 4.1 + lokale OSM-Tiles |
-| Serialisierung | Google.Protobuf, System.Text.Json |
-| Verbindung | Serial (0x94 0xC3 Framing), TCP/WiFi, Bluetooth Low Energy |
-
-**Verbindungstypen:**
-
-| Typ | Transport | Framing | Besonderheiten |
-|----|----|----|----|
-| USB/Serial | COM-Port, 115200 baud | 4-Byte Header (0x94 0xC3 + Länge) | Wakeup-Sequenz, Debug-Text interleaved |
-| TCP/WiFi | TCP-Socket | 4-Byte Header (wie Serial) | Hostname/IP + Port konfigurierbar |
-| Bluetooth | BLE GATT Characteristics | Raw Protobuf (kein Framing) | Direkte FromRadio/ToRadio Pakete |
-
-**Verbindungssequenz:**
-
-```
-Windows Client → USB/Serial | TCP/WiFi | BLE → Meshtastic Node → LoRa → Mesh
-```
-
-
-1. Verbindung öffnen → Wakeup-Sequenz senden (nur Serial/TCP) → `want_config_id` senden
-2. `my_info`, `node_info` (×N), `channel` (×8), `config`, `config_complete_id` empfangen
-3. Falls Channels fehlen (z.B. T-Deck): Retry-Mechanismus mit bis zu 3 Runden per `GetChannelRequest`
-4. Bereit für MeshPackets
-
-**Serielles Protokoll (Robustheit):**
-
-* Max. Paketlänge 512 Bytes (per Meshtastic-Spezifikation), darüber = korrupt → false Start überspringen
-* Schutz vor partiellem Header-Verlust (letztes Byte 0x94 wird bei Buffer-Clear bewahrt)
-* Stale-Packet-Timeout: unvollständige Pakete werden nach 5s verworfen
-* Device-Debug-Text (ANSI-Codes) wird erkannt, ANSI-Codes gestrippt, separat geloggt
-* Auto-Recovery: sendet Wakeup + `want_config_id` wenn >60s kein Protobuf-Paket empfangen wurde
-
-**Fehler-Erkennung (Geräte-Logs):**
-
-| Code | Beschreibung |
-|----|----|
-| TxWatchdog | Software-Bug beim LoRa-Senden |
-| NoRadio | Kein LoRa-Radio gefunden |
-| TransmitFailed | Radio-Sendehardware-Fehler |
-| Brownout | CPU-Spannung unter Minimum |
-| SX1262Failure | SX1262 Radio Selbsttest fehlgeschlagen |
-| FlashCorruptionRecoverable | Flash-Korruption erkannt (repariert) |
-| FlashCorruptionUnrecoverable | Flash-Korruption (nicht reparierbar) |
-
-
-## 🔧 Aus Quellcode bauen
-
-**Voraussetzungen:** .NET 8.0 SDK, Windows 10/11 x64
-
-```bash
-git clone https://github.com/SMLunchen/mh_windowsclient.git
-cd mh_windowsclient
-dotnet publish MeshhessenClient/MeshhessenClient.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=false -o public
-```
-
-EXE liegt danach unter `public\MeshhessenClient.exe`. Alternativ: `build.bat` ausführen.
+<img alt="Meshhessen Client – Vektorkarte (MapLibre GL) mit Meshtastic Node-Positionen unter Windows" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/vector_in_action.png" />
+
+## ⬇️ Download & Schnellstart
+
+| | |
+|---|---|
+| **Download** | [Neueste `MeshhessenClient.exe` aus den Releases](https://github.com/SMLunchen/mh_windowsclient/releases) — eine Datei, ohne Installer startbar, portabel |
+| **Voraussetzung** | Windows 10/11 (x64) — sonst nichts: Die EXE bringt die komplette .NET-Laufzeitumgebung mit (self-contained) |
+| **Geräte** | Alle Meshtastic-Geräte: LILYGO T-Beam, T-Deck, RAK4631, Heltec, Seeed u. v. m. |
+| **Verbindung** | USB/Serial · TCP/WLAN · Bluetooth (BLE) |
+| **Privatsphäre** | Vollständig offline-fähig — keine Cloud, keine Registrierung, keine Telemetrie zum Entwickler |
+
+1. `MeshhessenClient.exe` herunterladen und starten — keine Installation, keine separate Runtime nötig
+2. Meshtastic-Gerät anschließen (USB) oder IP/BT bereithalten → Verbindungstyp wählen → **Verbinden**
+3. 3–10 Sekunden warten, bis die Kanäle geladen sind — loslegen!
+
+> 💡 Windows SmartScreen warnt beim ersten Start vor dem „unbekannten Herausgeber" — normal bei unsignierten Open-Source-Downloads. **„Weitere Informationen → Trotzdem ausführen."** Details, Prüfsummen-Check und erste Schritte: [Schnellstart-Anleitung](docs/de/schnellstart.md).
+
+## ✨ Das kann der Client
+
+### ⛰ Dein gesamtes Mesh auf einer Karte
+Offline-Karten (Raster + gestochen scharfe Vektorkarte), Node-Positionen, Traceroutes, Nachbar-Linien, Umwelt-Heatmaps und zuschaltbare Fach-Layer — plus echtes **3D-Gelände** mit SRTM-Höhenmodell. Einmal betrachtete Gebiete funktionieren auch ohne Internet.
+
+<img alt="Meshhessen Client – 3D-Gelände (SRTM-Höhenmodell) mit Schummerung auf der Meshtastic-Vektorkarte" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map-with-dem-elevation-profile.png" />
+
+→ [Karte & Offline-Nutzung](docs/de/karte.md)
+
+### 📡 Verstehe deine Funkstrecken
+**Echte HF-Nachbarn** (belegt durch Direktempfang, Traceroutes und NeighborInfo — nicht bloß „gehört via MQTT"), SNR in beide Richtungen, und per Rechtsklick das **Höhenprofil jeder Funkstrecke**: SRTM-Gelände, Sichtlinie, Fresnel-Zone und die Antwort auf die Frage „steht da ein Berg im Weg?".
+
+<img alt="Meshhessen Client – Höhenprofil einer Meshtastic-Funkstrecke: SRTM-Gelände, Sichtlinie und Fresnel-Zone" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/elevation-profile.png" />
+
+→ [Telemetrie & Funkanalyse](docs/de/telemetrie.md) · [Traceroute](docs/de/traceroute.md)
+
+### 📊 Erkenne Probleme, bevor Verbindungen ausfallen
+Frei konfigurierbares **Telemetrie-Dashboard** (11 Widget-Typen, Schwellwert-Alarme als Windows-Toast, Tag/Nacht-Schattierung, Vollbild für Wandmonitore), Node-Statistiken mit Tag/Nacht-Auswertung und LED-Ampeln für Signal, Nachbarn, Pfad-Stabilität und Mesh-Health.
+
+<img alt="Meshhessen Client – Telemetrie-Dashboard mit konfigurierbaren Widgets: Gauges, Heatmaps, Mesh-Health und Schwellwert-Alarmen" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/telemetry-dashboard.png" />
+
+→ [Telemetrie & Funkanalyse](docs/de/telemetrie.md)
+
+### 💬 Kommuniziere bequem am PC
+Kanal-Chat und Direktnachrichten mit Reaktionen, Antworten und optionaler Nachrichten-Historie — inklusive client-seitiger **PKI-Entschlüsselung** (X25519 + AES-256-CCM) und 🚨 Alert-Bell/SOS. Dazu **Fernverwaltung** entfernter Nodes (auch über Relay-/MQTT-Strecken) und vollständige Gerätekonfiguration.
+
+<img width="1443" height="813" alt="Meshhessen Client – Meshtastic Nachrichten, Kanal-Chat und Direktnachrichten (DM) unter Windows" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/new-chat-layout.png" />
+
+→ [Nachrichten](docs/de/nachrichten.md) · [Node-Verwaltung & Fernkonfiguration](docs/de/node-verwaltung.md)
+
+## 🧭 Für deinen Einsatzzweck
+
+| | |
+|---|---|
+| **📶 Mesh-Betreiber** | Antennenstandorte analysieren, Signalverläufe vergleichen, instabile Funkstrecken mit Höhenprofil und Fresnel-Zone identifizieren |
+| **🏕️ Outdoor & Offline** | Karten vorab herunterladen, Standorte darstellen, komplett ohne Internetverbindung arbeiten — auch auf dem T-Deck ([SD-Karten-Assistent](docs/de/tools.md)) |
+| **🚒 Übungen & Notfunk** | Lageübersicht, Nachrichten, Feuerwehr-/Rettungs-Layer und Kiosk-Modus auf einer Oberfläche — als Unterstützung für Ausbildung und Übungen (kein zertifiziertes BOS-/Alarmierungssystem) |
+| **🔬 Technikbegeisterte** | Geräte vollständig konfigurieren, Telemetrie auswerten, entfernte Nodes administrieren, Apps per [Virtual Node](docs/de/tools.md) anbinden |
+
+## 📚 Dokumentation
+
+| Deutsch | English |
+|---|---|
+| [🚀 Schnellstart & Verbindung](docs/de/schnellstart.md) | [🚀 Getting started & connection](docs/en/getting-started.md) |
+| [🗺️ Karte & Offline-Nutzung](docs/de/karte.md) | [🗺️ Map & offline use](docs/en/map.md) |
+| [📨 Nachrichten & Kommunikation](docs/de/nachrichten.md) | [📨 Messaging & communication](docs/en/messaging.md) |
+| [📊 Telemetrie & Funkanalyse](docs/de/telemetrie.md) | [📊 Telemetry & radio analysis](docs/en/telemetry.md) |
+| [📡 Traceroute](docs/de/traceroute.md) | [📡 Traceroute](docs/en/traceroute.md) |
+| [🔧 Node-Verwaltung & Fernkonfiguration](docs/de/node-verwaltung.md) | [🔧 Node management & remote admin](docs/en/node-management.md) |
+| [🧰 Tools: Virtual Node, T-Deck, Kiosk](docs/de/tools.md) | [🧰 Tools: Virtual Node, T-Deck, kiosk](docs/en/tools.md) |
+| [🏗️ Technik & Protokoll](docs/de/technik.md) | [🏗️ Technology & protocol](docs/en/technical.md) |
+
+📖 **Komfortabel lesen:** Dieselben Kapitel gibt es als durchsuchbares Handbuch unter [meshhessenclient.de/handbuch](https://meshhessenclient.de/handbuch/).
+
+Außerdem: [Changelog](CHANGELOG.md) · [Website mit Telemetrie-Hilfe](https://meshhessenclient.de)
+
+## 💬 Community & Mitmachen
+
+Der Meshhessen Client ist ein Gemeinschaftsprojekt der Meshtastic-Community in Hessen — und läuft mit jedem Meshtastic-Mesh weltweit.
+
+* 🌐 **Website:** [www.meshhessen.de](https://www.meshhessen.de) · [meshhessenclient.de](https://meshhessenclient.de)
+* 🐛 **Fehler gefunden / Idee?** → [Issues](https://github.com/SMLunchen/mh_windowsclient/issues)
+* 📡 **Netz:** Airtime ist kein All-you-can-eat → Short Slow! ;)
+* 🛠️ **Aus Quellcode bauen:** siehe [Technik & Protokoll](docs/de/technik.md#aus-quellcode-bauen)
 
 ### Forks & Weiterverwendung
 
 Der Quellcode darf im Rahmen der Lizenz geforkt und angepasst werden — wir freuen uns über abgeleitete Projekte.
 
-> ⚠️ **Der Meshhessen-Tile-Server ist davon ausgenommen.** Die Karten-Infrastruktur (`tile.meshhessenclient.de` und die zugehörigen Vektor-/Raster-Endpunkte) wird **ausschließlich für den offiziellen Meshhessen Client** bereitgestellt und aus Spenden der Community finanziert. Forks, abgeleitete oder umgebaute Clients (auch für andere Mesh-Protokolle wie MeshCore) dürfen diese Server **nicht** nutzen und müssen **eigene Tile-Infrastruktur betreiben**.
->
-> Der Client bringt dafür alles mit: der Karten-Modus **„Online – eigener Tile-Server"** in den Einstellungen erlaubt beliebige eigene Tile-URLs. Ein einfacher Tile-Cache (z. B. eigener OSM/OpenTopo-Proxy) ist schnell und günstig aufgesetzt.
->
-> Unautorisierte Zugriffe auf die Meshhessen-Server werden technisch unterbunden.
-
+> ⚠️ **Der Meshhessen-Tile-Server ist davon ausgenommen.** Die Karten-Infrastruktur (`tile.meshhessenclient.de` und die zugehörigen Vektor-/Raster-Endpunkte) wird **ausschließlich für den offiziellen Meshhessen Client** bereitgestellt und aus Spenden der Community finanziert. Forks, abgeleitete oder umgebaute Clients (auch für andere Mesh-Protokolle wie MeshCore) dürfen diese Server **nicht** nutzen und müssen **eigene Tile-Infrastruktur betreiben**. Der Client bringt dafür alles mit: Karten-Modus **„Online – eigener Tile-Server"**. Unautorisierte Zugriffe werden technisch unterbunden.
 
 ## 🙏 Credits
 
 * **[Meshtastic Project](https://meshtastic.org)** – Firmware & Protokoll-Spezifikation
-* **[ModernWPF](https://github.com/Kinnara/ModernWpf)** – Fluent UI für WPF
-* **[Mapsui](https://mapsui.com)** – Offline-Karte
+* **[ModernWPF](https://github.com/Kinnara/ModernWpf)** – Fluent UI für WPF · **[Mapsui](https://mapsui.com)** – Rasterkarte · **[MapLibre GL](https://maplibre.org)** – Vektorkarte
 * **[Meshhessen Community](https://www.meshhessen.de)** – Für das Netzwerk und die Inspiration
 
 **Made with ❤️ by the Meshhessen Community** · [www.meshhessen.de](https://www.meshhessen.de)
 
-
 ---
 
-## 🔍 Verwandte Suchbegriffe
+# 📡 Meshhessen Client
 
-Meshhessen Client · Windows-Client für Meshtastic-Geräte · Meshtastic Windows App · Meshtastic PC Software · Meshtastic Desktop App · Meshtastic USB Windows · Meshtastic Serial Windows · Meshtastic WPF · Meshtastic .NET · LoRa Mesh Windows · Meshtastic Offline Karte · Meshtastic Telemetrie · Meshtastic Traceroute · Meshtastic Hessen · Meshtastic Deutschland · Meshtastic Germany · LILYGO T-Beam Windows · T-Deck Windows · RAK4631 Windows · Heltec Windows · Meshtastic BLE Windows · Meshtastic Bluetooth Windows · Meshtastic PKI · Meshhessen Community · Meshhessen
+**Your mesh. Your map. Your control.**
 
+The free, native **Windows client for Meshtastic devices**: send messages, analyze radio links, manage nodes — and keep the full picture even without internet. Built by the [Meshhessen Community](https://www.meshhessen.de) in Hesse, Germany — made for every Meshtastic mesh, anywhere.
 
----
+## ⬇️ Download & Quick Start
 
-# Meshhessen Client – Windows Client for Meshtastic Devices (WPF · .NET 8)
+| | |
+|---|---|
+| **Download** | [Latest `MeshhessenClient.exe` from Releases](https://github.com/SMLunchen/mh_windowsclient/releases) — a single file, runs without an installer, portable |
+| **Requirements** | Windows 10/11 (x64) — nothing else: the EXE ships with the complete .NET runtime (self-contained) |
+| **Devices** | All Meshtastic devices: LILYGO T-Beam, T-Deck, RAK4631, Heltec, Seeed and more |
+| **Connection** | USB/Serial · TCP/WiFi · Bluetooth (BLE) |
+| **Privacy** | Fully offline-capable — no cloud, no registration, no telemetry to the developer |
 
-**Meshhessen Client** is a **free, native Windows client for Meshtastic devices** (WPF/.NET 8) for Windows 10/11. Connect your **Meshtastic device** (LILYGO T-Beam, T-Deck, RAK4631, Heltec, etc.) via **USB/Serial, TCP/WiFi, or Bluetooth** to your Windows PC – fully **offline-capable**, no cloud, no installation required. Developed by and for the [Meshhessen Community](https://www.meshhessen.de).
+1. Download and launch `MeshhessenClient.exe` — no installation, no separate runtime needed
+2. Plug in your Meshtastic device (USB) or have IP/BT ready → pick a connection type → **Connect**
+3. Wait 3–10 seconds for the channels to load — go!
 
- ![Windows](https://img.shields.io/badge/Windows-10%2F11-blue)
- ![.NET](https://img.shields.io/badge/.NET-8.0-purple)
- ![Status](https://img.shields.io/badge/Status-v1.6.4.7-yellow)
- ![License](https://img.shields.io/github/license/SMLunchen/mh_windowsclient)
- ![Stars](https://img.shields.io/github/stars/SMLunchen/mh_windowsclient)
+> 💡 Windows SmartScreen may warn about an "unknown publisher" on first launch — normal for unsigned open-source downloads. **"More info → Run anyway."** Details, checksum verification and first steps: [getting-started guide](docs/en/getting-started.md).
 
+## ✨ Highlights
 
-## 🚀 Quick Start
+* **⛰ Your whole mesh on one map** – offline maps (raster + crisp vector), node pins, traceroutes, neighbor lines, environment heatmaps, fire/rescue layers — plus real **3D terrain** from an SRTM elevation model → [Map & offline use](docs/en/map.md)
+* **📡 Understand your radio links** – **real RF neighbors** (proven by direct reception, traceroutes and NeighborInfo — not just "heard via MQTT"), SNR in both directions, and a right-click **elevation profile** per link: terrain, line of sight, Fresnel zone → [Telemetry](docs/en/telemetry.md) · [Traceroute](docs/en/traceroute.md)
+* **📊 Spot problems before links die** – configurable **telemetry dashboard** (11 widget types, threshold toasts, fullscreen for wall monitors), day/night statistics, LED health indicators → [Telemetry](docs/en/telemetry.md)
+* **💬 Communicate comfortably from your PC** – channel chat & DMs with reactions, replies and optional history, client-side **PKI decryption** (X25519 + AES-256-CCM), 🚨 alert bell/SOS → [Messaging](docs/en/messaging.md)
+* **🔧 Configure everything** – full device configuration, **remote admin** across relay/MQTT paths, favorites sync → [Node management](docs/en/node-management.md)
+* **🧰 Power tools** – Virtual-Node TCP proxy for phone apps, T-Deck SD-card map assistant, kiosk mode for shared stations → [Tools](docs/en/tools.md)
 
+## 📚 Documentation
 
-1. Download and install the [**.NET 8 Desktop Runtime**](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)
-2. **Download:** Get the latest `MeshhessenClient.exe` from [Releases](../../releases)
-3. **Connect device:** Plug in your Meshtastic device via USB
-4. **Launch:** Double-click `MeshhessenClient.exe` – no installation required
-5. **Connect:** Select connection type (Serial, TCP, or Bluetooth) → click "Connect"
-6. **Start:** Wait 3–10 seconds for channels to load, then send messages
+[🚀 Getting started](docs/en/getting-started.md) · [🗺️ Map](docs/en/map.md) · [📨 Messaging](docs/en/messaging.md) · [📊 Telemetry](docs/en/telemetry.md) · [📡 Traceroute](docs/en/traceroute.md) · [🔧 Node management](docs/en/node-management.md) · [🧰 Tools](docs/en/tools.md) · [🏗️ Technology](docs/en/technical.md) · [Changelog](CHANGELOG.md)
 
-> The app is fully offline-capable. No cloud, no registration, no telemetry to the developer.
+📖 **Prefer a searchable manual?** The same chapters live at [meshhessenclient.de/handbuch](https://meshhessenclient.de/handbuch/).
 
+### Forks & reuse
 
-## ✨ Features
-
-### 📨 Messaging & Communication
-
-* **Send and receive messages** (broadcast & direct messages)
-* **Multi-channel** – all channels from your device loaded automatically
-* **Direct Messages (DMs)** with a dedicated chat window in a tabbed layout
-* **PKI decryption** – client-side decryption of PKI-encrypted DMs (X25519 + AES-256-CTR); private key is loaded automatically from the connected device
-* **Node public key database** – local CSV file (`node_keys.csv`) for managing public keys for PKI decryption
-* **Tap-back reactions** – react to messages with emoji (32 emojis, like the Android app)
-  * Right-click a message → emoji picker
-  * Reactions are sent to the sender/channel and displayed inline
-  * Works in channel chat and DMs
-* **Reply function** – reply to individual messages (protocol-level)
-  * Quoted block with accent-colored highlight of the original message
-  * Works in channel chat and DMs
-* **Selectable & copyable messages** – select text, copy to clipboard, click links
-  * Right-click any message → "Copy Message" in context menu
-  * Always copies the right-clicked message (not just the last selected row)
-  * Context menu available even for messages from unknown senders
-* **🚨 Alert Bell support** – send and receive emergency alerts
-  * 🚨 SOS button in chat and DMs
-  * Visual: red blinking border + notification bar with "Jump to map" button
-* **Persistent message database** – store channel and DM messages in a local SQLite DB (optional, enable in settings)
-  * Last 24 hours loaded automatically on connect; older messages lazy-loaded when scrolling up
-  * **DM history:** all conversations from the last 24 h appear automatically when the DM window is opened
-  * **Per-channel deletion** directly in the Channels tab: "Clear Message DB" column with a time-range dialog (All / 30 / 90 / 365 days)
-  * Confirmation before clearing a DM conversation (no accidental wipe)
-  * Configurable retention period (30 / 90 / 365 days)
-
-Messaging view with channel chat and direct messages:
-<img width="1443" height="813" alt="Meshhessen Client – Meshtastic messages, channel chat and direct messages (DM) on Windows" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/messaging.png" />
-
-Channel list with all Meshtastic channels:
-<img width="1443" height="814" alt="Meshhessen Client – Meshtastic channel list (multi-channel) on Windows" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/channel_list.png" />
-
-Alert Bell / SOS emergency display:
-<img width="1446" height="816" alt="Meshhessen Client – Alert Bell SOS emergency signalling for Meshtastic devices on Windows" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/alert_bell.png" />
-
-### 📊 Telemetry & Statistics
-
-* **Persistent telemetry database** – received packet and device data is stored locally in a SQLite database
-* **Telemetry Dashboard** – freely configurable widget dashboard with named dashboards:
-  * **11 widget types:** line, area, bar, scatter, gauge, stat value, heatmap, histogram, candlestick, state timeline, clock
-  * Multi-node support, all metrics: SNR, RSSI, battery, voltage, channel/TX utilization, temperature, humidity, pressure, packets/h, noise floor, RX/TX stats
-  * Drag-and-drop arrangement, freely resizable, editable, duplicatable, auto-refresh
-  * **Zoom/pan in charts** (survives auto-refresh), day/night shading, threshold lines with **Windows toast alerts** on crossings
-  * **Export:** CSV (incl. a German-Excel flavour), widget as PNG, copy image, share whole dashboards as JSON (export/import)
-  * **Fullscreen mode (F11)** for wall monitors; window placement and last active dashboard are remembered
-  * **Automatic telemetry polling (📥):** up to 4 nodes are actively polled for LocalStats/environment/device data (mesh-friendly: LocalStats at most 1×/h, others every 30 min max); counter deltas yield packets/h rates
-  * Persisted in `dashboards.json`, theme-adaptive incl. live Windows theme switching
-* **Node statistics window** – detailed analysis per node:
-  * Day/night breakdown of reception quality
-  * Time-series graphs for SNR, RSSI, packet rate and device data (battery, voltage)
-  * **Real RF neighbors** – proven by direct reception, traceroute hop pairs and NeighborInfo packets, with SNR in both directions (fills over time; classic "heard" list as automatic fallback until then)
-  * **⛰ Elevation profile per radio link** – right-click a neighbor (or a traceroute hop): SRTM terrain profile with line of sight and 60 % Fresnel zone (4/3 earth, 868 MHz), including a verdict whether the path is clear or terrain is in the way
-  * **LocalStats** (newer firmware): noise floor, RX bad/duplicates, TX relay and more (routing tab)
-* **LED indicators** in the main window show the connected node's status at a glance:
-  * 📶 **Signal** – reception quality (SNR/RSSI trend)
-  * 👥 **Neighbors** – number and stability of direct neighbor nodes
-  * 🛤️ **Path stability** – stability of the traceroute path
-  * 🌐 **Mesh health** – overall health of the visible mesh
-  * 🌤️ **Weather** – for nodes with environmental sensors
-
-**📊 Telemetry dashboard** – freely configurable widgets (line, gauge, heatmap, histogram, ranking, mesh health, candlestick …) with threshold alerts, auto-refresh, polling plan and fullscreen for wall monitors:
-<img alt="Meshhessen Client – telemetry dashboard with configurable widgets: gauges, heatmaps, mesh health and threshold alerts" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/telemetry-dashboard.png" />
-
-**New: ⛰ Elevation profile per radio link** – right-click a neighbor or traceroute hop: SRTM terrain with line of sight and 60 % Fresnel zone, including a verdict whether the path is clear or terrain is in the way:
-<img alt="Meshhessen Client – elevation profile of a Meshtastic radio link: SRTM terrain, line of sight and Fresnel zone" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/elevation-profile.png" />
-
-<details>
-<summary>📊 <b>More screenshots:</b> LED indicators, graphs, statistics windows, neighbors, airtime, routing</summary>
-
-Telemetry LED indicators in the main window:
-<img width="516" height="162" alt="Meshhessen Client – Meshtastic telemetry LEDs for signal, neighbors, mesh health and weather" src="https://github.com/user-attachments/assets/a580cf69-ab10-4890-a17a-1c5086c19700" />
-
-Telemetry time-series graph (SNR, RSSI, battery):
-<img width="902" height="604" alt="Meshhessen Client – Meshtastic telemetry graph SNR RSSI battery time series OxyPlot" src="https://github.com/user-attachments/assets/a42d6a79-5b90-4f7a-8456-c74099c55c41" />
-
-Node telemetry statistics window:
-<img width="1278" height="889" alt="Meshhessen Client – Meshtastic node telemetry day/night statistics on Windows" src="https://github.com/user-attachments/assets/4821c996-c524-499a-8fba-f738fb051f88" />
-
-Node telemetry overview (signal):
-
-![Meshhessen Client – Meshtastic node telemetry overview: signal analysis, routing, airtime and neighbor statistics](https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node-telemetry.png)
-
-Real RF neighbors with SNR in both directions – right-click opens the link's elevation profile:
-
-![Meshhessen Client – real RF neighbors with SNR in both directions and elevation-profile context menu](https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node_neighbors.png)
-
-Airtime analysis per node (TX/RX airtime, channel utilization):
-
-![Meshhessen Client – Meshtastic airtime analysis: TX airtime, RX airtime and channel utilization per node](https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node_airtime.png)
-
-Battery & voltage analysis (day/night profile, night drop):
-
-![Meshhessen Client – Meshtastic battery analysis: voltage curve, day/night profile and night drop](https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node_power.png)
-
-Routing statistics (hop count, path stability, path change rate):
-
-![Meshhessen Client – Meshtastic routing statistics: hop count, path stability and path change rate](https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node_routing.png)
-</details>
-
-### 🗺️ Map
-
-* **Three map styles:** OSM Standard, OSM Dark Mode, OpenTopoMap (topographic)
-* **Four map modes** (switchable in settings):
-  * **Offline** (default) – pre-downloaded tiles from the Meshhessen server, no internet required, Germany only
-  * **Online – Meshhessen Server** – tiles fetched on demand from `tile.meshhessenclient.de` and stored permanently; all three styles, Germany only
-  * **Online – custom tile server** – same as above but using your own configured tile URLs from the settings; public OSM/OpenTopoMap servers are not allowed here (tile usage policy)
-  * **Online – OpenStreetMap** – worldwide coverage via `tile.openstreetmap.org`; standard map only; OSM tile policy compliant (no bulk download, tiles cached locally)
-* **Node positions** as colored pins on the map
-* **Node paths** – record GPS position history and display tracks on the map
-* **Direct neighbor lines** – toggle in the legend box: draws lines from your own position to every node we received **directly over RF (0 hops, no MQTT)**
-  * Color gradient by **SNR** (red → yellow → green) or by **age** of the last direct contact (cyan → purple)
-  * **"Permanent"** option shows every neighbor ever heard directly (instead of only the last 24 h); historical 0-hop contacts come from the telemetry DB
-  * Dark outline beneath each line for good visibility even on the topo map
-* **Waypoints** – received waypoints are displayed on the map; create and send waypoints via right-click on the map
-* **Environment & radio overlay** (🌡️ button) – value boxes at the nodes and a weather-service-style interpolated heatmap; besides all environment metrics (temperature, humidity, IAQ, wind, rain …) now also **SNR, RSSI and noise floor** as surface overlays
-* **Vector map (MapLibre GL)** – crisp at every zoom level, fire/rescue layers, automatic offline caching — and **⛰ 3D terrain** (SRTM elevation model with hillshading, Ctrl+drag to tilt, north arrow while rotated; works offline for areas viewed once)
-
-The vector map (MapLibre GL) – razor-sharp at every zoom level, with node pins:
-<img alt="Meshhessen Client – vector map (MapLibre GL) with Meshtastic node positions on Windows" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/vector_in_action.png" />
-
-**New: ⛰ 3D terrain** – a real elevation model (SRTM) with hillshading on the vector map, tilted via Ctrl+drag:
-<img alt="Meshhessen Client – 3D terrain (SRTM elevation model) with hillshading on the Meshtastic vector map" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/map-with-dem-elevation-profile.png" />
-
-<details>
-<summary>🌡️ <b>Environment & radio overlay</b> – weather-service-style interpolated heatmap (3 metrics to flip through)</summary>
-
-<details>
-<summary>🌡 Temperature – isotherms, zone labels and legend</summary>
-<img alt="Meshhessen Client – temperature heatmap overlay with isotherms on the Meshtastic map" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/map-environment-overlay-temp.png" />
-</details>
-
-<details>
-<summary>⏲ Barometric pressure – same surface, next metric</summary>
-<img alt="Meshhessen Client – barometric pressure heatmap overlay on the Meshtastic map" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/map-environment-overlay-pressure.png" />
-</details>
-
-<details>
-<summary>📡 Noise floor – radio quality as a surface overlay (SNR/RSSI too)</summary>
-<img alt="Meshhessen Client – noise floor heatmap overlay: radio quality as a surface on the Meshtastic map" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/map-environment-overlay-noisefloor.png" />
-</details>
-
-<details>
-<summary>🖱 Mouse-over – value boxes right at the nodes</summary>
-<img alt="Meshhessen Client – mouse-over value boxes of the environment overlay at the Meshtastic nodes" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/mouse-over-telemetry-environment-map.png" />
-</details>
-
-</details>
-
-<details>
-<summary>🚒 <b>Fire service / rescue layer:</b> raster vs. vector, hydrant details</summary>
-
-Comparison: classic raster map – without the optional special-purpose layers:
-<img alt="Meshhessen Client – classic raster map without the fire service layer (comparison)" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/raster_wo_hydrant.png" />
-
-The same area as a vector map with the 🚒 fire service / rescue layer enabled (click shows details):
-<img alt="Meshhessen Client – vector map with fire service layer: hydrants, stations and rescue points on the Meshtastic map" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/vector_w_hydrant.png" />
-
-Clicking a hydrant shows its details – here an underground hydrant (ring symbol) with water source:
-<img alt="Meshhessen Client – hydrant detail popup on the vector map: underground hydrant with type and water source" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/hydrant_unterflur.png" />
-</details>
-
-<details>
-<summary>🗺️ <b>More screenshots:</b> offline map, neighbor lines, GPS tracks, tile downloader</summary>
-
-Direct RF neighbors with SNR color gradient on the vector map:
-<img alt="Meshhessen Client – neighbor lines with SNR color gradient on the vector map (0-hop RF)" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/vector_w_neighborlinks.png" />
-
-Offline map with node positions and distance display:
-<img width="1250" height="813" alt="Meshhessen Client – Windows app for Meshtastic devices: offline map with node positions (OSM)" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/map.png" />
-
-Direct RF neighbors as lines on the raster map (gradient by SNR or age):
-<img alt="Meshhessen Client – direct Meshtastic neighbors as colored lines on the map (0-hop RF, SNR gradient)" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/map_neighbor_lines.png" />
-
-Node position history (GPS track) on the map:
-<img width="967" height="411" alt="Meshhessen Client – Meshtastic node position history GPS track on map" src="https://github.com/user-attachments/assets/0415083a-9f22-44fc-b767-be66b69892cd" />
-
-Offline tile downloader for Germany and surroundings:
-<img width="567" height="883" alt="Meshhessen Client – offline map tile downloader for Meshtastic devices on Windows (OSM, OpenTopoMap)" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/tile_downloader.png" />
-</details>
-
-### 📡 Traceroute
-
-* **Start traceroute** – directly from the node context menu (node list, map, message list)
-* **"RF only" mode** – sends the request with the OK-to-MQTT bit cleared (pre-encrypted packet): MQTT gateways won't uplink it, the route runs over RF exclusively
-* **Dedicated window** per target node with:
-  * Hop table: node name, distance, SNR (in dB), MQTT indicator (⚡ lightning symbol)
-  * Live status (waiting / received)
-* **Map plotting** – plot the route with lines
-  * Solid line where positions are known
-  * Dashed line where positions are missing
-  * Direction arrows on segments
-  * Click a segment → SNR popup for that hop
-  * Falls back to the configured map position if own GPS is unavailable
-* **Multiple traceroutes at once** on the map – each gets a unique color
-* **Save & Load** – traceroutes are automatically saved to `traceroutes/` as JSON
-  * Compare routes recorded at different times
-  * Load multiple files simultaneously
-  * Load historical traceroutes directly from the database
-* **Time range filter** – filter traceroutes by period (3d / 7d / 14d / 30d / 90d / All)
-* **Deduplication** – show only the latest traceroute per node pair (optional)
-* **Map legend** – shows all active traces with color and individual ✕ remove button
-
-<details>
-<summary>📡 <b>Screenshots:</b> hop table & route on the map</summary>
-
-Traceroute window with hop table:
-<img width="780" height="868" alt="Meshhessen Client – traceroute for Meshtastic devices: hop table, distance and SNR on Windows" src="https://github.com/user-attachments/assets/10880a3d-9d94-4b07-84bc-ad64af56dab1" />
-
-Traceroute path on the map:
-<img width="1278" height="889" alt="Meshhessen Client – Meshtastic traceroute path visualized on the offline map" src="https://github.com/user-attachments/assets/800925ef-0d4e-41ad-a7f2-56cdd06da6b7" />
-</details>
-
-### 🖧 Virtual Node (Tools Tab)
-
-* **TCP proxy server** – connect Meshtastic apps (Android/iOS) to the Meshhessen Client as if it were a real Meshtastic device
-* **Configurable in the Tools tab:** port (default: 4404), enable/disable, optionally block admin commands
-* **Auto-start** as soon as a connection to the physical node is established (when enabled)
-* **Config replay:** connecting apps receive all channels, node list and device config immediately
-* **Bidirectional visibility:** messages sent in the app appear in connected apps – and vice versa
-* **Multi-client:** multiple apps can connect simultaneously; status and connected IPs are shown in the Tools tab
-
-### 🔧 Node Management
-
-* **Node overview** – all nodes in the mesh with SNR, battery, distance, hop count
-  * **Tile view (Fancy View)** – optionally enabled in Settings → Appearance: replaces the table with a responsive tile surface (column count grows/shrinks with the window width)
-    * Per tile: ShortName badge in node color, 🔑/🔓 PKI status, full name, "X min ago", ⭐ favorite star, 📡 infrastructure and ☁ MQTT icons
-    * Power (externally powered or battery + voltage), distance + altitude, hops, RSSI/SNR with color gradient, environment telemetry (🌡/💧/🌬), hardware model · device role · node ID
-    * Own node always on top, virtualized scrolling even with 1000+ nodes
-  * **SNR/RSSI only for direct reception** – signal values are shown only when we hear the node directly (0 hops, no MQTT); for relayed nodes the column shows the hop count instead
-  * **Advanced filters** – by "last seen" (5 min to 60 days), hide MQTT nodes, favorites only, SNR coloring on/off; sort dropdown in tile mode
-* **Request information** – right-click submenu (list, tile, map) requests data from a node like the Android app: user info, position, device/environment/air-quality/power/host metrics, signal quality/mesh stats, PAX counter
-* **Firmware version & hardware model** – queried automatically on connect and shown in the node info window
-* **PKI key indicator** – 🔑 column shows whether a node's public key is known
-* **Node colors** – color-code nodes individually (map + lists)
-* **Node notes** – free-text annotations per node
-* **Pin nodes** – pin nodes to the top of the list (independent of sorting); your own node can be pinned too
-* **Per-node station name** – a dedicated station name per connected node; ✏ button next to the Connect button; resolution global → node-specific → ShortName
-* **Favorites** – mark nodes as favorites (★ icon, right-click menu); synced with the device (`set_favorite_node` / `remove_favorite_node`); favorites shown at the top of the list
-* **Remote Administration** – full remote admin UI for favorite nodes: all configuration tabs (Owner, Device, Position, LoRa, Bluetooth, Network, Display, Channels, Security, Control), session-key handshake, configurable timeout, lazy loading (load-on-demand per tab) and "↻ Reload Tab" button
-* **Node configuration** – full device configuration directly from the client, all modules in one window:
-  * **Device & LoRa:** region, modem preset, TX power, hop limit, device role, rebroadcast mode
-  * **Position:** GPS mode, smart broadcast, fixed position with coordinate input; "Pick from Map" opens a dedicated map picker window (respects offline/online settings); "Own Map Pin" copies the position set via right-click
-  * **Network:** Wi-Fi SSID/PSK, DHCP/static IP, Ethernet, NTP server, syslog
-  * **Display:** screen timeout, carousel, compass, 12h clock, metric/imperial, display mode, OLED type
-  * **MQTT:** server, credentials, TLS, JSON mode, root topic, proxy mode, map reporting with precision level (bits 10–19), MQTT proxy client
-  * **Telemetry:** device, environment, air quality and power metric intervals
-  * **Bluetooth:** enable, pairing mode, fixed PIN
-  * **Security:** display & generate public/private key, admin keys, managed mode
-  * **Channels:** all 8 channels – role, name, uplink, downlink, position precision (bits 10–19, ~23 km to ~45 m)
-  * **Additional modules:** neighbor info, store & forward, external notification, canned messages, range test, serial
-* **Change BT PIN** – set Bluetooth PIN directly from the client
-
-Node overview as a table – with avatar, signal LEDs, filters and sorting:
-<img alt="Meshhessen Client – node overview as a table with avatar, SNR, RSSI, battery and signal LEDs" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/nodelist_new.png" />
-
-Node overview as tile view (Fancy View) – with telemetry, power and signal quality per tile:
-<img alt="Meshhessen Client – node tile view (Fancy View) with telemetry, battery and signal quality per node" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/nodelist_new_tiles.png" />
-
-### ⚙️ Connection & System
-
-* **Multi-connection** – USB/Serial, TCP/WiFi, and Bluetooth (BLE)
-* **Remember last connection** – connection type (Serial / BT / WiFi) and last used BT device are saved and pre-selected on next launch
-* **Auto-reconnect** – after settings changes that require a device reboot
-* **Update check** – automatically checks for new versions on startup; a clickable hint appears in the status bar if an update is available (offline-safe: no error if no internet)
-* **Multi-language** – German and English (switchable in settings)
-* **Dark mode** & ModernWPF Fluent design
-* **Automatic logging** of all messages (`logs/`)
-* **Debug tab** with live log for troubleshooting
-* **Meshhessen quick-config** – one-click Short Slow + EU868 + Meshhessen channel setup
-* **Kiosk / training mode** – for shared stations (club room, training, events):
-  * Enable in settings, set a password and choose what gets hidden while locked: tabs (Nodes, Channels, Settings, Info, Tools, Debug), node configuration, remote admin, telemetry dashboard, SOS button, Meshhessen quick-config
-  * **🔒 lock in the footer bar** to lock/unlock (only shown once a password is set); unlock via password, the app always starts locked in kiosk mode
-  * While locked, **admin commands from Virtual Node clients are additionally blocked** (regardless of the VNode setting)
-  * ⚠️ **Protects against accidents, not attacks** – the password is stored as a PBKDF2 hash, but anyone who can edit the INI file can disable the mode
-  * **Forgot the password?** Close the client and set `KioskModeEnabled=True` to `False` in `meshhessen-client.ini` (or clear the `KioskPasswordHash=…` line and set a new one)
-
-<details>
-<summary>🔒 <b>Screenshot:</b> kiosk settings</summary>
-
-Kiosk / training mode – lockable UI for shared stations (settings):
-<img alt="Meshhessen Client – kiosk and training mode: lockable UI with password protection for shared stations" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/kiosk_settings.png" />
-</details>
-
-
-## 💬 The Meshhessen Community
-
-The Meshhessen Client is a community project of the Meshtastic community in Hesse, Germany. Our regional LoRa mesh network is growing – join us!
-
-* 🌐 **Website:** [www.meshhessen.de](https://www.meshhessen.de)
-* 📡 **Network:** Growing mesh network in Hesse and surrounding areas – airtime is not all-you-can-eat → Short Slow! ;)
-* 🤝 **Contribute:** Set up your own node, extend coverage, grow the community
-
-
-## ⚠️ Known Limitations
-
-* ~~No persistent message history~~ → now available as optional message database (enable in settings)
-* Tested with firmware 2.x
-* T-Deck: channels are not always included in the config sequence (retry workaround active) – The T-Deck is barely keeping up with itself, so everything takes a bit longer there…
-* ~~Heltec boards abort local configuration after 4–5/17 configs~~ → fixed by sequential loading (send → wait for response → send next)
-
-
-## 🗺️ Setting Up the Offline Map
-
-**Map types:** OSM Standard (light), OSM Dark Mode, OpenTopoMap (topographic) – selectable in settings.
-
-> ⚠️ **Important:** Please do NOT switch to the official OSM tile server – offline downloads violate their policy. We use our own server that explicitly permits this. You can configure your own tile server in settings.
-
-**Downloading tiles:**
-
-
-1. Open settings → select map source (OSM / OSM Dark / OpenTopo)
-2. Click **"Download Tiles"**
-3. Enter bounding box and zoom levels – e.g. Hesse: `49.3,7.7,51.7,10.2`, Zoom `1-14`
-4. Start download
-5. Tiles are saved under `maptiles/` and are permanently available offline
-6. Tiles are portable – transferable via USB
-
-**Using the map:**
-
-* Open the **"🗺️ Map"** tab
-* Right-click on map → set own location
-* Node pins appear automatically once GPS data is received
-* Right-click on a node → set color, send DM, edit note, start traceroute, open telemetry
-
-
-## 🏗️ Technical Overview
-
-| Component | Technology |
-|----|----|
-| UI | WPF .NET 8, ModernWPF (Fluent) |
-| Protocol | Meshtastic Protobuf over Serial/TCP/BLE |
-| Map | Mapsui 4.1 + local OSM tiles |
-| Serialization | Google.Protobuf, System.Text.Json |
-| Connection | Serial (0x94 0xC3 framing), TCP/WiFi, Bluetooth Low Energy |
-
-**Connection types:**
-
-| Type | Transport | Framing | Notes |
-|----|----|----|----|
-| USB/Serial | COM port, 115200 baud | 4-byte header (0x94 0xC3 + length) | Wake-up sequence, debug text interleaved |
-| TCP/WiFi | TCP socket | 4-byte header (same as serial) | Configurable hostname/IP + port |
-| Bluetooth | BLE GATT characteristics | Raw protobuf (no framing) | Direct FromRadio/ToRadio packets |
-
-**Connection sequence:**
-
-```
-Windows Client → USB/Serial | TCP/WiFi | BLE → Meshtastic Node → LoRa → Mesh
-```
-
-
-1. Open connection → send wake-up sequence (Serial/TCP only) → send `want_config_id`
-2. Receive `my_info`, `node_info` (×N), `channel` (×8), `config`, `config_complete_id`
-3. If channels are missing (e.g. T-Deck): retry mechanism up to 3 rounds via `GetChannelRequest`
-4. Ready for MeshPackets
-
-
-## 🔧 Building from Source
-
-**Requirements:** .NET 8.0 SDK, Windows 10/11 x64
-
-```bash
-git clone https://github.com/SMLunchen/mh_windowsclient.git
-cd mh_windowsclient
-dotnet publish MeshhessenClient/MeshhessenClient.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=false -o public
-```
-
-The EXE will be at `public\MeshhessenClient.exe`. Alternatively, run `build.bat`.
-
-### Forks & Reuse
-
-You are welcome to fork and adapt the source code within the terms of the license — we're happy to see derivative projects.
-
-> ⚠️ **The Meshhessen tile server is not part of that.** The map infrastructure (`tile.meshhessenclient.de` and the associated vector/raster endpoints) is provided **exclusively for the official Meshhessen Client** and is funded by community donations. Forks, derivative or repurposed clients (including ports to other mesh protocols such as MeshCore) **may not** use these servers and must **run their own tile infrastructure**.
->
-> The client ships with everything you need for that: the **"Online – custom tile server"** map mode in settings accepts any tile URLs you like. A simple tile cache (e.g. your own OSM/OpenTopo proxy) is quick and cheap to set up.
->
-> Unauthorized access to the Meshhessen servers is blocked at the technical level.
-
-
-## 🙏 Credits
-
-* **[Meshtastic Project](https://meshtastic.org)** – Firmware & protocol specification
-* **[ModernWPF](https://github.com/Kinnara/ModernWpf)** – Fluent UI for WPF
-* **[Mapsui](https://mapsui.com)** – Offline map
-* **[Meshhessen Community](https://www.meshhessen.de)** – For the network and the inspiration
-
-**Made with ❤️ by the Meshhessen Community** · [www.meshhessen.de](https://www.meshhessen.de)
-
-
----
-
-## 🔍 Related Search Terms
-
-Meshhessen Client · Windows client for Meshtastic devices · Meshtastic Windows app · Meshtastic PC software · Meshtastic desktop app · Meshtastic USB Windows · Meshtastic serial Windows · Meshtastic WPF · Meshtastic .NET · LoRa mesh Windows · Meshtastic offline map · Meshtastic telemetry · Meshtastic traceroute · Meshtastic Germany · Meshtastic Hessen · LILYGO T-Beam Windows · T-Deck Windows · RAK4631 Windows · Heltec Windows · Meshtastic BLE Windows · Meshtastic Bluetooth Windows · Meshtastic PKI decryption · Meshhessen community · Meshhessen
+You are welcome to fork and adapt the source code within the terms of the license. **The Meshhessen tile server is not part of that:** the map infrastructure (`tile.meshhessenclient.de` and the associated vector/raster endpoints) is provided exclusively for the official Meshhessen Client and funded by community donations. Forks and derivative clients (including ports to other mesh protocols) must run their own tile infrastructure — the **"Online – custom tile server"** map mode accepts any tile URLs. Unauthorized access is blocked technically.
