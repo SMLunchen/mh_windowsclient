@@ -1390,15 +1390,24 @@ public class MeshtasticProtocolService
                 RxRssi = encHops == 0 && !packet.ViaMqtt && packet.RxRssi != 0  ? packet.RxRssi : null,
             };
 
+            // Encrypted unicast to someone else: overheard mesh traffic (other people's DMs /
+            // directed packets). Never surface as a chat bubble — that made the DM window pop
+            // open with "[Encrypted message – PSK required]" from nodes that never messaged us.
+            const uint BroadcastAddr = 0xFFFFFFFF;
+            bool toUs = _myNodeId != 0 && packet.To == _myNodeId;
+            bool toBroadcast = packet.To == 0 || packet.To == BroadcastAddr;
+            if (!toUs && !toBroadcast)
+            {
+                if (_debugDevice)
+                    Logger.WriteLine($"[PKI] Ignoring overheard encrypted packet !{packet.From:x8} → !{packet.To:x8} (not addressed to us)");
+                return;
+            }
+
             // Encrypted DM addressed to us that we couldn't decrypt: keep the
-            // ciphertext (also persisted with the message) and actively request the
-            // sender's NodeInfo, so we can decrypt it retroactively once the key
-            // arrives. We treat ANY encrypted DM to us as a PKI candidate — not only
-            // when pki_encrypted is set — because MQTT-relayed PKI DMs can arrive
-            // without that flag; a non-PKI ciphertext simply never parses on retry,
-            // so this is safe. Broadcasts (To != us) are excluded (PKI is 1:1).
-            bool isDmToUs = _myNodeId != 0 && packet.To == _myNodeId;
-            if (isDmToUs)
+            // ciphertext and request the sender's NodeInfo for late PKI decrypt.
+            // MQTT-relayed PKI DMs can arrive with pki_encrypted=false; non-PKI
+            // ciphertext simply never parses on retry.
+            if (toUs)
             {
                 Logger.WriteLine($"[PKI] Encrypted DM to us from !{packet.From:x8}: pki={packet.PkiEncrypted} " +
                     $"viaMqtt={packet.ViaMqtt} — capturing ciphertext ({packet.Encrypted.Length} bytes) for retry");
@@ -1517,13 +1526,20 @@ public class MeshtasticProtocolService
             return false;
         }
 
-        if ((int)data.Portnum == 1) // TEXT_MESSAGE_APP → a real DM: update the shown bubble in place
+        if ((int)data.Portnum == 1) // TEXT_MESSAGE_APP → a real DM
         {
+            var text = data.Payload.ToStringUtf8();
             Logger.WriteLine($"[PKI] Late-decrypted DM ({via}) from !{item.FromId:x8} (pktId={item.Id:x8})");
+            item.Message = text;
+            item.IsEncrypted = false;
+            // In-place update if a placeholder was already shown…
             PkiMessageDecrypted?.Invoke(this, new PkiLateDecryptedEventArgs
             {
-                Item = item, Text = data.Payload.ToStringUtf8(), FromId = item.FromId, PacketId = item.Id
+                Item = item, Text = text, FromId = item.FromId, PacketId = item.Id
             });
+            // …and deliver as a normal message so the DM UI gets it when placeholders
+            // were suppressed (overheard/non-chat encrypted traffic no longer creates tabs).
+            MessageReceived?.Invoke(this, item);
             return true;
         }
 

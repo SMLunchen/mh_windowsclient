@@ -80,6 +80,9 @@
     <sys:String x:Key="StrDevice">Gerät:</sys:String>
     <sys:String x:Key="StrScanDevices">Geräte suchen</sys:String>
     <sys:String x:Key="StrOpenDms">Direktnachrichten öffnen</sys:String>
+    <sys:String x:Key="StrDmAutoPopup">Auto PopUp</sys:String>
+    <sys:String x:Key="StrDmAutoPopupTip">An: DM-Fenster öffnet sich bei neuer Nachricht. Aus: Button blinkt rot und zeigt die Anzahl ungelesener DMs.</sys:String>
+    <sys:String x:Key="StrDmUnreadTip">Ungelesene Direktnachrichten</sys:String>
     <sys:String x:Key="StrOpenDashboard">Telemetrie-Dashboard öffnen</sys:String>
 
     <!-- Alert -->

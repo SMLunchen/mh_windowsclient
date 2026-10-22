@@ -1431,14 +1431,11 @@ public partial class MainWindow
             OpenInlineDm(node.NodeId, node.Name, node.ColorHex);
             return;
         }
-        if (_dmWindow == null || !_dmWindow.IsVisible)
-        {
-            _dmWindow = new DirectMessagesWindow(_protocolService, _myNodeId);
-            _dmWindow.SetMessageDbManager(_messageDbManager);
-            _dmWindow.Show();
-        }
-        _dmWindow.Activate();
-        _dmWindow.OpenChatWithNode(node.NodeId, node.Name, node.ColorHex);
+        var win = EnsureDmWindow();
+        if (!win.IsVisible)
+            win.Show();
+        win.Activate();
+        win.OpenChatWithNode(node.NodeId, node.Name, node.ColorHex);
     }
 
     /// <summary>Open (or create) an inline DM conversation and show it in the Messages overview tab.</summary>

@@ -19,6 +19,15 @@ public partial class DirectMessagesWindow : Window
     private uint _myNodeId;
     private Services.MessageDbManager? _messageDbManager;
 
+    /// <summary>When true, incoming DMs bring this window to the front (legacy behaviour).</summary>
+    public bool AutoPopup { get; set; } = true;
+
+    /// <summary>Total unread incoming DMs across all conversations.</summary>
+    public int TotalUnreadCount => _conversations.Sum(c => c.UnreadCount);
+
+    /// <summary>Raised whenever <see cref="TotalUnreadCount"/> changes.</summary>
+    public event Action<int>? UnreadCountChanged;
+
     private static string Loc(string key) =>
         Application.Current?.Resources[key] as string ?? key;
 
@@ -28,6 +37,7 @@ public partial class DirectMessagesWindow : Window
         _protocolService = protocolService;
         _myNodeId = myNodeId;
         DmTabControl.SelectionChanged += DmTabControl_SelectionChanged;
+        DmTabControl.SelectionChanged += DmTabControl_MarkReadOnSelect;
     }
 
     // On switching to a DM tab, scroll its message list to the newest message.
@@ -38,6 +48,27 @@ public partial class DirectMessagesWindow : Window
         if (DmTabControl.SelectedItem is TabItem { Tag: ListView lv } && lv.Items.Count > 0)
             lv.Dispatcher.BeginInvoke(new System.Action(() => lv.ScrollIntoView(lv.Items[lv.Items.Count - 1])),
                 System.Windows.Threading.DispatcherPriority.Loaded);
+    }
+
+    private void DmTabControl_MarkReadOnSelect(object sender, SelectionChangedEventArgs e)
+    {
+        if (!ReferenceEquals(e.OriginalSource, DmTabControl)) return;
+        if (DmTabControl.SelectedItem is TabItem tab)
+        {
+            var conv = _conversations.FirstOrDefault(c =>
+                _tabByNodeId.TryGetValue(c.NodeId, out var t) && ReferenceEquals(t, tab));
+            if (conv != null)
+                MarkConversationRead(conv, tab);
+        }
+    }
+
+    private void MarkConversationRead(DirectMessageConversation conversation, TabItem tab)
+    {
+        if (conversation.UnreadCount == 0 && !conversation.HasUnread) return;
+        conversation.UnreadCount = 0;
+        conversation.HasUnread = false;
+        UpdateTabHeader(tab, conversation);
+        UnreadCountChanged?.Invoke(TotalUnreadCount);
     }
 
     public void UpdateProtocolService(MeshtasticProtocolService protocolService)
@@ -107,6 +138,25 @@ public partial class DirectMessagesWindow : Window
         {
             try
             {
+                // Undecrypted placeholders are buffered in the protocol layer for late PKI
+                // decrypt. Showing them here created fake DM tabs (and used to pop this
+                // window) for NodeInfo/Telemetry/traceroute replies we couldn't decrypt.
+                // Real text arrives after decrypt via MessageReceived / PkiMessageDecrypted.
+                if (message.IsEncrypted)
+                    return;
+
+                // Dedup: late decrypt may re-deliver a packet we already have.
+                if (message.Id != 0 && _dmMessageById.ContainsKey(message.Id))
+                {
+                    var existing = _dmMessageById[message.Id];
+                    if (existing.IsEncrypted && !message.IsEncrypted)
+                    {
+                        existing.Message = message.Message;
+                        existing.IsEncrypted = false;
+                    }
+                    return;
+                }
+
                 // Bestimme den Chat-Partner (nicht ich selbst)
                 uint partnerId = message.FromId == _myNodeId ? message.ToId : message.FromId;
 
@@ -121,7 +171,9 @@ public partial class DirectMessagesWindow : Window
                         ColorHex = message.SenderColorHex
                     };
                     _conversations.Add(conversation);
-                    CreateTabForConversation(conversation);
+                    // Don't auto-activate: otherwise a new tab is selected immediately and
+                    // never counts as unread (badge/pulse would stay at 0).
+                    CreateTabForConversation(conversation, activate: false);
                 }
 
                 // Populate reply preview from original DM message
@@ -152,24 +204,34 @@ public partial class DirectMessagesWindow : Window
                 // Log die Nachricht
                 Services.MessageLogger.LogDirectMessage(partnerId, conversation.NodeName, message.From, message.Message, message.IsViaMqtt);
 
-                // Markiere als ungelesen wenn Tab nicht aktiv
                 var tab = _tabByNodeId[partnerId];
-                if (DmTabControl.SelectedItem != tab)
+                bool incoming = message.FromId != _myNodeId && !message.IsEncrypted;
+                if (incoming)
                 {
-                    conversation.HasUnread = true;
-                    UpdateTabHeader(tab, conversation);
-                }
-
-                // Zeige Fenster bei neuer Nachricht (nur bei eingehenden, nicht bei eigenen)
-                if (message.FromId != _myNodeId)
-                {
-                    MakeWindowProminent();
-
-                    // Show alert animation if message has alert bell
-                    if (message.HasAlertBell)
+                    if (AutoPopup)
                     {
-                        ShowAlertBellAnimation();
+                        // Open/focus the conversation — counts as seen, no badge.
+                        DmTabControl.SelectedItem = tab;
+                        MakeWindowProminent();
                     }
+                    else
+                    {
+                        // Window Hide() keeps the last tab selected — only treat as "seen"
+                        // when the window is actually visible AND that tab is active.
+                        bool viewingThisChat = IsVisible && ReferenceEquals(DmTabControl.SelectedItem, tab);
+                        if (!viewingThisChat)
+                        {
+                            conversation.UnreadCount++;
+                            conversation.HasUnread = true;
+                            UpdateTabHeader(tab, conversation);
+                            UnreadCountChanged?.Invoke(TotalUnreadCount);
+                            if (!IsVisible)
+                                System.Media.SystemSounds.Asterisk.Play();
+                        }
+                    }
+
+                    if (message.HasAlertBell)
+                        ShowAlertBellAnimation();
                 }
 
                 UpdateStatusBar();
@@ -552,11 +614,7 @@ public partial class DirectMessagesWindow : Window
         tab.Content = grid;
 
         // Event: Markiere als gelesen wenn Tab gewählt wird
-        tab.GotFocus += (s, e) =>
-        {
-            conversation.HasUnread = false;
-            UpdateTabHeader(tab, conversation);
-        };
+        tab.GotFocus += (s, e) => MarkConversationRead(conversation, tab);
 
         DmTabControl.Items.Add(tab);
         if (activate)

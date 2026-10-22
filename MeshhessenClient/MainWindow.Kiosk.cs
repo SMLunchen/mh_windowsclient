@@ -792,25 +792,19 @@ public partial class MainWindow
     {
         try
         {
-            if (_dmWindow == null)
-            {
-                _dmWindow = new DirectMessagesWindow(_protocolService, _myNodeId);
-                _dmWindow.SetMessageDbManager(_messageDbManager);
-            }
+            var win = EnsureDmWindow();
 
-            // Zeige Fenster
-            if (_dmWindow.IsVisible)
-            {
-                _dmWindow.Activate(); // Bringe in den Vordergrund
-            }
+            if (win.IsVisible)
+                win.Activate();
             else
             {
-                _dmWindow.Show();
-                _dmWindow.Activate();
+                win.Show();
+                win.Activate();
             }
 
-            // Reset Button-Hervorhebung
             OpenDmWindowButton.FontWeight = FontWeights.Normal;
+            // Pulse stops only when unread is cleared by viewing conversations.
+            UpdateDmUnreadUi(win.TotalUnreadCount);
         }
         catch (Exception ex)
         {
