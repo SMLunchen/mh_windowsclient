@@ -60,6 +60,21 @@
     
   
   
+  <style>
+    :root { --md-accent-fg-color: #20c997; }
+    [data-md-color-scheme="default"] { --md-typeset-a-color: #198754; }
+    [data-md-color-scheme="slate"]   { --md-typeset-a-color: #20c997; }
+    [data-md-color-primary="black"]  { --md-primary-fg-color: #161b22; }
+  </style>
+  <style>
+    .mh-flags { display: flex; align-items: center; gap: .45rem; padding: 0 .3rem; }
+    .mh-flag { display: inline-flex; line-height: 0; opacity: .5; transition: opacity .15s; }
+    .mh-flag svg { display: block; border-radius: 2px; box-shadow: 0 0 0 1px rgba(255,255,255,.35); }
+    .mh-flag:hover, .mh-flag:focus-visible { opacity: 1; }
+    .mh-flag--active { opacity: 1; }
+    .mh-flag--active svg { box-shadow: 0 0 0 1px rgba(255,255,255,.35), 0 2px 0 0 var(--md-accent-fg-color); }
+  </style>
+  
   
     
     
@@ -160,30 +175,33 @@
       <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
     
     
-      <div class="md-header__option">
-  <div class="md-select">
+      
+
+
+<div class="md-header__option">
+  <nav class="mh-flags" aria-label="Sprache wechseln">
     
-    <button class="md-header__button md-icon" aria-label="Sprache wechseln">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m12.87 15.07-2.54-2.51.03-.03A17.5 17.5 0 0 0 14.07 6H17V4h-7V2H8v2H1v2h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2zm-2.62 7 1.62-4.33L19.12 17z"/></svg>
-    </button>
-    <div class="md-select__inner">
-      <ul class="md-select__list">
-        
-          <li class="md-select__item">
-            <a href="https://meshhessenclient.de/handbuch/" hreflang="de" class="md-select__link">
-              Deutsch
-            </a>
-          </li>
-        
-          <li class="md-select__item">
-            <a href="https://meshhessenclient.de/handbuch/en/" hreflang="en" class="md-select__link">
-              English
-            </a>
-          </li>
-        
-      </ul>
-    </div>
-  </div>
+      
+      
+      
+        <span class="mh-flag mh-flag--active" title="Deutsch">
+      
+      
+        <svg viewBox="0 0 5 3" width="21" height="13" role="img" aria-label="Deutsch"><rect width="5" height="1" y="0" fill="#000"/><rect width="5" height="1" y="1" fill="#D00"/><rect width="5" height="1" y="2" fill="#FFCE00"/></svg>
+      
+      </span>
+    
+      
+      
+      
+        <a class="mh-flag" href="https://meshhessenclient.de/handbuch/en/telemetry/" hreflang="en" title="English">
+      
+      
+        <svg viewBox="0 0 60 30" width="26" height="13" role="img" aria-label="English"><clipPath id="mhuk"><path d="M0,0 v30 h60 v-30 z"/></clipPath><path d="M0,0 v30 h60 v-30 z" fill="#012169"/><path d="M0,0 L60,30 M60,0 L0,30" stroke="#fff" stroke-width="6"/><path d="M0,0 L60,30 M60,0 L0,30" clip-path="url(#mhuk)" stroke="#C8102E" stroke-width="4"/><path d="M30,0 v30 M0,15 h60" stroke="#fff" stroke-width="10"/><path d="M30,0 v30 M0,15 h60" stroke="#C8102E" stroke-width="6"/></svg>
+      
+      </a>
+    
+  </nav>
 </div>
     
     
@@ -1052,8 +1070,6 @@
     
     
       <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
-      
-        <script src="../../lang-switch.js"></script>
       
     
   </body>

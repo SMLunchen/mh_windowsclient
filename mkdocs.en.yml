@@ -47,9 +47,6 @@ theme:
   icon:
     repo: fontawesome/brands/github
 
-extra_javascript:
-  - https://meshhessenclient.de/handbuch/lang-switch.js
-
 extra:
   alternate:
     - name: Deutsch

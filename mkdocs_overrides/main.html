@@ -8,6 +8,23 @@
 
 {% block extrahead %}
   {{ super() }}
+  {# Meshhessen-Design-Angleichung (wie mqtt.meshhessen.de): grüner Akzent
+     statt Hellblau, Header im Portal-Navbar-Ton. Branding bleibt
+     Meshhessen Client. Plus Styling für den Fahnen-Sprachwähler. #}
+  <style>
+    :root { --md-accent-fg-color: #20c997; }
+    [data-md-color-scheme="default"] { --md-typeset-a-color: #198754; }
+    [data-md-color-scheme="slate"]   { --md-typeset-a-color: #20c997; }
+    [data-md-color-primary="black"]  { --md-primary-fg-color: #161b22; }
+  </style>
+  <style>
+    .mh-flags { display: flex; align-items: center; gap: .45rem; padding: 0 .3rem; }
+    .mh-flag { display: inline-flex; line-height: 0; opacity: .5; transition: opacity .15s; }
+    .mh-flag svg { display: block; border-radius: 2px; box-shadow: 0 0 0 1px rgba(255,255,255,.35); }
+    .mh-flag:hover, .mh-flag:focus-visible { opacity: 1; }
+    .mh-flag--active { opacity: 1; }
+    .mh-flag--active svg { box-shadow: 0 0 0 1px rgba(255,255,255,.35), 0 2px 0 0 var(--md-accent-fg-color); }
+  </style>
   {% set other = config.extra.hreflang_map.get(page.url) if config.extra.hreflang_map else none %}
   {% if other %}
     {% set self_url = config.site_url ~ page.url %}

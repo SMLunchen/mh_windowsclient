@@ -49,14 +49,31 @@
   </script>
 
   <style>
+    /* Design-Angleichung an mqtt.meshhessen.de: Meshhessen-Grün als Akzent,
+       GitHub-Dark-Flächen, Mesh-Partikel-Hintergrund (mesh-bg.js).
+       Branding bleibt Meshhessen CLIENT. */
+    :root {
+      --mh-green: #20c997;        /* Markengrün (Akzent, Links, Icons) */
+      --mh-green-dark: #198754;   /* Buttons, Flächen */
+      --mh-green-soft: #6eddbf;   /* heller Zweit-Akzent */
+    }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: #0d1117;
+      background: transparent; /* Hintergrund liefert #mesh-bg */
       color: #e6edf3;
       line-height: 1.6;
     }
-    a { color: #58a6ff; text-decoration: none; }
+    #mesh-bg {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      background: #0d1117;
+      pointer-events: none;
+    }
+    a { color: var(--mh-green); text-decoration: none; }
     a:hover { text-decoration: underline; }
 
     /* ── Header ── */
@@ -71,15 +88,16 @@
     .badges { display: flex; flex-wrap: wrap; gap: 0.4rem; justify-content: center; margin-bottom: 1.2rem; }
     .btn {
       display: inline-block;
-      background: #238636;
+      background: var(--mh-green-dark);
       color: #fff;
       padding: 0.6rem 1.4rem;
       border-radius: 6px;
       font-size: 1rem;
       font-weight: 600;
       margin: 0.3rem;
+      box-shadow: 0 2px 8px rgba(32,201,151,.25);
     }
-    .btn:hover { background: #2ea043; text-decoration: none; }
+    .btn:hover { background: var(--mh-green); color: #04150f; text-decoration: none; }
     .btn.secondary {
       background: #21262d;
       border: 1px solid #30363d;
@@ -107,7 +125,7 @@
     }
     .doc-links { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 0.5rem 1rem; list-style: none; margin-top: 0.8rem; padding: 0; }
     .doc-links a { display: block; padding: 0.55rem 0.9rem; background: #161b22; border: 1px solid #30363d; border-radius: 8px; color: #e6edf3; }
-    .doc-links a:hover { border-color: #58a6ff; text-decoration: none; }
+    .doc-links a:hover { border-color: var(--mh-green); text-decoration: none; }
     .dev-badge { display: inline-block; margin-left: 0.5rem; padding: 0.1rem 0.6rem; border-radius: 12px; font-size: 0.78rem; background: #3a2d10; color: #e3b341; border: 1px solid #9e6a03; }
     .dl-note { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 0.8rem 1rem; font-size: 0.92rem; margin-top: 0.8rem; }
 
@@ -130,8 +148,8 @@
       transition: background 0.15s;
     }
     .lang-btn.active, .lang-btn:hover {
-      background: #1f6feb;
-      border-color: #1f6feb;
+      background: var(--mh-green-dark);
+      border-color: var(--mh-green);
       color: #fff;
     }
 
@@ -146,7 +164,7 @@
       border-bottom: 1px solid #30363d;
       padding-bottom: 0.4rem;
     }
-    h3 { font-size: 1.05rem; margin: 1.2rem 0 0.4rem; color: #79c0ff; }
+    h3 { font-size: 1.05rem; margin: 1.2rem 0 0.4rem; color: var(--mh-green); }
 
     p { color: #c9d1d9; margin-bottom: 0.6rem; }
 
@@ -174,7 +192,7 @@
       border: 1px solid #30363d;
       transition: border-color 0.15s, opacity 0.15s;
     }
-    .screenshot-item img:hover { border-color: #58a6ff; opacity: 0.9; }
+    .screenshot-item img:hover { border-color: var(--mh-green); opacity: 0.9; }
     .screenshot-item .caption {
       font-size: 0.78rem;
       color: #8b949e;
@@ -194,14 +212,14 @@
       border-radius: 8px;
       padding: 1rem 1.2rem;
     }
-    .telem-card h3 { color: #79c0ff; margin: 0 0 0.6rem; font-size: 1rem; }
+    .telem-card h3 { color: var(--mh-green); margin: 0 0 0.6rem; font-size: 1rem; }
     .telem-card p, .telem-card li { color: #8b949e; font-size: 0.88rem; }
     .telem-card ul { padding-left: 1.2rem; }
     .telem-card li { margin-bottom: 0.2rem; }
 
     .led-table { width: 100%; border-collapse: collapse; margin: 0.6rem 0; font-size: 0.88rem; }
     .led-table th, .led-table td { padding: 0.4rem 0.6rem; border: 1px solid #30363d; text-align: left; }
-    .led-table th { background: #161b22; color: #79c0ff; }
+    .led-table th { background: #161b22; color: var(--mh-green); }
     .led-table td { color: #8b949e; }
     .led-green { color: #3fb950; font-weight: 700; }
     .led-yellow { color: #d29922; font-weight: 700; }
@@ -306,6 +324,8 @@
   </style>
 </head>
 <body>
+<canvas id="mesh-bg" aria-hidden="true"></canvas>
+<script src="mesh-bg.js" defer></script>
 
 <header>
   <h1>📡 Meshhessen Client</h1>
@@ -403,7 +423,7 @@
 
   <h2>Für deinen Einsatzzweck</h2>
   <div class="grid">
-    <div class="card" style="--card-accent:#58a6ff">
+    <div class="card" style="--card-accent:#20c997">
       <h3>📶 Mesh-Betreiber</h3>
       <p>Antennenstandorte analysieren, Signalverläufe vergleichen und instabile Funkstrecken mit Höhenprofil und Fresnel-Zone identifizieren.</p>
     </div>
@@ -441,7 +461,7 @@
 
   <h2>Alle Funktionen im Überblick</h2>
   <div class="grid">
-    <div class="card" style="--card-accent:#58a6ff">
+    <div class="card" style="--card-accent:#20c997">
       <span class="badge-new">NEU</span>
       <h3>📨 Nachrichten</h3>
       <ul>
@@ -528,7 +548,7 @@
         <li>Fehlt der Schlüssel: aktive Anforderung auf dem richtigen Kanal</li>
       </ul>
     </div>
-    <div class="card" style="--card-accent:#79c0ff">
+    <div class="card" style="--card-accent:#6eddbf">
       <span class="badge-new">NEU</span>
       <h3>⚙️ Verbindung &amp; System</h3>
       <ul>
@@ -891,7 +911,7 @@
 
   <h2>For your use case</h2>
   <div class="grid">
-    <div class="card" style="--card-accent:#58a6ff">
+    <div class="card" style="--card-accent:#20c997">
       <h3>📶 Mesh operators</h3>
       <p>Analyze antenna sites, compare signal trends and identify unstable radio links with elevation profile and Fresnel zone.</p>
     </div>
@@ -929,7 +949,7 @@
 
   <h2>All features at a glance</h2>
   <div class="grid">
-    <div class="card" style="--card-accent:#58a6ff">
+    <div class="card" style="--card-accent:#20c997">
       <span class="badge-new">NEW</span>
       <h3>📨 Messaging</h3>
       <ul>
@@ -1015,7 +1035,7 @@
         <li>Missing key: active request on the correct channel</li>
       </ul>
     </div>
-    <div class="card" style="--card-accent:#79c0ff">
+    <div class="card" style="--card-accent:#6eddbf">
       <span class="badge-new">NEW</span>
       <h3>⚙️ Connection &amp; System</h3>
       <ul>
