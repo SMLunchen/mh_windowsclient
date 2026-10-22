@@ -727,13 +727,25 @@ public partial class MainWindow : Window
     }
 
     /// <summary>Show/hide the inline DM section per the DmStyle setting. In window mode the inline
-    /// selection is cleared (DMs go back to the separate window).</summary>
+    /// selection is cleared (DMs go back to the separate window). When inline, the top DM button
+    /// / popup checkbox are hidden (DMs live in the sidebar).</summary>
     private void ApplyDmStyle()
     {
         bool inline = DmInline;
         var vis = inline ? Visibility.Visible : Visibility.Collapsed;
         if (DmSectionHeader != null) DmSectionHeader.Visibility = vis;
         if (DmList != null) DmList.Visibility = vis;
+        if (DmWindowControlsPanel != null)
+            DmWindowControlsPanel.Visibility = inline ? Visibility.Collapsed : Visibility.Visible;
+        if (inline)
+        {
+            StopDmUnreadPulse();
+            if (DmUnreadBadge != null) DmUnreadBadge.Visibility = Visibility.Collapsed;
+        }
+        else
+        {
+            UpdateDmUnreadUi(_dmWindow?.TotalUnreadCount ?? 0);
+        }
         if (!inline && _currentDmPartner != 0)
         {
             // Leaving inline mode while a DM was open → fall back to a channel view.

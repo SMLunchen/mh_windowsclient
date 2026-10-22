@@ -80,7 +80,7 @@
     <sys:String x:Key="StrDevice">Device:</sys:String>
     <sys:String x:Key="StrScanDevices">Search devices</sys:String>
     <sys:String x:Key="StrOpenDms">Open direct messages</sys:String>
-    <sys:String x:Key="StrDmAutoPopup">Auto PopUp</sys:String>
+    <sys:String x:Key="StrDmAutoPopup">DM Popup</sys:String>
     <sys:String x:Key="StrDmAutoPopupTip">On: DM window opens on new message. Off: button pulses red and shows the unread DM count.</sys:String>
     <sys:String x:Key="StrDmUnreadTip">Unread direct messages</sys:String>
     <sys:String x:Key="StrOpenDashboard">Open telemetry dashboard</sys:String>
