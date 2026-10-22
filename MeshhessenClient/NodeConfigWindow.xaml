@@ -241,7 +241,6 @@
                                 <ComboBoxItem Content="CLIENT" Tag="0"/>
                                 <ComboBoxItem Content="CLIENT_MUTE" Tag="1"/>
                                 <ComboBoxItem Content="ROUTER" Tag="2"/>
-                                <ComboBoxItem Content="ROUTER_CLIENT" Tag="3"/>
                                 <ComboBoxItem Content="REPEATER" Tag="4"/>
                                 <ComboBoxItem Content="TRACKER" Tag="5"/>
                                 <ComboBoxItem Content="SENSOR" Tag="6"/>
@@ -249,6 +248,8 @@
                                 <ComboBoxItem Content="CLIENT_HIDDEN" Tag="8"/>
                                 <ComboBoxItem Content="LOST_AND_FOUND" Tag="9"/>
                                 <ComboBoxItem Content="TAK_TRACKER" Tag="10"/>
+                                <ComboBoxItem Content="ROUTER_LATE" Tag="11"/>
+                                <ComboBoxItem Content="CLIENT_BASE" Tag="12"/>
                             </ComboBox>
                             <TextBlock Text="{DynamicResource StrNcRebroadcast}" Margin="0,12,0,2"/>
                             <ComboBox x:Name="RebroadcastComboBox" Width="220" HorizontalAlignment="Left">
