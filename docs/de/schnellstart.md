@@ -61,5 +61,5 @@ Alle Nachrichten werden automatisch geloggt unter `[EXE-Verzeichnis]/logs/`:
 * [📨 Nachrichten & Kommunikation](nachrichten.md)
 * [📊 Telemetrie & Funkanalyse](telemetrie.md)
 * [🔧 Node-Verwaltung & Fernkonfiguration](node-verwaltung.md)
-* [🧰 Tools: Virtual Node, T-Deck-Assistent, Kiosk-Modus](tools.md)
+* [🖧 Virtual Node](virtual-node.md) · [🔧 T-Deck-Assistent](t-deck.md) · [🔒 Kiosk-Modus](kiosk.md)
 * [🏗️ Technik & Protokoll](technik.md)

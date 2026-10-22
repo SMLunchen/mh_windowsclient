@@ -1,4 +1,5 @@
 
+
 <!doctype html>
 <html lang="de" class="no-js">
   <head>
@@ -57,6 +58,17 @@
 
     
     
+  
+  
+  
+    
+    
+      <link rel="alternate" hreflang="de" href="https://meshhessenclient.de/handbuch/de/karte/" />
+      <link rel="alternate" hreflang="en" href="https://meshhessenclient.de/handbuch/en/map/" />
+      <link rel="alternate" hreflang="x-default" href="https://meshhessenclient.de/handbuch/de/karte/" />
+    
+  
+
   </head>
   
   
@@ -549,6 +561,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../messwerte/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Messwerte verstehen
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../traceroute/" class="md-nav__link">
         
   
@@ -603,14 +642,68 @@
   
   
     <li class="md-nav__item">
-      <a href="../tools/" class="md-nav__link">
+      <a href="../virtual-node/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Virtual Node · T-Deck · Kiosk
+    Virtual Node
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../t-deck/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    T-Deck Karten-Assistent
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../kiosk/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Kiosk-Modus
   
 
     
@@ -841,17 +934,42 @@
 <h1 id="karte-offline-nutzung">🗺️ Karte &amp; Offline-Nutzung<a class="headerlink" href="#karte-offline-nutzung" title="Permanent link">&para;</a></h1>
 <p><a href="../../">← Handbuch-Übersicht</a> · <a href="https://meshhessenclient.de/handbuch/en/map/">🇬🇧 English version</a></p>
 <h2 id="kartentypen-vektorkarte">Kartentypen &amp; Vektorkarte<a class="headerlink" href="#kartentypen-vektorkarte" title="Permanent link">&para;</a></h2>
-<ul>
-<li><strong>Drei Kartentypen:</strong> OSM Standard, OSM Dark Mode, OpenTopoMap (topografisch)</li>
-<li><strong>Vektorkarten</strong> (umschaltbar in den Einstellungen, Raster bleibt Standard):</li>
-<li>Gestochen scharf in jeder Zoomstufe (MapLibre GL), deutlich kleinere Offline-Daten, Kartenstil-Updates ohne Client-Update</li>
-<li><strong>🚒 Feuerwehr-/Rettungs-Layer</strong> zuschaltbar (siehe unten)</li>
-<li>Layer-Auswahl in den Einstellungen und über den 🗂️-Button direkt auf der Karte; solange ein Layer aus ist, wird kein Byte dafür geladen</li>
-<li><strong>Automatischer Offline-Cache:</strong> online betrachtete Gebiete sind ohne Internet weiter nutzbar; zusätzlich <strong>Vektor-Offlinepaket-Downloader</strong> (Bundesland/eigene Bounding-Box, Topo-Extras und Zusatz-Layer als Opt-in)</li>
-<li>Voller Funktionsumfang: Node-Pins, Traceroutes, Nachbar-Linien, Positionsverläufe und Rechtsklick-Menü auch auf der Vektorkarte</li>
-<li><strong>⛰ 3D-Gelände</strong> – echtes Höhenmodell (SRTM, 90 m) mit Schummerung, zuschaltbar über das 🗂️-Layer-Popup; Strg+Ziehen neigt die Karte, bei gedrehter/geneigter Ansicht erscheint ein Nordpfeil (Klick = einnorden); einmal betrachtete Gebiete funktionieren auch offline</li>
-<li>Benötigt die Microsoft-WebView2-Runtime (auf Windows 11 vorinstalliert); ohne sie fällt der Client automatisch auf Raster zurück</li>
-</ul>
+<p><strong>Welcher Kartenstil zeigt was?</strong></p>
+<table>
+<thead>
+<tr>
+<th>Stil</th>
+<th>Was er zeigt</th>
+<th>Wofür geeignet</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>OSM Standard</strong></td>
+<td>Klassische Straßenkarte: Orte, Straßen, Gebäude, POIs</td>
+<td>Alltag &amp; Navigation — der Allrounder</td>
+</tr>
+<tr>
+<td><strong>OSM Dark Mode</strong></td>
+<td>Dieselbe Karte in dunkler Darstellung</td>
+<td>Nachtbetrieb, Funkraum/Wandmonitor, passend zum Dark Mode des Clients</td>
+</tr>
+<tr>
+<td><strong>OpenTopoMap</strong></td>
+<td>Topografische Karte mit Höhenlinien und Geländeschattierung</td>
+<td>Standort- und Reichweitenplanung: Gelände zwischen den Nodes auf einen Blick</td>
+</tr>
+</tbody>
+</table>
+<p>Alle drei Stile gibt es auf der Raster- wie auf der Vektorkarte. Die <strong>Vektorkarte</strong> (MapLibre GL) rendert sie gestochen scharf und bringt zusätzlich die zuschaltbaren Fach-Layer und das 3D-Gelände mit:
+* <strong>Vektorkarten</strong> (umschaltbar in den Einstellungen, Raster bleibt Standard):
+  * Gestochen scharf in jeder Zoomstufe (MapLibre GL), deutlich kleinere Offline-Daten, Kartenstil-Updates ohne Client-Update
+  * <strong>🚒 Feuerwehr-/Rettungs-Layer</strong> zuschaltbar (siehe unten)
+  * Layer-Auswahl in den Einstellungen und über den 🗂️-Button direkt auf der Karte; solange ein Layer aus ist, wird kein Byte dafür geladen
+  * <strong>Automatischer Offline-Cache:</strong> online betrachtete Gebiete sind ohne Internet weiter nutzbar; zusätzlich <strong>Vektor-Offlinepaket-Downloader</strong> (Bundesland/eigene Bounding-Box, Topo-Extras und Zusatz-Layer als Opt-in)
+  * Voller Funktionsumfang: Node-Pins, Traceroutes, Nachbar-Linien, Positionsverläufe und Rechtsklick-Menü auch auf der Vektorkarte
+  * <strong>⛰ 3D-Gelände</strong> – echtes Höhenmodell (SRTM; DEM-Abdeckung bis ca. 52° N) mit Schummerung, zuschaltbar über das 🗂️-Layer-Popup; Strg+Ziehen neigt die Karte, bei gedrehter/geneigter Ansicht erscheint ein Nordpfeil (Klick = einnorden); einmal betrachtete Gebiete funktionieren auch offline
+  * Benötigt die Microsoft-WebView2-Runtime (auf Windows 11 vorinstalliert); ohne sie fällt der Client automatisch auf Raster zurück</p>
 <p>Die Vektorkarte (MapLibre GL) – gestochen scharf in jeder Zoomstufe, mit Node-Pins:
 <img alt="Meshhessen Client – Vektorkarte (MapLibre GL) mit Meshtastic Node-Positionen unter Windows" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/vector_in_action.png" /></p>
 <p><strong>⛰ 3D-Gelände</strong> – echtes Höhenmodell (SRTM) mit Schummerung auf der Vektorkarte, per Strg+Ziehen geneigt:
@@ -867,12 +985,12 @@
 </thead>
 <tbody>
 <tr>
-<td><strong>Offline</strong> (Standard)</td>
+<td><strong>Offline (Standard)</strong></td>
 <td>Vorher heruntergeladene Tiles vom Meshhessen-Server. Kein Internet erforderlich.</td>
 <td>Deutschland, Österreich &amp; Schweiz (DACH)</td>
 </tr>
 <tr>
-<td><strong>Online – Meshhessen-Server</strong></td>
+<td><strong>Online – Meshhessen-Server (DACH)</strong></td>
 <td>Tiles werden bei Bedarf von <code>tile.meshhessenclient.de</code> geladen und dauerhaft lokal gespeichert. Alle drei Stile.</td>
 <td>Deutschland, Österreich &amp; Schweiz (DACH)</td>
 </tr>
@@ -882,7 +1000,7 @@
 <td>je nach Server</td>
 </tr>
 <tr>
-<td><strong>Online – OpenStreetMap</strong></td>
+<td><strong>Online – OpenStreetMap (weltweit)</strong></td>
 <td>Weltweite Abdeckung über <code>tile.openstreetmap.org</code>; nur Standardkarte; OSM-Policy-konform (kein Bulk-Download, Tiles lokal gecacht).</td>
 <td>Weltweit</td>
 </tr>
@@ -893,16 +1011,16 @@
 </blockquote>
 <h2 id="tiles-herunterladen-offline-nutzung">Tiles herunterladen (Offline-Nutzung)<a class="headerlink" href="#tiles-herunterladen-offline-nutzung" title="Permanent link">&para;</a></h2>
 <blockquote>
-<p>⚠️ <strong>Wichtig:</strong> Tile-Download ist nur für den Meshhessen-Tile-Server (<code>tile.meshhessenclient.de</code>) vorgesehen – Bulk-Downloads verstoßen gegen die OSM-Tile-Policy.</p>
+<p>✅ <strong>Vom Meshhessen-Server ist der Download ausdrücklich erwünscht</strong> — <code>tile.meshhessenclient.de</code> steht genau dafür bereit; lade dir deine Region ruhig komplett herunter (mit Augenmaß bei Zoomstufe und Fläche). Gesperrt ist der Massen-Download nur von <strong>öffentlichen Servern</strong> wie OSM/OpenTopoMap — deren Tile-Policy verbietet Bulk-Downloads.</p>
 </blockquote>
 <ol>
-<li><strong>Einstellungen → Karte:</strong> Karten-Modus <strong>Offline</strong> (oder „Online – Meshhessen") wählen und den gewünschten Kartenstil einstellen</li>
-<li><strong>„Tiles herunterladen"</strong> klicken — der Download-Dialog öffnet sich:</li>
+<li><strong>Einstellungen → Karte / Tiles:</strong> Karten-Modus <strong>Offline</strong> und Kartendarstellung <strong>Raster</strong> wählen — nur in dieser Kombination ist der Download-Button sichtbar (für die Vektorkarte gibt es den eigenen Vektor-Paket-Downloader, siehe oben)</li>
+<li><strong>„Tiles herunterladen…"</strong> klicken — der Download-Dialog öffnet sich; den Kartenstil wählst du direkt im Dialog:</li>
 </ol>
 <p><img width="567" alt="Meshhessen Client – Offline-Karten-Tile-Downloader: Bounding Box, Zoomstufen und Fortschritt" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/tile_downloader.png" /></p>
 <ol>
-<li><strong>Gebiet festlegen:</strong> Bounding Box als <code>latMin,lonMin,latMax,lonMax</code> eingeben — z. B. Hessen: <code>49.3,7.7,51.7,10.2</code></li>
-<li><strong>Zoomstufen wählen:</strong> <code>1-12</code> reicht für die Übersicht, <code>1-14</code> ist die Empfehlung für Ortslagen, ab <code>15</code> nur für kleine Gebiete — <strong>jede weitere Stufe vervierfacht</strong> die Kachelzahl</li>
+<li><strong>Gebiet festlegen:</strong> Bundesland aus der Liste wählen oder die Bounding Box manuell in die vier Felder <strong>Nord / Süd / Ost / West</strong> eintragen — Hessen ist vorausgefüllt (N 51,7 · S 49,4 · O 10,3 · W 7,8)</li>
+<li><strong>Zoomstufen wählen</strong> (Min/Max-Felder): bis <code>12</code> reicht für die Übersicht, bis <code>14</code> (Voreinstellung) für Ortslagen, ab <code>15</code> nur für kleine Gebiete — <strong>jede weitere Stufe vervierfacht</strong> die Kachelzahl</li>
 <li><strong>Download starten</strong> und den Fortschritt beobachten — bereits vorhandene Kacheln werden übersprungen, ein Abbruch + Neustart ist also völlig harmlos</li>
 <li>Tiles landen unter <code>maptiles/</code>, sind dauerhaft offline verfügbar und portabel (per USB übertragbar)</li>
 <li><strong>Offline-Test</strong> nicht vergessen (siehe unten)</li>
@@ -915,12 +1033,12 @@
 </ul>
 <p><strong>Wieviel Speicher brauche ich?</strong> Grobe Richtwerte für die Rasterkarte: Hessen bis Zoom 14 ≈ 2–4 GB je Kartenstil; ganz Deutschland bis Zoom 14 ≈ 20–30 GB. Die Vektorkarte ist deutlich kompakter — das Vektor-Offlinepaket für ein Bundesland liegt meist unter 1 GB.</p>
 <blockquote>
-<p>⚠️ <strong>Auf SD-Karten die Zuordnungseinheit mitdenken</strong> (z. B. fürs T-Deck): Viele Tiles sind nur wenige hundert Bytes groß, belegen aber je einen vollen Cluster. Mit Standard-Formatierung großer Karten (oft 128-KB-Cluster) vervielfacht sich der tatsächliche Platzbedarf gegenüber den Richtwerten oben. Deshalb exFAT mit <strong>4096-Byte-Zuordnungseinheiten</strong> formatieren — der <a href="../tools/">T-Deck-Assistent</a> empfiehlt und erledigt genau das.</p>
+<p>⚠️ <strong>Auf SD-Karten die Zuordnungseinheit mitdenken</strong> (z. B. fürs T-Deck): Viele Tiles sind nur wenige hundert Bytes groß, belegen aber je einen vollen Cluster. Mit Standard-Formatierung großer Karten (oft 128-KB-Cluster) vervielfacht sich der tatsächliche Platzbedarf gegenüber den Richtwerten oben. Deshalb exFAT mit <strong>4096-Byte-Zuordnungseinheiten</strong> formatieren — der <a href="../t-deck/">T-Deck-Assistent</a> empfiehlt und erledigt genau das.</p>
 </blockquote>
 <p><strong>Offline-Test:</strong> Karten-Modus auf <strong>Offline</strong> stellen (oder kurz WLAN/LAN trennen) und die Zielregion durchzoomen — was jetzt sichtbar ist, ist wirklich lokal gespeichert. Fehlende Kacheln erscheinen als leere Flächen; dann den Download-Bereich/Zoom erweitern.</p>
 <h2 id="auf-der-karte">Auf der Karte<a class="headerlink" href="#auf-der-karte" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>Node-Positionen</strong> als farbige Pins; Rechtsklick auf Node → Farbe setzen, DM senden, Notiz bearbeiten, Traceroute starten, Telemetrie öffnen</li>
+<li><strong>Node-Positionen</strong> als farbige Pins; Rechtsklick auf Node → Node-Info, DM senden, Farbe setzen, Notiz bearbeiten, anpinnen, Traceroute starten, Telemetrie/Positionsverlauf öffnen, Informationen anfordern</li>
 <li><strong>Node-Pfade</strong> – GPS-Positionsverläufe aufzeichnen und anzeigen</li>
 <li><strong>Direkte Nachbar-Linien</strong> – aktivierbar im Legenden-Feld: Linien zu allen Nodes, die wir <strong>direkt über HF (0 Hops, kein MQTT)</strong> empfangen haben</li>
 <li>Farbverlauf wählbar nach <strong>SNR</strong> (rot → gelb → grün) oder <strong>Alter</strong> der letzten direkten Verbindung (cyan → violett)</li>

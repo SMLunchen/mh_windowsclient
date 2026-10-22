@@ -1,4 +1,5 @@
 
+
 <!doctype html>
 <html lang="en" class="no-js">
   <head>
@@ -16,7 +17,7 @@
         <link rel="prev" href="../messaging/">
       
       
-        <link rel="next" href="../traceroute/">
+        <link rel="next" href="../metrics/">
       
       
         
@@ -57,6 +58,17 @@
 
     
     
+  
+  
+  
+    
+    
+      <link rel="alternate" hreflang="en" href="https://meshhessenclient.de/handbuch/en/telemetry/" />
+      <link rel="alternate" hreflang="de" href="https://meshhessenclient.de/handbuch/de/telemetrie/" />
+      <link rel="alternate" hreflang="x-default" href="https://meshhessenclient.de/handbuch/de/telemetrie/" />
+    
+  
+
   </head>
   
   
@@ -521,6 +533,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../metrics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Understanding the values
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../traceroute/" class="md-nav__link">
         
   
@@ -575,14 +614,68 @@
   
   
     <li class="md-nav__item">
-      <a href="../tools/" class="md-nav__link">
+      <a href="../virtual-node/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Virtual Node · T-Deck · kiosk
+    Virtual Node
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../t-deck/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    T-Deck map assistant
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../kiosk/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Kiosk mode
   
 
     
@@ -761,7 +854,7 @@
 <ul>
 <li><strong>Persistent telemetry database</strong> – received packet and device data is stored locally in a SQLite database</li>
 <li><strong>Telemetry Dashboard</strong> – freely configurable widget dashboard with named dashboards (📊 button in the toolbar):</li>
-<li><strong>11 widget types:</strong> line, area, bar, scatter, gauge, stat value, heatmap, histogram, candlestick, state timeline, clock</li>
+<li><strong>14 widget types:</strong> line, area, bar, scatter, gauge, stat value, heatmap, histogram, candlestick, state timeline, ranking, multi-stat, mesh health, clock</li>
 <li>Multi-node support, all metrics: SNR, RSSI, battery, voltage, channel/TX utilization, temperature, humidity, pressure, packets/h, noise floor, RX/TX stats</li>
 <li>Drag-and-drop arrangement, freely resizable, editable, duplicatable, auto-refresh</li>
 <li><strong>Zoom/pan in charts</strong> (survives auto-refresh), day/night shading, threshold lines with <strong>Windows toast alerts</strong> on crossings</li>
@@ -775,17 +868,17 @@
 <h2 id="how-to-create-a-dashboard-set-an-alert-read-the-values">How-to: create a dashboard, set an alert, read the values<a class="headerlink" href="#how-to-create-a-dashboard-set-an-alert-read-the-values" title="Permanent link">&para;</a></h2>
 <p><strong>Goal:</strong> a dashboard that watches your solar router's battery and warns you before it runs dry overnight.</p>
 <ol>
-<li><strong>Open:</strong> 📊 button in the main window toolbar → the dashboard window starts with "Dashboard 1" ("+ New" creates more named dashboards, e.g. "Solar monitoring")</li>
-<li><strong>Add a widget:</strong> "+ Add Widget" → pick a type (for battery: <strong>line</strong>), tick the node(s), metric <strong>battery (%)</strong>, range <strong>7d</strong> → save. Widgets can be dragged around and resized via the grip in the lower right</li>
-<li><strong>Set the alert:</strong> enter your limit into the widget's <strong>Threshold</strong> field (e.g. <code>30</code>). The threshold line appears in the chart; when the latest value <strong>crosses</strong> it you get a <strong>Windows toast</strong> (transition only — no constant nagging)</li>
+<li><strong>Open:</strong> 📊 button in the main window toolbar → on first open the window is empty; "+ New" creates your first dashboard (suggested name "Dashboard 1" — call it e.g. "Solar monitoring")</li>
+<li><strong>Add a widget:</strong> "+ Add Widget" → pick a type (for battery: <strong>time series/line</strong>), tick the node(s), metric <strong>battery (%)</strong>, range <strong>7 days</strong> (the default) → save. On the finished card you can switch via the 1d/7d/14d/30d buttons, reorder via the ⠿ grip and resize via the grip in the lower right</li>
+<li><strong>Set the alert:</strong> enter your limit into the widget's <strong>Threshold</strong> field (e.g. <code>30</code>). The threshold line appears in the chart; when the value <strong>crosses</strong> it on a refresh you get a <strong>Windows toast</strong> (transition only — no constant nagging)</li>
 <li><strong>Keep it fresh:</strong> auto-refresh top right (e.g. 30 s); if the node rarely sends on its own, add it to the polling plan via the <strong>📥 Polling</strong> button (max. 4 nodes, mesh-friendly)</li>
-<li><strong>Success check:</strong> the widget shows a curve with day/night shading; the last refresh time is shown at the bottom. For a test, set the threshold just past the current value — the toast must fire immediately</li>
-<li><strong>Reading the values:</strong> if the battery drops more than ~15–20 % overnight, check the <a href="https://meshhessenclient.de/?lang=en#telemetry">metrics explainer on the landing page</a>; SNR/RSSI interpretation lives in the <a href="../glossary/">glossary</a></li>
+<li><strong>Success check &amp; alert test:</strong> the widget shows a curve with day/night shading; the last refresh time is shown at the bottom. Test the alert in two steps: first set the threshold on the same side as the current value (e.g. well below the battery level) and wait for one refresh — this first check silently records the baseline. Then move the threshold past the current value and press "↺ Refresh" (or wait for the auto-refresh): now the toast fires</li>
+<li><strong>Reading the values:</strong> if the battery drops more than ~15–20 % overnight, see the chapter <a href="../metrics/">Understanding the values</a> (night drop, voltage); SNR/RSSI interpretation lives there and in the <a href="../glossary/">glossary</a></li>
 </ol>
 <p><strong>Typical pitfalls:</strong></p>
 <ul>
 <li><em>Widget stays empty</em> → no data for this node/metric in the telemetry database yet (the node doesn't send that metric → enable polling or right-click "Request information")</li>
-<li><em>No toast despite threshold</em> → toasts fire on the <strong>transition</strong> only; if the value was already past the threshold when you set it, the alert comes with the next crossing. Also check: are Windows notifications allowed for apps?</li>
+<li><em>No toast despite threshold</em> → checks only happen on a <strong>refresh</strong> (auto-refresh, "↺" or saving in the editor), never while typing — and the very first check after opening silently records the baseline; only the next <strong>transition</strong> is reported. Also check: are Windows notifications allowed for apps?</li>
 <li><em>Zoom keeps resetting</em> → zoom/pan survives auto-refresh; the manual "Refresh" button deliberately resets the view</li>
 </ul>
 <!-- SCREENSHOT REQUEST: widget editor open (type/node/metric/threshold visible) -->
@@ -798,10 +891,17 @@
 <li>Time-series graphs for SNR, RSSI, packet rate and device data (battery, voltage)</li>
 <li><strong>Real RF neighbors</strong> – proven by direct reception, traceroute hop pairs and NeighborInfo packets, with SNR in both directions (fills over time; classic "heard" list as automatic fallback until then)</li>
 <li><strong>LocalStats</strong> (newer firmware): noise floor, RX bad/duplicates, TX relay and more (routing tab)</li>
-<li><strong>LED indicators</strong> in the main window: 📶 signal, 👥 neighbors, 🛤️ path stability, 🌐 mesh health, 🌤️ weather</li>
+<li><strong>"Net:" LED strip</strong> in the main window — the state of the whole visible mesh at a glance:</li>
+<li><strong>Weather/ST</strong> – "signal weather": short-term SNR/RSSI trend of all nodes (last 6 h)</li>
+<li><strong>LT-SNR</strong> – antenna health: long-term SNR trend of all nodes (last 7 days)</li>
+<li><strong>Nbrs</strong> – neighbor quality: average link quality to neighbor nodes</li>
+<li><strong>Path</strong> – route stability: frequency of route changes in the mesh</li>
+<li><strong>Mesh Health</strong> – overall score 0–100 % from path costs, route changes, reception rate and channel utilization</li>
 </ul>
 <h2 id="elevation-profile-per-radio-link">⛰ Elevation profile per radio link<a class="headerlink" href="#elevation-profile-per-radio-link" title="Permanent link">&para;</a></h2>
-<p>Right-click a neighbor (or a traceroute hop): SRTM terrain profile with line of sight and 60 % Fresnel zone (4/3 earth, 868 MHz), including a verdict whether the path is clear or terrain is in the way:
+<p>Real RF neighbors with SNR in both directions — a <strong>right-click</strong> on a neighbor (or a traceroute hop) opens the link's elevation profile:</p>
+<p><img alt="Meshhessen Client – real RF neighbors with SNR in both directions and elevation-profile context menu" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node_neighbors.png" /></p>
+<p>The elevation profile then shows the SRTM terrain profile of the radio link with line of sight and 60 % Fresnel zone (4/3 earth, 868 MHz), including a verdict whether the path is clear or terrain is in the way:
 <img alt="Meshhessen Client – elevation profile of a Meshtastic radio link: SRTM terrain, line of sight and Fresnel zone" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/elevation-profile.png" /></p>
 <h2 id="more-screenshots">More screenshots<a class="headerlink" href="#more-screenshots" title="Permanent link">&para;</a></h2>
 <p>Telemetry LED indicators in the main window:
@@ -812,8 +912,6 @@
 <img width="1278" height="889" alt="Meshhessen Client – Meshtastic node telemetry day/night statistics on Windows" src="https://github.com/user-attachments/assets/4821c996-c524-499a-8fba-f738fb051f88" /></p>
 <p>Node telemetry overview (signal):</p>
 <p><img alt="Meshhessen Client – Meshtastic node telemetry overview: signal analysis, routing, airtime and neighbor statistics" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node-telemetry.png" /></p>
-<p>Real RF neighbors with SNR in both directions – right-click opens the link's elevation profile:</p>
-<p><img alt="Meshhessen Client – real RF neighbors with SNR in both directions and elevation-profile context menu" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node_neighbors.png" /></p>
 <p>Airtime analysis per node (TX/RX airtime, channel utilization):</p>
 <p><img alt="Meshhessen Client – Meshtastic airtime analysis: TX airtime, RX airtime and channel utilization per node" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node_airtime.png" /></p>
 <p>Battery &amp; voltage analysis (day/night profile, night drop):</p>
@@ -821,7 +919,7 @@
 <p>Routing statistics (hop count, path stability, path change rate):</p>
 <p><img alt="Meshhessen Client – Meshtastic routing statistics: hop count, path stability and path change rate" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node_routing.png" /></p>
 <blockquote>
-<p>📖 What the individual metrics mean (SNR, RSSI, channel utilization, hop costs …) is explained in detail in the <a href="https://meshhessenclient.de/#telemetrie">telemetry help on the website</a>.</p>
+<p>📖 What the individual metrics mean (SNR, RSSI, channel utilization, hop costs …) is explained in detail in the chapter <a href="../metrics/">Understanding the values</a>.</p>
 </blockquote>
 
 
@@ -875,13 +973,13 @@
         
         
           
-          <a href="../traceroute/" class="md-footer__link md-footer__link--next" aria-label="Next: Traceroute">
+          <a href="../metrics/" class="md-footer__link md-footer__link--next" aria-label="Next: Understanding the values">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Traceroute
+                Understanding the values
               </div>
             </div>
             <div class="md-footer__button md-icon">

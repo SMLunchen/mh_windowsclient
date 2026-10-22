@@ -15,6 +15,7 @@ on:
       - 'docs/*.md'
       - 'mkdocs.yml'
       - 'mkdocs.en.yml'
+      - 'mkdocs_overrides/**'
       - '.github/workflows/handbuch.yml'
   workflow_dispatch:
 

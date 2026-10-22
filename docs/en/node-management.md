@@ -12,7 +12,7 @@
   * **SNR/RSSI only for direct reception** – signal values are shown only when we hear the node directly (0 hops, no MQTT); for relayed nodes the column shows the hop count instead
   * **Advanced filters** – by "last seen" (5 min to 60 days), hide MQTT nodes, favorites only, SNR coloring on/off; sort dropdown in tile mode
 * **Request information** – right-click submenu (list, tile, map) requests data from a node like the Android app: user info, position, device/environment/air-quality/power/host metrics, signal quality/mesh stats, PAX counter
-* **Firmware version & hardware model** – queried automatically on connect and shown in the node info window:
+* **Node info window** – right-click a node (list, tile, map or message) → "ℹ️ Node Info": hardware model, role, PKI status, battery, signal, first/last seen and position. Your own device's firmware version lives under Settings → Device info; a remote node's is shown in the remote admin window:
 
 <img alt="Meshhessen Client – node info window with role, battery, signal, first/last seen" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node-info-window.png" />
 * **PKI key indicator** – 🔑 column shows whether a node's public key is known
@@ -36,11 +36,11 @@ Full remote admin UI for favorite nodes — also works across relay and MQTT pat
 ### How to administer a remote node (step by step)
 
 1. **Prerequisites:** your public key must be registered as an admin key on the target node (its security tab, admin keys 1–3) — or you share an admin channel. The target also needs to know your node's public key (PKI).
-2. Mark the target node as a **favorite** (★ in the right-click menu) — only favorites get the menu entry
-3. Right-click the node → **"Remote Administration"** — the client negotiates a session key and loads the configuration (either everything at once or per tab on demand)
+2. Mark the target node as a **favorite** (★ in the right-click menu) — the remote-admin selection dialog only lists favorites
+3. Open **"🛠️ Remote Administration"** (right-click in the tile view, or Settings → Remote administration) and pick the favorite in the dialog — the client negotiates a session key and loads the configuration (either everything at once or per tab on demand). After the first valid access the target automatically marks your admin node as a favorite, so your key cannot be evicted from its node database
 4. Change settings → **"Save"** writes them back over the air; the target reboots if required
-5. **Typical failures:** timeout without a response → admin key missing on the target or the node is currently unreachable (try a traceroute); "no key" → the target's public key is missing locally (receive the node directly once or add the key to `node_keys.csv`). Rejections are reported with a concrete reason instead of failing silently.
-6. Across multiple hops every answer takes a few seconds — the **timeout** is adjustable in the window (default 120 s); individual tabs can be retried via "↻ Reload Tab"
+5. **Typical failures:** timeout without a response → admin key missing on the target or the node is currently unreachable (try a traceroute); PKI error → the target's public key is missing locally (receive the node directly once or pull it via "📥 Request information → User info"). Rejections are reported with a concrete reason instead of failing silently.
+6. Across multiple hops every answer takes a few seconds — the **timeout** is adjustable (default 30 s; 5–300 s live in the window); individual tabs can be retried via "↻ Reload Tab"
 
 **Favorites on the remote device** can be set/removed remotely, too:
 <img alt="Meshhessen Client – set a favorite node remotely on the remote Meshtastic device" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/remote-admin-set-favorite-node.png" />
@@ -64,6 +64,6 @@ Full device configuration directly from the client, all modules in one window:
 * **MQTT:** server, credentials, TLS, JSON mode, root topic, proxy mode, map reporting with precision level (bits 10–19), MQTT proxy client
 * **Telemetry:** device, environment, air quality and power metric intervals
 * **Bluetooth:** enable, pairing mode, fixed PIN; **change BT PIN** directly from the client
-* **Security:** display & generate public/private key, admin keys, managed mode
+* **Security:** show public key (read-only), show/change private key, admin keys, managed mode
 * **Channels:** all 8 channels – role, name, uplink, downlink, position precision (bits 10–19, ~23 km to ~45 m)
 * **Additional modules:** neighbor info, store & forward, external notification, canned messages, range test, serial

@@ -1,4 +1,5 @@
 
+
 <!doctype html>
 <html lang="de" class="no-js">
   <head>
@@ -57,6 +58,17 @@
 
     
     
+  
+  
+  
+    
+    
+      <link rel="alternate" hreflang="de" href="https://meshhessenclient.de/handbuch/de/nachrichten/" />
+      <link rel="alternate" hreflang="en" href="https://meshhessenclient.de/handbuch/en/messaging/" />
+      <link rel="alternate" hreflang="x-default" href="https://meshhessenclient.de/handbuch/de/nachrichten/" />
+    
+  
+
   </head>
   
   
@@ -488,6 +500,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../messwerte/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Messwerte verstehen
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../traceroute/" class="md-nav__link">
         
   
@@ -542,14 +581,68 @@
   
   
     <li class="md-nav__item">
-      <a href="../tools/" class="md-nav__link">
+      <a href="../virtual-node/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Virtual Node · T-Deck · Kiosk
+    Virtual Node
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../t-deck/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    T-Deck Karten-Assistent
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../kiosk/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Kiosk-Modus
   
 
     
@@ -723,7 +816,7 @@
 <li><strong>Multi-Channel</strong> – alle Kanäle deines Geräts automatisch geladen</li>
 <li><strong>Direktnachrichten (DMs)</strong> mit separatem Chat-Fenster im Tabbed-Layout</li>
 <li><strong>PKI-Entschlüsselung</strong> – client-seitige Entschlüsselung von PKI-verschlüsselten DMs (X25519 + AES-256-CCM, firmware-konform); Private Key wird automatisch vom verbundenen Gerät geladen</li>
-<li><strong>Node-Public-Key-Datenbank</strong> – lokale CSV-Datei (<code>node_keys.csv</code>) zum Verwalten von Public Keys für PKI-Entschlüsselung</li>
+<li><strong>Node-Public-Key-Datenbank</strong> – lokale CSV-Datei (<code>node_keys.csv</code>), die der Client automatisch mit den Public Keys empfangener Nodes pflegt (manuelle Änderungen werden beim nächsten Start eingelesen)</li>
 <li><strong>Tap-Back Reaktionen</strong> – auf Nachrichten mit Emoji reagieren (32 Emojis, wie Android-App)</li>
 <li>Rechtsklick auf Nachricht → Emoji-Picker</li>
 <li>Reaktionen werden direkt an Sender/Kanal übermittelt und angezeigt</li>
@@ -736,28 +829,28 @@
 <li>Kopiert immer die angeklickte Nachricht (nicht die zuletzt selektierte)</li>
 <li><strong>🚨 Alert Bell Support</strong> – Senden und Empfangen von Notrufen</li>
 <li>🚨 SOS-Button in Chat und DMs</li>
-<li>Visuell: rote blinkende Umrandung + Notification-Bar mit „Zur Karte springen"-Button</li>
-<li><strong>Persistente Nachrichten-Datenbank</strong> – Kanal- und DM-Nachrichten dauerhaft in lokaler SQLite-DB speichern (optional, aktivierbar in Einstellungen)</li>
+<li>Visuell: rote blinkende Umrandung + Notification-Bar mit „📍 Zur Karte"-Button</li>
+<li><strong>Persistente Nachrichten-Datenbank</strong> – Kanal- und DM-Nachrichten dauerhaft in lokaler SQLite-DB (standardmäßig aktiv; abschaltbar in den Einstellungen unter „Nachrichten-Datenbank")</li>
 <li>Letzten 24 Stunden beim Verbinden automatisch geladen; ältere Nachrichten per Hochscrollen nachladen</li>
 <li><strong>DM-History:</strong> Alle Konversationen der letzten 24 h erscheinen beim Öffnen des DM-Fensters automatisch</li>
 <li><strong>Pro-Kanal-Löschung</strong> direkt im Kanäle-Tab: „Nachrichten-DB leeren"-Spalte mit Zeitraum-Dialog (Alle / 30 / 90 / 365 Tage)</li>
 <li>Bestätigung vor dem Löschen einer DM-Konversation (kein versehentliches Wischen)</li>
-<li>Aufbewahrungsdauer konfigurierbar (30 / 90 / 365 Tage)</li>
+<li>Aufbewahrungsdauer konfigurierbar (30 / 90 / 365 Tage / unbegrenzt — Standard: 90 Tage)</li>
 </ul>
 <h2 id="how-to-erste-nachricht-verschlusselte-dm-senden">How-to: erste Nachricht &amp; verschlüsselte DM senden<a class="headerlink" href="#how-to-erste-nachricht-verschlusselte-dm-senden" title="Permanent link">&para;</a></h2>
 <p><strong>Ziel:</strong> Eine Broadcast-Nachricht in den Kanal schicken und danach eine Ende-zu-Ende-verschlüsselte Direktnachricht an einen bestimmten Node.</p>
 <ol>
-<li><strong>Kanal-Nachricht:</strong> Nachrichten-Tab → unten den Kanal wählen → Text eintippen → Enter. Die eigene Nachricht erscheint rechtsbündig; Antworten laufen im selben Verlauf ein</li>
-<li><strong>DM starten:</strong> Rechtsklick auf den Ziel-Node (in der Node-Liste, auf der Karte oder direkt auf eine seiner Nachrichten) → <strong>„Direktnachricht“</strong> — das DM-Fenster öffnet die Konversation als eigenen Tab</li>
-<li><strong>Verschlüsselung prüfen:</strong> Die 🔑-Spalte in der Node-Liste zeigt, ob der öffentliche Schlüssel des Ziels bekannt ist. 🔑 = die DM geht PKI-verschlüsselt raus (X25519 + AES-256-CCM), 🔓 = nur Kanal-Verschlüsselung</li>
-<li><strong>Erfolgskontrolle:</strong> Die gesendete Nachricht bekommt einen Zustell-Haken (ACK); die Antwort des Gegenübers erscheint im Tab. Empfangene PKI-DMs entschlüsselt der Client selbst</li>
+<li><strong>Kanal-Nachricht:</strong> Nachrichten-Tab → links in der Seitenleiste „Kanäle“ den Kanal wählen → unten Text eintippen → Enter. Die eigene Nachricht erscheint rechtsbündig; Antworten laufen im selben Verlauf ein</li>
+<li><strong>DM starten:</strong> Rechtsklick auf den Ziel-Node (in der Node-Liste, auf der Karte oder direkt auf eine seiner Nachrichten) → <strong>„💬 DM senden“</strong> — die Konversation öffnet als eigener Tab im DM-Fenster (je nach Einstellung auch direkt im Hauptfenster im Chat-Stil)</li>
+<li><strong>Verschlüsselung prüfen:</strong> Die 🔑-Spalte in der Node-Liste zeigt, ob der öffentliche Schlüssel des Ziels bekannt ist. 🔑 = PKI-DMs können ver- und entschlüsselt werden (X25519 + AES-256-CCM); bleibt die Zelle leer (Tabelle) bzw. zeigt 🔓 (Kachelansicht), ist der Key unbekannt — dann bleibt nur die Kanal-Verschlüsselung</li>
+<li><strong>Erfolgskontrolle:</strong> Die gesendete Nachricht bekommt Zustell-Haken: ✓ = gesendet, ✓✓ (grün) = vom Empfänger bestätigt (ACK); die Antwort des Gegenübers erscheint im Tab. Empfangene PKI-DMs entschlüsselt der Client selbst</li>
 <li><strong>Extras:</strong> Rechtsklick auf eine Nachricht → Emoji-Reaktion oder „Antworten“ (Zitat-Block); Texte sind markier- und kopierbar</li>
 </ol>
 <p><strong>Typische Fehler:</strong></p>
 <ul>
-<li><em>🔓 statt 🔑 beim Ziel</em> → der öffentliche Schlüssel fehlt lokal: den Node einmal direkt empfangen oder per Rechtsklick „Informationen anfordern“ die Benutzer-Info ziehen</li>
+<li><em>Kein 🔑 beim Ziel</em> → der öffentliche Schlüssel fehlt lokal: den Node einmal direkt empfangen oder per Rechtsklick „📥 Informationen anfordern → Benutzer-Info“ den Key ziehen (bei verschlüsselt empfangenen Nachrichten geht es auch über den 🔑-Button direkt an der Nachricht)</li>
 <li><em>Kein ACK</em> → Ziel gerade nicht erreichbar (mit <a href="../traceroute/">Traceroute</a> testen) oder die Funkstrecke ist ausgelastet — kurz warten statt mehrfach senden (Airtime!)</li>
-<li><em>Alte Konversation fehlt</em> → die Nachrichten-Datenbank ist optional: in den Einstellungen aktivieren, sonst beginnt der Verlauf erst mit dem Verbinden</li>
+<li><em>Alte Konversation fehlt</em> → die Nachrichten-Datenbank ist standardmäßig aktiv; prüfen, ob sie in den Einstellungen („Nachrichten-Datenbank“) abgeschaltet wurde — ohne sie beginnt der Verlauf erst mit dem Verbinden</li>
 </ul>
 <!-- SCREENSHOT-WUNSCH: DM-Fenster mit laufender Konversation + sichtbarem 🔑-Status in der Node-Liste -->
 

@@ -13,6 +13,10 @@
          <lastmod>2026-10-22</lastmod>
     </url>
     <url>
+         <loc>https://meshhessenclient.de/handbuch/en/kiosk/</loc>
+         <lastmod>2026-10-22</lastmod>
+    </url>
+    <url>
          <loc>https://meshhessenclient.de/handbuch/en/map/</loc>
          <lastmod>2026-10-22</lastmod>
     </url>
@@ -21,7 +25,15 @@
          <lastmod>2026-10-22</lastmod>
     </url>
     <url>
+         <loc>https://meshhessenclient.de/handbuch/en/metrics/</loc>
+         <lastmod>2026-10-22</lastmod>
+    </url>
+    <url>
          <loc>https://meshhessenclient.de/handbuch/en/node-management/</loc>
+         <lastmod>2026-10-22</lastmod>
+    </url>
+    <url>
+         <loc>https://meshhessenclient.de/handbuch/en/t-deck/</loc>
          <lastmod>2026-10-22</lastmod>
     </url>
     <url>
@@ -33,11 +45,11 @@
          <lastmod>2026-10-22</lastmod>
     </url>
     <url>
-         <loc>https://meshhessenclient.de/handbuch/en/tools/</loc>
+         <loc>https://meshhessenclient.de/handbuch/en/traceroute/</loc>
          <lastmod>2026-10-22</lastmod>
     </url>
     <url>
-         <loc>https://meshhessenclient.de/handbuch/en/traceroute/</loc>
+         <loc>https://meshhessenclient.de/handbuch/en/virtual-node/</loc>
          <lastmod>2026-10-22</lastmod>
     </url>
 </urlset>

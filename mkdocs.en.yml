@@ -17,6 +17,7 @@ site_dir: site_handbuch_en
 
 theme:
   name: material
+  custom_dir: mkdocs_overrides   # per-chapter hreflang links (extra.hreflang_map)
   language: en
   font: false            # no Google Fonts requests — system fonts
   favicon: https://meshhessenclient.de/favicon.ico
@@ -57,6 +58,22 @@ extra:
     - name: English
       link: https://meshhessenclient.de/handbuch/en/
       lang: en
+  # page.url (EN build) → German counterpart. Rendered by
+  # mkdocs_overrides/main.html as <link rel="alternate" hreflang>.
+  hreflang_map:
+    "": https://meshhessenclient.de/handbuch/
+    "getting-started/": https://meshhessenclient.de/handbuch/de/schnellstart/
+    "map/": https://meshhessenclient.de/handbuch/de/karte/
+    "messaging/": https://meshhessenclient.de/handbuch/de/nachrichten/
+    "telemetry/": https://meshhessenclient.de/handbuch/de/telemetrie/
+    "metrics/": https://meshhessenclient.de/handbuch/de/messwerte/
+    "traceroute/": https://meshhessenclient.de/handbuch/de/traceroute/
+    "node-management/": https://meshhessenclient.de/handbuch/de/node-verwaltung/
+    "virtual-node/": https://meshhessenclient.de/handbuch/de/virtual-node/
+    "t-deck/": https://meshhessenclient.de/handbuch/de/t-deck/
+    "kiosk/": https://meshhessenclient.de/handbuch/de/kiosk/
+    "technical/": https://meshhessenclient.de/handbuch/de/technik/
+    "glossary/": https://meshhessenclient.de/handbuch/de/glossar/
 
 plugins:
   - search:
@@ -83,8 +100,11 @@ nav:
   - Map & offline use: map.md
   - Messaging & communication: messaging.md
   - Telemetry & radio analysis: telemetry.md
+  - Understanding the values: metrics.md
   - Traceroute: traceroute.md
   - Node management & remote admin: node-management.md
-  - Virtual Node · T-Deck · kiosk: tools.md
+  - Virtual Node: virtual-node.md
+  - T-Deck map assistant: t-deck.md
+  - Kiosk mode: kiosk.md
   - Technology & protocol: technical.md
   - Glossary: glossary.md

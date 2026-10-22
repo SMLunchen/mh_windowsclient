@@ -28,6 +28,7 @@ exclude_docs: |
 
 theme:
   name: material
+  custom_dir: mkdocs_overrides   # kapitelgenaue hreflang-Links (extra.hreflang_map)
   language: de
   font: false            # keine Google-Fonts-Requests — Systemschriften
   favicon: https://meshhessenclient.de/favicon.ico
@@ -68,6 +69,22 @@ extra:
     - name: English
       link: https://meshhessenclient.de/handbuch/en/
       lang: en
+  # Seite (page.url im DE-Build) → englisches Gegenstück. Wird von
+  # mkdocs_overrides/main.html zu <link rel="alternate" hreflang> gerendert.
+  hreflang_map:
+    "": https://meshhessenclient.de/handbuch/en/
+    "de/schnellstart/": https://meshhessenclient.de/handbuch/en/getting-started/
+    "de/karte/": https://meshhessenclient.de/handbuch/en/map/
+    "de/nachrichten/": https://meshhessenclient.de/handbuch/en/messaging/
+    "de/telemetrie/": https://meshhessenclient.de/handbuch/en/telemetry/
+    "de/messwerte/": https://meshhessenclient.de/handbuch/en/metrics/
+    "de/traceroute/": https://meshhessenclient.de/handbuch/en/traceroute/
+    "de/node-verwaltung/": https://meshhessenclient.de/handbuch/en/node-management/
+    "de/virtual-node/": https://meshhessenclient.de/handbuch/en/virtual-node/
+    "de/t-deck/": https://meshhessenclient.de/handbuch/en/t-deck/
+    "de/kiosk/": https://meshhessenclient.de/handbuch/en/kiosk/
+    "de/technik/": https://meshhessenclient.de/handbuch/en/technical/
+    "de/glossar/": https://meshhessenclient.de/handbuch/en/glossary/
 
 plugins:
   - search:
@@ -94,9 +111,12 @@ nav:
   - Karte & Offline-Nutzung: de/karte.md
   - Nachrichten & Kommunikation: de/nachrichten.md
   - Telemetrie & Funkanalyse: de/telemetrie.md
+  - Messwerte verstehen: de/messwerte.md
   - Traceroute: de/traceroute.md
   - Node-Verwaltung & Fernkonfiguration: de/node-verwaltung.md
-  - Virtual Node · T-Deck · Kiosk: de/tools.md
+  - Virtual Node: de/virtual-node.md
+  - T-Deck Karten-Assistent: de/t-deck.md
+  - Kiosk-Modus: de/kiosk.md
   - Technik & Protokoll: de/technik.md
   - Architektur (Entwickler): architecture.md
   - Glossar: de/glossar.md

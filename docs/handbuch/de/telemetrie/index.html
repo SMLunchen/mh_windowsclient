@@ -1,4 +1,5 @@
 
+
 <!doctype html>
 <html lang="de" class="no-js">
   <head>
@@ -16,7 +17,7 @@
         <link rel="prev" href="../nachrichten/">
       
       
-        <link rel="next" href="../traceroute/">
+        <link rel="next" href="../messwerte/">
       
       
         
@@ -57,6 +58,17 @@
 
     
     
+  
+  
+  
+    
+    
+      <link rel="alternate" hreflang="de" href="https://meshhessenclient.de/handbuch/de/telemetrie/" />
+      <link rel="alternate" hreflang="en" href="https://meshhessenclient.de/handbuch/en/telemetry/" />
+      <link rel="alternate" hreflang="x-default" href="https://meshhessenclient.de/handbuch/de/telemetrie/" />
+    
+  
+
   </head>
   
   
@@ -521,6 +533,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../messwerte/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Messwerte verstehen
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../traceroute/" class="md-nav__link">
         
   
@@ -575,14 +614,68 @@
   
   
     <li class="md-nav__item">
-      <a href="../tools/" class="md-nav__link">
+      <a href="../virtual-node/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Virtual Node · T-Deck · Kiosk
+    Virtual Node
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../t-deck/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    T-Deck Karten-Assistent
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../kiosk/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Kiosk-Modus
   
 
     
@@ -788,7 +881,7 @@
 <ul>
 <li><strong>Persistente Telemetrie-Datenbank</strong> – empfangene Paket- und Gerätedaten werden lokal in einer SQLite-Datenbank gespeichert</li>
 <li><strong>Telemetrie-Dashboard</strong> – frei konfigurierbares Widget-Dashboard mit benannten Dashboards (📊-Button in der Toolbar):</li>
-<li><strong>11 Widget-Typen:</strong> Linie, Fläche, Balken, Scatter, Gauge, Stat-Wert, Heatmap, Histogramm, Candlestick, State-Timeline, Uhrzeit</li>
+<li><strong>14 Widget-Typen:</strong> Linie, Fläche, Balken, Scatter, Gauge, Stat-Wert, Heatmap, Histogramm, Candlestick, State-Timeline, Ranking, Multi-Stat, Mesh-Health, Uhrzeit</li>
 <li>Multi-Node-Support, alle Metriken: SNR, RSSI, Batterie, Spannung, Kanal-/TX-Auslastung, Temperatur, Luftfeuchtigkeit, Luftdruck, Pakete/h, Noise Floor, RX/TX-Statistiken</li>
 <li>Widgets per Drag-and-Drop anordnen, frei skalierbar (Resize-Griff), editierbar, duplizierbar, Auto-Refresh</li>
 <li><strong>Zoom/Pan in Charts</strong> (bleibt über den Auto-Refresh erhalten), Tag/Nacht-Schattierung, Schwellwert-Linien mit <strong>Windows-Toast-Alarm</strong> bei Über-/Unterschreitung</li>
@@ -803,17 +896,17 @@
 <h2 id="how-to-dashboard-anlegen-alarm-einrichten-werte-deuten">How-to: Dashboard anlegen, Alarm einrichten, Werte deuten<a class="headerlink" href="#how-to-dashboard-anlegen-alarm-einrichten-werte-deuten" title="Permanent link">&para;</a></h2>
 <p><strong>Ziel:</strong> Ein Dashboard, das die Batterie deines Solar-Routers überwacht und dich warnt, bevor er nachts leerläuft.</p>
 <ol>
-<li><strong>Öffnen:</strong> 📊-Button in der Toolbar des Hauptfensters → das Dashboard-Fenster startet mit „Dashboard 1“ (per „+ Neu“ legst du weitere benannte Dashboards an, z. B. „Solar-Monitoring“)</li>
-<li><strong>Widget hinzufügen:</strong> „+ Add Widget“ → Typ wählen (für Batterie: <strong>Linie</strong>), Node(s) anhaken, Metrik <strong>Batterie (%)</strong>, Zeitraum <strong>7d</strong> → Speichern. Das Widget lässt sich per Drag-and-Drop verschieben und am Griff unten rechts skalieren</li>
-<li><strong>Alarm einrichten:</strong> Im Widget den gewünschten Grenzwert ins <strong>Threshold</strong>-Feld eintragen (z. B. <code>30</code>). Die Schwellwert-Linie erscheint im Chart; <strong>kreuzt</strong> der letzte Messwert die Schwelle, kommt ein <strong>Windows-Toast</strong> (nur beim Übergang — kein Dauer-Gepiepe)</li>
-<li><strong>Aktuell halten:</strong> Auto-Refresh oben rechts (z. B. 30 s); sendet der Node selbst zu selten, nimm ihn über den <strong>📥 Polling</strong>-Button in den Abfrageplan (max. 4 Nodes, mesh-schonend)</li>
-<li><strong>Erfolgskontrolle:</strong> Das Widget zeigt eine Kurve mit Tag/Nacht-Schattierung; unten steht die letzte Aktualisierungszeit. Zum Test den Threshold kurz über den aktuellen Wert legen — der Toast muss sofort kommen</li>
-<li><strong>Werte deuten:</strong> Fällt die Batterie nachts um mehr als ~15–20 %, lohnt der Blick auf die <a href="https://meshhessenclient.de/?lang=de#telemetrie">Messwerte-Erklärung auf der Startseite</a>; die SNR/RSSI-Interpretation steht im <a href="../glossar/">Glossar</a></li>
+<li><strong>Öffnen:</strong> 📊-Button in der Toolbar des Hauptfensters → beim ersten Öffnen ist das Fenster leer; mit „+ Neu“ legst du dein erstes Dashboard an (Namensvorschlag „Dashboard 1“ — nenn es z. B. „Solar-Monitoring“)</li>
+<li><strong>Widget hinzufügen:</strong> „+ Widget hinzufügen“ → Typ wählen (für Batterie: <strong>Zeitverlauf/Linie</strong>), Node(s) anhaken, Metrik <strong>Batterie (%)</strong>, Zeitraum <strong>7 Tage</strong> (voreingestellt) → Speichern. Auf der fertigen Karte schaltest du per 1d/7d/14d/30d-Buttons um, sortierst per ⠿-Griff um und skalierst am Griff unten rechts</li>
+<li><strong>Alarm einrichten:</strong> Im Widget den gewünschten Grenzwert ins <strong>Schwellwert</strong>-Feld eintragen (z. B. <code>30</code>). Die Schwellwert-Linie erscheint im Chart; <strong>kreuzt</strong> der Wert die Schwelle bei einer Aktualisierung, kommt ein <strong>Windows-Toast</strong> (nur beim Übergang — kein Dauer-Gepiepe)</li>
+<li><strong>Aktuell halten:</strong> Auto-Refresh oben rechts (z. B. 30 s); sendet der Node selbst zu selten, nimm ihn über den <strong>📥 Abfragen</strong>-Button in den Abfrageplan (max. 4 Nodes, mesh-schonend)</li>
+<li><strong>Erfolgskontrolle &amp; Alarm-Test:</strong> Das Widget zeigt eine Kurve mit Tag/Nacht-Schattierung; unten steht die letzte Aktualisierungszeit. Den Alarm testest du in zwei Schritten: Schwellwert erst auf dieselbe Seite wie der aktuelle Wert legen (z. B. deutlich unter den Batteriestand) und eine Aktualisierung abwarten — dieser erste Check merkt sich still die Ausgangslage. Dann die Schwelle über den aktuellen Wert schieben und „↺ Aktualisieren“ drücken (oder den Auto-Refresh abwarten): jetzt kommt der Toast</li>
+<li><strong>Werte deuten:</strong> Fällt die Batterie nachts um mehr als ~15–20 %, lohnt der Blick ins Kapitel <a href="../messwerte/">Messwerte verstehen</a> (Nachtabfall, Spannung); die SNR/RSSI-Interpretation steht dort und im <a href="../glossar/">Glossar</a></li>
 </ol>
 <p><strong>Typische Fehler:</strong></p>
 <ul>
 <li><em>Widget bleibt leer</em> → für diesen Node/diese Metrik liegen noch keine Daten in der Telemetrie-Datenbank (der Node sendet die Metrik nicht → Polling aktivieren oder per Rechtsklick „Informationen anfordern“)</li>
-<li><em>Kein Toast trotz Schwellwert</em> → Toasts melden nur den <strong>Übergang</strong>; lag der Wert schon beim Setzen jenseits der Schwelle, kommt die Meldung erst beim nächsten Wechsel. Außerdem prüfen: Sind Windows-Benachrichtigungen für Apps erlaubt?</li>
+<li><em>Kein Toast trotz Schwellwert</em> → geprüft wird nur bei einer <strong>Aktualisierung</strong> (Auto-Refresh, „↺“ oder Editor-Speichern), nicht schon beim Eintippen — und der allererste Check nach dem Öffnen setzt stumm die Ausgangslage, gemeldet wird erst der nächste <strong>Übergang</strong>. Außerdem prüfen: Sind Windows-Benachrichtigungen für Apps erlaubt?</li>
 <li><em>Zoom springt zurück</em> → Zoom/Pan bleibt beim Auto-Refresh erhalten; der manuelle „Aktualisieren“-Knopf setzt die Ansicht bewusst zurück</li>
 </ul>
 <!-- SCREENSHOT-WUNSCH: Widget-Editor offen (Typ/Node/Metrik/Threshold sichtbar) -->
@@ -826,15 +919,17 @@
 <li>Zeitreihen-Graphen für SNR, RSSI, Paketrate und Gerätedaten (Batterie, Spannung)</li>
 <li><strong>Echte HF-Nachbarn</strong> – belegt durch Direktempfang, Traceroute-Teilstrecken und NeighborInfo-Pakete, mit SNR in beide Richtungen (füllt sich mit der Zeit; bis dahin automatisch die klassische „gehört"-Liste)</li>
 <li><strong>LocalStats</strong> (neuere Firmware): Noise Floor, RX fehlerhaft/Duplikate, TX Relay u. v. m. (Routing-Tab)</li>
-<li><strong>LED-Indikatoren</strong> im Hauptfenster zeigen auf einen Blick den Status des verbundenen Nodes:</li>
-<li>📶 <strong>Signal</strong> – Empfangsqualität (SNR/RSSI-Trend)</li>
-<li>👥 <strong>Nachbarn</strong> – Anzahl und Stabilität direkter Nachbar-Nodes</li>
-<li>🛤️ <strong>Pfad-Stabilität</strong> – Stabilität des Traceroute-Pfads</li>
-<li>🌐 <strong>Mesh-Health</strong> – Gesamtzustand des sichtbaren Meshes</li>
-<li>🌤️ <strong>Wetter</strong> – für Nodes mit Umweltsensor</li>
+<li><strong>LED-Ampel „Netz:“</strong> im Hauptfenster — der Zustand des gesamten sichtbaren Meshes auf einen Blick:</li>
+<li><strong>Wetter/KT</strong> – „Signal-Wetter“: Kurzzeit-SNR/RSSI-Trend aller Nodes (letzte 6 h)</li>
+<li><strong>LZ-SNR</strong> – Antennen-Gesundheit: Langzeit-SNR-Trend aller Nodes (letzte 7 Tage)</li>
+<li><strong>NB</strong> – Nachbar-Qualität: durchschnittliche Verbindungsqualität zu den Nachbar-Nodes</li>
+<li><strong>PS</strong> – Routen-Stabilität: Häufigkeit von Routenänderungen im Mesh</li>
+<li><strong>Mesh Health</strong> – Gesamt-Score 0–100 % aus Pfadkosten, Routenwechseln, Empfangsrate und Kanalauslastung</li>
 </ul>
 <h2 id="hohenprofil-pro-funkstrecke">⛰ Höhenprofil pro Funkstrecke<a class="headerlink" href="#hohenprofil-pro-funkstrecke" title="Permanent link">&para;</a></h2>
-<p>Rechtsklick auf einen Nachbarn (oder einen Traceroute-Hop): SRTM-Geländeprofil mit Sichtlinie und 60-%-Fresnel-Zone (4/3-Erdkrümmung, 868 MHz) samt Einschätzung, ob die Strecke frei ist oder Gelände im Weg steht:
+<p>Echte HF-Nachbarn mit SNR in beide Richtungen — der <strong>Rechtsklick</strong> auf einen Nachbarn (oder einen Traceroute-Hop) öffnet das Höhenprofil des Links:</p>
+<p><img alt="Meshhessen Client – Echte HF-Nachbarn mit SNR in beide Richtungen und Höhenprofil-Kontextmenü" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node_neighbors.png" /></p>
+<p>Das Höhenprofil zeigt dann das SRTM-Geländeprofil der Funkstrecke mit Sichtlinie und 60-%-Fresnel-Zone (4/3-Erdkrümmung, 868 MHz) samt Einschätzung, ob die Strecke frei ist oder Gelände im Weg steht:
 <img alt="Meshhessen Client – Höhenprofil einer Meshtastic-Funkstrecke: SRTM-Gelände, Sichtlinie und Fresnel-Zone" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/elevation-profile.png" /></p>
 <h2 id="weitere-screenshots">Weitere Screenshots<a class="headerlink" href="#weitere-screenshots" title="Permanent link">&para;</a></h2>
 <p>Telemetrie-LED-Ampel im Hauptfenster:
@@ -845,8 +940,6 @@
 <img width="1278" height="889" alt="Meshhessen Client – Meshtastic Node-Telemetrie Tag/Nacht-Auswertung Statistik Windows" src="https://github.com/user-attachments/assets/4821c996-c524-499a-8fba-f738fb051f88" /></p>
 <p>Node-Telemetrie-Übersicht (Signal):</p>
 <p><img alt="Meshhessen Client – Meshtastic Node-Telemetrie-Übersicht: Signal-Analyse, Routing, Airtime und Nachbar-Statistik" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node-telemetry.png" /></p>
-<p>Echte HF-Nachbarn mit SNR in beide Richtungen – Rechtsklick öffnet das Höhenprofil des Links:</p>
-<p><img alt="Meshhessen Client – Echte HF-Nachbarn mit SNR in beide Richtungen und Höhenprofil-Kontextmenü" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node_neighbors.png" /></p>
 <p>Airtime-Auswertung pro Node (TX/RX-Sendezeit, Kanalauslastung):</p>
 <p><img alt="Meshhessen Client – Meshtastic Airtime-Analyse: TX-Airtime, RX-Airtime und Kanalauslastung pro Node" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node_airtime.png" /></p>
 <p>Batterie &amp; Spannungs-Analyse (Tag/Nacht-Profil, Nachtabfall):</p>
@@ -854,7 +947,7 @@
 <p>Routing-Statistik (Hop-Anzahl, Pfad-Stabilität, Pfadwechsel-Rate):</p>
 <p><img alt="Meshhessen Client – Meshtastic Routing-Statistik: Hop-Anzahl, Pfad-Stabilität und Pfadwechsel-Rate" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node_routing.png" /></p>
 <blockquote>
-<p>📖 Was die einzelnen Messwerte bedeuten (SNR, RSSI, Kanalauslastung, Hop-Kosten …) erklärt ausführlich die <a href="https://meshhessenclient.de/#telemetrie">Telemetrie-Hilfe auf der Website</a>.</p>
+<p>📖 Was die einzelnen Messwerte bedeuten (SNR, RSSI, Kanalauslastung, Hop-Kosten …) erklärt ausführlich das Kapitel <a href="../messwerte/">Messwerte verstehen</a>.</p>
 </blockquote>
 
 
@@ -908,13 +1001,13 @@
         
         
           
-          <a href="../traceroute/" class="md-footer__link md-footer__link--next" aria-label="Weiter: Traceroute">
+          <a href="../messwerte/" class="md-footer__link md-footer__link--next" aria-label="Weiter: Messwerte verstehen">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Weiter
               </span>
               <div class="md-ellipsis">
-                Traceroute
+                Messwerte verstehen
               </div>
             </div>
             <div class="md-footer__button md-icon">
