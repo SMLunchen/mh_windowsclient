@@ -1,0 +1,30 @@
+{#
+  Sprachwähler als Fahnen statt Globus-Dropdown (Runde 7, User-Wunsch):
+  beide Flaggen direkt im Header — die aktive Sprache ist markiert, die andere
+  verlinkt kapitelgenau über extra.hreflang_map (Fallback: Startseite der
+  anderen Sprache). Inline-SVG statt Emoji, weil Windows Flaggen-Emojis nur
+  als Buchstabenpaare ("DE"/"GB") rendert.
+#}
+{% set map = config.extra.hreflang_map or {} %}
+{% set other_url = map.get(page.url) %}
+<div class="md-header__option">
+  <nav class="mh-flags" aria-label="{{ lang.t('select.language') }}">
+    {% for alt in config.extra.alternate %}
+      {% set active = alt.lang == config.theme.language %}
+      {% set href = other_url if (not active and other_url) else alt.link %}
+      {% if active %}
+        <span class="mh-flag mh-flag--active" title="{{ alt.name }}">
+      {% else %}
+        <a class="mh-flag" href="{{ href }}" hreflang="{{ alt.lang }}" title="{{ alt.name }}">
+      {% endif %}
+      {% if alt.lang == "de" %}
+        <svg viewBox="0 0 5 3" width="21" height="13" role="img" aria-label="Deutsch"><rect width="5" height="1" y="0" fill="#000"/><rect width="5" height="1" y="1" fill="#D00"/><rect width="5" height="1" y="2" fill="#FFCE00"/></svg>
+      {% elif alt.lang == "en" %}
+        <svg viewBox="0 0 60 30" width="26" height="13" role="img" aria-label="English"><clipPath id="mhuk"><path d="M0,0 v30 h60 v-30 z"/></clipPath><path d="M0,0 v30 h60 v-30 z" fill="#012169"/><path d="M0,0 L60,30 M60,0 L0,30" stroke="#fff" stroke-width="6"/><path d="M0,0 L60,30 M60,0 L0,30" clip-path="url(#mhuk)" stroke="#C8102E" stroke-width="4"/><path d="M30,0 v30 M0,15 h60" stroke="#fff" stroke-width="10"/><path d="M30,0 v30 M0,15 h60" stroke="#C8102E" stroke-width="6"/></svg>
+      {% else %}
+        {{ alt.name }}
+      {% endif %}
+      {% if active %}</span>{% else %}</a>{% endif %}
+    {% endfor %}
+  </nav>
+</div>

@@ -8,14 +8,29 @@
   <link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
 
   <style>
+    /* Design-Angleichung an mqtt.meshhessen.de — siehe index.html. */
+    :root {
+      --mh-green: #20c997;
+      --mh-green-dark: #198754;
+      --mh-green-soft: #6eddbf;
+    }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: #0d1117;
+      background: transparent;
       color: #e6edf3;
       line-height: 1.6;
     }
-    a { color: #58a6ff; text-decoration: none; }
+    #mesh-bg {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      background: #0d1117;
+      pointer-events: none;
+    }
+    a { color: var(--mh-green); text-decoration: none; }
     a:hover { text-decoration: underline; }
 
     header {
@@ -57,8 +72,8 @@
       transition: background 0.15s;
     }
     .lang-btn.active, .lang-btn:hover {
-      background: #1f6feb;
-      border-color: #1f6feb;
+      background: var(--mh-green-dark);
+      border-color: var(--mh-green);
       color: #fff;
     }
 
@@ -73,7 +88,7 @@
       padding-left: 1.4rem;
     }
     .version-entry.upcoming  { border-left-color: #3fb950; }
-    .version-entry.current   { border-left-color: #58a6ff; }
+    .version-entry.current   { border-left-color: var(--mh-green); }
     .version-entry.old       { border-left-color: #484f58; }
 
     .version-header {
@@ -94,7 +109,7 @@
       white-space: nowrap;
     }
     .tag-upcoming { background: #1a4a26; color: #3fb950; border: 1px solid #3fb950; }
-    .tag-latest   { background: #1c2d5a; color: #58a6ff; border: 1px solid #58a6ff; }
+    .tag-latest   { background: #0f3b2e; color: var(--mh-green); border: 1px solid var(--mh-green); }
     .tag-dev      { display: inline-block; margin-left: 0.5rem; padding: 0.1rem 0.6rem; border-radius: 12px; font-size: 0.78rem; background: #3a2d10; color: #e3b341; border: 1px solid #9e6a03; }
     .tag-release  { background: #1c2128; color: #8b949e; border: 1px solid #30363d; }
     .tag-beta     { background: #2d1f54; color: #bc8cff; border: 1px solid #bc8cff; }
@@ -121,7 +136,7 @@
     .cl-group-title {
       font-size: 0.86rem;
       font-weight: 600;
-      color: #79c0ff;
+      color: var(--mh-green);
       margin-bottom: 0.2rem;
     }
 
@@ -140,7 +155,7 @@
       border: 1px solid #30363d;
       border-radius: 3px;
       padding: 0 0.3rem;
-      color: #79c0ff;
+      color: var(--mh-green-soft);
     }
 
     .divider { border: none; border-top: 1px solid #1c2128; margin: 2rem 0; }
@@ -155,6 +170,8 @@
   </style>
 </head>
 <body>
+<canvas id="mesh-bg" aria-hidden="true"></canvas>
+<script src="mesh-bg.js" defer></script>
 
 <header>
   <h1>Changelog</h1>

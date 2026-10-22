@@ -58,9 +58,6 @@ theme:
   icon:
     repo: fontawesome/brands/github
 
-extra_javascript:
-  - lang-switch.js
-
 extra:
   alternate:
     - name: Deutsch

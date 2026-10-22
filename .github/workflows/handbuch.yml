@@ -10,7 +10,6 @@ on:
     branches: [master]
     paths:
       - 'docs/**/*.md'
-      - 'docs/lang-switch.js'
       - 'requirements-docs.txt'
       - 'docs/*.md'
       - 'mkdocs.yml'
