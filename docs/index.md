@@ -18,6 +18,11 @@ Willkommen im Handbuch des **Meshhessen Clients** — dem kostenlosen Windows-Cl
 | | [🔧 Node-Verwaltung & Fernkonfiguration](de/node-verwaltung.md) | |
 | | [🧰 Virtual Node · T-Deck · Kiosk](de/tools.md) | |
 
+**🎯 How-tos — Schritt für Schritt:**
+[Dashboard anlegen & Alarm einrichten](de/telemetrie.md#how-to-dashboard-anlegen-alarm-einrichten-werte-deuten) ·
+[Erste Nachricht & verschlüsselte DM](de/nachrichten.md#how-to-erste-nachricht-verschlusselte-dm-senden) ·
+[Handy-App über den PC verbinden](de/tools.md#how-to-handy-app-uber-den-pc-verbinden)
+
 ## 🇬🇧 English → [full English manual](https://meshhessenclient.de/handbuch/en/)
 
 | Getting started | Features | Help |

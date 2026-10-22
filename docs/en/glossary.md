@@ -12,7 +12,13 @@
 : Base noise at the receiver (environmental interference + receiver noise). Approximation: RSSI ≈ noise floor + SNR. Newer firmware reports it in LocalStats.
 
 **Hop**
-: One forward through a relay node. Every hop adds latency and airtime; the hop limit (default 3, max. 7) bounds a message's reach.
+: One forward through a relay node (Meshtastic counting: **direct = 0 hops**). Every hop adds latency and airtime; the hop limit (default 3, max. 7) bounds a message's reach. Not to be confused with the number of radio legs:
+
+    | Link | Hops (relay forwards) | Radio legs |
+    |---|---|---|
+    | A → B | 0 | 1 |
+    | A → R1 → B | 1 | 2 |
+    | A → R1 → R2 → B | 2 | 3 |
 
 **Airtime**
 : The time a transmission occupies the radio channel. A shared resource: the longer the modem preset and the more packets/hops, the less capacity remains for everyone else.

@@ -12,7 +12,13 @@
 : Grundrauschen am Empfänger (Umgebungsstörungen + Empfängerrauschen). Näherung: RSSI ≈ Noise Floor + SNR. Neuere Firmware meldet ihn in den LocalStats.
 
 **Hop**
-: Eine Weiterleitung durch einen Relay-Node. Jeder Hop erhöht Latenz und Airtime-Verbrauch; das Hop-Limit (Standard 3, max. 7) begrenzt die Reichweite einer Nachricht.
+: Eine Weiterleitung durch einen Relay-Node (Meshtastic-Zählweise: **direkt = 0 Hops**). Jeder Hop erhöht Latenz und Airtime-Verbrauch; das Hop-Limit (Standard 3, max. 7) begrenzt die Reichweite. Nicht verwechseln mit der Zahl der Funkstrecken:
+
+    | Verbindung | Hops (Relay-Weiterleitungen) | Funkstrecken |
+    |---|---|---|
+    | A → B | 0 | 1 |
+    | A → R1 → B | 1 | 2 |
+    | A → R1 → R2 → B | 2 | 3 |
 
 **Airtime**
 : Die Zeit, die eine Aussendung den Funkkanal belegt. Gemeinschaftsressource: Je länger das Modem-Preset und je mehr Pakete/Hops, desto weniger Kapazität bleibt für alle anderen.

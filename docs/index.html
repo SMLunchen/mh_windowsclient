@@ -651,11 +651,11 @@
   <div class="telem-grid">
     <div class="telem-card">
       <h3>Hop-Anzahl</h3>
-      <p>Wie viele Zwischenstationen (Relay-Nodes) ein Paket durchläuft. Jeder Hop erhöht die Latenz und verbraucht Airtime auf dem Kanal.</p>
+      <p>Wie oft ein Paket von Relay-Nodes weitergeleitet wurde (Meshtastic-Zählweise: <strong>direkt = 0 Hops</strong>; die Zahl der Funkstrecken ist Hops + 1). Jede Weiterleitung erhöht Latenz und Airtime-Verbrauch.</p>
       <ul>
-        <li><span class="led-green">● 1 Hop</span> – Direktverbindung, optimal</li>
-        <li><span class="led-green">● 2–3 Hops</span> – Normal</li>
-        <li><span class="led-yellow">● 4–5 Hops</span> – Hoch, hoher Airtime-Verbrauch</li>
+        <li><span class="led-green">● 0 Hops</span> – Direktverbindung, optimal</li>
+        <li><span class="led-green">● 1–2 Hops</span> – Normal</li>
+        <li><span class="led-yellow">● 3–5 Hops</span> – Hoch, hoher Airtime-Verbrauch</li>
         <li><span class="led-red">● 6–7 Hops</span> – Maximum, sehr ineffizient</li>
       </ul>
     </div>
@@ -676,7 +676,7 @@
 
   <h3>👥 Nachbarn (Neighbors)</h3>
   <p>
-    Zeigt alle Nodes, die der ausgewählte Node direkt (1 Hop, ohne Relay) hört. Pro Nachbar wird der
+    Zeigt alle Nodes, die der ausgewählte Node direkt (0 Hops, ohne Relay) hört. Pro Nachbar wird der
     SNR der direkten Verbindung und der zeitliche Trend angezeigt. Viele stabile Nachbarn bedeuten
     eine gute Einbindung ins Mesh; wenige oder instabile Nachbarn zeigen Reichweitenprobleme.
   </p>
@@ -905,7 +905,7 @@
   </div>
 
   <h2>📚 Documentation &amp; Help</h2>
-  <p>Step-by-step guides for every topic — as a searchable <a href="handbuch/">📖 manual</a> (English &amp; German):</p>
+  <p>Step-by-step guides for every topic — as a searchable <a href="handbuch/en/">📖 manual</a> (English &amp; German):</p>
   <ul class="doc-links">
     <li><a href="handbuch/en/getting-started/">🚀 Getting started &amp; connection</a></li>
     <li><a href="handbuch/en/map/">🗺️ Map &amp; offline use</a></li>
@@ -1134,11 +1134,11 @@
   <div class="telem-grid">
     <div class="telem-card">
       <h3>Hop Count</h3>
-      <p>How many relay nodes a packet passes through. Each hop increases latency and consumes airtime on the channel.</p>
+      <p>How often a packet was forwarded by relay nodes (Meshtastic counting: <strong>direct = 0 hops</strong>; the number of radio legs is hops + 1). Every forward adds latency and airtime.</p>
       <ul>
-        <li><span class="led-green">● 1 hop</span> – Direct link, optimal</li>
-        <li><span class="led-green">● 2–3 hops</span> – Normal</li>
-        <li><span class="led-yellow">● 4–5 hops</span> – High, heavy airtime use</li>
+        <li><span class="led-green">● 0 hops</span> – Direct link, optimal</li>
+        <li><span class="led-green">● 1–2 hops</span> – Normal</li>
+        <li><span class="led-yellow">● 3–5 hops</span> – High, heavy airtime use</li>
         <li><span class="led-red">● 6–7 hops</span> – Maximum, very inefficient</li>
       </ul>
     </div>
@@ -1159,7 +1159,7 @@
 
   <h3>👥 Neighbors</h3>
   <p>
-    Shows all nodes that the selected node hears directly (1 hop, no relay). Per neighbor the SNR of
+    Shows all nodes that the selected node hears directly (0 hops, no relay). Per neighbor the SNR of
     the direct link and its trend over time are displayed. Many stable neighbors indicate good
     integration into the mesh; few or unstable neighbors indicate range or configuration issues.
   </p>
@@ -1349,6 +1349,7 @@
     document.getElementById('hero-sub').textContent = t.sub;
     document.getElementById('hero-dl').textContent = t.dl;
     document.getElementById('hero-manual').textContent = t.manual;
+    document.getElementById('hero-manual').href = lang === 'en' ? 'handbuch/en/' : 'handbuch/';
     document.getElementById('hero-chips').innerHTML =
       t.chips.map(c => '<span class="chip">' + c + '</span>').join('');
     // update html lang attribute for accessibility/SEO

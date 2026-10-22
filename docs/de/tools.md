@@ -11,6 +11,24 @@
 * **Bidirektionale Sichtbarkeit:** Nachrichten aus der App erscheinen in verbundenen Apps – und umgekehrt
 * **Multi-Client:** mehrere Apps gleichzeitig verbindbar; Status und verbundene IPs werden im Tools-Tab angezeigt
 
+### How-to: Handy-App über den PC verbinden
+
+**Ziel:** Die Meshtastic-App auf dem Handy nutzt den am PC angeschlossenen Node mit — als wäre der Client ein eigenes Gerät im WLAN.
+
+1. **Voraussetzung:** Der Client ist mit dem physischen Node verbunden; Handy und PC hängen im selben Netz (WLAN)
+2. **Aktivieren:** Tools-Tab → Virtual Node einschalten (Standard-Port **4404**); optional „Admin-Befehle blockieren“ und Autostart setzen
+3. **Handy verbinden:** Meshtastic-App → Geräteauswahl → **Netzwerk/TCP** → IP-Adresse des PCs + Port 4404 eintragen (die PC-IP zeigt z. B. `ipconfig`; verbundene Clients listet der Tools-Tab)
+4. **Erfolgskontrolle:** Die App lädt sofort Kanäle, Node-Liste und Konfiguration; eine Testnachricht vom Handy erscheint im Client — und umgekehrt
+5. **Mehrere Geräte:** Weitere Apps können sich parallel verbinden; der Tools-Tab zeigt Status und IPs
+
+**Typische Fehler:**
+
+* *App findet den PC nicht* → die Windows-Firewall fragt beim ersten Start nach der Freigabe — zulassen (oder eine eingehende Regel für Port 4404 anlegen); außerdem prüfen, ob Handy und PC wirklich im selben WLAN/Subnetz sind
+* *Verbindung steht, aber keine Daten* → der Client selbst ist gerade nicht mit dem Node verbunden; die Reihenfolge ist Client ↔ Node, dann Handy ↔ Client
+* *Admin-Änderungen aus der App wirken nicht* → „Admin-Befehle blockieren“ ist aktiv (auch der gesperrte Kiosk-Modus blockiert sie zusätzlich)
+
+<!-- SCREENSHOT-WUNSCH: Tools-Tab mit aktivem Virtual Node + verbundener Client-IP -->
+
 ## 🔧 T-Deck Karten-Assistent (Tools-Tab)
 
 * **SD-Karte vorbereiten** – geführter 6-Schritt-Assistent zum Bespielen einer SD-Karte mit Offline-Karten für das Meshtastic T-Deck

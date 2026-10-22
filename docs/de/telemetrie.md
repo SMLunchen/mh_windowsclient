@@ -19,6 +19,26 @@
 **📊 Telemetrie-Dashboard** – frei konfigurierbare Widgets mit Schwellwert-Alarmen, Auto-Refresh und Vollbild:
 <img alt="Meshhessen Client – Telemetrie-Dashboard mit konfigurierbaren Widgets: Gauges, Heatmaps, Mesh-Health und Schwellwert-Alarmen" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/telemetry-dashboard.png" />
 
+## How-to: Dashboard anlegen, Alarm einrichten, Werte deuten
+
+**Ziel:** Ein Dashboard, das die Batterie deines Solar-Routers überwacht und dich warnt, bevor er nachts leerläuft.
+
+1. **Öffnen:** 📊-Button in der Toolbar des Hauptfensters → das Dashboard-Fenster startet mit „Dashboard 1“ (per „+ Neu“ legst du weitere benannte Dashboards an, z. B. „Solar-Monitoring“)
+2. **Widget hinzufügen:** „+ Add Widget“ → Typ wählen (für Batterie: **Linie**), Node(s) anhaken, Metrik **Batterie (%)**, Zeitraum **7d** → Speichern. Das Widget lässt sich per Drag-and-Drop verschieben und am Griff unten rechts skalieren
+3. **Alarm einrichten:** Im Widget den gewünschten Grenzwert ins **Threshold**-Feld eintragen (z. B. `30`). Die Schwellwert-Linie erscheint im Chart; **kreuzt** der letzte Messwert die Schwelle, kommt ein **Windows-Toast** (nur beim Übergang — kein Dauer-Gepiepe)
+4. **Aktuell halten:** Auto-Refresh oben rechts (z. B. 30 s); sendet der Node selbst zu selten, nimm ihn über den **📥 Polling**-Button in den Abfrageplan (max. 4 Nodes, mesh-schonend)
+5. **Erfolgskontrolle:** Das Widget zeigt eine Kurve mit Tag/Nacht-Schattierung; unten steht die letzte Aktualisierungszeit. Zum Test den Threshold kurz über den aktuellen Wert legen — der Toast muss sofort kommen
+6. **Werte deuten:** Fällt die Batterie nachts um mehr als ~15–20 %, lohnt der Blick auf die [Messwerte-Erklärung auf der Startseite](https://meshhessenclient.de/?lang=de#telemetrie); die SNR/RSSI-Interpretation steht im [Glossar](glossar.md)
+
+**Typische Fehler:**
+
+* *Widget bleibt leer* → für diesen Node/diese Metrik liegen noch keine Daten in der Telemetrie-Datenbank (der Node sendet die Metrik nicht → Polling aktivieren oder per Rechtsklick „Informationen anfordern“)
+* *Kein Toast trotz Schwellwert* → Toasts melden nur den **Übergang**; lag der Wert schon beim Setzen jenseits der Schwelle, kommt die Meldung erst beim nächsten Wechsel. Außerdem prüfen: Sind Windows-Benachrichtigungen für Apps erlaubt?
+* *Zoom springt zurück* → Zoom/Pan bleibt beim Auto-Refresh erhalten; der manuelle „Aktualisieren“-Knopf setzt die Ansicht bewusst zurück
+
+<!-- SCREENSHOT-WUNSCH: Widget-Editor offen (Typ/Node/Metrik/Threshold sichtbar) -->
+<!-- SCREENSHOT-WUNSCH: Windows-Toast einer Schwellwert-Warnung -->
+
 ## Node-Statistik & echte HF-Nachbarn
 
 * **Node-Statistik-Fenster** – detaillierte Auswertung pro Node:

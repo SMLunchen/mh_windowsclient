@@ -30,10 +30,23 @@ theme:
   name: material
   language: de
   font: false            # keine Google-Fonts-Requests — Systemschriften
+  favicon: https://meshhessenclient.de/favicon.ico
+  logo: https://meshhessenclient.de/favicon.ico
   palette:
-    scheme: slate
-    primary: black
-    accent: light blue
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: black
+      accent: light blue
+      toggle:
+        icon: material/brightness-7
+        name: Helles Design
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: black
+      accent: light blue
+      toggle:
+        icon: material/brightness-4
+        name: Dunkles Design
   features:
     - navigation.sections
     - navigation.top
@@ -43,6 +56,9 @@ theme:
     - content.action.edit    # ✏-Stift: „Auf GitHub bearbeiten"
   icon:
     repo: fontawesome/brands/github
+
+extra_javascript:
+  - lang-switch.js
 
 extra:
   alternate:

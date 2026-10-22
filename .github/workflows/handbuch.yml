@@ -10,6 +10,8 @@ on:
     branches: [master]
     paths:
       - 'docs/**/*.md'
+      - 'docs/lang-switch.js'
+      - 'requirements-docs.txt'
       - 'docs/*.md'
       - 'mkdocs.yml'
       - 'mkdocs.en.yml'
@@ -29,8 +31,8 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install MkDocs Material
-        run: pip install mkdocs-material
+      - name: Install pinned docs toolchain
+        run: pip install -r requirements-docs.txt
 
       - name: Build German site (strict = Link-Check inklusive)
         run: mkdocs build --strict -d site_handbuch
