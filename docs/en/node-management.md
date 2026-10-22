@@ -1,6 +1,6 @@
 # 🔧 Node Management & Remote Admin
 
-[← Handbook home](../index.md) · [🇩🇪 Deutsche Version](../de/node-verwaltung.md)
+[← Handbook home](index.md) · [🇩🇪 Deutsche Version](https://meshhessenclient.de/handbuch/de/node-verwaltung/)
 
 ## Node overview
 

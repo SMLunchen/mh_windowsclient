@@ -1,6 +1,6 @@
 # Architektur – Meshhessen Client
 
-Stand: v1.5.14 · abgeleitet aus dem aktuellen Quellcode (`Services/`, `Models/`, Fenster im Projektroot).
+Stand: v1.6.4.7 · abgeleitet aus dem Quellcode (`Services/`, `Models/`, Fenster im Projektroot). Die Kernmuster (geteilter Protokoll-Service, `IConnectionService`-Abstraktion, Event-Fluss) sind seit v1.5 stabil; seither kamen u. a. Vektorkarte (WebView2/MapLibre), Telemetrie-Dashboard, rf_links/Triangulation und TerrainService hinzu.
 
 Der Client ist schichtweise aufgebaut mit `MainWindow` als zentraler Drehscheibe.
 Empfangsdaten fließen von unten (Gerät) nach oben (UI) über **Events**, Befehle den
@@ -34,7 +34,7 @@ flowchart TB
   %% ---------- Protocol core ----------
   subgraph PROTO["⚙️ Protokoll-Kern"]
     PROTOSVC["MeshtasticProtocolService<br/>Protobuf en/decode · ~25 Events · SendXxxAsync"]
-    PKI["PkiDecryptionService<br/>X25519 + AES-256-CTR"]
+    PKI["PkiDecryptionService<br/>X25519 + AES-256-CCM"]
     NKS["NodeKeyService<br/>Public-Key-Auflösung (CSV)"]
   end
 

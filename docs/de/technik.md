@@ -1,6 +1,6 @@
 # 🏗️ Technik & Protokoll
 
-[← Handbuch-Übersicht](../index.md) · [🇬🇧 English version](../en/technical.md)
+[← Handbuch-Übersicht](../index.md) · [🇬🇧 English version](https://meshhessenclient.de/handbuch/en/technical/)
 
 ## Technischer Überblick
 

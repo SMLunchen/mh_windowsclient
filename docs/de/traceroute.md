@@ -1,6 +1,6 @@
 # 📡 Traceroute
 
-[← Handbuch-Übersicht](../index.md) · [🇬🇧 English version](../en/traceroute.md)
+[← Handbuch-Übersicht](../index.md) · [🇬🇧 English version](https://meshhessenclient.de/handbuch/en/traceroute/)
 
 * **Traceroute starten** – direkt aus dem Node-Kontextmenü (Nodes-Liste, Karte, Nachrichtenliste)
 * **„Nur HF"-Modus** – sendet die Anfrage mit gelöschtem OK-to-MQTT-Bit (vorverschlüsseltes Paket): MQTT-Gateways leiten sie nicht weiter, die Route läuft ausschließlich über Funk. Hinweis: Die *Antwort* kann trotzdem über MQTT zurückkommen — das bestimmt der Ziel-Node.

@@ -18,20 +18,20 @@ Willkommen im Handbuch des **Meshhessen Clients** — dem kostenlosen Windows-Cl
 | | [🔧 Node-Verwaltung & Fernkonfiguration](de/node-verwaltung.md) | |
 | | [🧰 Virtual Node · T-Deck · Kiosk](de/tools.md) | |
 
-## 🇬🇧 English
+## 🇬🇧 English → [full English manual](https://meshhessenclient.de/handbuch/en/)
 
 | Getting started | Features | Help |
 |---|---|---|
-| [🚀 Getting started & connection](en/getting-started.md) | [🗺️ Map & offline use](en/map.md) | [📖 Glossary](en/glossary.md) |
-| | [📨 Messaging & communication](en/messaging.md) | [🏗️ Technology & protocol](en/technical.md) |
-| | [📊 Telemetry & radio analysis](en/telemetry.md) | |
-| | [📡 Traceroute](en/traceroute.md) | |
-| | [🔧 Node management & remote admin](en/node-management.md) | |
-| | [🧰 Virtual Node · T-Deck · kiosk](en/tools.md) | |
+| [🚀 Getting started & connection](https://meshhessenclient.de/handbuch/en/getting-started/) | [🗺️ Map & offline use](https://meshhessenclient.de/handbuch/en/map/) | [📖 Glossary](https://meshhessenclient.de/handbuch/en/glossary/) |
+| | [📨 Messaging & communication](https://meshhessenclient.de/handbuch/en/messaging/) | [🏗️ Technology & protocol](https://meshhessenclient.de/handbuch/en/technical/) |
+| | [📊 Telemetry & radio analysis](https://meshhessenclient.de/handbuch/en/telemetry/) | |
+| | [📡 Traceroute](https://meshhessenclient.de/handbuch/en/traceroute/) | |
+| | [🔧 Node management & remote admin](https://meshhessenclient.de/handbuch/en/node-management/) | |
+| | [🧰 Virtual Node · T-Deck · kiosk](https://meshhessenclient.de/handbuch/en/tools/) | |
 
 ---
 
-> 🔎 **Tipp / Tip:** Die Suche oben durchsucht alle Kapitel in beiden Sprachen. / The search box above covers every chapter in both languages.
+> 🔎 **Tipp:** Die Suche oben durchsucht alle deutschen Kapitel — das [englische Handbuch](https://meshhessenclient.de/handbuch/en/) hat eine eigene englische Suche. Umschalten geht auch über den Sprachwähler oben in der Leiste.
 >
 > ✍️ Fehler gefunden? Jede Seite hat einen „Bearbeiten"-Stift — Korrekturen per Pull Request sind willkommen. / Found a mistake? Every page has an edit pencil — corrections via pull request are welcome.
 >

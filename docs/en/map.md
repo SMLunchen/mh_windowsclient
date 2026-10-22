@@ -1,6 +1,6 @@
 # 🗺️ Map & Offline Use
 
-[← Handbook home](../index.md) · [🇩🇪 Deutsche Version](../de/karte.md)
+[← Handbook home](index.md) · [🇩🇪 Deutsche Version](https://meshhessenclient.de/handbuch/de/karte/)
 
 ## Map styles & vector map
 
@@ -24,8 +24,8 @@ The vector map (MapLibre GL) – razor-sharp at every zoom level, with node pins
 
 | Mode | Description | Coverage |
 |----|----|----|
-| **Offline** (default) | Pre-downloaded tiles from the Meshhessen server. No internet required. | Germany only |
-| **Online – Meshhessen server** | Tiles fetched on demand from `tile.meshhessenclient.de` and stored permanently. All three styles. | Germany only |
+| **Offline** (default) | Pre-downloaded tiles from the Meshhessen server. No internet required. | Germany, Austria & Switzerland (DACH) |
+| **Online – Meshhessen server** | Tiles fetched on demand from `tile.meshhessenclient.de` and stored permanently. All three styles. | Germany, Austria & Switzerland (DACH) |
 | **Online – custom tile server** | Same, but with your own configured tile URLs; public OSM/OpenTopoMap servers are not allowed here (tile usage policy). | depends on server |
 | **Online – OpenStreetMap** | Worldwide coverage via `tile.openstreetmap.org`; standard map only; OSM tile policy compliant. | Worldwide |
 
@@ -49,7 +49,7 @@ The vector map (MapLibre GL) – razor-sharp at every zoom level, with node pins
 **Typical pitfalls:**
 
 * **Download refuses to start** → public OSM/OpenTopoMap servers are blocked for bulk downloads (tile policy) — use the Meshhessen server or your own tile server
-* **Blank areas outside Germany** → the Meshhessen server covers Germany only; use the OSM online mode (viewing only, no bulk download) abroad
+* **Blank areas outside the DACH region** → the Meshhessen server covers Germany, Austria and Switzerland; use the OSM online mode (viewing only, no bulk download) elsewhere
 * **Download gets huge** → lower the zoom cap or shrink the bounding box — going from zoom 14 to 15 alone quadruples the data
 
 **How much storage?** Rough raster-map figures: Hesse up to zoom 14 ≈ 2–4 GB per map style; all of Germany up to zoom 14 ≈ 20–30 GB. The vector map is far more compact — a vector offline package for a federal state is usually below 1 GB.

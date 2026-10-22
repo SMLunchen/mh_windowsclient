@@ -1,7 +1,9 @@
-# Meshhessen Client — Handbuch (MkDocs Material)
-# Quelle: docs/de/*.md + docs/en/*.md (werden auch auf GitHub direkt gerendert).
-# Build:  mkdocs build --strict -d site_handbuch  → Inhalt nach docs/handbuch/ kopieren
-#         (macht .github/workflows/handbuch.yml automatisch bei jedem Doku-Push).
+# Meshhessen Client — Handbuch, DEUTSCHER Build (MkDocs Material)
+# Quelle: docs/de/*.md (+ Home/Architektur; rendert auch auf GitHub direkt).
+# Der englische Build kommt aus mkdocs.en.yml (eigene Sprache/Suche/Navigation)
+# und wird nach docs/handbuch/en/ gelegt — Sprachwechsel über extra.alternate.
+# Build: mkdocs build --strict -d site_handbuch → nach docs/handbuch/ kopieren
+#        (macht .github/workflows/handbuch.yml automatisch bei jedem Doku-Push).
 # GitHub Pages liefert docs/ aus → das Handbuch erscheint unter /handbuch/.
 
 site_name: Meshhessen Client – Handbuch
@@ -22,10 +24,12 @@ exclude_docs: |
   index.html
   changelog.html
   handbuch/
+  en/
 
 theme:
   name: material
   language: de
+  font: false            # keine Google-Fonts-Requests — Systemschriften
   palette:
     scheme: slate
     primary: black
@@ -40,11 +44,19 @@ theme:
   icon:
     repo: fontawesome/brands/github
 
+extra:
+  alternate:
+    - name: Deutsch
+      link: https://meshhessenclient.de/handbuch/
+      lang: de
+    - name: English
+      link: https://meshhessenclient.de/handbuch/en/
+      lang: en
+
 plugins:
   - search:
       lang:
         - de
-        - en
 
 markdown_extensions:
   - admonition
@@ -62,24 +74,13 @@ markdown_extensions:
 
 nav:
   - Handbuch: index.md
-  - 🇩🇪 Deutsch:
-      - Schnellstart & Verbindung: de/schnellstart.md
-      - Karte & Offline-Nutzung: de/karte.md
-      - Nachrichten & Kommunikation: de/nachrichten.md
-      - Telemetrie & Funkanalyse: de/telemetrie.md
-      - Traceroute: de/traceroute.md
-      - Node-Verwaltung & Fernkonfiguration: de/node-verwaltung.md
-      - Virtual Node · T-Deck · Kiosk: de/tools.md
-      - Technik & Protokoll: de/technik.md
-      - Architektur (Entwickler): architecture.md
-      - Glossar: de/glossar.md
-  - 🇬🇧 English:
-      - Getting started & connection: en/getting-started.md
-      - Map & offline use: en/map.md
-      - Messaging & communication: en/messaging.md
-      - Telemetry & radio analysis: en/telemetry.md
-      - Traceroute: en/traceroute.md
-      - Node management & remote admin: en/node-management.md
-      - Virtual Node · T-Deck · kiosk: en/tools.md
-      - Technology & protocol: en/technical.md
-      - Glossary: en/glossary.md
+  - Schnellstart & Verbindung: de/schnellstart.md
+  - Karte & Offline-Nutzung: de/karte.md
+  - Nachrichten & Kommunikation: de/nachrichten.md
+  - Telemetrie & Funkanalyse: de/telemetrie.md
+  - Traceroute: de/traceroute.md
+  - Node-Verwaltung & Fernkonfiguration: de/node-verwaltung.md
+  - Virtual Node · T-Deck · Kiosk: de/tools.md
+  - Technik & Protokoll: de/technik.md
+  - Architektur (Entwickler): architecture.md
+  - Glossar: de/glossar.md

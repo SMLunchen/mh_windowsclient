@@ -1,6 +1,6 @@
 # 📨 Messaging & Communication
 
-[← Handbook home](../index.md) · [🇩🇪 Deutsche Version](../de/nachrichten.md)
+[← Handbook home](index.md) · [🇩🇪 Deutsche Version](https://meshhessenclient.de/handbuch/de/nachrichten/)
 
 * **Send and receive messages** (broadcast & direct messages)
 * **Multi-channel** – all channels from your device loaded automatically

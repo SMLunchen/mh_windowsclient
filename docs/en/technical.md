@@ -1,6 +1,6 @@
 # 🏗️ Technology & Protocol
 
-[← Handbook home](../index.md) · [🇩🇪 Deutsche Version](../de/technik.md)
+[← Handbook home](index.md) · [🇩🇪 Deutsche Version](https://meshhessenclient.de/handbuch/de/technik/)
 
 ## Technical overview
 

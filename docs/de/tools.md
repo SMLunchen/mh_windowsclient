@@ -1,6 +1,6 @@
 # 🧰 Tools: Virtual Node, T-Deck-Assistent & Kiosk-Modus
 
-[← Handbuch-Übersicht](../index.md) · [🇬🇧 English version](../en/tools.md)
+[← Handbuch-Übersicht](../index.md) · [🇬🇧 English version](https://meshhessenclient.de/handbuch/en/tools/)
 
 ## 🖧 Virtual Node (Tools-Tab)
 
@@ -14,7 +14,7 @@
 ## 🔧 T-Deck Karten-Assistent (Tools-Tab)
 
 * **SD-Karte vorbereiten** – geführter 6-Schritt-Assistent zum Bespielen einer SD-Karte mit Offline-Karten für das Meshtastic T-Deck
-* **Schritt 1 – Willkommen:** Erklärt den Workflow; Hinweis: nur Deutschland verfügbar
+* **Schritt 1 – Willkommen:** Erklärt den Workflow; Abdeckung = Meshhessen-Tile-Server (DACH-Region; die Schnellauswahl listet deutsche Bundesländer, per Freestyle-Rechteck geht auch Österreich/Schweiz)
 * **Schritt 2 – Laufwerk:** Zeigt alle Wechseldatenträger mit Größe, freiem Speicher und Dateisystem
 * **Schritt 3 – Formatierung:**
   * Empfiehlt **exFAT mit 4096-Byte-Zuordnungseinheiten** (T-Deck-optimal; kleine Tiles ≈ 100 Bytes → kleine AU spart erheblich Speicher)

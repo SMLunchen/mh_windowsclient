@@ -1,6 +1,6 @@
 # 🧰 Tools: Virtual Node, T-Deck Assistant & Kiosk Mode
 
-[← Handbook home](../index.md) · [🇩🇪 Deutsche Version](../de/tools.md)
+[← Handbook home](index.md) · [🇩🇪 Deutsche Version](https://meshhessenclient.de/handbuch/de/tools/)
 
 ## 🖧 Virtual Node (Tools tab)
 
@@ -14,7 +14,7 @@
 ## 🔧 T-Deck Map Assistant (Tools tab)
 
 * **Prepare an SD card** – guided 6-step wizard for loading offline maps onto a Meshtastic T-Deck SD card
-* **Step 1 – Welcome:** explains the workflow; note: Germany only
+* **Step 1 – Welcome:** explains the workflow; coverage = Meshhessen tile server (DACH region; the quick picker lists German federal states, the freestyle rectangle also covers Austria/Switzerland)
 * **Step 2 – Drive:** shows all removable drives with size, free space and file system
 * **Step 3 – Formatting:** recommends **exFAT with 4096-byte allocation units** (T-Deck-optimal; small tiles ≈ 100 bytes → small AU saves a lot of space); formatting via UAC-elevated PowerShell with two confirmations
 * **Step 4 – Area:** by federal state (checkboxes), all of Germany, or **freestyle** (draw a rectangle on an interactive map)
