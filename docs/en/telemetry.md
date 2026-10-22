@@ -18,6 +18,26 @@
 **📊 Telemetry dashboard** – freely configurable widgets with threshold alerts, auto-refresh and fullscreen:
 <img alt="Meshhessen Client – telemetry dashboard with configurable widgets: gauges, heatmaps, mesh health and threshold alerts" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/telemetry-dashboard.png" />
 
+## How-to: create a dashboard, set an alert, read the values
+
+**Goal:** a dashboard that watches your solar router's battery and warns you before it runs dry overnight.
+
+1. **Open:** 📊 button in the main window toolbar → the dashboard window starts with "Dashboard 1" ("+ New" creates more named dashboards, e.g. "Solar monitoring")
+2. **Add a widget:** "+ Add Widget" → pick a type (for battery: **line**), tick the node(s), metric **battery (%)**, range **7d** → save. Widgets can be dragged around and resized via the grip in the lower right
+3. **Set the alert:** enter your limit into the widget's **Threshold** field (e.g. `30`). The threshold line appears in the chart; when the latest value **crosses** it you get a **Windows toast** (transition only — no constant nagging)
+4. **Keep it fresh:** auto-refresh top right (e.g. 30 s); if the node rarely sends on its own, add it to the polling plan via the **📥 Polling** button (max. 4 nodes, mesh-friendly)
+5. **Success check:** the widget shows a curve with day/night shading; the last refresh time is shown at the bottom. For a test, set the threshold just past the current value — the toast must fire immediately
+6. **Reading the values:** if the battery drops more than ~15–20 % overnight, check the [metrics explainer on the landing page](https://meshhessenclient.de/?lang=en#telemetry); SNR/RSSI interpretation lives in the [glossary](glossary.md)
+
+**Typical pitfalls:**
+
+* *Widget stays empty* → no data for this node/metric in the telemetry database yet (the node doesn't send that metric → enable polling or right-click "Request information")
+* *No toast despite threshold* → toasts fire on the **transition** only; if the value was already past the threshold when you set it, the alert comes with the next crossing. Also check: are Windows notifications allowed for apps?
+* *Zoom keeps resetting* → zoom/pan survives auto-refresh; the manual "Refresh" button deliberately resets the view
+
+<!-- SCREENSHOT REQUEST: widget editor open (type/node/metric/threshold visible) -->
+<!-- SCREENSHOT REQUEST: Windows toast of a threshold alert -->
+
 ## Node statistics & real RF neighbors
 
 * **Node statistics window** – detailed analysis per node:

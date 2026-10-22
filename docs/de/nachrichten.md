@@ -27,6 +27,24 @@
   * Bestätigung vor dem Löschen einer DM-Konversation (kein versehentliches Wischen)
   * Aufbewahrungsdauer konfigurierbar (30 / 90 / 365 Tage)
 
+## How-to: erste Nachricht & verschlüsselte DM senden
+
+**Ziel:** Eine Broadcast-Nachricht in den Kanal schicken und danach eine Ende-zu-Ende-verschlüsselte Direktnachricht an einen bestimmten Node.
+
+1. **Kanal-Nachricht:** Nachrichten-Tab → unten den Kanal wählen → Text eintippen → Enter. Die eigene Nachricht erscheint rechtsbündig; Antworten laufen im selben Verlauf ein
+2. **DM starten:** Rechtsklick auf den Ziel-Node (in der Node-Liste, auf der Karte oder direkt auf eine seiner Nachrichten) → **„Direktnachricht“** — das DM-Fenster öffnet die Konversation als eigenen Tab
+3. **Verschlüsselung prüfen:** Die 🔑-Spalte in der Node-Liste zeigt, ob der öffentliche Schlüssel des Ziels bekannt ist. 🔑 = die DM geht PKI-verschlüsselt raus (X25519 + AES-256-CCM), 🔓 = nur Kanal-Verschlüsselung
+4. **Erfolgskontrolle:** Die gesendete Nachricht bekommt einen Zustell-Haken (ACK); die Antwort des Gegenübers erscheint im Tab. Empfangene PKI-DMs entschlüsselt der Client selbst
+5. **Extras:** Rechtsklick auf eine Nachricht → Emoji-Reaktion oder „Antworten“ (Zitat-Block); Texte sind markier- und kopierbar
+
+**Typische Fehler:**
+
+* *🔓 statt 🔑 beim Ziel* → der öffentliche Schlüssel fehlt lokal: den Node einmal direkt empfangen oder per Rechtsklick „Informationen anfordern“ die Benutzer-Info ziehen
+* *Kein ACK* → Ziel gerade nicht erreichbar (mit [Traceroute](traceroute.md) testen) oder die Funkstrecke ist ausgelastet — kurz warten statt mehrfach senden (Airtime!)
+* *Alte Konversation fehlt* → die Nachrichten-Datenbank ist optional: in den Einstellungen aktivieren, sonst beginnt der Verlauf erst mit dem Verbinden
+
+<!-- SCREENSHOT-WUNSCH: DM-Fenster mit laufender Konversation + sichtbarem 🔑-Status in der Node-Liste -->
+
 ## Screenshots
 
 Nachrichtenansicht mit Kanal-Chat und Direktnachrichten:

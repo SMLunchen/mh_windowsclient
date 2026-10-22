@@ -1,0 +1,5 @@
+# Gepinnte Abhängigkeiten für den Handbuch-Build (mkdocs.yml + mkdocs.en.yml).
+# Bewusst exakt fixiert, damit Layout und Build-Verhalten nicht unbemerkt durch
+# Paket-Updates kippen — Upgrades gezielt testen und hier anheben.
+mkdocs==1.6.1
+mkdocs-material==9.7.7
