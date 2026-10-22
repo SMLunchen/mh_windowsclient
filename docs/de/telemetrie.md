@@ -1,6 +1,6 @@
 # 📊 Telemetrie & Funkanalyse
 
-[← Zur Projektübersicht](../../README.md) · [🇬🇧 English version](../en/telemetry.md)
+[← Handbuch-Übersicht](../index.md) · [🇬🇧 English version](../en/telemetry.md)
 
 ## Telemetrie-Datenbank & Dashboard
 
@@ -17,7 +17,7 @@
   * **Unabhängiges Fenster** – kann auf einem zweiten Monitor platziert werden
 
 **📊 Telemetrie-Dashboard** – frei konfigurierbare Widgets mit Schwellwert-Alarmen, Auto-Refresh und Vollbild:
-<img alt="Meshhessen Client – Telemetrie-Dashboard mit konfigurierbaren Widgets: Gauges, Heatmaps, Mesh-Health und Schwellwert-Alarmen" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/telemetry-dashboard.png" />
+<img alt="Meshhessen Client – Telemetrie-Dashboard mit konfigurierbaren Widgets: Gauges, Heatmaps, Mesh-Health und Schwellwert-Alarmen" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/telemetry-dashboard.png" />
 
 ## Node-Statistik & echte HF-Nachbarn
 
@@ -36,7 +36,7 @@
 ## ⛰ Höhenprofil pro Funkstrecke
 
 Rechtsklick auf einen Nachbarn (oder einen Traceroute-Hop): SRTM-Geländeprofil mit Sichtlinie und 60-%-Fresnel-Zone (4/3-Erdkrümmung, 868 MHz) samt Einschätzung, ob die Strecke frei ist oder Gelände im Weg steht:
-<img alt="Meshhessen Client – Höhenprofil einer Meshtastic-Funkstrecke: SRTM-Gelände, Sichtlinie und Fresnel-Zone" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/elevation-profile.png" />
+<img alt="Meshhessen Client – Höhenprofil einer Meshtastic-Funkstrecke: SRTM-Gelände, Sichtlinie und Fresnel-Zone" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/elevation-profile.png" />
 
 ## Weitere Screenshots
 
@@ -51,22 +51,22 @@ Node-Telemetrie-Statistik-Fenster:
 
 Node-Telemetrie-Übersicht (Signal):
 
-![Meshhessen Client – Meshtastic Node-Telemetrie-Übersicht: Signal-Analyse, Routing, Airtime und Nachbar-Statistik](https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node-telemetry.png)
+![Meshhessen Client – Meshtastic Node-Telemetrie-Übersicht: Signal-Analyse, Routing, Airtime und Nachbar-Statistik](https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node-telemetry.png)
 
 Echte HF-Nachbarn mit SNR in beide Richtungen – Rechtsklick öffnet das Höhenprofil des Links:
 
-![Meshhessen Client – Echte HF-Nachbarn mit SNR in beide Richtungen und Höhenprofil-Kontextmenü](https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node_neighbors.png)
+![Meshhessen Client – Echte HF-Nachbarn mit SNR in beide Richtungen und Höhenprofil-Kontextmenü](https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node_neighbors.png)
 
 Airtime-Auswertung pro Node (TX/RX-Sendezeit, Kanalauslastung):
 
-![Meshhessen Client – Meshtastic Airtime-Analyse: TX-Airtime, RX-Airtime und Kanalauslastung pro Node](https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node_airtime.png)
+![Meshhessen Client – Meshtastic Airtime-Analyse: TX-Airtime, RX-Airtime und Kanalauslastung pro Node](https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node_airtime.png)
 
 Batterie & Spannungs-Analyse (Tag/Nacht-Profil, Nachtabfall):
 
-![Meshhessen Client – Meshtastic Batterie-Analyse: Spannungs-Verlauf, Tag/Nacht-Profil und Nachtabfall](https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node_power.png)
+![Meshhessen Client – Meshtastic Batterie-Analyse: Spannungs-Verlauf, Tag/Nacht-Profil und Nachtabfall](https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node_power.png)
 
 Routing-Statistik (Hop-Anzahl, Pfad-Stabilität, Pfadwechsel-Rate):
 
-![Meshhessen Client – Meshtastic Routing-Statistik: Hop-Anzahl, Pfad-Stabilität und Pfadwechsel-Rate](https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node_routing.png)
+![Meshhessen Client – Meshtastic Routing-Statistik: Hop-Anzahl, Pfad-Stabilität und Pfadwechsel-Rate](https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node_routing.png)
 
 > 📖 Was die einzelnen Messwerte bedeuten (SNR, RSSI, Kanalauslastung, Hop-Kosten …) erklärt ausführlich die [Telemetrie-Hilfe auf der Website](https://meshhessenclient.de/#telemetrie).

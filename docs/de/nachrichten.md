@@ -1,6 +1,6 @@
 # 📨 Nachrichten & Kommunikation
 
-[← Zur Projektübersicht](../../README.md) · [🇬🇧 English version](../en/messaging.md)
+[← Handbuch-Übersicht](../index.md) · [🇬🇧 English version](../en/messaging.md)
 
 * **Nachrichten** senden und empfangen (Broadcast & Direct Messages)
 * **Multi-Channel** – alle Kanäle deines Geräts automatisch geladen
@@ -30,10 +30,10 @@
 ## Screenshots
 
 Nachrichtenansicht mit Kanal-Chat und Direktnachrichten:
-<img width="1443" height="813" alt="Meshhessen Client – Meshtastic Nachrichten, Kanal-Chat und Direktnachrichten (DM) unter Windows" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/new-chat-layout.png" />
+<img width="1443" height="813" alt="Meshhessen Client – Meshtastic Nachrichten, Kanal-Chat und Direktnachrichten (DM) unter Windows" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/new-chat-layout.png" />
 
 Kanal-Liste mit allen Meshtastic-Kanälen:
-<img width="1443" height="814" alt="Meshhessen Client – Meshtastic Kanal-Liste (Multi-Channel) unter Windows" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/channel_list.png" />
+<img width="1443" height="814" alt="Meshhessen Client – Meshtastic Kanal-Liste (Multi-Channel) unter Windows" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/channel_list.png" />
 
 Alert Bell / SOS-Notruf Anzeige:
-<img width="1446" height="816" alt="Meshhessen Client – Alert Bell SOS-Notruf Signalisierung für Meshtastic-Geräte unter Windows" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/alert_bell.png" />
+<img width="1446" height="816" alt="Meshhessen Client – Alert Bell SOS-Notruf Signalisierung für Meshtastic-Geräte unter Windows" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/alert_bell.png" />

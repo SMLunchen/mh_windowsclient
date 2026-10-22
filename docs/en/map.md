@@ -1,6 +1,6 @@
 # 🗺️ Map & Offline Use
 
-[← Back to project overview](../../README.md) · [🇩🇪 Deutsche Version](../de/karte.md)
+[← Handbook home](../index.md) · [🇩🇪 Deutsche Version](../de/karte.md)
 
 ## Map styles & vector map
 
@@ -15,10 +15,10 @@
   * Requires the Microsoft WebView2 runtime (pre-installed on Windows 11); without it the client falls back to raster automatically
 
 The vector map (MapLibre GL) – razor-sharp at every zoom level, with node pins:
-<img alt="Meshhessen Client – vector map (MapLibre GL) with Meshtastic node positions on Windows" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/vector_in_action.png" />
+<img alt="Meshhessen Client – vector map (MapLibre GL) with Meshtastic node positions on Windows" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/vector_in_action.png" />
 
 **⛰ 3D terrain** – a real elevation model (SRTM) with hillshading on the vector map, tilted via Ctrl+drag:
-<img alt="Meshhessen Client – 3D terrain (SRTM elevation model) with hillshading on the Meshtastic vector map" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/map-with-dem-elevation-profile.png" />
+<img alt="Meshhessen Client – 3D terrain (SRTM elevation model) with hillshading on the Meshtastic vector map" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map-with-dem-elevation-profile.png" />
 
 ## Map modes
 
@@ -38,7 +38,7 @@ The vector map (MapLibre GL) – razor-sharp at every zoom level, with node pins
 1. **Settings → Map:** select map mode **Offline** (or "Online – Meshhessen") and pick a map style
 2. Click **"Download Tiles"** — the download dialog opens:
 
-   <img width="567" alt="Meshhessen Client – offline map tile downloader: bounding box, zoom levels and progress" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/tile_downloader.png" />
+   <img width="567" alt="Meshhessen Client – offline map tile downloader: bounding box, zoom levels and progress" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/tile_downloader.png" />
 
 3. **Define the area:** enter the bounding box as `latMin,lonMin,latMax,lonMax` — e.g. Hesse: `49.3,7.7,51.7,10.2`
 4. **Pick zoom levels:** `1-12` is enough for an overview, `1-14` is the recommendation for towns, `15+` only for small areas — **every extra level quadruples** the tile count
@@ -69,40 +69,40 @@ The vector map (MapLibre GL) – razor-sharp at every zoom level, with node pins
 ### Environment & radio overlay in pictures
 
 Temperature – isotherms, zone labels and legend:
-<img alt="Meshhessen Client – temperature heatmap overlay with isotherms on the Meshtastic map" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/map-environment-overlay-temp.png" />
+<img alt="Meshhessen Client – temperature heatmap overlay with isotherms on the Meshtastic map" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map-environment-overlay-temp.png" />
 
 Noise floor – radio quality as a surface overlay:
-<img alt="Meshhessen Client – noise floor heatmap overlay: radio quality as a surface on the Meshtastic map" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/map-environment-overlay-noisefloor.png" />
+<img alt="Meshhessen Client – noise floor heatmap overlay: radio quality as a surface on the Meshtastic map" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map-environment-overlay-noisefloor.png" />
 
 Barometric pressure:
-<img alt="Meshhessen Client – barometric pressure heatmap overlay on the Meshtastic map" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/map-environment-overlay-pressure.png" />
+<img alt="Meshhessen Client – barometric pressure heatmap overlay on the Meshtastic map" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map-environment-overlay-pressure.png" />
 
 Mouse-over value boxes right at the nodes:
-<img alt="Meshhessen Client – mouse-over value boxes of the environment overlay at the Meshtastic nodes" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/mouse-over-telemetry-environment-map.png" />
+<img alt="Meshhessen Client – mouse-over value boxes of the environment overlay at the Meshtastic nodes" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/mouse-over-telemetry-environment-map.png" />
 
 ## 🚒 Fire service / rescue layer (vector map)
 
 An optional special-purpose layer for fire services, rescue services and civil protection – meant as support during operations and exercises ("where is the nearest hydrant / rescue point?"). Data comes **live from OpenStreetMap** (daily updates on the Meshhessen server) – coverage depends on the local mapping state. Colors follow fire-plan conventions: **red** = extinguishing/alerting, **blue** = water supply, **green** = rescue, **orange** = civil protection. Clicking an object opens a detail popup with all attributes maintained in OSM (type, couplings, flow, pressure, water source, operator, location description, survey date). Icons deliberately overlap ("during an operation you want to see every point"). Works offline for cached areas; while the layer is off, not a single byte is transferred.
 
 Comparison: classic raster map – without the optional special-purpose layers:
-<img alt="Meshhessen Client – classic raster map without the fire service layer (comparison)" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/raster_wo_hydrant.png" />
+<img alt="Meshhessen Client – classic raster map without the fire service layer (comparison)" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/raster_wo_hydrant.png" />
 
 The same area as a vector map with the 🚒 fire service / rescue layer enabled (click shows details):
-<img alt="Meshhessen Client – vector map with fire service layer: hydrants, stations and rescue points on the Meshtastic map" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/vector_w_hydrant.png" />
+<img alt="Meshhessen Client – vector map with fire service layer: hydrants, stations and rescue points on the Meshtastic map" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/vector_w_hydrant.png" />
 
 Clicking a hydrant shows its details – here an underground hydrant (ring symbol) with water source:
-<img alt="Meshhessen Client – hydrant detail popup on the vector map: underground hydrant with type and water source" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/hydrant_unterflur.png" />
+<img alt="Meshhessen Client – hydrant detail popup on the vector map: underground hydrant with type and water source" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/hydrant_unterflur.png" />
 
 ## More screenshots
 
 Direct RF neighbors with SNR color gradient on the vector map:
-<img alt="Meshhessen Client – neighbor lines with SNR color gradient on the vector map (0-hop RF)" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/vector_w_neighborlinks.png" />
+<img alt="Meshhessen Client – neighbor lines with SNR color gradient on the vector map (0-hop RF)" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/vector_w_neighborlinks.png" />
 
 Offline map with node positions and distance display:
-<img width="1250" height="813" alt="Meshhessen Client – Windows app for Meshtastic devices: offline map with node positions (OSM)" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/map.png" />
+<img width="1250" height="813" alt="Meshhessen Client – Windows app for Meshtastic devices: offline map with node positions (OSM)" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map.png" />
 
 Direct RF neighbors as lines on the raster map (gradient by SNR or age):
-<img alt="Meshhessen Client – direct Meshtastic neighbors as colored lines on the map (0-hop RF, SNR gradient)" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/map_neighbor_lines.png" />
+<img alt="Meshhessen Client – direct Meshtastic neighbors as colored lines on the map (0-hop RF, SNR gradient)" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map_neighbor_lines.png" />
 
 Node position history (GPS track) on the map:
 <img width="967" height="411" alt="Meshhessen Client – Meshtastic node position history GPS track on map" src="https://github.com/user-attachments/assets/0415083a-9f22-44fc-b767-be66b69892cd" />

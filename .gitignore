@@ -77,3 +77,6 @@ secret.key
 # Legal drafts (Impressum, Datenschutz) — contain personal/operator data,
 # kept out of the public repo until finalized.
 legal/
+
+# MkDocs-Zwischenausgabe (fertiges Handbuch liegt committet in docs/handbuch/)
+/site_handbuch/

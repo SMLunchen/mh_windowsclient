@@ -1,6 +1,6 @@
 # 🚀 Getting Started & Connection
 
-[← Back to project overview](../../README.md) · [🇩🇪 Deutsche Version](../de/schnellstart.md)
+[← Handbook home](../index.md) · [🇩🇪 Deutsche Version](../de/schnellstart.md)
 
 ## Installation in 5 steps
 

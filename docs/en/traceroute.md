@@ -1,6 +1,6 @@
 # 📡 Traceroute
 
-[← Back to project overview](../../README.md) · [🇩🇪 Deutsche Version](../de/traceroute.md)
+[← Handbook home](../index.md) · [🇩🇪 Deutsche Version](../de/traceroute.md)
 
 * **Start traceroute** – directly from the node context menu (node list, map, message list)
 * **"RF only" mode** – sends the request with the OK-to-MQTT bit cleared (pre-encrypted packet): MQTT gateways won't uplink it, the route runs over RF exclusively. Note: the *reply* may still come back via MQTT — that's up to the target node.
@@ -19,7 +19,7 @@
 ## Screenshots
 
 Traceroute window with hop table, "RF only" checkbox and honest MQTT badges (only the bridged segment carries the badge):
-<img alt="Meshhessen Client – traceroute with hop table, RF-only mode and honest per-segment MQTT labeling" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/traceroute-true-mqtt-labeling.png" />
+<img alt="Meshhessen Client – traceroute with hop table, RF-only mode and honest per-segment MQTT labeling" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/traceroute-true-mqtt-labeling.png" />
 
 Traceroute path on the map:
 <img width="1278" height="889" alt="Meshhessen Client – Meshtastic traceroute path visualized on the offline map" src="https://github.com/user-attachments/assets/800925ef-0d4e-41ad-a7f2-56cdd06da6b7" />

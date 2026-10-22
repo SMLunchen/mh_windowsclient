@@ -1,6 +1,6 @@
 # 🏗️ Technology & Protocol
 
-[← Back to project overview](../../README.md) · [🇩🇪 Deutsche Version](../de/technik.md)
+[← Handbook home](../index.md) · [🇩🇪 Deutsche Version](../de/technik.md)
 
 ## Technical overview
 

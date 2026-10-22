@@ -1,6 +1,6 @@
 # 🧰 Tools: Virtual Node, T-Deck Assistant & Kiosk Mode
 
-[← Back to project overview](../../README.md) · [🇩🇪 Deutsche Version](../de/tools.md)
+[← Handbook home](../index.md) · [🇩🇪 Deutsche Version](../de/tools.md)
 
 ## 🖧 Virtual Node (Tools tab)
 
@@ -27,16 +27,16 @@
 ### The wizard in pictures
 
 Steps 1–3: welcome, drive selection and formatting recommendation (exFAT, 4096 bytes):
-<img alt="Meshhessen Client – T-Deck map assistant step 1: welcome" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/t-deck-assistant-stage1.png" />
-<img alt="Meshhessen Client – T-Deck map assistant step 2: drive selection" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/t-deck-assistant-stage2.png" />
-<img alt="Meshhessen Client – T-Deck map assistant step 3: formatting (exFAT 4096)" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/t-deck-assistant-stage3.png" />
+<img alt="Meshhessen Client – T-Deck map assistant step 1: welcome" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/t-deck-assistant-stage1.png" />
+<img alt="Meshhessen Client – T-Deck map assistant step 2: drive selection" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/t-deck-assistant-stage2.png" />
+<img alt="Meshhessen Client – T-Deck map assistant step 3: formatting (exFAT 4096)" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/t-deck-assistant-stage3.png" />
 
 Step 4: choose the map area — federal state, all of Germany or a freestyle rectangle on the map:
-<img alt="Meshhessen Client – T-Deck map assistant step 4: select map area on an interactive map" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/t-deck-assistant-stage4-select-maprange.png" />
+<img alt="Meshhessen Client – T-Deck map assistant step 4: select map area on an interactive map" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/t-deck-assistant-stage4-select-maprange.png" />
 
 Steps 5 + 6: zoom/map style and the transfer running onto the SD card:
-<img alt="Meshhessen Client – T-Deck map assistant step 5: zoom and map style" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/t-deck-assistant-stage5.png" />
-<img alt="Meshhessen Client – T-Deck map assistant step 6: tiles being transferred to the SD card" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/t-deck-assistant-stage6-downloading.png" />
+<img alt="Meshhessen Client – T-Deck map assistant step 5: zoom and map style" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/t-deck-assistant-stage5.png" />
+<img alt="Meshhessen Client – T-Deck map assistant step 6: tiles being transferred to the SD card" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/t-deck-assistant-stage6-downloading.png" />
 
 ## 🔒 Kiosk / training mode
 
@@ -49,4 +49,4 @@ For shared stations (club room, training, events):
 * **Forgot the password?** Close the client and set `KioskModeEnabled=True` to `False` in `meshhessen-client.ini` (or clear the `KioskPasswordHash=…` line and set a new one)
 
 Kiosk / training mode – lockable UI for shared stations (settings):
-<img alt="Meshhessen Client – kiosk and training mode: lockable UI with password protection for shared stations" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/kiosk_settings.png" />
+<img alt="Meshhessen Client – kiosk and training mode: lockable UI with password protection for shared stations" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/kiosk_settings.png" />

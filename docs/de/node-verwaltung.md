@@ -1,6 +1,6 @@
 # 🔧 Node-Verwaltung & Fernkonfiguration
 
-[← Zur Projektübersicht](../../README.md) · [🇬🇧 English version](../en/node-management.md)
+[← Handbuch-Übersicht](../index.md) · [🇬🇧 English version](../en/node-management.md)
 
 ## Knoten-Übersicht
 
@@ -14,7 +14,7 @@
 * **Informationen anfordern** – Rechtsklick-Untermenü (Liste, Kachel, Karte) fordert wie die Android-App gezielt Daten von einem Node an: Benutzer-Info, Position, Geräte-/Umwelt-/Luftqualität-/Strom-/Host-Metriken, Signalqualität/Mesh-Statistik, PAX-Zähler
 * **Firmware-Version & Hardware-Modell** – werden automatisch beim Verbinden abgefragt und im Node-Info-Fenster angezeigt:
 
-<img alt="Meshhessen Client – Node-Info-Fenster mit Rolle, Akku, Signal, Zuerst/Zuletzt gesehen" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node-info-window.png" />
+<img alt="Meshhessen Client – Node-Info-Fenster mit Rolle, Akku, Signal, Zuerst/Zuletzt gesehen" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node-info-window.png" />
 * **PKI-Schlüssel-Indikator** – 🔑-Spalte zeigt, ob der Public Key des Nodes bekannt ist
 * **Node-Farben** – Nodes individuell einfärben (Karte + Listen)
 * **Node-Notizen** – Freitext-Notizen pro Node
@@ -22,16 +22,16 @@
 * **Favoriten** – Nodes als Favoriten markieren (★-Symbol, Rechtsklick-Menü); wird mit dem Gerät synchronisiert (`set_favorite_node` / `remove_favorite_node`); Favoriten erscheinen oben in der Liste
 
 Node-Übersicht als Tabelle – mit Avatar, Signal-LEDs, Filtern und Sortierung:
-<img alt="Meshhessen Client – Node-Übersicht als Tabelle mit Avatar, SNR, RSSI, Batterie und Signal-LEDs" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/nodelist_new.png" />
+<img alt="Meshhessen Client – Node-Übersicht als Tabelle mit Avatar, SNR, RSSI, Batterie und Signal-LEDs" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/nodelist_new.png" />
 
 Node-Übersicht als Kachelansicht (Fancy View) – mit Telemetrie, Strom und Signalqualität pro Kachel:
-<img alt="Meshhessen Client – Node-Kachelansicht (Fancy View) mit Telemetrie, Batterie und Signalqualität pro Node" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/nodelist_new_tiles.png" />
+<img alt="Meshhessen Client – Node-Kachelansicht (Fancy View) mit Telemetrie, Batterie und Signalqualität pro Node" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/nodelist_new_tiles.png" />
 
 ## Fernverwaltung (Remote Admin)
 
 Vollständige Remote-Admin-Oberfläche für Favoriten-Nodes — funktioniert auch über Relay- und MQTT-Strecken:
 
-<img alt="Meshhessen Client – Remote Administration eines Meshtastic-Nodes: LoRa-Konfiguration über Funk" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/remote-admin.png" />
+<img alt="Meshhessen Client – Remote Administration eines Meshtastic-Nodes: LoRa-Konfiguration über Funk" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/remote-admin.png" />
 
 ### So administrierst du einen entfernten Node (Schritt für Schritt)
 
@@ -43,7 +43,7 @@ Vollständige Remote-Admin-Oberfläche für Favoriten-Nodes — funktioniert auc
 6. Über mehrere Hops dauert jede Antwort einige Sekunden — der **Timeout** ist im Fenster einstellbar (Standard 120 s), einzelne Tabs lassen sich per „↻ Tab neu laden" wiederholen
 
 Auch **Favoriten auf dem entfernten Gerät** lassen sich remote setzen/entfernen:
-<img alt="Meshhessen Client – Favoriten-Node remote auf dem entfernten Meshtastic-Gerät setzen" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/remote-admin-set-favorite-node.png" />
+<img alt="Meshhessen Client – Favoriten-Node remote auf dem entfernten Meshtastic-Gerät setzen" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/remote-admin-set-favorite-node.png" />
 
 Features im Überblick:
 

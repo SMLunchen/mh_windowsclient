@@ -12,7 +12,7 @@ Der kostenlose, native **Windows-Client für Meshtastic-Geräte**: Nachrichten s
 
 > **English summary:** Free Windows app for Meshtastic devices – offline maps (raster + vector incl. 3D terrain), radio-link analysis with elevation profiles & Fresnel zones, telemetry dashboards, traceroute, PKI decryption, full device & remote configuration, Virtual-Node TCP proxy. No installer, no cloud. [→ English version below](#-meshhessen-client-1)
 
-<img alt="Meshhessen Client – Vektorkarte (MapLibre GL) mit Meshtastic Node-Positionen unter Windows" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/vector_in_action.png" />
+<img alt="Meshhessen Client – Vektorkarte (MapLibre GL) mit Meshtastic Node-Positionen unter Windows" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/vector_in_action.png" />
 
 ## ⬇️ Download & Schnellstart
 
@@ -35,28 +35,28 @@ Der kostenlose, native **Windows-Client für Meshtastic-Geräte**: Nachrichten s
 ### ⛰ Dein gesamtes Mesh auf einer Karte
 Offline-Karten (Raster + gestochen scharfe Vektorkarte), Node-Positionen, Traceroutes, Nachbar-Linien, Umwelt-Heatmaps und zuschaltbare Fach-Layer — plus echtes **3D-Gelände** mit SRTM-Höhenmodell. Einmal betrachtete Gebiete funktionieren auch ohne Internet.
 
-<img alt="Meshhessen Client – 3D-Gelände (SRTM-Höhenmodell) mit Schummerung auf der Meshtastic-Vektorkarte" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/map-with-dem-elevation-profile.png" />
+<img alt="Meshhessen Client – 3D-Gelände (SRTM-Höhenmodell) mit Schummerung auf der Meshtastic-Vektorkarte" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map-with-dem-elevation-profile.png" />
 
 → [Karte & Offline-Nutzung](docs/de/karte.md)
 
 ### 📡 Verstehe deine Funkstrecken
 **Echte HF-Nachbarn** (belegt durch Direktempfang, Traceroutes und NeighborInfo — nicht bloß „gehört via MQTT"), SNR in beide Richtungen, und per Rechtsklick das **Höhenprofil jeder Funkstrecke**: SRTM-Gelände, Sichtlinie, Fresnel-Zone und die Antwort auf die Frage „steht da ein Berg im Weg?".
 
-<img alt="Meshhessen Client – Höhenprofil einer Meshtastic-Funkstrecke: SRTM-Gelände, Sichtlinie und Fresnel-Zone" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/elevation-profile.png" />
+<img alt="Meshhessen Client – Höhenprofil einer Meshtastic-Funkstrecke: SRTM-Gelände, Sichtlinie und Fresnel-Zone" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/elevation-profile.png" />
 
 → [Telemetrie & Funkanalyse](docs/de/telemetrie.md) · [Traceroute](docs/de/traceroute.md)
 
 ### 📊 Erkenne Probleme, bevor Verbindungen ausfallen
 Frei konfigurierbares **Telemetrie-Dashboard** (11 Widget-Typen, Schwellwert-Alarme als Windows-Toast, Tag/Nacht-Schattierung, Vollbild für Wandmonitore), Node-Statistiken mit Tag/Nacht-Auswertung und LED-Ampeln für Signal, Nachbarn, Pfad-Stabilität und Mesh-Health.
 
-<img alt="Meshhessen Client – Telemetrie-Dashboard mit konfigurierbaren Widgets: Gauges, Heatmaps, Mesh-Health und Schwellwert-Alarmen" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/telemetry-dashboard.png" />
+<img alt="Meshhessen Client – Telemetrie-Dashboard mit konfigurierbaren Widgets: Gauges, Heatmaps, Mesh-Health und Schwellwert-Alarmen" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/telemetry-dashboard.png" />
 
 → [Telemetrie & Funkanalyse](docs/de/telemetrie.md)
 
 ### 💬 Kommuniziere bequem am PC
 Kanal-Chat und Direktnachrichten mit Reaktionen, Antworten und optionaler Nachrichten-Historie — inklusive client-seitiger **PKI-Entschlüsselung** (X25519 + AES-256-CCM) und 🚨 Alert-Bell/SOS. Dazu **Fernverwaltung** entfernter Nodes (auch über Relay-/MQTT-Strecken) und vollständige Gerätekonfiguration.
 
-<img width="1443" height="813" alt="Meshhessen Client – Meshtastic Nachrichten, Kanal-Chat und Direktnachrichten (DM) unter Windows" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/new-chat-layout.png" />
+<img width="1443" height="813" alt="Meshhessen Client – Meshtastic Nachrichten, Kanal-Chat und Direktnachrichten (DM) unter Windows" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/new-chat-layout.png" />
 
 → [Nachrichten](docs/de/nachrichten.md) · [Node-Verwaltung & Fernkonfiguration](docs/de/node-verwaltung.md)
 
@@ -81,6 +81,8 @@ Kanal-Chat und Direktnachrichten mit Reaktionen, Antworten und optionaler Nachri
 | [🔧 Node-Verwaltung & Fernkonfiguration](docs/de/node-verwaltung.md) | [🔧 Node management & remote admin](docs/en/node-management.md) |
 | [🧰 Tools: Virtual Node, T-Deck, Kiosk](docs/de/tools.md) | [🧰 Tools: Virtual Node, T-Deck, kiosk](docs/en/tools.md) |
 | [🏗️ Technik & Protokoll](docs/de/technik.md) | [🏗️ Technology & protocol](docs/en/technical.md) |
+
+📖 **Komfortabel lesen:** Dieselben Kapitel gibt es als durchsuchbares Handbuch unter [meshhessenclient.de/handbuch](https://meshhessenclient.de/handbuch/).
 
 Außerdem: [Changelog](CHANGELOG.md) · [Website mit Telemetrie-Hilfe](https://meshhessenclient.de)
 
@@ -143,6 +145,8 @@ The free, native **Windows client for Meshtastic devices**: send messages, analy
 ## 📚 Documentation
 
 [🚀 Getting started](docs/en/getting-started.md) · [🗺️ Map](docs/en/map.md) · [📨 Messaging](docs/en/messaging.md) · [📊 Telemetry](docs/en/telemetry.md) · [📡 Traceroute](docs/en/traceroute.md) · [🔧 Node management](docs/en/node-management.md) · [🧰 Tools](docs/en/tools.md) · [🏗️ Technology](docs/en/technical.md) · [Changelog](CHANGELOG.md)
+
+📖 **Prefer a searchable manual?** The same chapters live at [meshhessenclient.de/handbuch](https://meshhessenclient.de/handbuch/).
 
 ### Forks & reuse
 

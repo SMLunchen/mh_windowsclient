@@ -1,6 +1,6 @@
 # 📨 Messaging & Communication
 
-[← Back to project overview](../../README.md) · [🇩🇪 Deutsche Version](../de/nachrichten.md)
+[← Handbook home](../index.md) · [🇩🇪 Deutsche Version](../de/nachrichten.md)
 
 * **Send and receive messages** (broadcast & direct messages)
 * **Multi-channel** – all channels from your device loaded automatically
@@ -20,10 +20,10 @@
 ## Screenshots
 
 Messaging view with channel chat and direct messages:
-<img width="1443" height="813" alt="Meshhessen Client – Meshtastic messages, channel chat and direct messages (DM) on Windows" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/new-chat-layout.png" />
+<img width="1443" height="813" alt="Meshhessen Client – Meshtastic messages, channel chat and direct messages (DM) on Windows" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/new-chat-layout.png" />
 
 Channel list with all Meshtastic channels:
-<img width="1443" height="814" alt="Meshhessen Client – Meshtastic channel list (multi-channel) on Windows" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/channel_list.png" />
+<img width="1443" height="814" alt="Meshhessen Client – Meshtastic channel list (multi-channel) on Windows" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/channel_list.png" />
 
 Alert Bell / SOS emergency display:
-<img width="1446" height="816" alt="Meshhessen Client – Alert Bell SOS emergency signalling for Meshtastic devices on Windows" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/alert_bell.png" />
+<img width="1446" height="816" alt="Meshhessen Client – Alert Bell SOS emergency signalling for Meshtastic devices on Windows" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/alert_bell.png" />

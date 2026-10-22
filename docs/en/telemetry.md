@@ -1,6 +1,6 @@
 # 📊 Telemetry & Radio Analysis
 
-[← Back to project overview](../../README.md) · [🇩🇪 Deutsche Version](../de/telemetrie.md)
+[← Handbook home](../index.md) · [🇩🇪 Deutsche Version](../de/telemetrie.md)
 
 ## Telemetry database & dashboard
 
@@ -16,7 +16,7 @@
   * Persisted in `dashboards.json`, theme-adaptive incl. live Windows theme switching; independent window for a second monitor
 
 **📊 Telemetry dashboard** – freely configurable widgets with threshold alerts, auto-refresh and fullscreen:
-<img alt="Meshhessen Client – telemetry dashboard with configurable widgets: gauges, heatmaps, mesh health and threshold alerts" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/telemetry-dashboard.png" />
+<img alt="Meshhessen Client – telemetry dashboard with configurable widgets: gauges, heatmaps, mesh health and threshold alerts" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/telemetry-dashboard.png" />
 
 ## Node statistics & real RF neighbors
 
@@ -30,7 +30,7 @@
 ## ⛰ Elevation profile per radio link
 
 Right-click a neighbor (or a traceroute hop): SRTM terrain profile with line of sight and 60 % Fresnel zone (4/3 earth, 868 MHz), including a verdict whether the path is clear or terrain is in the way:
-<img alt="Meshhessen Client – elevation profile of a Meshtastic radio link: SRTM terrain, line of sight and Fresnel zone" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/elevation-profile.png" />
+<img alt="Meshhessen Client – elevation profile of a Meshtastic radio link: SRTM terrain, line of sight and Fresnel zone" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/elevation-profile.png" />
 
 ## More screenshots
 
@@ -45,22 +45,22 @@ Node telemetry statistics window:
 
 Node telemetry overview (signal):
 
-![Meshhessen Client – Meshtastic node telemetry overview: signal analysis, routing, airtime and neighbor statistics](https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node-telemetry.png)
+![Meshhessen Client – Meshtastic node telemetry overview: signal analysis, routing, airtime and neighbor statistics](https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node-telemetry.png)
 
 Real RF neighbors with SNR in both directions – right-click opens the link's elevation profile:
 
-![Meshhessen Client – real RF neighbors with SNR in both directions and elevation-profile context menu](https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node_neighbors.png)
+![Meshhessen Client – real RF neighbors with SNR in both directions and elevation-profile context menu](https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node_neighbors.png)
 
 Airtime analysis per node (TX/RX airtime, channel utilization):
 
-![Meshhessen Client – Meshtastic airtime analysis: TX airtime, RX airtime and channel utilization per node](https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node_airtime.png)
+![Meshhessen Client – Meshtastic airtime analysis: TX airtime, RX airtime and channel utilization per node](https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node_airtime.png)
 
 Battery & voltage analysis (day/night profile, night drop):
 
-![Meshhessen Client – Meshtastic battery analysis: voltage curve, day/night profile and night drop](https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node_power.png)
+![Meshhessen Client – Meshtastic battery analysis: voltage curve, day/night profile and night drop](https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node_power.png)
 
 Routing statistics (hop count, path stability, path change rate):
 
-![Meshhessen Client – Meshtastic routing statistics: hop count, path stability and path change rate](https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node_routing.png)
+![Meshhessen Client – Meshtastic routing statistics: hop count, path stability and path change rate](https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node_routing.png)
 
 > 📖 What the individual metrics mean (SNR, RSSI, channel utilization, hop costs …) is explained in detail in the [telemetry help on the website](https://meshhessenclient.de/#telemetrie).

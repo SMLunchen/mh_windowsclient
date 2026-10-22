@@ -1,6 +1,6 @@
 # 🔧 Node Management & Remote Admin
 
-[← Back to project overview](../../README.md) · [🇩🇪 Deutsche Version](../de/node-verwaltung.md)
+[← Handbook home](../index.md) · [🇩🇪 Deutsche Version](../de/node-verwaltung.md)
 
 ## Node overview
 
@@ -14,7 +14,7 @@
 * **Request information** – right-click submenu (list, tile, map) requests data from a node like the Android app: user info, position, device/environment/air-quality/power/host metrics, signal quality/mesh stats, PAX counter
 * **Firmware version & hardware model** – queried automatically on connect and shown in the node info window:
 
-<img alt="Meshhessen Client – node info window with role, battery, signal, first/last seen" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node-info-window.png" />
+<img alt="Meshhessen Client – node info window with role, battery, signal, first/last seen" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node-info-window.png" />
 * **PKI key indicator** – 🔑 column shows whether a node's public key is known
 * **Node colors** – color-code nodes individually (map + lists)
 * **Node notes** – free-text annotations per node
@@ -22,16 +22,16 @@
 * **Favorites** – mark nodes as favorites (★ icon, right-click menu); synced with the device (`set_favorite_node` / `remove_favorite_node`); favorites shown at the top of the list
 
 Node overview as a table – with avatar, signal LEDs, filters and sorting:
-<img alt="Meshhessen Client – node overview as a table with avatar, SNR, RSSI, battery and signal LEDs" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/nodelist_new.png" />
+<img alt="Meshhessen Client – node overview as a table with avatar, SNR, RSSI, battery and signal LEDs" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/nodelist_new.png" />
 
 Node overview as tile view (Fancy View) – with telemetry, power and signal quality per tile:
-<img alt="Meshhessen Client – node tile view (Fancy View) with telemetry, battery and signal quality per node" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/nodelist_new_tiles.png" />
+<img alt="Meshhessen Client – node tile view (Fancy View) with telemetry, battery and signal quality per node" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/nodelist_new_tiles.png" />
 
 ## Remote administration
 
 Full remote admin UI for favorite nodes — also works across relay and MQTT paths:
 
-<img alt="Meshhessen Client – remote administration of a Meshtastic node: LoRa configuration over the air" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/remote-admin.png" />
+<img alt="Meshhessen Client – remote administration of a Meshtastic node: LoRa configuration over the air" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/remote-admin.png" />
 
 ### How to administer a remote node (step by step)
 
@@ -43,7 +43,7 @@ Full remote admin UI for favorite nodes — also works across relay and MQTT pat
 6. Across multiple hops every answer takes a few seconds — the **timeout** is adjustable in the window (default 120 s); individual tabs can be retried via "↻ Reload Tab"
 
 **Favorites on the remote device** can be set/removed remotely, too:
-<img alt="Meshhessen Client – set a favorite node remotely on the remote Meshtastic device" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/remote-admin-set-favorite-node.png" />
+<img alt="Meshhessen Client – set a favorite node remotely on the remote Meshtastic device" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/remote-admin-set-favorite-node.png" />
 
 Feature overview:
 

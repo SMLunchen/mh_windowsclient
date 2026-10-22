@@ -1,6 +1,6 @@
 # 🗺️ Karte & Offline-Nutzung
 
-[← Zur Projektübersicht](../../README.md) · [🇬🇧 English version](../en/map.md)
+[← Handbuch-Übersicht](../index.md) · [🇬🇧 English version](../en/map.md)
 
 ## Kartentypen & Vektorkarte
 
@@ -15,10 +15,10 @@
   * Benötigt die Microsoft-WebView2-Runtime (auf Windows 11 vorinstalliert); ohne sie fällt der Client automatisch auf Raster zurück
 
 Die Vektorkarte (MapLibre GL) – gestochen scharf in jeder Zoomstufe, mit Node-Pins:
-<img alt="Meshhessen Client – Vektorkarte (MapLibre GL) mit Meshtastic Node-Positionen unter Windows" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/vector_in_action.png" />
+<img alt="Meshhessen Client – Vektorkarte (MapLibre GL) mit Meshtastic Node-Positionen unter Windows" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/vector_in_action.png" />
 
 **⛰ 3D-Gelände** – echtes Höhenmodell (SRTM) mit Schummerung auf der Vektorkarte, per Strg+Ziehen geneigt:
-<img alt="Meshhessen Client – 3D-Gelände (SRTM-Höhenmodell) mit Schummerung auf der Meshtastic-Vektorkarte" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/map-with-dem-elevation-profile.png" />
+<img alt="Meshhessen Client – 3D-Gelände (SRTM-Höhenmodell) mit Schummerung auf der Meshtastic-Vektorkarte" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map-with-dem-elevation-profile.png" />
 
 ## Karten-Modi
 
@@ -38,7 +38,7 @@ Die Vektorkarte (MapLibre GL) – gestochen scharf in jeder Zoomstufe, mit Node-
 1. **Einstellungen → Karte:** Karten-Modus **Offline** (oder „Online – Meshhessen") wählen und den gewünschten Kartenstil einstellen
 2. **„Tiles herunterladen"** klicken — der Download-Dialog öffnet sich:
 
-   <img width="567" alt="Meshhessen Client – Offline-Karten-Tile-Downloader: Bounding Box, Zoomstufen und Fortschritt" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/tile_downloader.png" />
+   <img width="567" alt="Meshhessen Client – Offline-Karten-Tile-Downloader: Bounding Box, Zoomstufen und Fortschritt" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/tile_downloader.png" />
 
 3. **Gebiet festlegen:** Bounding Box als `latMin,lonMin,latMax,lonMax` eingeben — z. B. Hessen: `49.3,7.7,51.7,10.2`
 4. **Zoomstufen wählen:** `1-12` reicht für die Übersicht, `1-14` ist die Empfehlung für Ortslagen, ab `15` nur für kleine Gebiete — **jede weitere Stufe vervierfacht** die Kachelzahl
@@ -71,16 +71,16 @@ Die Vektorkarte (MapLibre GL) – gestochen scharf in jeder Zoomstufe, mit Node-
 ### Umwelt- & Funk-Overlay in Bildern
 
 Temperatur – Isothermen, Zonen-Beschriftung und Legende:
-<img alt="Meshhessen Client – Temperatur-Heatmap-Overlay mit Isothermen auf der Meshtastic-Karte" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/map-environment-overlay-temp.png" />
+<img alt="Meshhessen Client – Temperatur-Heatmap-Overlay mit Isothermen auf der Meshtastic-Karte" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map-environment-overlay-temp.png" />
 
 Noise Floor – Funkqualität als Flächen-Overlay:
-<img alt="Meshhessen Client – Noise-Floor-Heatmap-Overlay: Funkqualität als Fläche auf der Meshtastic-Karte" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/map-environment-overlay-noisefloor.png" />
+<img alt="Meshhessen Client – Noise-Floor-Heatmap-Overlay: Funkqualität als Fläche auf der Meshtastic-Karte" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map-environment-overlay-noisefloor.png" />
 
 Luftdruck:
-<img alt="Meshhessen Client – Luftdruck-Heatmap-Overlay auf der Meshtastic-Karte" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/map-environment-overlay-pressure.png" />
+<img alt="Meshhessen Client – Luftdruck-Heatmap-Overlay auf der Meshtastic-Karte" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map-environment-overlay-pressure.png" />
 
 Mouse-Over-Messwert-Boxen direkt an den Nodes:
-<img alt="Meshhessen Client – Mouse-Over-Messwert-Boxen des Umwelt-Overlays an den Meshtastic-Nodes" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/mouse-over-telemetry-environment-map.png" />
+<img alt="Meshhessen Client – Mouse-Over-Messwert-Boxen des Umwelt-Overlays an den Meshtastic-Nodes" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/mouse-over-telemetry-environment-map.png" />
 
 ## 🚒 Feuerwehr-/Rettungs-Layer (Vektorkarte)
 
@@ -114,24 +114,24 @@ Zuschaltbarer Fach-Layer für Feuerwehr, Rettungsdienst und Katastrophenschutz �
 * Die Architektur ist für weitere Fach-Layer vorbereitet (z. B. THW, Krankenhäuser)
 
 Vergleich: klassische Rasterkarte – ohne zuschaltbare Fach-Layer:
-<img alt="Meshhessen Client – klassische Rasterkarte ohne Feuerwehr-Layer (Vergleichsbild)" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/raster_wo_hydrant.png" />
+<img alt="Meshhessen Client – klassische Rasterkarte ohne Feuerwehr-Layer (Vergleichsbild)" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/raster_wo_hydrant.png" />
 
 Derselbe Ausschnitt als Vektorkarte mit aktivem 🚒 Feuerwehr-/Rettungs-Layer (Klick zeigt Details):
-<img alt="Meshhessen Client – Vektorkarte mit Feuerwehr-Layer: Hydranten, Wachen und Rettungspunkte auf der Meshtastic-Karte" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/vector_w_hydrant.png" />
+<img alt="Meshhessen Client – Vektorkarte mit Feuerwehr-Layer: Hydranten, Wachen und Rettungspunkte auf der Meshtastic-Karte" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/vector_w_hydrant.png" />
 
 Klick auf einen Hydranten zeigt die Details – hier ein Unterflurhydrant (Ring-Symbol) mit Wasserquelle:
-<img alt="Meshhessen Client – Hydranten-Detail-Popup auf der Vektorkarte: Unterflurhydrant mit Bauart und Wasserquelle" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/hydrant_unterflur.png" />
+<img alt="Meshhessen Client – Hydranten-Detail-Popup auf der Vektorkarte: Unterflurhydrant mit Bauart und Wasserquelle" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/hydrant_unterflur.png" />
 
 ## Weitere Screenshots
 
 Direkte HF-Nachbarn mit SNR-Farbverlauf auf der Vektorkarte:
-<img alt="Meshhessen Client – Nachbar-Linien mit SNR-Farbverlauf auf der Vektorkarte (0-Hop HF)" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/vector_w_neighborlinks.png" />
+<img alt="Meshhessen Client – Nachbar-Linien mit SNR-Farbverlauf auf der Vektorkarte (0-Hop HF)" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/vector_w_neighborlinks.png" />
 
 Offline-Karte mit Node-Positionen und Entfernungsanzeige:
-<img width="1250" height="813" alt="Meshhessen Client – Windows-App für Meshtastic-Geräte: Offline-Karte mit Node-Positionen (OSM)" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/map.png" />
+<img width="1250" height="813" alt="Meshhessen Client – Windows-App für Meshtastic-Geräte: Offline-Karte mit Node-Positionen (OSM)" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map.png" />
 
 Direkte HF-Nachbarn als Linien auf der Rasterkarte (Farbverlauf nach SNR oder Alter):
-<img alt="Meshhessen Client – Direkte Meshtastic-Nachbarn als farbige Linien auf der Karte (0-Hop HF, SNR-Farbverlauf)" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/map_neighbor_lines.png" />
+<img alt="Meshhessen Client – Direkte Meshtastic-Nachbarn als farbige Linien auf der Karte (0-Hop HF, SNR-Farbverlauf)" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map_neighbor_lines.png" />
 
 Node-Standort-Verlauf (GPS-Track) auf der Karte:
 <img width="967" height="411" alt="Meshhessen Client – Meshtastic Node-Standort-Verlauf GPS-Track auf Karte" src="https://github.com/user-attachments/assets/0415083a-9f22-44fc-b767-be66b69892cd" />

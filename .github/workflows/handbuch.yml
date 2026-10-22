@@ -1,0 +1,50 @@
+# Baut das Handbuch (MkDocs Material) aus docs/de + docs/en und committet den
+# fertigen HTML-Output nach docs/handbuch/ — GitHub Pages (Branch-Modus, /docs)
+# liefert es dann unter meshhessenclient.de/handbuch/ aus.
+# --strict lässt den Build bei kaputten internen Links fehlschlagen → der
+# Link-Check läuft damit automatisch bei jedem Doku-Push.
+name: Handbuch bauen
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'docs/de/**'
+      - 'docs/en/**'
+      - 'docs/index.md'
+      - 'mkdocs.yml'
+      - '.github/workflows/handbuch.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install MkDocs Material
+        run: pip install mkdocs-material
+
+      - name: Build (strict = Link-Check inklusive)
+        run: mkdocs build --strict -d site_handbuch
+
+      - name: Publish into docs/handbuch
+        run: |
+          rm -rf docs/handbuch
+          mv site_handbuch docs/handbuch
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/handbuch
+          if git diff --cached --quiet; then
+            echo "Handbuch unverändert — nichts zu committen."
+          else
+            git commit -m "docs: Handbuch neu gebaut (MkDocs)"
+            git push
+          fi

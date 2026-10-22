@@ -1,6 +1,6 @@
 # 🧰 Tools: Virtual Node, T-Deck-Assistent & Kiosk-Modus
 
-[← Zur Projektübersicht](../../README.md) · [🇬🇧 English version](../en/tools.md)
+[← Handbuch-Übersicht](../index.md) · [🇬🇧 English version](../en/tools.md)
 
 ## 🖧 Virtual Node (Tools-Tab)
 
@@ -29,16 +29,16 @@
 ### Der Assistent in Bildern
 
 Schritt 1–3: Willkommen, Laufwerkswahl und Formatierungsempfehlung (exFAT, 4096 Bytes):
-<img alt="Meshhessen Client – T-Deck Karten-Assistent Schritt 1: Willkommen" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/t-deck-assistant-stage1.png" />
-<img alt="Meshhessen Client – T-Deck Karten-Assistent Schritt 2: Laufwerksauswahl" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/t-deck-assistant-stage2.png" />
-<img alt="Meshhessen Client – T-Deck Karten-Assistent Schritt 3: Formatierung (exFAT 4096)" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/t-deck-assistant-stage3.png" />
+<img alt="Meshhessen Client – T-Deck Karten-Assistent Schritt 1: Willkommen" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/t-deck-assistant-stage1.png" />
+<img alt="Meshhessen Client – T-Deck Karten-Assistent Schritt 2: Laufwerksauswahl" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/t-deck-assistant-stage2.png" />
+<img alt="Meshhessen Client – T-Deck Karten-Assistent Schritt 3: Formatierung (exFAT 4096)" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/t-deck-assistant-stage3.png" />
 
 Schritt 4: Kartenbereich wählen — Bundesland, ganz Deutschland oder Freestyle-Rechteck auf der Karte:
-<img alt="Meshhessen Client – T-Deck Karten-Assistent Schritt 4: Kartenbereich auf interaktiver Karte wählen" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/t-deck-assistant-stage4-select-maprange.png" />
+<img alt="Meshhessen Client – T-Deck Karten-Assistent Schritt 4: Kartenbereich auf interaktiver Karte wählen" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/t-deck-assistant-stage4-select-maprange.png" />
 
 Schritt 5 + 6: Zoom/Kartentyp und der laufende Transfer auf die SD-Karte:
-<img alt="Meshhessen Client – T-Deck Karten-Assistent Schritt 5: Zoom und Kartentyp" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/t-deck-assistant-stage5.png" />
-<img alt="Meshhessen Client – T-Deck Karten-Assistent Schritt 6: Tiles werden auf die SD-Karte übertragen" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/t-deck-assistant-stage6-downloading.png" />
+<img alt="Meshhessen Client – T-Deck Karten-Assistent Schritt 5: Zoom und Kartentyp" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/t-deck-assistant-stage5.png" />
+<img alt="Meshhessen Client – T-Deck Karten-Assistent Schritt 6: Tiles werden auf die SD-Karte übertragen" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/t-deck-assistant-stage6-downloading.png" />
 
 ## 🔒 Kiosk-/Trainingsmodus
 
@@ -51,4 +51,4 @@ Für geteilte Stationen (Vereinslokal, Schulung, Veranstaltung):
 * **Passwort vergessen?** Client beenden und in `meshhessen-client.ini` die Zeile `KioskModeEnabled=True` auf `False` setzen (oder die Zeile `KioskPasswordHash=…` leeren und neu setzen)
 
 Kiosk-/Trainingsmodus – sperrbare Oberfläche für geteilte Stationen (Einstellungen):
-<img alt="Meshhessen Client – Kiosk- und Trainingsmodus: sperrbare Oberfläche mit Passwortschutz für geteilte Stationen" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/kiosk_settings.png" />
+<img alt="Meshhessen Client – Kiosk- und Trainingsmodus: sperrbare Oberfläche mit Passwortschutz für geteilte Stationen" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/kiosk_settings.png" />

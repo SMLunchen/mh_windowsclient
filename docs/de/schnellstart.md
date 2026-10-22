@@ -1,6 +1,6 @@
 # 🚀 Schnellstart & Verbindung
 
-[← Zur Projektübersicht](../../README.md) · [🇬🇧 English version](../en/getting-started.md)
+[← Handbuch-Übersicht](../index.md) · [🇬🇧 English version](../en/getting-started.md)
 
 ## Installation in 5 Schritten
 

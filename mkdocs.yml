@@ -1,0 +1,85 @@
+# Meshhessen Client — Handbuch (MkDocs Material)
+# Quelle: docs/de/*.md + docs/en/*.md (werden auch auf GitHub direkt gerendert).
+# Build:  mkdocs build --strict -d site_handbuch  → Inhalt nach docs/handbuch/ kopieren
+#         (macht .github/workflows/handbuch.yml automatisch bei jedem Doku-Push).
+# GitHub Pages liefert docs/ aus → das Handbuch erscheint unter /handbuch/.
+
+site_name: Meshhessen Client – Handbuch
+site_url: https://meshhessenclient.de/handbuch/
+site_description: Handbuch des Meshhessen Clients – dem kostenlosen Windows-Client für Meshtastic-Geräte.
+repo_url: https://github.com/SMLunchen/mh_windowsclient
+repo_name: SMLunchen/mh_windowsclient
+edit_uri: edit/master/docs/
+copyright: Made with ❤ by the Meshhessen Community · <a href="https://meshhessenclient.de/">meshhessenclient.de</a>
+
+docs_dir: docs
+site_dir: site_handbuch
+
+# index.html/changelog.html sind die Landingpage (werden von Pages direkt
+# ausgeliefert), docs/handbuch ist der committete Build-Output — alles drei
+# darf NICHT als Handbuch-Quelle eingesammelt werden.
+exclude_docs: |
+  index.html
+  changelog.html
+  handbuch/
+
+theme:
+  name: material
+  language: de
+  palette:
+    scheme: slate
+    primary: black
+    accent: light blue
+  features:
+    - navigation.sections
+    - navigation.top
+    - navigation.footer      # „vorherige/nächste Seite" am Seitenende
+    - search.suggest
+    - search.highlight
+    - content.action.edit    # ✏-Stift: „Auf GitHub bearbeiten"
+  icon:
+    repo: fontawesome/brands/github
+
+plugins:
+  - search:
+      lang:
+        - de
+        - en
+
+markdown_extensions:
+  - admonition
+  - def_list
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+
+nav:
+  - Handbuch: index.md
+  - 🇩🇪 Deutsch:
+      - Schnellstart & Verbindung: de/schnellstart.md
+      - Karte & Offline-Nutzung: de/karte.md
+      - Nachrichten & Kommunikation: de/nachrichten.md
+      - Telemetrie & Funkanalyse: de/telemetrie.md
+      - Traceroute: de/traceroute.md
+      - Node-Verwaltung & Fernkonfiguration: de/node-verwaltung.md
+      - Virtual Node · T-Deck · Kiosk: de/tools.md
+      - Technik & Protokoll: de/technik.md
+      - Architektur (Entwickler): architecture.md
+      - Glossar: de/glossar.md
+  - 🇬🇧 English:
+      - Getting started & connection: en/getting-started.md
+      - Map & offline use: en/map.md
+      - Messaging & communication: en/messaging.md
+      - Telemetry & radio analysis: en/telemetry.md
+      - Traceroute: en/traceroute.md
+      - Node management & remote admin: en/node-management.md
+      - Virtual Node · T-Deck · kiosk: en/tools.md
+      - Technology & protocol: en/technical.md
+      - Glossary: en/glossary.md

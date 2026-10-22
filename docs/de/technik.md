@@ -1,6 +1,6 @@
 # 🏗️ Technik & Protokoll
 
-[← Zur Projektübersicht](../../README.md) · [🇬🇧 English version](../en/technical.md)
+[← Handbuch-Übersicht](../index.md) · [🇬🇧 English version](../en/technical.md)
 
 ## Technischer Überblick
 
