@@ -54,6 +54,15 @@ Der **Meshhessen Client** ist ein **kostenloser, nativer Windows-Client für Mes
   * Bestätigung vor dem Löschen einer DM-Konversation (kein versehentliches Wischen)
   * Aufbewahrungsdauer konfigurierbar (30 / 90 / 365 Tage)
 
+Nachrichtenansicht mit Kanal-Chat und Direktnachrichten:
+<img width="1443" height="813" alt="Meshhessen Client – Meshtastic Nachrichten, Kanal-Chat und Direktnachrichten (DM) unter Windows" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/messaging.png" />
+
+Kanal-Liste mit allen Meshtastic-Kanälen:
+<img width="1443" height="814" alt="Meshhessen Client – Meshtastic Kanal-Liste (Multi-Channel) unter Windows" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/channel_list.png" />
+
+Alert Bell / SOS-Notruf Anzeige:
+<img width="1446" height="816" alt="Meshhessen Client – Alert Bell SOS-Notruf Signalisierung für Meshtastic-Geräte unter Windows" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/alert_bell.png" />
+
 ### 📊 Telemetrie & Statistik
 
 * **Persistente Telemetrie-Datenbank** – empfangene Paket- und Gerätedaten werden lokal in einer SQLite-Datenbank gespeichert
@@ -80,6 +89,45 @@ Der **Meshhessen Client** ist ein **kostenloser, nativer Windows-Client für Mes
   * 🛤️ **Pfad-Stabilität** – Stabilität des Traceroute-Pfads
   * 🌐 **Mesh-Health** – Gesamtzustand des sichtbaren Meshes; 
   * 🌤️ **Wetter** – für Nodes mit Umweltsensor
+
+**📊 Telemetrie-Dashboard** – frei konfigurierbare Widgets (Linie, Gauge, Heatmap, Histogramm, Ranking, Mesh-Health, Candlestick …) mit Schwellwert-Alarmen, Auto-Refresh, Polling-Plan und Vollbild für Wandmonitore:
+<img alt="Meshhessen Client – Telemetrie-Dashboard mit konfigurierbaren Widgets: Gauges, Heatmaps, Mesh-Health und Schwellwert-Alarmen" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/telemetry-dashboard.png" />
+
+**Neu: ⛰ Höhenprofil pro Funkstrecke** – Rechtsklick auf einen Nachbarn oder Traceroute-Hop: SRTM-Gelände mit Sichtlinie und 60-%-Fresnel-Zone, samt Einschätzung, ob die Strecke frei ist oder Gelände im Weg steht:
+<img alt="Meshhessen Client – Höhenprofil einer Meshtastic-Funkstrecke: SRTM-Gelände, Sichtlinie und Fresnel-Zone" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/elevation-profile.png" />
+
+<details>
+<summary>📊 <b>Mehr Screenshots:</b> LED-Ampel, Graphen, Statistik-Fenster, Nachbarn, Airtime, Routing</summary>
+
+Telemetrie-LED-Ampel im Hauptfenster:
+<img width="516" height="162" alt="Meshhessen Client – Meshtastic Telemetrie-LEDs für Signal, Nachbarn, Mesh-Health und Wetter" src="https://github.com/user-attachments/assets/a580cf69-ab10-4890-a17a-1c5086c19700" />
+
+Telemetrie-Zeitreihen-Graph (SNR, RSSI, Batterie):
+<img width="902" height="604" alt="Meshhessen Client – Meshtastic Telemetrie-Graph SNR RSSI Batterie Zeitreihe OxyPlot" src="https://github.com/user-attachments/assets/a42d6a79-5b90-4f7a-8456-c74099c55c41" />
+
+Node-Telemetrie-Statistik-Fenster:
+<img width="1278" height="889" alt="Meshhessen Client – Meshtastic Node-Telemetrie Tag/Nacht-Auswertung Statistik Windows" src="https://github.com/user-attachments/assets/4821c996-c524-499a-8fba-f738fb051f88" />
+
+Node-Telemetrie-Übersicht (Signal):
+
+![Meshhessen Client – Meshtastic Node-Telemetrie-Übersicht: Signal-Analyse, Routing, Airtime und Nachbar-Statistik](https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node-telemetry.png)
+
+Echte HF-Nachbarn mit SNR in beide Richtungen – Rechtsklick öffnet das Höhenprofil des Links:
+
+![Meshhessen Client – Echte HF-Nachbarn mit SNR in beide Richtungen und Höhenprofil-Kontextmenü](https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node_neighbors.png)
+
+Airtime-Auswertung pro Node (TX/RX-Sendezeit, Kanalauslastung):
+
+![Meshhessen Client – Meshtastic Airtime-Analyse: TX-Airtime, RX-Airtime und Kanalauslastung pro Node](https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node_airtime.png)
+
+Batterie & Spannungs-Analyse (Tag/Nacht-Profil, Nachtabfall):
+
+![Meshhessen Client – Meshtastic Batterie-Analyse: Spannungs-Verlauf, Tag/Nacht-Profil und Nachtabfall](https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node_power.png)
+
+Routing-Statistik (Hop-Anzahl, Pfad-Stabilität, Pfadwechsel-Rate):
+
+![Meshhessen Client – Meshtastic Routing-Statistik: Hop-Anzahl, Pfad-Stabilität und Pfadwechsel-Rate](https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node_routing.png)
+</details>
 
 ### 🗺️ Karte
 
@@ -123,6 +171,20 @@ Zuschaltbarer Fach-Layer für Feuerwehr, Rettungsdienst und Katastrophenschutz �
 * **Offline nutzbar:** online betrachtete Gebiete landen automatisch im Cache; im Vektor-Offlinepaket-Downloader lässt sich der Layer gezielt für ein Gebiet mitladen
 * Solange der Layer ausgeschaltet ist, wird **kein einziges Byte** dafür übertragen
 * Die Architektur ist für weitere Fach-Layer vorbereitet (z. B. THW, Krankenhäuser)
+
+<details>
+<summary>🚒 <b>Screenshots:</b> Raster vs. Vektor mit Feuerwehr-Layer, Hydranten-Details</summary>
+
+Vergleich: klassische Rasterkarte – ohne zuschaltbare Fach-Layer:
+<img alt="Meshhessen Client – klassische Rasterkarte ohne Feuerwehr-Layer (Vergleichsbild)" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/raster_wo_hydrant.png" />
+
+Derselbe Ausschnitt als Vektorkarte mit aktivem 🚒 Feuerwehr-/Rettungs-Layer (Klick zeigt Details):
+<img alt="Meshhessen Client – Vektorkarte mit Feuerwehr-Layer: Hydranten, Wachen und Rettungspunkte auf der Meshtastic-Karte" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/vector_w_hydrant.png" />
+
+Klick auf einen Hydranten zeigt die Details – hier ein Unterflurhydrant (Ring-Symbol) mit Wasserquelle:
+<img alt="Meshhessen Client – Hydranten-Detail-Popup auf der Vektorkarte: Unterflurhydrant mit Bauart und Wasserquelle" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/hydrant_unterflur.png" />
+</details>
+
 * **Vier Karten-Modi** (umschaltbar in Einstellungen):
   * **Offline** (Standard) – vorher heruntergeladene Tiles vom Meshhessen-Server, kein Internet, nur Deutschland
   * **Online – Meshhessen-Server** – Tiles werden on-demand von `tile.meshhessenclient.de` geladen und dauerhaft lokal gespeichert; alle drei Stile, nur Deutschland
@@ -136,6 +198,56 @@ Zuschaltbarer Fach-Layer für Feuerwehr, Rettungsdienst und Katastrophenschutz �
   * Dunkler Umriss unter jeder Linie für gute Sichtbarkeit auch auf der Topo-Karte
 * **Wegpunkte (Waypoints)** – empfangene Wegpunkte werden auf der Karte angezeigt; Wegpunkte per Karte-Rechtsklick erstellen und senden
 * **Umwelt- & Funk-Overlay** (🌡️-Button) – Messwert-Boxen an den Nodes und interpolierte Heatmap im Wetterdienst-Stil; neben allen Umweltmetriken (Temperatur, Feuchte, IAQ, Wind, Regen …) jetzt auch **SNR, RSSI und Noise Floor** als Flächen-Overlay
+
+Die Vektorkarte (MapLibre GL) – gestochen scharf in jeder Zoomstufe, mit Node-Pins:
+<img alt="Meshhessen Client – Vektorkarte (MapLibre GL) mit Meshtastic Node-Positionen unter Windows" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/vector_in_action.png" />
+
+**Neu: ⛰ 3D-Gelände** – echtes Höhenmodell (SRTM) mit Schummerung auf der Vektorkarte, per Strg+Ziehen geneigt:
+<img alt="Meshhessen Client – 3D-Gelände (SRTM-Höhenmodell) mit Schummerung auf der Meshtastic-Vektorkarte" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/map-with-dem-elevation-profile.png" />
+
+<details>
+<summary>🌡️ <b>Umwelt- & Funk-Overlay</b> – interpolierte Heatmap im Wetterdienst-Stil (3 Metriken zum Durchschalten)</summary>
+
+<details>
+<summary>🌡 Temperatur – Isothermen, Zonen-Beschriftung und Legende</summary>
+<img alt="Meshhessen Client – Temperatur-Heatmap-Overlay mit Isothermen auf der Meshtastic-Karte" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/map-environment-overlay-temp.png" />
+</details>
+
+<details>
+<summary>⏲ Luftdruck – dieselbe Fläche, eine Metrik weiter</summary>
+<img alt="Meshhessen Client – Luftdruck-Heatmap-Overlay auf der Meshtastic-Karte" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/map-environment-overlay-pressure.png" />
+</details>
+
+<details>
+<summary>📡 Noise Floor – Funkqualität als Flächen-Overlay (auch SNR/RSSI möglich)</summary>
+<img alt="Meshhessen Client – Noise-Floor-Heatmap-Overlay: Funkqualität als Fläche auf der Meshtastic-Karte" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/map-environment-overlay-noisefloor.png" />
+</details>
+
+<details>
+<summary>🖱 Mouse-Over – Messwert-Boxen direkt an den Nodes</summary>
+<img alt="Meshhessen Client – Mouse-Over-Messwert-Boxen des Umwelt-Overlays an den Meshtastic-Nodes" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/mouse-over-telemetry-environment-map.png" />
+</details>
+
+</details>
+
+<details>
+<summary>🗺️ <b>Mehr Screenshots:</b> Offline-Karte, Nachbar-Linien, GPS-Tracks, Tile-Downloader</summary>
+
+Direkte HF-Nachbarn mit SNR-Farbverlauf auf der Vektorkarte:
+<img alt="Meshhessen Client – Nachbar-Linien mit SNR-Farbverlauf auf der Vektorkarte (0-Hop HF)" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/vector_w_neighborlinks.png" />
+
+Offline-Karte mit Node-Positionen und Entfernungsanzeige:
+<img width="1250" height="813" alt="Meshhessen Client – Windows-App für Meshtastic-Geräte: Offline-Karte mit Node-Positionen (OSM)" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/map.png" />
+
+Direkte HF-Nachbarn als Linien auf der Rasterkarte (Farbverlauf nach SNR oder Alter):
+<img alt="Meshhessen Client – Direkte Meshtastic-Nachbarn als farbige Linien auf der Karte (0-Hop HF, SNR-Farbverlauf)" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/map_neighbor_lines.png" />
+
+Node-Standort-Verlauf (GPS-Track) auf der Karte:
+<img width="967" height="411" alt="Meshhessen Client – Meshtastic Node-Standort-Verlauf GPS-Track auf Karte" src="https://github.com/user-attachments/assets/0415083a-9f22-44fc-b767-be66b69892cd" />
+
+Offline-Tile-Downloader für Deutschland und Umgebung:
+<img width="567" height="883" alt="Meshhessen Client – Offline-Karten-Tile-Downloader für Meshtastic-Geräte unter Windows (OSM, OpenTopoMap)" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/tile_downloader.png" />
+</details>
 
 ### 📡 Traceroute
 
@@ -158,6 +270,16 @@ Zuschaltbarer Fach-Layer für Feuerwehr, Rettungsdienst und Katastrophenschutz �
 * **Zeitreihenfilter** – Traceroutes nach Zeitraum filtern (3d / 7d / 14d / 30d / 90d / Alle)
 * **Deduplizierung** – nur neueste Traceroute pro Node-Paar anzeigen (optional)
 * **Karten-Legende** – zeigt alle aktiven Traces mit Farbe und ✕-Button zum Entfernen
+
+<details>
+<summary>📡 <b>Screenshots:</b> Hop-Tabelle & Pfad auf der Karte</summary>
+
+Traceroute-Fenster mit Hop-Tabelle:
+<img width="780" height="868" alt="Meshhessen Client – Traceroute für Meshtastic-Geräte: Hop-Tabelle, Entfernung und SNR unter Windows" src="https://github.com/user-attachments/assets/10880a3d-9d94-4b07-84bc-ad64af56dab1" />
+
+Traceroute-Pfad auf der Karte:
+<img width="1278" height="889" alt="Meshhessen Client – Meshtastic Traceroute-Pfad auf Offline-Karte visualisiert" src="https://github.com/user-attachments/assets/800925ef-0d4e-41ad-a7f2-56cdd06da6b7" />
+</details>
 
 ### 🖧 Virtual Node (Tools-Tab)
 
@@ -219,6 +341,12 @@ Zuschaltbarer Fach-Layer für Feuerwehr, Rettungsdienst und Katastrophenschutz �
   * **Weitere Module:** Nachbar-Info, Store & Forward, Externe Benachrichtigung, Canned Messages, Range Test, Serial
 * **BT-PIN ändern** – Bluetooth-PIN direkt aus dem Client setzen
 
+Node-Übersicht als Tabelle – mit Avatar, Signal-LEDs, Filtern und Sortierung:
+<img alt="Meshhessen Client – Node-Übersicht als Tabelle mit Avatar, SNR, RSSI, Batterie und Signal-LEDs" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/nodelist_new.png" />
+
+Node-Übersicht als Kachelansicht (Fancy View) – mit Telemetrie, Strom und Signalqualität pro Kachel:
+<img alt="Meshhessen Client – Node-Kachelansicht (Fancy View) mit Telemetrie, Batterie und Signalqualität pro Node" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/nodelist_new_tiles.png" />
+
 ### ⚙️ Verbindung & System
 
 * **Multi-Verbindung** – USB/Serial, TCP/WiFi und Bluetooth (BLE)
@@ -237,6 +365,13 @@ Zuschaltbarer Fach-Layer für Feuerwehr, Rettungsdienst und Katastrophenschutz �
   * ⚠️ **Versehens-Schutz, kein Angriffs-Schutz** – das Passwort wird als PBKDF2-Hash gespeichert, aber wer die INI-Datei bearbeiten kann, kann den Modus deaktivieren
   * **Passwort vergessen?** Client beenden und in `meshhessen-client.ini` die Zeile `KioskModeEnabled=True` auf `False` setzen (oder die Zeile `KioskPasswordHash=…` leeren und neu setzen)
 
+<details>
+<summary>🔒 <b>Screenshot:</b> Kiosk-Einstellungen</summary>
+
+Kiosk-/Trainingsmodus – sperrbare Oberfläche für geteilte Stationen (Einstellungen):
+<img alt="Meshhessen Client – Kiosk- und Trainingsmodus: sperrbare Oberfläche mit Passwortschutz für geteilte Stationen" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/kiosk_settings.png" />
+</details>
+
 
 ## 💬 Die Meshhessen Community
 
@@ -246,152 +381,6 @@ Der Meshhessen Client ist ein Gemeinschaftsprojekt der Meshtastic-Community in H
 * 📡 **Netz:** Wachsendes Mesh-Netzwerk in Hessen und Umgebung – Airtime ist kein All-you-can-eat → Short Slow! ;)
 * 🤝 **Mitmachen:** Eigenen Node aufstellen, Reichweite erweitern, Community wachsen lassen
 
-
-## 📸 Screenshots
-
-Die Vektorkarte (MapLibre GL) – gestochen scharf in jeder Zoomstufe, mit Node-Pins:
-<img alt="Meshhessen Client – Vektorkarte (MapLibre GL) mit Meshtastic Node-Positionen unter Windows" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/vector_in_action.png" />
-
-**Neu: ⛰ 3D-Gelände** – echtes Höhenmodell (SRTM) mit Schummerung auf der Vektorkarte, per Strg+Ziehen geneigt:
-<img alt="Meshhessen Client – 3D-Gelände (SRTM-Höhenmodell) mit Schummerung auf der Meshtastic-Vektorkarte" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/map-with-dem-elevation-profile.png" />
-
-> 💡 Die weiteren Screenshots sind nach Themen gruppiert – einfach aufklappen.
-
-<details>
-<summary>🌡️ <b>Umwelt- & Funk-Overlay</b> – interpolierte Heatmap im Wetterdienst-Stil (3 Metriken zum Durchschalten)</summary>
-
-<details>
-<summary>🌡 Temperatur – Isothermen, Zonen-Beschriftung und Legende</summary>
-<img alt="Meshhessen Client – Temperatur-Heatmap-Overlay mit Isothermen auf der Meshtastic-Karte" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/map-environment-overlay-temp.png" />
-</details>
-
-<details>
-<summary>⏲ Luftdruck – dieselbe Fläche, eine Metrik weiter</summary>
-<img alt="Meshhessen Client – Luftdruck-Heatmap-Overlay auf der Meshtastic-Karte" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/map-environment-overlay-pressure.png" />
-</details>
-
-<details>
-<summary>📡 Noise Floor – Funkqualität als Flächen-Overlay (auch SNR/RSSI möglich)</summary>
-<img alt="Meshhessen Client – Noise-Floor-Heatmap-Overlay: Funkqualität als Fläche auf der Meshtastic-Karte" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/map-environment-overlay-noisefloor.png" />
-</details>
-
-<details>
-<summary>🖱 Mouse-Over – Messwert-Boxen direkt an den Nodes</summary>
-<img alt="Meshhessen Client – Mouse-Over-Messwert-Boxen des Umwelt-Overlays an den Meshtastic-Nodes" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/mouse-over-telemetry-environment-map.png" />
-</details>
-
-</details>
-
-<details>
-<summary>⛰ <b>Höhenprofil pro Funkstrecke</b> – Gelände, Sichtlinie & Fresnel-Zone (Rechtsklick auf Nachbar oder Traceroute-Hop)</summary>
-
-SRTM-Geländeprofil mit 4/3-Erdkrümmung, Sichtlinie zwischen den Antennen und 60-%-Fresnel-Zone – inklusive Einschätzung, ob die Strecke frei ist oder Gelände im Weg steht:
-<img alt="Meshhessen Client – Höhenprofil einer Meshtastic-Funkstrecke: SRTM-Gelände, Sichtlinie und Fresnel-Zone" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/elevation-profile.png" />
-</details>
-
-<details>
-<summary>🚒 <b>Feuerwehr-/Rettungs-Layer</b> – Hydranten, Wachen & Rettungspunkte auf der Vektorkarte</summary>
-
-Vergleich: klassische Rasterkarte – ohne zuschaltbare Fach-Layer:
-<img alt="Meshhessen Client – klassische Rasterkarte ohne Feuerwehr-Layer (Vergleichsbild)" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/raster_wo_hydrant.png" />
-
-Derselbe Ausschnitt als Vektorkarte mit aktivem 🚒 Feuerwehr-/Rettungs-Layer (Klick zeigt Details):
-<img alt="Meshhessen Client – Vektorkarte mit Feuerwehr-Layer: Hydranten, Wachen und Rettungspunkte auf der Meshtastic-Karte" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/vector_w_hydrant.png" />
-
-Klick auf einen Hydranten zeigt die Details – hier ein Unterflurhydrant (Ring-Symbol) mit Wasserquelle:
-<img alt="Meshhessen Client – Hydranten-Detail-Popup auf der Vektorkarte: Unterflurhydrant mit Bauart und Wasserquelle" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/hydrant_unterflur.png" />
-</details>
-
-<details>
-<summary>🗺️ <b>Karte & Nachbar-Linien</b> – Offline-Karte, direkte HF-Nachbarn, GPS-Tracks</summary>
-
-Direkte HF-Nachbarn mit SNR-Farbverlauf auf der Vektorkarte:
-<img alt="Meshhessen Client – Nachbar-Linien mit SNR-Farbverlauf auf der Vektorkarte (0-Hop HF)" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/vector_w_neighborlinks.png" />
-
-Offline-Karte mit Node-Positionen und Entfernungsanzeige:
-<img width="1250" height="813" alt="Meshhessen Client – Windows-App für Meshtastic-Geräte: Offline-Karte mit Node-Positionen (OSM)" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/map.png" />
-
-Direkte HF-Nachbarn als Linien auf der Rasterkarte (Farbverlauf nach SNR oder Alter):
-<img alt="Meshhessen Client – Direkte Meshtastic-Nachbarn als farbige Linien auf der Karte (0-Hop HF, SNR-Farbverlauf)" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/map_neighbor_lines.png" />
-
-Node-Standort-Verlauf (GPS-Track) auf der Karte:
-<img width="967" height="411" alt="Meshhessen Client – Meshtastic Node-Standort-Verlauf GPS-Track auf Karte" src="https://github.com/user-attachments/assets/0415083a-9f22-44fc-b767-be66b69892cd" />
-</details>
-
-<details>
-<summary>📋 <b>Node-Listen</b> – Tabelle & Kachelansicht (Fancy View)</summary>
-
-Node-Übersicht als Tabelle – mit Avatar, Signal-LEDs, Filtern und Sortierung:
-<img alt="Meshhessen Client – Node-Übersicht als Tabelle mit Avatar, SNR, RSSI, Batterie und Signal-LEDs" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/nodelist_new.png" />
-
-Node-Übersicht als Kachelansicht (Fancy View) – mit Telemetrie, Strom und Signalqualität pro Kachel:
-<img alt="Meshhessen Client – Node-Kachelansicht (Fancy View) mit Telemetrie, Batterie und Signalqualität pro Node" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/nodelist_new_tiles.png" />
-</details>
-
-<details>
-<summary>📨 <b>Nachrichten, Kanäle & SOS</b></summary>
-
-Nachrichtenansicht mit Kanal-Chat und Direktnachrichten:
-<img width="1443" height="813" alt="Meshhessen Client – Meshtastic Nachrichten, Kanal-Chat und Direktnachrichten (DM) unter Windows" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/messaging.png" />
-
-Kanal-Liste mit allen Meshtastic-Kanälen:
-<img width="1443" height="814" alt="Meshhessen Client – Meshtastic Kanal-Liste (Multi-Channel) unter Windows" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/channel_list.png" />
-
-Alert Bell / SOS-Notruf Anzeige:
-<img width="1446" height="816" alt="Meshhessen Client – Alert Bell SOS-Notruf Signalisierung für Meshtastic-Geräte unter Windows" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/alert_bell.png" />
-</details>
-
-<details>
-<summary>📡 <b>Traceroute</b> – Hop-Tabelle & Pfad auf der Karte</summary>
-
-Traceroute-Fenster mit Hop-Tabelle:
-<img width="780" height="868" alt="Meshhessen Client – Traceroute für Meshtastic-Geräte: Hop-Tabelle, Entfernung und SNR unter Windows" src="https://github.com/user-attachments/assets/10880a3d-9d94-4b07-84bc-ad64af56dab1" />
-
-Traceroute-Pfad auf der Karte:
-<img width="1278" height="889" alt="Meshhessen Client – Meshtastic Traceroute-Pfad auf Offline-Karte visualisiert" src="https://github.com/user-attachments/assets/800925ef-0d4e-41ad-a7f2-56cdd06da6b7" />
-</details>
-
-<details>
-<summary>📊 <b>Telemetrie & Statistik</b> – LED-Ampel, Graphen, Nachbarn, Airtime, Routing</summary>
-
-Telemetrie-LED-Ampel im Hauptfenster:
-<img width="516" height="162" alt="Meshhessen Client – Meshtastic Telemetrie-LEDs für Signal, Nachbarn, Mesh-Health und Wetter" src="https://github.com/user-attachments/assets/a580cf69-ab10-4890-a17a-1c5086c19700" />
-
-Telemetrie-Zeitreihen-Graph (SNR, RSSI, Batterie):
-<img width="902" height="604" alt="Meshhessen Client – Meshtastic Telemetrie-Graph SNR RSSI Batterie Zeitreihe OxyPlot" src="https://github.com/user-attachments/assets/a42d6a79-5b90-4f7a-8456-c74099c55c41" />
-
-Node-Telemetrie-Statistik-Fenster:
-<img width="1278" height="889" alt="Meshhessen Client – Meshtastic Node-Telemetrie Tag/Nacht-Auswertung Statistik Windows" src="https://github.com/user-attachments/assets/4821c996-c524-499a-8fba-f738fb051f88" />
-
-Node-Telemetrie-Übersicht (Signal):
-
-![Meshhessen Client – Meshtastic Node-Telemetrie-Übersicht: Signal-Analyse, Routing, Airtime und Nachbar-Statistik](https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node-telemetry.png)
-
-Echte HF-Nachbarn mit SNR in beide Richtungen – Rechtsklick öffnet das Höhenprofil des Links:
-![Meshhessen Client – Echte HF-Nachbarn mit SNR in beide Richtungen und Höhenprofil-Kontextmenü](https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node_neighbors.png)
-
-Airtime-Auswertung pro Node (TX/RX-Sendezeit, Kanalauslastung):
-
-![Meshhessen Client – Meshtastic Airtime-Analyse: TX-Airtime, RX-Airtime und Kanalauslastung pro Node](https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node_airtime.png)
-
-Batterie & Spannungs-Analyse (Tag/Nacht-Profil, Nachtabfall):
-
-![Meshhessen Client – Meshtastic Batterie-Analyse: Spannungs-Verlauf, Tag/Nacht-Profil und Nachtabfall](https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node_power.png)
-
-Routing-Statistik (Hop-Anzahl, Pfad-Stabilität, Pfadwechsel-Rate):
-
-![Meshhessen Client – Meshtastic Routing-Statistik: Hop-Anzahl, Pfad-Stabilität und Pfadwechsel-Rate](https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node_routing.png)
-</details>
-
-<details>
-<summary>🧰 <b>Tools</b> – Tile-Downloader & Kiosk-Modus</summary>
-
-Offline-Tile-Downloader für Deutschland und Umgebung:
-<img width="567" height="883" alt="Meshhessen Client – Offline-Karten-Tile-Downloader für Meshtastic-Geräte unter Windows (OSM, OpenTopoMap)" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/tile_downloader.png" />
-
-Kiosk-/Trainingsmodus – sperrbare Oberfläche für geteilte Stationen (Einstellungen):
-<img alt="Meshhessen Client – Kiosk- und Trainingsmodus: sperrbare Oberfläche mit Passwortschutz für geteilte Stationen" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/kiosk_settings.png" />
-</details>
 
 ## ⚠️ Bekannte Einschränkungen
 
@@ -591,6 +580,15 @@ Meshhessen Client · Windows-Client für Meshtastic-Geräte · Meshtastic Window
   * Confirmation before clearing a DM conversation (no accidental wipe)
   * Configurable retention period (30 / 90 / 365 days)
 
+Messaging view with channel chat and direct messages:
+<img width="1443" height="813" alt="Meshhessen Client – Meshtastic messages, channel chat and direct messages (DM) on Windows" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/messaging.png" />
+
+Channel list with all Meshtastic channels:
+<img width="1443" height="814" alt="Meshhessen Client – Meshtastic channel list (multi-channel) on Windows" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/channel_list.png" />
+
+Alert Bell / SOS emergency display:
+<img width="1446" height="816" alt="Meshhessen Client – Alert Bell SOS emergency signalling for Meshtastic devices on Windows" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/alert_bell.png" />
+
 ### 📊 Telemetry & Statistics
 
 * **Persistent telemetry database** – received packet and device data is stored locally in a SQLite database
@@ -616,6 +614,45 @@ Meshhessen Client · Windows-Client für Meshtastic-Geräte · Meshtastic Window
   * 🌐 **Mesh health** – overall health of the visible mesh
   * 🌤️ **Weather** – for nodes with environmental sensors
 
+**📊 Telemetry dashboard** – freely configurable widgets (line, gauge, heatmap, histogram, ranking, mesh health, candlestick …) with threshold alerts, auto-refresh, polling plan and fullscreen for wall monitors:
+<img alt="Meshhessen Client – telemetry dashboard with configurable widgets: gauges, heatmaps, mesh health and threshold alerts" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/telemetry-dashboard.png" />
+
+**New: ⛰ Elevation profile per radio link** – right-click a neighbor or traceroute hop: SRTM terrain with line of sight and 60 % Fresnel zone, including a verdict whether the path is clear or terrain is in the way:
+<img alt="Meshhessen Client – elevation profile of a Meshtastic radio link: SRTM terrain, line of sight and Fresnel zone" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/elevation-profile.png" />
+
+<details>
+<summary>📊 <b>More screenshots:</b> LED indicators, graphs, statistics windows, neighbors, airtime, routing</summary>
+
+Telemetry LED indicators in the main window:
+<img width="516" height="162" alt="Meshhessen Client – Meshtastic telemetry LEDs for signal, neighbors, mesh health and weather" src="https://github.com/user-attachments/assets/a580cf69-ab10-4890-a17a-1c5086c19700" />
+
+Telemetry time-series graph (SNR, RSSI, battery):
+<img width="902" height="604" alt="Meshhessen Client – Meshtastic telemetry graph SNR RSSI battery time series OxyPlot" src="https://github.com/user-attachments/assets/a42d6a79-5b90-4f7a-8456-c74099c55c41" />
+
+Node telemetry statistics window:
+<img width="1278" height="889" alt="Meshhessen Client – Meshtastic node telemetry day/night statistics on Windows" src="https://github.com/user-attachments/assets/4821c996-c524-499a-8fba-f738fb051f88" />
+
+Node telemetry overview (signal):
+
+![Meshhessen Client – Meshtastic node telemetry overview: signal analysis, routing, airtime and neighbor statistics](https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node-telemetry.png)
+
+Real RF neighbors with SNR in both directions – right-click opens the link's elevation profile:
+
+![Meshhessen Client – real RF neighbors with SNR in both directions and elevation-profile context menu](https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node_neighbors.png)
+
+Airtime analysis per node (TX/RX airtime, channel utilization):
+
+![Meshhessen Client – Meshtastic airtime analysis: TX airtime, RX airtime and channel utilization per node](https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node_airtime.png)
+
+Battery & voltage analysis (day/night profile, night drop):
+
+![Meshhessen Client – Meshtastic battery analysis: voltage curve, day/night profile and night drop](https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node_power.png)
+
+Routing statistics (hop count, path stability, path change rate):
+
+![Meshhessen Client – Meshtastic routing statistics: hop count, path stability and path change rate](https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node_routing.png)
+</details>
+
 ### 🗺️ Map
 
 * **Three map styles:** OSM Standard, OSM Dark Mode, OpenTopoMap (topographic)
@@ -633,6 +670,69 @@ Meshhessen Client · Windows-Client für Meshtastic-Geräte · Meshtastic Window
 * **Waypoints** – received waypoints are displayed on the map; create and send waypoints via right-click on the map
 * **Environment & radio overlay** (🌡️ button) – value boxes at the nodes and a weather-service-style interpolated heatmap; besides all environment metrics (temperature, humidity, IAQ, wind, rain …) now also **SNR, RSSI and noise floor** as surface overlays
 * **Vector map (MapLibre GL)** – crisp at every zoom level, fire/rescue layers, automatic offline caching — and **⛰ 3D terrain** (SRTM elevation model with hillshading, Ctrl+drag to tilt, north arrow while rotated; works offline for areas viewed once)
+
+The vector map (MapLibre GL) – razor-sharp at every zoom level, with node pins:
+<img alt="Meshhessen Client – vector map (MapLibre GL) with Meshtastic node positions on Windows" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/vector_in_action.png" />
+
+**New: ⛰ 3D terrain** – a real elevation model (SRTM) with hillshading on the vector map, tilted via Ctrl+drag:
+<img alt="Meshhessen Client – 3D terrain (SRTM elevation model) with hillshading on the Meshtastic vector map" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/map-with-dem-elevation-profile.png" />
+
+<details>
+<summary>🌡️ <b>Environment & radio overlay</b> – weather-service-style interpolated heatmap (3 metrics to flip through)</summary>
+
+<details>
+<summary>🌡 Temperature – isotherms, zone labels and legend</summary>
+<img alt="Meshhessen Client – temperature heatmap overlay with isotherms on the Meshtastic map" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/map-environment-overlay-temp.png" />
+</details>
+
+<details>
+<summary>⏲ Barometric pressure – same surface, next metric</summary>
+<img alt="Meshhessen Client – barometric pressure heatmap overlay on the Meshtastic map" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/map-environment-overlay-pressure.png" />
+</details>
+
+<details>
+<summary>📡 Noise floor – radio quality as a surface overlay (SNR/RSSI too)</summary>
+<img alt="Meshhessen Client – noise floor heatmap overlay: radio quality as a surface on the Meshtastic map" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/map-environment-overlay-noisefloor.png" />
+</details>
+
+<details>
+<summary>🖱 Mouse-over – value boxes right at the nodes</summary>
+<img alt="Meshhessen Client – mouse-over value boxes of the environment overlay at the Meshtastic nodes" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/mouse-over-telemetry-environment-map.png" />
+</details>
+
+</details>
+
+<details>
+<summary>🚒 <b>Fire service / rescue layer:</b> raster vs. vector, hydrant details</summary>
+
+Comparison: classic raster map – without the optional special-purpose layers:
+<img alt="Meshhessen Client – classic raster map without the fire service layer (comparison)" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/raster_wo_hydrant.png" />
+
+The same area as a vector map with the 🚒 fire service / rescue layer enabled (click shows details):
+<img alt="Meshhessen Client – vector map with fire service layer: hydrants, stations and rescue points on the Meshtastic map" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/vector_w_hydrant.png" />
+
+Clicking a hydrant shows its details – here an underground hydrant (ring symbol) with water source:
+<img alt="Meshhessen Client – hydrant detail popup on the vector map: underground hydrant with type and water source" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/hydrant_unterflur.png" />
+</details>
+
+<details>
+<summary>🗺️ <b>More screenshots:</b> offline map, neighbor lines, GPS tracks, tile downloader</summary>
+
+Direct RF neighbors with SNR color gradient on the vector map:
+<img alt="Meshhessen Client – neighbor lines with SNR color gradient on the vector map (0-hop RF)" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/vector_w_neighborlinks.png" />
+
+Offline map with node positions and distance display:
+<img width="1250" height="813" alt="Meshhessen Client – Windows app for Meshtastic devices: offline map with node positions (OSM)" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/map.png" />
+
+Direct RF neighbors as lines on the raster map (gradient by SNR or age):
+<img alt="Meshhessen Client – direct Meshtastic neighbors as colored lines on the map (0-hop RF, SNR gradient)" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/map_neighbor_lines.png" />
+
+Node position history (GPS track) on the map:
+<img width="967" height="411" alt="Meshhessen Client – Meshtastic node position history GPS track on map" src="https://github.com/user-attachments/assets/0415083a-9f22-44fc-b767-be66b69892cd" />
+
+Offline tile downloader for Germany and surroundings:
+<img width="567" height="883" alt="Meshhessen Client – offline map tile downloader for Meshtastic devices on Windows (OSM, OpenTopoMap)" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/tile_downloader.png" />
+</details>
 
 ### 📡 Traceroute
 
@@ -655,6 +755,16 @@ Meshhessen Client · Windows-Client für Meshtastic-Geräte · Meshtastic Window
 * **Time range filter** – filter traceroutes by period (3d / 7d / 14d / 30d / 90d / All)
 * **Deduplication** – show only the latest traceroute per node pair (optional)
 * **Map legend** – shows all active traces with color and individual ✕ remove button
+
+<details>
+<summary>📡 <b>Screenshots:</b> hop table & route on the map</summary>
+
+Traceroute window with hop table:
+<img width="780" height="868" alt="Meshhessen Client – traceroute for Meshtastic devices: hop table, distance and SNR on Windows" src="https://github.com/user-attachments/assets/10880a3d-9d94-4b07-84bc-ad64af56dab1" />
+
+Traceroute path on the map:
+<img width="1278" height="889" alt="Meshhessen Client – Meshtastic traceroute path visualized on the offline map" src="https://github.com/user-attachments/assets/800925ef-0d4e-41ad-a7f2-56cdd06da6b7" />
+</details>
 
 ### 🖧 Virtual Node (Tools Tab)
 
@@ -696,6 +806,12 @@ Meshhessen Client · Windows-Client für Meshtastic-Geräte · Meshtastic Window
   * **Additional modules:** neighbor info, store & forward, external notification, canned messages, range test, serial
 * **Change BT PIN** – set Bluetooth PIN directly from the client
 
+Node overview as a table – with avatar, signal LEDs, filters and sorting:
+<img alt="Meshhessen Client – node overview as a table with avatar, SNR, RSSI, battery and signal LEDs" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/nodelist_new.png" />
+
+Node overview as tile view (Fancy View) – with telemetry, power and signal quality per tile:
+<img alt="Meshhessen Client – node tile view (Fancy View) with telemetry, battery and signal quality per node" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/nodelist_new_tiles.png" />
+
 ### ⚙️ Connection & System
 
 * **Multi-connection** – USB/Serial, TCP/WiFi, and Bluetooth (BLE)
@@ -713,6 +829,13 @@ Meshhessen Client · Windows-Client für Meshtastic-Geräte · Meshtastic Window
   * While locked, **admin commands from Virtual Node clients are additionally blocked** (regardless of the VNode setting)
   * ⚠️ **Protects against accidents, not attacks** – the password is stored as a PBKDF2 hash, but anyone who can edit the INI file can disable the mode
   * **Forgot the password?** Close the client and set `KioskModeEnabled=True` to `False` in `meshhessen-client.ini` (or clear the `KioskPasswordHash=…` line and set a new one)
+
+<details>
+<summary>🔒 <b>Screenshot:</b> kiosk settings</summary>
+
+Kiosk / training mode – lockable UI for shared stations (settings):
+<img alt="Meshhessen Client – kiosk and training mode: lockable UI with password protection for shared stations" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/kiosk_settings.png" />
+</details>
 
 
 ## 💬 The Meshhessen Community
