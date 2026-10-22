@@ -42,7 +42,7 @@
     "downloadUrl": "https://github.com/SMLunchen/mh_windowsclient/releases/latest",
     "author": { "@type": "Organization", "name": "Meshhessen Community", "url": "https://www.meshhessen.de" },
     "softwareVersion": "1.6.4.7",
-    "screenshot": "https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map.png",
+    "screenshot": "https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map-with-dem-elevation-profile.png",
     "keywords": "Meshtastic, Windows, LoRa, Mesh, Telemetrie, Traceroute, Offline-Karte, PKI"
   }
   </script>
@@ -85,6 +85,26 @@
       color: #e6edf3;
     }
     .btn.secondary:hover { background: #30363d; }
+
+    /* ── Hero ── */
+    .claim { font-size: 1.45rem; font-weight: 700; color: #e6edf3; margin-bottom: 0.5rem; }
+    .chips { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; margin-bottom: 1.1rem; }
+    .chip { background: #21262d; border: 1px solid #30363d; border-radius: 20px; padding: 0.25rem 0.9rem; font-size: 0.85rem; color: #c9d1d9; }
+    .hero-shot { margin: 0 0 1.6rem; }
+    .hero-shot img { width: 100%; border-radius: 10px; border: 1px solid #30363d; display: block; }
+    .hero-shot .caption { color: #8b949e; font-size: 0.85rem; text-align: center; display: block; margin-top: 0.4rem; }
+
+    /* ── Feature highlight rows ── */
+    .feature-row { display: grid; grid-template-columns: 1.1fr 1fr; gap: 1.4rem; align-items: center; margin: 1.8rem 0; }
+    .feature-row.swap .feature-shot { order: 2; }
+    .feature-row .feature-shot img { width: 100%; border-radius: 8px; border: 1px solid #30363d; display: block; }
+    .feature-row h3 { margin-top: 0; font-size: 1.2rem; }
+    .feature-row p { font-size: 0.97rem; }
+    @media (max-width: 760px) {
+      .feature-row, .feature-row.swap { grid-template-columns: 1fr; }
+      .feature-row.swap .feature-shot { order: 0; }
+    }
+    .dl-note { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 0.8rem 1rem; font-size: 0.92rem; margin-top: 0.8rem; }
 
     /* ── Language switcher ── */
     .lang-bar {
@@ -283,23 +303,30 @@
 <body>
 
 <header>
-  <h1>Meshhessen Client</h1>
-  <p class="subtitle">
-    Kostenloser Windows-Client für Meshtastic-Geräte –
-    Offline-Karte, Telemetrie-Analyse, Traceroute und PKI-Entschlüsselung.
-    Keine Cloud, keine Installation.
+  <h1>📡 Meshhessen Client</h1>
+  <p class="claim" id="hero-claim">Dein Mesh. Deine Karte. Deine Kontrolle.</p>
+  <p class="subtitle" id="hero-sub">
+    Meshtastic auf deinem Windows-PC: Nachrichten senden, Funkstrecken analysieren,
+    Nodes verwalten – und auch ohne Internet den Überblick behalten.
+    Aus Hessen, für jedes Meshtastic-Mesh.
   </p>
-  <div class="badges">
+  <div class="chips" id="hero-chips">
+    <span class="chip">✔ Kostenlos &amp; Open Source</span>
+    <span class="chip">📴 Offline-fähig</span>
+    <span class="chip">🔌 USB · WLAN · Bluetooth</span>
+    <span class="chip">🪟 Windows 10/11</span>
+  </div>
+  <div>
+    <a class="btn" id="hero-dl" href="https://github.com/SMLunchen/mh_windowsclient/releases/latest">⬇ Für Windows herunterladen</a>
+    <a class="btn secondary" href="https://github.com/SMLunchen/mh_windowsclient">GitHub</a>
+    <a class="btn secondary" href="https://www.meshhessen.de">meshhessen.de</a>
+  </div>
+  <div class="badges" style="margin-top:1rem;">
     <img src="https://img.shields.io/badge/Windows-10%2F11-blue" alt="Windows 10/11" />
     <img src="https://img.shields.io/badge/.NET-8.0-purple" alt=".NET 8.0" />
     <img src="https://img.shields.io/github/v/release/SMLunchen/mh_windowsclient" alt="Release" />
     <img src="https://img.shields.io/github/license/SMLunchen/mh_windowsclient" alt="License" />
     <img src="https://img.shields.io/github/stars/SMLunchen/mh_windowsclient" alt="Stars" />
-  </div>
-  <div>
-    <a class="btn" href="https://github.com/SMLunchen/mh_windowsclient/releases/latest">⬇ Download (EXE)</a>
-    <a class="btn secondary" href="https://github.com/SMLunchen/mh_windowsclient">GitHub Repository</a>
-    <a class="btn secondary" href="https://www.meshhessen.de">meshhessen.de</a>
   </div>
   <div class="lang-bar">
     <button class="lang-btn active" onclick="setLang('de')" id="btn-de">🇩🇪 Deutsch</button>
@@ -311,13 +338,83 @@
 <div class="section active" id="de">
 <main>
 
+  <div class="hero-shot">
+    <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map-with-dem-elevation-profile.png" target="_blank" rel="noopener">
+      <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map-with-dem-elevation-profile.png"
+           alt="Meshhessen Client – 3D-Gelände (SRTM-Höhenmodell) mit Meshtastic-Nodes auf der Vektorkarte" />
+    </a>
+    <span class="caption">⛰ 3D-Gelände mit Node-Positionen auf der Vektorkarte – einer von vielen Blicken auf dein Mesh</span>
+  </div>
+
   <div class="whats-new">
     <span class="vbadge">v1.6.4.7</span>
     <span class="summary">🛰️ Traceroute: ehrliche MQTT-Badges pro Teilstrecke · 🔗 Nachbar-Datenbank von falschen 0-dB-Links bereinigt · ✕ kaputte Symbole repariert · ℹ️ Node-Info zeigt „Zuerst/Zuletzt gesehen" (Node-Info-Rework &amp; Dashboard-Dark-Mode-Fix seit 1.6.4.6).</span>
     <a href="changelog.html">Changelog ansehen →</a>
   </div>
 
-  <h2>Features</h2>
+  <h2>Was du damit machst</h2>
+
+  <div class="feature-row">
+    <div class="feature-shot">
+      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/vector_in_action.png" target="_blank" rel="noopener"><img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/vector_in_action.png" alt="Meshhessen Client – Vektorkarte mit Meshtastic Node-Positionen" loading="lazy" /></a>
+    </div>
+    <div>
+      <h3>🗺️ Dein gesamtes Mesh auf einer Karte</h3>
+      <p>Offline-Karten (Raster + gestochen scharfe Vektorkarte), Node-Positionen, Traceroutes, Nachbar-Linien, Umwelt-Heatmaps, ⛰ 3D-Gelände und zuschaltbare Fach-Layer wie den 🚒 Feuerwehr-Layer. Einmal betrachtete Gebiete funktionieren auch ohne Internet.</p>
+    </div>
+  </div>
+
+  <div class="feature-row swap">
+    <div class="feature-shot">
+      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/elevation-profile.png" target="_blank" rel="noopener"><img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/elevation-profile.png" alt="Meshhessen Client – Höhenprofil einer Funkstrecke mit Fresnel-Zone" loading="lazy" /></a>
+    </div>
+    <div>
+      <h3>📡 Verstehe, wie gut dein Mesh wirklich funkt</h3>
+      <p><strong>Echte HF-Nachbarn</strong> statt „irgendwann mal via MQTT gehört", SNR in beide Richtungen – und per Rechtsklick das <strong>Höhenprofil jeder Funkstrecke</strong> mit Sichtlinie und Fresnel-Zone. Unterscheide echte Funkverbindungen von MQTT-Strecken und finde heraus, ob ein Berg im Weg steht.</p>
+    </div>
+  </div>
+
+  <div class="feature-row">
+    <div class="feature-shot">
+      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/telemetry-dashboard.png" target="_blank" rel="noopener"><img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/telemetry-dashboard.png" alt="Meshhessen Client – Telemetrie-Dashboard mit Widgets und Schwellwert-Alarmen" loading="lazy" /></a>
+    </div>
+    <div>
+      <h3>📊 Erkenne Probleme, bevor Verbindungen ausfallen</h3>
+      <p>Frei konfigurierbares Telemetrie-Dashboard mit 11 Widget-Typen, Schwellwert-Alarmen als Windows-Toast, Tag/Nacht-Schattierung und Vollbild für Wandmonitore. Dazu Node-Statistiken und LED-Ampeln für Signal, Nachbarn, Pfad-Stabilität und Mesh-Health.</p>
+    </div>
+  </div>
+
+  <div class="feature-row swap">
+    <div class="feature-shot">
+      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/messaging.png" target="_blank" rel="noopener"><img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/messaging.png" alt="Meshhessen Client – Kanal-Chat und Direktnachrichten" loading="lazy" /></a>
+    </div>
+    <div>
+      <h3>💬 Kommuniziere direkt über dein Funknetz</h3>
+      <p>Kanalnachrichten, Direktnachrichten, Reaktionen und optionale Nachrichten-Historie – bequem am PC, ohne Cloud-Zwang. Inklusive client-seitiger PKI-Entschlüsselung und 🚨 SOS/Alert-Bell. Entfernte Nodes verwaltest du per Fernkonfiguration gleich mit.</p>
+    </div>
+  </div>
+
+  <h2>Für deinen Einsatzzweck</h2>
+  <div class="grid">
+    <div class="card" style="--card-accent:#58a6ff">
+      <h3>📶 Mesh-Betreiber</h3>
+      <p>Antennenstandorte analysieren, Signalverläufe vergleichen und instabile Funkstrecken mit Höhenprofil und Fresnel-Zone identifizieren.</p>
+    </div>
+    <div class="card" style="--card-accent:#3fb950">
+      <h3>🏕️ Outdoor &amp; Offline</h3>
+      <p>Karten herunterladen, Standorte darstellen und unabhängig von einer Internetverbindung arbeiten – auch auf dem T-Deck per SD-Karten-Assistent.</p>
+    </div>
+    <div class="card" style="--card-accent:#e3b341">
+      <h3>🚒 Übungen &amp; Notfunk</h3>
+      <p>Lageübersicht, Nachrichten, Feuerwehr-/Rettungs-Layer und Kiosk-Modus auf einer Oberfläche – als Unterstützung für Ausbildung und Übungen. Kein zertifiziertes BOS- oder Alarmierungssystem.</p>
+    </div>
+    <div class="card" style="--card-accent:#bc8cff">
+      <h3>🔬 Technikbegeisterte</h3>
+      <p>Geräte vollständig konfigurieren, Telemetrie auswerten, entfernte Nodes administrieren und Apps über den Virtual Node anbinden.</p>
+    </div>
+  </div>
+
+  <h2>Alle Funktionen im Überblick</h2>
   <div class="grid">
     <div class="card" style="--card-accent:#58a6ff">
       <span class="badge-new">NEU</span>
@@ -598,7 +695,7 @@
     </li>
     <li>
       <strong>Hohe Kanalauslastung (&gt; 25 %):</strong>
-      Modem-Preset auf <em>Short Slow</em> setzen (höhere Spreading Factor = weniger Airtime).
+      Modem-Preset auf <em>Short Slow</em> setzen (höhere Datenrate durch niedrigeren Spreading Factor = kürzere Airtime pro Paket).
       Position-Update-Rate in der Firmware reduzieren (z.B. auf alle 10–30 Minuten).
       Telemetrie-Intervalle (Gerät, Umwelt) erhöhen.
       Unnötige Broadcasts (z.B. häufige Nachrichten) minimieren.
@@ -806,8 +903,10 @@
       <a href="https://github.com/SMLunchen/mh_windowsclient/releases/latest">Neueste <code>MeshhessenClient.exe</code></a> herunterladen
     </li>
     <li>Meshtastic-Gerät per USB anstecken</li>
-    <li>Doppelklick auf <code>MeshhessenClient.exe</code> – fertig. Keine Installation nötig.</li>
+    <li>Doppelklick auf <code>MeshhessenClient.exe</code> – die App startet ohne Installer (portabel, alles bleibt im EXE-Ordner).</li>
   </ol>
+
+  <p class="dl-note">💡 <strong>Windows SmartScreen:</strong> Beim ersten Start kann Windows vor einem „unbekannten Herausgeber" warnen – normal bei unsignierten Open-Source-Downloads. <strong>„Weitere Informationen → Trotzdem ausführen"</strong> startet die App. Zum Verifizieren die SHA-256-Prüfsumme aus dem GitHub-Release vergleichen: <code>Get-FileHash MeshhessenClient.exe</code> (PowerShell).</p>
 
   <div class="disclaimer">
     Der Meshhessen Client ist ein inoffizieller Community-Client für Meshtastic-Geräte und steht in keiner
@@ -822,13 +921,83 @@
 <div class="section" id="en">
 <main>
 
+  <div class="hero-shot">
+    <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map-with-dem-elevation-profile.png" target="_blank" rel="noopener">
+      <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map-with-dem-elevation-profile.png"
+           alt="Meshhessen Client – 3D terrain (SRTM elevation model) with Meshtastic nodes on the vector map" />
+    </a>
+    <span class="caption">⛰ 3D terrain with node positions on the vector map – one of many views of your mesh</span>
+  </div>
+
   <div class="whats-new">
     <span class="vbadge">v1.6.4.7</span>
     <span class="summary">🛰️ Traceroute: honest per-segment MQTT badges · 🔗 neighbor database cleaned of fake 0 dB links · ✕ broken glyphs repaired · ℹ️ node info shows "first/last seen" (node-info rework &amp; dashboard dark-mode fix since 1.6.4.6).</span>
     <a href="changelog.html">View changelog →</a>
   </div>
 
-  <h2>Features</h2>
+  <h2>What you do with it</h2>
+
+  <div class="feature-row">
+    <div class="feature-shot">
+      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/vector_in_action.png" target="_blank" rel="noopener"><img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/vector_in_action.png" alt="Meshhessen Client – vector map with Meshtastic node positions" loading="lazy" /></a>
+    </div>
+    <div>
+      <h3>🗺️ Your whole mesh on one map</h3>
+      <p>Offline maps (raster + razor-sharp vector), node positions, traceroutes, neighbor lines, environment heatmaps, ⛰ 3D terrain and optional special layers like the 🚒 fire service layer. Areas viewed once keep working without internet.</p>
+    </div>
+  </div>
+
+  <div class="feature-row swap">
+    <div class="feature-shot">
+      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/elevation-profile.png" target="_blank" rel="noopener"><img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/elevation-profile.png" alt="Meshhessen Client – elevation profile of a radio link with Fresnel zone" loading="lazy" /></a>
+    </div>
+    <div>
+      <h3>📡 Understand how well your mesh really performs</h3>
+      <p><strong>Real RF neighbors</strong> instead of "heard via MQTT at some point", SNR in both directions – and a right-click <strong>elevation profile for every radio link</strong> with line of sight and Fresnel zone. Tell genuine radio links from MQTT paths and find out whether a hill is in the way.</p>
+    </div>
+  </div>
+
+  <div class="feature-row">
+    <div class="feature-shot">
+      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/telemetry-dashboard.png" target="_blank" rel="noopener"><img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/telemetry-dashboard.png" alt="Meshhessen Client – telemetry dashboard with widgets and threshold alerts" loading="lazy" /></a>
+    </div>
+    <div>
+      <h3>📊 Spot problems before links fail</h3>
+      <p>Freely configurable telemetry dashboard with 11 widget types, threshold alerts as Windows toasts, day/night shading and fullscreen for wall monitors. Plus node statistics and LED health indicators for signal, neighbors, path stability and mesh health.</p>
+    </div>
+  </div>
+
+  <div class="feature-row swap">
+    <div class="feature-shot">
+      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/messaging.png" target="_blank" rel="noopener"><img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/messaging.png" alt="Meshhessen Client – channel chat and direct messages" loading="lazy" /></a>
+    </div>
+    <div>
+      <h3>💬 Communicate right over your radio network</h3>
+      <p>Channel messages, direct messages, reactions and optional message history – comfortably on your PC, no cloud required. Including client-side PKI decryption and 🚨 SOS/alert bell. Remote nodes are managed via remote admin, too.</p>
+    </div>
+  </div>
+
+  <h2>For your use case</h2>
+  <div class="grid">
+    <div class="card" style="--card-accent:#58a6ff">
+      <h3>📶 Mesh operators</h3>
+      <p>Analyze antenna sites, compare signal trends and identify unstable radio links with elevation profile and Fresnel zone.</p>
+    </div>
+    <div class="card" style="--card-accent:#3fb950">
+      <h3>🏕️ Outdoor &amp; offline</h3>
+      <p>Download maps ahead of time, display positions and work fully independent of an internet connection – T-Deck included via the SD-card assistant.</p>
+    </div>
+    <div class="card" style="--card-accent:#e3b341">
+      <h3>🚒 Exercises &amp; emergency comms</h3>
+      <p>Situation overview, messages, fire/rescue layers and kiosk mode on a single surface – as support for training and exercises. Not a certified public-safety or alerting system.</p>
+    </div>
+    <div class="card" style="--card-accent:#bc8cff">
+      <h3>🔬 Tinkerers</h3>
+      <p>Fully configure devices, analyze telemetry, administer remote nodes and connect apps via the Virtual Node.</p>
+    </div>
+  </div>
+
+  <h2>All features at a glance</h2>
   <div class="grid">
     <div class="card" style="--card-accent:#58a6ff">
       <span class="badge-new">NEW</span>
@@ -1107,7 +1276,7 @@
     </li>
     <li>
       <strong>High channel utilization (&gt; 25 %):</strong>
-      Switch modem preset to <em>Short Slow</em> (higher spreading factor = less airtime per packet).
+      Switch modem preset to <em>Short Slow</em> (higher data rate via a lower spreading factor = shorter airtime per packet).
       Reduce position update rate in firmware (e.g. every 10–30 minutes).
       Increase telemetry intervals (device, environment). Minimize unnecessary broadcasts.
     </li>
@@ -1306,8 +1475,10 @@
       Download the latest <a href="https://github.com/SMLunchen/mh_windowsclient/releases/latest"><code>MeshhessenClient.exe</code></a>
     </li>
     <li>Plug in your Meshtastic device via USB</li>
-    <li>Double-click <code>MeshhessenClient.exe</code> – done. No installation required.</li>
+    <li>Double-click <code>MeshhessenClient.exe</code> – the app runs without an installer (portable, everything stays in the EXE folder).</li>
   </ol>
+
+  <p class="dl-note">💡 <strong>Windows SmartScreen:</strong> on first launch Windows may warn about an "unknown publisher" – normal for unsigned open-source downloads. <strong>"More info → Run anyway"</strong> starts the app. To verify, compare the SHA-256 checksum from the GitHub release: <code>Get-FileHash MeshhessenClient.exe</code> (PowerShell).</p>
 
   <div class="disclaimer">
     The Meshhessen Client is an unofficial community client for Meshtastic devices and is not affiliated
@@ -1336,11 +1507,32 @@
 </footer>
 
 <script>
+  const heroTexts = {
+    de: {
+      claim: 'Dein Mesh. Deine Karte. Deine Kontrolle.',
+      sub: 'Meshtastic auf deinem Windows-PC: Nachrichten senden, Funkstrecken analysieren, Nodes verwalten – und auch ohne Internet den Überblick behalten. Aus Hessen, für jedes Meshtastic-Mesh.',
+      chips: ['✔ Kostenlos & Open Source', '📴 Offline-fähig', '🔌 USB · WLAN · Bluetooth', '🪟 Windows 10/11'],
+      dl: '⬇ Für Windows herunterladen'
+    },
+    en: {
+      claim: 'Your mesh. Your map. Your control.',
+      sub: 'Meshtastic on your Windows PC: send messages, analyze radio links, manage nodes – and keep the full picture even without internet. From Hesse, for every Meshtastic mesh.',
+      chips: ['✔ Free & open source', '📴 Offline-capable', '🔌 USB · WiFi · Bluetooth', '🪟 Windows 10/11'],
+      dl: '⬇ Download for Windows'
+    }
+  };
+
   function setLang(lang) {
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
     document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
     document.getElementById(lang).classList.add('active');
     document.getElementById('btn-' + lang).classList.add('active');
+    const t = heroTexts[lang];
+    document.getElementById('hero-claim').textContent = t.claim;
+    document.getElementById('hero-sub').textContent = t.sub;
+    document.getElementById('hero-dl').textContent = t.dl;
+    document.getElementById('hero-chips').innerHTML =
+      t.chips.map(c => '<span class="chip">' + c + '</span>').join('');
     // update html lang attribute for accessibility/SEO
     document.documentElement.lang = lang;
     history.replaceState(null, '', '#' + lang);
