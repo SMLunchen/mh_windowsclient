@@ -420,6 +420,8 @@ public partial class MainWindow
             var payload = new
             {
                 image = img.DataUri,
+                w = img.Width,
+                h = img.Height,
                 coords = new[]
                 {
                     new[] { img.MinLon, img.MaxLat },   // top-left (NW)

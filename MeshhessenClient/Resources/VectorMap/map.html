@@ -316,6 +316,7 @@ function envBoxHoverHide(id) {
 // bands, legend } or null. The raster uses linear resampling → soft, blended edges;
 // contour lines mark the band boundaries. Re-added after a style(data) reload.
 let envSurf = null;
+let envImgDims = null; // "WxH" of the texture currently held by the image source
 const ENV_IMG_SRC = 'env-img-src';
 const ENV_IMG_LYR = 'env-img-layer';
 const ENV_CONT_SRC = 'env-cont-src';
@@ -329,6 +330,7 @@ function setEnvSurface(payload) {
   envSurf = payload || null;
   updateEnvSurface();
   updateEnvLegend();
+  applyTerrain(); // heatmap active ⇄ 3D drape suspended (image sources clip per terrain tile)
 }
 
 function segsFC(segs) {
@@ -362,6 +364,7 @@ function labelsFC(labels) {
 function removeEnvSurfaceLayers() {
   [ENV_LBL_LYR, ENV_BORDER_LYR, ENV_CONT_LYR, ENV_IMG_LYR].forEach(function (id) { if (map.getLayer(id)) map.removeLayer(id); });
   [ENV_LBL_SRC, ENV_BORDER_SRC, ENV_CONT_SRC, ENV_IMG_SRC].forEach(function (id) { if (map.getSource(id)) map.removeSource(id); });
+  envImgDims = null;
 }
 
 function updateEnvSurface() {
@@ -371,16 +374,25 @@ function updateEnvSurface() {
     if (!envSurf || !envSurf.image) { removeEnvSurfaceLayers(); post('envheat', { points: 0, added: false }); return; }
 
     // Smooth colour image (linear resampling → soft edges).
+    // MapLibre's ImageSource.updateImage keeps the OLD texture size — the grid's
+    // pixel dimensions change with the node bounding box, and a wider image got
+    // clipped at the previous width (sharp vertical edge). updateImage is only
+    // safe while the dimensions match; otherwise recreate the image source.
+    const dims = (envSurf.w && envSurf.h) ? (envSurf.w + 'x' + envSurf.h) : null;
     const imgSrc = map.getSource(ENV_IMG_SRC);
-    if (imgSrc && imgSrc.updateImage) {
+    if (imgSrc && imgSrc.updateImage && dims && dims === envImgDims) {
       imgSrc.updateImage({ url: envSurf.image, coordinates: envSurf.coords });
     } else {
-      if (imgSrc) removeEnvSurfaceLayers();
+      if (map.getLayer(ENV_IMG_LYR)) map.removeLayer(ENV_IMG_LYR);
+      if (map.getSource(ENV_IMG_SRC)) map.removeSource(ENV_IMG_SRC);
       map.addSource(ENV_IMG_SRC, { type: 'image', url: envSurf.image, coordinates: envSurf.coords });
+      // Keep the fill UNDER the contour/border lines when those layers already exist
+      const beforeId = map.getLayer(ENV_CONT_LYR) ? ENV_CONT_LYR : undefined;
       map.addLayer({
         id: ENV_IMG_LYR, type: 'raster', source: ENV_IMG_SRC,
         paint: { 'raster-resampling': 'linear', 'raster-opacity': 1, 'raster-fade-duration': 0 }
-      });
+      }, beforeId);
+      envImgDims = dims;
     }
 
     // Band-boundary contour lines, then the heavier outer border of the whole area.
@@ -672,7 +684,14 @@ function applyTerrain() {
           type: 'raster-dem', tiles: [terrainCfg.url], tileSize: 256,
           encoding: 'mapbox', minzoom: 5, maxzoom: 10
         });
-      map.setTerrain({ source: 'terrain-dem', exaggeration: terrainCfg.ex });
+      // 3D draping (setTerrain) renders raster/image layers per terrain tile
+      // (render-to-texture) — an IMAGE source spanning tile boundaries gets cut
+      // off at hard vertical/horizontal edges there (known MapLibre limitation).
+      // While the environment heatmap image is shown, suspend the 3D drape and
+      // keep only the hillshade look; it comes back when the heatmap is cleared.
+      const envActive = !!(envSurf && envSurf.image);
+      if (envActive) { try { map.setTerrain(null); } catch (e) { } }
+      else map.setTerrain({ source: 'terrain-dem', exaggeration: terrainCfg.ex });
       if (!map.getLayer('terrain-hillshade'))
         map.addLayer({ id: 'terrain-hillshade', type: 'hillshade', source: 'terrain-dem',
           paint: { 'hillshade-exaggeration': 0.35 } }, firstSymbolLayerId());

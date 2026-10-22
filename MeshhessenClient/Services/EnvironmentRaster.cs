@@ -15,6 +15,9 @@ public static class EnvironmentRaster
     {
         public string DataUri = "";      // "data:image/png;base64,…"
         public double MinLon, MinLat, MaxLon, MaxLat;   // image extent (grid-centre span)
+        public int Width, Height;        // pixel dimensions — MapLibre's updateImage keeps
+                                         // the old texture size, so a size change must
+                                         // recreate the image source (else: clipped edge)
     }
 
     /// <param name="rgbAt">normalised value t (0..1) → (r,g,b).</param>
@@ -95,6 +98,8 @@ public static class EnvironmentRaster
             MaxLon = g.Lon0 + (g.Nx - 0.5) * g.DLon,
             MinLat = g.Lat0 + 0.5 * g.DLat,
             MaxLat = g.Lat0 + (g.Ny - 0.5) * g.DLat,
+            Width = w,
+            Height = h,
         };
     }
 }

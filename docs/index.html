@@ -340,6 +340,8 @@
         <li>OSM Standard, OSM Dark, OpenTopoMap</li>
         <li><strong>NEU: Vektorkarten (Vorschau)</strong> – gestochen scharf, kleinere Offline-Daten, Stil-Updates ohne Client-Update</li>
         <li><strong>NEU: 🚒 Feuerwehr-/Rettungs-Layer</strong> zuschaltbar – Hydranten, Wachen, Sirenen, Löschteiche, Defibrillatoren u. v. m.</li>
+        <li><strong>NEU: ⛰ 3D-Gelände</strong> – SRTM-Höhenmodell mit Schummerung (Vektorkarte), Strg+Ziehen neigt, Nordpfeil bei Drehung</li>
+        <li><strong>Umwelt- &amp; Funk-Overlay</strong> – Heatmap im Wetterdienst-Stil (Temperatur, Luftdruck, … sowie SNR/RSSI/Noise Floor)</li>
         <li><strong>Offline</strong> (vorheruntergeladen; Vektor: besuchte Gebiete werden automatisch gespeichert)</li>
         <li><strong>Online Meshhessen</strong> (lazy download, Deutschland) / <strong>Online OSM</strong> (weltweit, nur Raster)</li>
         <li>Node-Pins, GPS-Tracks, Wegpunkte, <strong>direkte Nachbar-Linien</strong> (0-Hop HF)</li>
@@ -374,6 +376,8 @@
       <h3>📊 Telemetrie-Analyse</h3>
       <ul>
         <li>Zeitreihen-Graphen: SNR, RSSI, Batterie</li>
+        <li><strong>NEU: Echte HF-Nachbarn</strong> – SNR in beide Richtungen (Direktempfang, Traceroutes, NeighborInfo)</li>
+        <li><strong>NEU: ⛰ Höhenprofil pro Funkstrecke</strong> – Gelände, Sichtlinie &amp; Fresnel-Zone</li>
         <li>LED-Ampeln: Signal, Nachbarn, Pfad, Mesh-Health</li>
         <li>Kanalauslastung &amp; Airtime-Analyse</li>
         <li>Nachtabfall-Erkennung &amp; Spannungsverlauf</li>
@@ -385,6 +389,7 @@
       <h3>📡 Traceroute</h3>
       <ul>
         <li>Hop-Tabelle mit SNR &amp; Entfernung</li>
+        <li><strong>NEU: „Nur HF"-Modus</strong> – Anfrage ohne MQTT-Uplink; ehrliche MQTT-Badges pro Teilstrecke</li>
         <li>Karten-Visualisierung mit Richtungspfeilen</li>
         <li>SNR-Popup per Klick auf Hop-Linie</li>
         <li>Zeitreihenfilter, Deduplizierung</li>
@@ -620,11 +625,46 @@
   <h2>📸 Screenshots <small style="font-size:0.75rem; color:#8b949e;">(klicken zum Vergrößern)</small></h2>
   <div class="screenshots">
     <div class="screenshot-item">
+      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map-with-dem-elevation-profile.png" target="_blank" rel="noopener">
+        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map-with-dem-elevation-profile.png"
+             alt="Meshhessen Client – 3D-Gelände (SRTM-Höhenmodell) mit Schummerung auf der Meshtastic-Vektorkarte" loading="lazy" />
+      </a>
+      <span class="caption">NEU: ⛰ 3D-Gelände – SRTM-Höhenmodell mit Schummerung (Strg+Ziehen)</span>
+    </div>
+    <div class="screenshot-item">
+      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/elevation-profile.png" target="_blank" rel="noopener">
+        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/elevation-profile.png"
+             alt="Meshhessen Client – Höhenprofil einer Meshtastic-Funkstrecke: SRTM-Gelände, Sichtlinie und Fresnel-Zone" loading="lazy" />
+      </a>
+      <span class="caption">NEU: ⛰ Höhenprofil pro Funkstrecke – Gelände, Sichtlinie &amp; Fresnel-Zone</span>
+    </div>
+    <div class="screenshot-item">
+      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map-environment-overlay-temp.png" target="_blank" rel="noopener">
+        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map-environment-overlay-temp.png"
+             alt="Meshhessen Client – Temperatur-Heatmap-Overlay mit Isothermen auf der Meshtastic-Karte" loading="lazy" />
+      </a>
+      <span class="caption">Umwelt-Overlay: Temperatur-Heatmap mit Isothermen &amp; Legende</span>
+    </div>
+    <div class="screenshot-item">
+      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map-environment-overlay-noisefloor.png" target="_blank" rel="noopener">
+        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map-environment-overlay-noisefloor.png"
+             alt="Meshhessen Client – Noise-Floor-Heatmap-Overlay: Funkqualität als Fläche auf der Meshtastic-Karte" loading="lazy" />
+      </a>
+      <span class="caption">Funk-Overlay: Noise Floor als Fläche (auch SNR/RSSI)</span>
+    </div>
+    <div class="screenshot-item">
+      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/mouse-over-telemetry-environment-map.png" target="_blank" rel="noopener">
+        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/mouse-over-telemetry-environment-map.png"
+             alt="Meshhessen Client – Mouse-Over-Messwert-Boxen des Umwelt-Overlays an den Meshtastic-Nodes" loading="lazy" />
+      </a>
+      <span class="caption">Umwelt-Overlay: Messwert-Boxen per Mouse-Over</span>
+    </div>
+    <div class="screenshot-item">
       <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/vector_in_action.png" target="_blank" rel="noopener">
         <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/vector_in_action.png"
              alt="Meshhessen Client – Vektorkarte (MapLibre GL) mit Meshtastic Node-Positionen unter Windows" loading="lazy" />
       </a>
-      <span class="caption">NEU: Vektorkarte – scharf in jeder Zoomstufe</span>
+      <span class="caption">Vektorkarte – scharf in jeder Zoomstufe</span>
     </div>
     <div class="screenshot-item">
       <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/vector_w_hydrant.png" target="_blank" rel="noopener">
@@ -713,9 +753,9 @@
     <div class="screenshot-item">
       <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node_neighbors.png" target="_blank" rel="noopener">
         <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node_neighbors.png"
-             alt="Meshhessen Client – Meshtastic Nachbar-Analyse: Direkte Verbindungen und SNR-Trends" loading="lazy" />
+             alt="Meshhessen Client – Echte HF-Nachbarn mit SNR in beide Richtungen und Höhenprofil-Kontextmenü" loading="lazy" />
       </a>
-      <span class="caption">Nachbar-Analyse mit SNR-Trends</span>
+      <span class="caption">Echte HF-Nachbarn (SNR beide Richtungen, Rechtsklick → Höhenprofil)</span>
     </div>
     <div class="screenshot-item">
       <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node_routing.png" target="_blank" rel="noopener">
@@ -803,6 +843,8 @@
         <li>OSM Standard, OSM Dark, OpenTopoMap</li>
         <li><strong>NEW: vector maps (preview)</strong> – razor-sharp, smaller offline data, style updates without a client update</li>
         <li><strong>NEW: 🚒 fire service / rescue layer</strong> – hydrants, stations, sirens, fire ponds, defibrillators and more</li>
+        <li><strong>NEW: ⛰ 3D terrain</strong> – SRTM elevation model with hillshading (vector map), Ctrl+drag to tilt, north arrow while rotated</li>
+        <li><strong>Environment &amp; radio overlay</strong> – weather-service-style heatmap (temperature, pressure, … plus SNR/RSSI/noise floor)</li>
         <li><strong>Offline</strong> (pre-downloaded; vector: visited areas cached automatically)</li>
         <li><strong>Online Meshhessen</strong> (lazy download, Germany) / <strong>Online OSM</strong> (worldwide, raster only)</li>
         <li>Node pins, GPS tracks, waypoints, <strong>direct neighbor lines</strong> (0-hop RF)</li>
@@ -836,6 +878,8 @@
       <h3>📊 Telemetry Analysis</h3>
       <ul>
         <li>Time-series graphs: SNR, RSSI, battery</li>
+        <li><strong>NEW: real RF neighbors</strong> – SNR in both directions (direct RX, traceroutes, NeighborInfo)</li>
+        <li><strong>NEW: ⛰ elevation profile per radio link</strong> – terrain, line of sight &amp; Fresnel zone</li>
         <li>LED indicators: signal, neighbors, path, mesh health</li>
         <li>Channel utilization &amp; airtime analysis</li>
         <li>Night-drop detection &amp; voltage profile</li>
@@ -847,6 +891,7 @@
       <h3>📡 Traceroute</h3>
       <ul>
         <li>Hop table with SNR &amp; distance</li>
+        <li><strong>NEW: "RF only" mode</strong> – request without MQTT uplink; honest per-segment MQTT badges</li>
         <li>Map visualization with direction arrows</li>
         <li>SNR popup on hop-line click</li>
         <li>Time range filter, deduplication</li>
@@ -1079,11 +1124,39 @@
   <h2>📸 Screenshots <small style="font-size:0.75rem; color:#8b949e;">(click to enlarge)</small></h2>
   <div class="screenshots">
     <div class="screenshot-item">
+      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map-with-dem-elevation-profile.png" target="_blank" rel="noopener">
+        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map-with-dem-elevation-profile.png"
+             alt="Meshhessen Client – 3D terrain (SRTM elevation model) with hillshading on the Meshtastic vector map" loading="lazy" />
+      </a>
+      <span class="caption">NEW: ⛰ 3D terrain – SRTM elevation model with hillshading (Ctrl+drag)</span>
+    </div>
+    <div class="screenshot-item">
+      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/elevation-profile.png" target="_blank" rel="noopener">
+        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/elevation-profile.png"
+             alt="Meshhessen Client – elevation profile of a Meshtastic radio link: SRTM terrain, line of sight and Fresnel zone" loading="lazy" />
+      </a>
+      <span class="caption">NEW: ⛰ elevation profile per radio link – terrain, line of sight &amp; Fresnel zone</span>
+    </div>
+    <div class="screenshot-item">
+      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map-environment-overlay-temp.png" target="_blank" rel="noopener">
+        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map-environment-overlay-temp.png"
+             alt="Meshhessen Client – temperature heatmap overlay with isotherms on the Meshtastic map" loading="lazy" />
+      </a>
+      <span class="caption">Environment overlay: temperature heatmap with isotherms &amp; legend</span>
+    </div>
+    <div class="screenshot-item">
+      <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map-environment-overlay-noisefloor.png" target="_blank" rel="noopener">
+        <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map-environment-overlay-noisefloor.png"
+             alt="Meshhessen Client – noise floor heatmap overlay: radio quality as a surface on the Meshtastic map" loading="lazy" />
+      </a>
+      <span class="caption">Radio overlay: noise floor as a surface (SNR/RSSI too)</span>
+    </div>
+    <div class="screenshot-item">
       <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/vector_in_action.png" target="_blank" rel="noopener">
         <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/vector_in_action.png"
              alt="Meshhessen Client – vector map (MapLibre GL) with Meshtastic node positions on Windows" loading="lazy" />
       </a>
-      <span class="caption">NEW: vector map – razor-sharp at any zoom</span>
+      <span class="caption">Vector map – razor-sharp at any zoom</span>
     </div>
     <div class="screenshot-item">
       <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/vector_w_hydrant.png" target="_blank" rel="noopener">
@@ -1174,7 +1247,7 @@
         <img src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node_neighbors.png"
              alt="Meshhessen Client – Meshtastic neighbor analysis: direct links and SNR trends" loading="lazy" />
       </a>
-      <span class="caption">Neighbor analysis with SNR trends</span>
+      <span class="caption">Real RF neighbors (SNR both directions, right-click → elevation profile)</span>
     </div>
     <div class="screenshot-item">
       <a href="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node_routing.png" target="_blank" rel="noopener">
