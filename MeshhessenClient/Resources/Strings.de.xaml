@@ -151,14 +151,14 @@
     <sys:String x:Key="StrImportTilesZip">Maptiles aus Zip laden...</sys:String>
     <sys:String x:Key="StrMapMode">Karten-Modus:</sys:String>
     <sys:String x:Key="StrMapModeOffline">Offline (Standard)</sys:String>
-    <sys:String x:Key="StrMapModeOfflineDesc">Nutzt vorher heruntergeladene Kacheln vom Meshhessen-Server. Alle drei Kartenstile verfügbar. Nur Deutschland abgedeckt. Kein Internet erforderlich.</sys:String>
-    <sys:String x:Key="StrMapModeOnlineOwn">Online – Meshhessen-Server (nur Deutschland)</sys:String>
-    <sys:String x:Key="StrMapModeOnlineOwnDesc">Lädt fehlende Kacheln bei Bedarf direkt vom Meshhessen-Server und speichert sie dauerhaft lokal. Alle drei Kartenstile verfügbar. Nur Deutschland abgedeckt. Internet erforderlich.</sys:String>
+    <sys:String x:Key="StrMapModeOfflineDesc">Nutzt vorher heruntergeladene Kacheln vom Meshhessen-Server. Alle drei Kartenstile verfügbar. Abdeckung: Deutschland, Österreich, Schweiz (DACH). Kein Internet erforderlich.</sys:String>
+    <sys:String x:Key="StrMapModeOnlineOwn">Online – Meshhessen-Server (DACH)</sys:String>
+    <sys:String x:Key="StrMapModeOnlineOwnDesc">Lädt fehlende Kacheln bei Bedarf direkt vom Meshhessen-Server und speichert sie dauerhaft lokal. Alle drei Kartenstile verfügbar. Abdeckung: Deutschland, Österreich, Schweiz (DACH). Internet erforderlich.</sys:String>
     <sys:String x:Key="StrMapModeOnlineCustom">Online – eigener Tile-Server</sys:String>
     <sys:String x:Key="StrMapModeOnlineCustomDesc">Lädt fehlende Kacheln bei Bedarf vom selbst konfigurierten Tile-Server (Tile-URLs unten) und speichert sie dauerhaft lokal. Öffentliche OSM-/OpenTopoMap-Server sind hier nicht zulässig – dafür den Modus „Online – OpenStreetMap" verwenden. Internet erforderlich.</sys:String>
     <sys:String x:Key="StrCustomTileServerPublicBlocked">Der Modus „Online – eigener Tile-Server" kann nicht mit öffentlichen OSM-/OpenTopoMap-URLs verwendet werden (Tile-Usage-Policy). Bitte einen eigenen Server eintragen oder den Modus „Online – OpenStreetMap" wählen.</sys:String>
     <sys:String x:Key="StrMapModeOnlineOsm">Online – OpenStreetMap (weltweit)</sys:String>
-    <sys:String x:Key="StrMapModeOnlineOsmWarn">⚠ Bitte beachten: Der OSM-Tile-Server ist spendenfinanziert und nur für interaktive Nutzung vorgesehen. Bitte diesen Modus nur nutzen, wenn kein Meshhessen-Server verfügbar ist (z. B. außerhalb Deutschlands). Nur der Standard-Kartenstil ist verfügbar (kein Topo/Dark). Kein manueller Tile-Download in diesem Modus. Angesehene Kacheln werden lokal zwischengespeichert.</sys:String>
+    <sys:String x:Key="StrMapModeOnlineOsmWarn">⚠ Bitte beachten: Der OSM-Tile-Server ist spendenfinanziert und nur für interaktive Nutzung vorgesehen. Bitte diesen Modus nur nutzen, wenn kein Meshhessen-Server verfügbar ist (z. B. außerhalb der DACH-Region). Nur der Standard-Kartenstil ist verfügbar (kein Topo/Dark). Kein manueller Tile-Download in diesem Modus. Angesehene Kacheln werden lokal zwischengespeichert.</sys:String>
     <sys:String x:Key="StrMapModeOnlineOsmSourceLocked">Im OSM-Online-Modus ist nur die Standardkarte verfügbar.</sys:String>
     <sys:String x:Key="StrMapRenderMode">Kartendarstellung:</sys:String>
     <sys:String x:Key="StrMapRenderRaster">Raster (bewährt, maximal kompatibel)</sys:String>
@@ -619,7 +619,7 @@
     <sys:String x:Key="StrTdDocLine1">Tiles werden lokal gespeichert und funktionieren offline.</sys:String>
     <sys:String x:Key="StrTdDocLine2">Du kannst mehrere Regionen nacheinander herunterladen (z.B. erst Hessen, dann Bayern).</sys:String>
     <sys:String x:Key="StrTdDocLine3">Höhere Zoom-Stufen (12+) benötigen viele Tiles. Beispiel: Hessen Zoom 1-12 ≈ 25.000 Tiles.</sys:String>
-    <sys:String x:Key="StrTdDocLine4">Respektiere bitte die OSM-Nutzungsbedingungen (max ~2 Anfragen/Sekunde).</sys:String>
+    <sys:String x:Key="StrTdDocLine4">Geladen wird vom Meshhessen- oder eigenen Tile-Server; öffentliche OSM-/OpenTopoMap-Server sind für den Download gesperrt (Tile-Policy).</sys:String>
     <sys:String x:Key="StrTdSelectState">Bundesland wählen (optional):</sys:String>
     <sys:String x:Key="StrTdManualEntry">(Manuelle Eingabe)</sys:String>
     <sys:String x:Key="StrTdNorth">Nord (max Lat):</sys:String>
@@ -1437,7 +1437,7 @@ Grün ≤15% | Gelb 15–25% | Rot &gt;25% | Grau = keine Airtime-Daten</sys:Str
 
     <!-- TDeck Wizard: common -->
     <sys:String x:Key="StrTDeckTitle">T-Deck Karten-Assistent</sys:String>
-    <sys:String x:Key="StrTDeckGermanyOnly">ℹ️ Offline-Karten sind nur für Deutschland verfügbar.</sys:String>
+    <sys:String x:Key="StrTDeckGermanyOnly">ℹ️ Offline-Karten sind für die DACH-Region verfügbar (Deutschland, Österreich, Schweiz).</sys:String>
     <sys:String x:Key="StrTDeckBack">◀ Zurück</sys:String>
     <sys:String x:Key="StrTDeckNext">Weiter ▶</sys:String>
     <sys:String x:Key="StrTDeckCancel">Abbrechen</sys:String>
@@ -1454,7 +1454,7 @@ Was macht dieser Assistent?
   • Wählt Zoom-Stufe und Kartentyp (OSM, OpenTopo, OSM Dark)
   • Kopiert bereits vorhandene Tiles direkt — und lädt fehlende nach
 
-ℹ️ Karten sind nur für Deutschland verfügbar (eigener Meshhessen-Tile-Server).
+ℹ️ Karten sind für die DACH-Region verfügbar (eigener Meshhessen-Tile-Server; Schnellauswahl: deutsche Bundesländer, per Freestyle auch AT/CH).
 
 Die Downloads sind additiv: Bereits vorhandene Tiles auf der SD-Karte werden nicht erneut übertragen.</sys:String>
 

@@ -61,5 +61,5 @@ All messages are logged automatically under `[EXE directory]/logs/`:
 * [📨 Messaging & communication](messaging.md)
 * [📊 Telemetry & radio analysis](telemetry.md)
 * [🔧 Node management & remote admin](node-management.md)
-* [🧰 Tools: Virtual Node, T-Deck assistant, kiosk mode](tools.md)
+* [🖧 Virtual Node](virtual-node.md) · [🔧 T-Deck assistant](t-deck.md) · [🔒 Kiosk mode](kiosk.md)
 * [🏗️ Technology & protocol](technical.md)

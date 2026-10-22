@@ -65,9 +65,9 @@ Kanal-Chat und Direktnachrichten mit Reaktionen, Antworten und optionaler Nachri
 | | |
 |---|---|
 | **📶 Mesh-Betreiber** | Antennenstandorte analysieren, Signalverläufe vergleichen, instabile Funkstrecken mit Höhenprofil und Fresnel-Zone identifizieren |
-| **🏕️ Outdoor & Offline** | Karten vorab herunterladen, Standorte darstellen, komplett ohne Internetverbindung arbeiten — auch auf dem T-Deck ([SD-Karten-Assistent](docs/de/tools.md)) |
+| **🏕️ Outdoor & Offline** | Karten vorab herunterladen, Standorte darstellen, komplett ohne Internetverbindung arbeiten — auch auf dem T-Deck ([SD-Karten-Assistent](docs/de/t-deck.md)) |
 | **🚒 Übungen & Notfunk** | Lageübersicht, Nachrichten, Feuerwehr-/Rettungs-Layer und Kiosk-Modus auf einer Oberfläche — als Unterstützung für Ausbildung und Übungen (kein zertifiziertes BOS-/Alarmierungssystem) |
-| **🔬 Technikbegeisterte** | Geräte vollständig konfigurieren, Telemetrie auswerten, entfernte Nodes administrieren, Apps per [Virtual Node](docs/de/tools.md) anbinden |
+| **🔬 Technikbegeisterte** | Geräte vollständig konfigurieren, Telemetrie auswerten, entfernte Nodes administrieren, Apps per [Virtual Node](docs/de/virtual-node.md) anbinden |
 
 ## 📚 Dokumentation
 
@@ -79,7 +79,7 @@ Kanal-Chat und Direktnachrichten mit Reaktionen, Antworten und optionaler Nachri
 | [📊 Telemetrie & Funkanalyse](docs/de/telemetrie.md) | [📊 Telemetry & radio analysis](docs/en/telemetry.md) |
 | [📡 Traceroute](docs/de/traceroute.md) | [📡 Traceroute](docs/en/traceroute.md) |
 | [🔧 Node-Verwaltung & Fernkonfiguration](docs/de/node-verwaltung.md) | [🔧 Node management & remote admin](docs/en/node-management.md) |
-| [🧰 Tools: Virtual Node, T-Deck, Kiosk](docs/de/tools.md) | [🧰 Tools: Virtual Node, T-Deck, kiosk](docs/en/tools.md) |
+| [🖧 Virtual Node](docs/de/virtual-node.md) · [🔧 T-Deck](docs/de/t-deck.md) · [🔒 Kiosk](docs/de/kiosk.md) | [🖧 Virtual Node](docs/en/virtual-node.md) · [🔧 T-Deck](docs/en/t-deck.md) · [🔒 Kiosk](docs/en/kiosk.md) |
 | [🏗️ Technik & Protokoll](docs/de/technik.md) | [🏗️ Technology & protocol](docs/en/technical.md) |
 
 📖 **Komfortabel lesen:** Dieselben Kapitel gibt es als durchsuchbares Handbuch unter [meshhessenclient.de/handbuch](https://meshhessenclient.de/handbuch/).
@@ -140,11 +140,11 @@ The free, native **Windows client for Meshtastic devices**: send messages, analy
 * **📊 Spot problems before links die** – configurable **telemetry dashboard** (11 widget types, threshold toasts, fullscreen for wall monitors), day/night statistics, LED health indicators → [Telemetry](docs/en/telemetry.md)
 * **💬 Communicate comfortably from your PC** – channel chat & DMs with reactions, replies and optional history, client-side **PKI decryption** (X25519 + AES-256-CCM), 🚨 alert bell/SOS → [Messaging](docs/en/messaging.md)
 * **🔧 Configure everything** – full device configuration, **remote admin** across relay/MQTT paths, favorites sync → [Node management](docs/en/node-management.md)
-* **🧰 Power tools** – Virtual-Node TCP proxy for phone apps, T-Deck SD-card map assistant, kiosk mode for shared stations → [Tools](docs/en/tools.md)
+* **🧰 Power tools** – Virtual-Node TCP proxy for phone apps, T-Deck SD-card map assistant, kiosk mode for shared stations → [Virtual Node](docs/en/virtual-node.md) · [T-Deck](docs/en/t-deck.md) · [Kiosk](docs/en/kiosk.md)
 
 ## 📚 Documentation
 
-[🚀 Getting started](docs/en/getting-started.md) · [🗺️ Map](docs/en/map.md) · [📨 Messaging](docs/en/messaging.md) · [📊 Telemetry](docs/en/telemetry.md) · [📡 Traceroute](docs/en/traceroute.md) · [🔧 Node management](docs/en/node-management.md) · [🧰 Tools](docs/en/tools.md) · [🏗️ Technology](docs/en/technical.md) · [Changelog](CHANGELOG.md)
+[🚀 Getting started](docs/en/getting-started.md) · [🗺️ Map](docs/en/map.md) · [📨 Messaging](docs/en/messaging.md) · [📊 Telemetry](docs/en/telemetry.md) · [📡 Traceroute](docs/en/traceroute.md) · [🔧 Node management](docs/en/node-management.md) · [🖧 Virtual Node](docs/en/virtual-node.md) · [🔧 T-Deck](docs/en/t-deck.md) · [🔒 Kiosk](docs/en/kiosk.md) · [🏗️ Technology](docs/en/technical.md) · [Changelog](CHANGELOG.md)
 
 📖 **Prefer a searchable manual?** The same chapters live at [meshhessenclient.de/handbuch](https://meshhessenclient.de/handbuch/).
 

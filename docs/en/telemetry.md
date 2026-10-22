@@ -6,7 +6,7 @@
 
 * **Persistent telemetry database** – received packet and device data is stored locally in a SQLite database
 * **Telemetry Dashboard** – freely configurable widget dashboard with named dashboards (📊 button in the toolbar):
-  * **11 widget types:** line, area, bar, scatter, gauge, stat value, heatmap, histogram, candlestick, state timeline, clock
+  * **14 widget types:** line, area, bar, scatter, gauge, stat value, heatmap, histogram, candlestick, state timeline, ranking, multi-stat, mesh health, clock
   * Multi-node support, all metrics: SNR, RSSI, battery, voltage, channel/TX utilization, temperature, humidity, pressure, packets/h, noise floor, RX/TX stats
   * Drag-and-drop arrangement, freely resizable, editable, duplicatable, auto-refresh
   * **Zoom/pan in charts** (survives auto-refresh), day/night shading, threshold lines with **Windows toast alerts** on crossings
@@ -22,17 +22,17 @@
 
 **Goal:** a dashboard that watches your solar router's battery and warns you before it runs dry overnight.
 
-1. **Open:** 📊 button in the main window toolbar → the dashboard window starts with "Dashboard 1" ("+ New" creates more named dashboards, e.g. "Solar monitoring")
-2. **Add a widget:** "+ Add Widget" → pick a type (for battery: **line**), tick the node(s), metric **battery (%)**, range **7d** → save. Widgets can be dragged around and resized via the grip in the lower right
-3. **Set the alert:** enter your limit into the widget's **Threshold** field (e.g. `30`). The threshold line appears in the chart; when the latest value **crosses** it you get a **Windows toast** (transition only — no constant nagging)
+1. **Open:** 📊 button in the main window toolbar → on first open the window is empty; "+ New" creates your first dashboard (suggested name "Dashboard 1" — call it e.g. "Solar monitoring")
+2. **Add a widget:** "+ Add Widget" → pick a type (for battery: **time series/line**), tick the node(s), metric **battery (%)**, range **7 days** (the default) → save. On the finished card you can switch via the 1d/7d/14d/30d buttons, reorder via the ⠿ grip and resize via the grip in the lower right
+3. **Set the alert:** enter your limit into the widget's **Threshold** field (e.g. `30`). The threshold line appears in the chart; when the value **crosses** it on a refresh you get a **Windows toast** (transition only — no constant nagging)
 4. **Keep it fresh:** auto-refresh top right (e.g. 30 s); if the node rarely sends on its own, add it to the polling plan via the **📥 Polling** button (max. 4 nodes, mesh-friendly)
-5. **Success check:** the widget shows a curve with day/night shading; the last refresh time is shown at the bottom. For a test, set the threshold just past the current value — the toast must fire immediately
-6. **Reading the values:** if the battery drops more than ~15–20 % overnight, check the [metrics explainer on the landing page](https://meshhessenclient.de/?lang=en#telemetry); SNR/RSSI interpretation lives in the [glossary](glossary.md)
+5. **Success check & alert test:** the widget shows a curve with day/night shading; the last refresh time is shown at the bottom. Test the alert in two steps: first set the threshold on the same side as the current value (e.g. well below the battery level) and wait for one refresh — this first check silently records the baseline. Then move the threshold past the current value and press "↺ Refresh" (or wait for the auto-refresh): now the toast fires
+6. **Reading the values:** if the battery drops more than ~15–20 % overnight, see the chapter [Understanding the values](metrics.md) (night drop, voltage); SNR/RSSI interpretation lives there and in the [glossary](glossary.md)
 
 **Typical pitfalls:**
 
 * *Widget stays empty* → no data for this node/metric in the telemetry database yet (the node doesn't send that metric → enable polling or right-click "Request information")
-* *No toast despite threshold* → toasts fire on the **transition** only; if the value was already past the threshold when you set it, the alert comes with the next crossing. Also check: are Windows notifications allowed for apps?
+* *No toast despite threshold* → checks only happen on a **refresh** (auto-refresh, "↺" or saving in the editor), never while typing — and the very first check after opening silently records the baseline; only the next **transition** is reported. Also check: are Windows notifications allowed for apps?
 * *Zoom keeps resetting* → zoom/pan survives auto-refresh; the manual "Refresh" button deliberately resets the view
 
 <!-- SCREENSHOT REQUEST: widget editor open (type/node/metric/threshold visible) -->
@@ -45,11 +45,20 @@
   * Time-series graphs for SNR, RSSI, packet rate and device data (battery, voltage)
   * **Real RF neighbors** – proven by direct reception, traceroute hop pairs and NeighborInfo packets, with SNR in both directions (fills over time; classic "heard" list as automatic fallback until then)
   * **LocalStats** (newer firmware): noise floor, RX bad/duplicates, TX relay and more (routing tab)
-* **LED indicators** in the main window: 📶 signal, 👥 neighbors, 🛤️ path stability, 🌐 mesh health, 🌤️ weather
+* **"Net:" LED strip** in the main window — the state of the whole visible mesh at a glance:
+  * **Weather/ST** – "signal weather": short-term SNR/RSSI trend of all nodes (last 6 h)
+  * **LT-SNR** – antenna health: long-term SNR trend of all nodes (last 7 days)
+  * **Nbrs** – neighbor quality: average link quality to neighbor nodes
+  * **Path** – route stability: frequency of route changes in the mesh
+  * **Mesh Health** – overall score 0–100 % from path costs, route changes, reception rate and channel utilization
 
 ## ⛰ Elevation profile per radio link
 
-Right-click a neighbor (or a traceroute hop): SRTM terrain profile with line of sight and 60 % Fresnel zone (4/3 earth, 868 MHz), including a verdict whether the path is clear or terrain is in the way:
+Real RF neighbors with SNR in both directions — a **right-click** on a neighbor (or a traceroute hop) opens the link's elevation profile:
+
+![Meshhessen Client – real RF neighbors with SNR in both directions and elevation-profile context menu](https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node_neighbors.png)
+
+The elevation profile then shows the SRTM terrain profile of the radio link with line of sight and 60 % Fresnel zone (4/3 earth, 868 MHz), including a verdict whether the path is clear or terrain is in the way:
 <img alt="Meshhessen Client – elevation profile of a Meshtastic radio link: SRTM terrain, line of sight and Fresnel zone" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/elevation-profile.png" />
 
 ## More screenshots
@@ -67,10 +76,6 @@ Node telemetry overview (signal):
 
 ![Meshhessen Client – Meshtastic node telemetry overview: signal analysis, routing, airtime and neighbor statistics](https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node-telemetry.png)
 
-Real RF neighbors with SNR in both directions – right-click opens the link's elevation profile:
-
-![Meshhessen Client – real RF neighbors with SNR in both directions and elevation-profile context menu](https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node_neighbors.png)
-
 Airtime analysis per node (TX/RX airtime, channel utilization):
 
 ![Meshhessen Client – Meshtastic airtime analysis: TX airtime, RX airtime and channel utilization per node](https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node_airtime.png)
@@ -83,4 +88,4 @@ Routing statistics (hop count, path stability, path change rate):
 
 ![Meshhessen Client – Meshtastic routing statistics: hop count, path stability and path change rate](https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node_routing.png)
 
-> 📖 What the individual metrics mean (SNR, RSSI, channel utilization, hop costs …) is explained in detail in the [telemetry help on the website](https://meshhessenclient.de/#telemetrie).
+> 📖 What the individual metrics mean (SNR, RSSI, channel utilization, hop costs …) is explained in detail in the chapter [Understanding the values](metrics.md).

@@ -1,4 +1,5 @@
 
+
 <!doctype html>
 <html lang="en" class="no-js">
   <head>
@@ -57,6 +58,17 @@
 
     
     
+  
+  
+  
+    
+    
+      <link rel="alternate" hreflang="en" href="https://meshhessenclient.de/handbuch/en/map/" />
+      <link rel="alternate" hreflang="de" href="https://meshhessenclient.de/handbuch/de/karte/" />
+      <link rel="alternate" hreflang="x-default" href="https://meshhessenclient.de/handbuch/de/karte/" />
+    
+  
+
   </head>
   
   
@@ -549,6 +561,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../metrics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Understanding the values
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../traceroute/" class="md-nav__link">
         
   
@@ -603,14 +642,68 @@
   
   
     <li class="md-nav__item">
-      <a href="../tools/" class="md-nav__link">
+      <a href="../virtual-node/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Virtual Node · T-Deck · kiosk
+    Virtual Node
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../t-deck/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    T-Deck map assistant
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../kiosk/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Kiosk mode
   
 
     
@@ -814,17 +907,42 @@
 <h1 id="map-offline-use">🗺️ Map &amp; Offline Use<a class="headerlink" href="#map-offline-use" title="Permanent link">&para;</a></h1>
 <p><a href="../">← Handbook home</a> · <a href="https://meshhessenclient.de/handbuch/de/karte/">🇩🇪 Deutsche Version</a></p>
 <h2 id="map-styles-vector-map">Map styles &amp; vector map<a class="headerlink" href="#map-styles-vector-map" title="Permanent link">&para;</a></h2>
-<ul>
-<li><strong>Three map styles:</strong> OSM Standard, OSM Dark Mode, OpenTopoMap (topographic)</li>
-<li><strong>Vector maps</strong> (switchable in settings, raster remains the default):</li>
-<li>Razor-sharp at every zoom level (MapLibre GL), much smaller offline data, style updates without a client update</li>
-<li><strong>🚒 Fire service / rescue layer</strong> (see below)</li>
-<li>Layer selection in the settings and via the 🗂️ button directly on the map; while a layer is off, not a single byte is loaded for it</li>
-<li><strong>Automatic offline cache:</strong> areas viewed online keep working without internet; plus a <strong>vector offline package downloader</strong> (federal state / custom bounding box, topo extras and extra layers as opt-in)</li>
-<li>Full feature set: node pins, traceroutes, neighbor lines, position tracks and the right-click menu also work on the vector map</li>
-<li><strong>⛰ 3D terrain</strong> – a real elevation model (SRTM, 90 m) with hillshading, toggled via the 🗂️ layer popup; Ctrl+drag tilts the map, a north arrow appears while rotated/tilted (click to re-north); areas viewed once keep working offline</li>
-<li>Requires the Microsoft WebView2 runtime (pre-installed on Windows 11); without it the client falls back to raster automatically</li>
-</ul>
+<p><strong>Which map style shows what?</strong></p>
+<table>
+<thead>
+<tr>
+<th>Style</th>
+<th>What it shows</th>
+<th>Best for</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>OSM Standard</strong></td>
+<td>Classic street map: places, roads, buildings, POIs</td>
+<td>Everyday use &amp; navigation — the all-rounder</td>
+</tr>
+<tr>
+<td><strong>OSM Dark Mode</strong></td>
+<td>The same map in a dark rendering</td>
+<td>Night operation, radio room / wall monitor, matches the client's dark mode</td>
+</tr>
+<tr>
+<td><strong>OpenTopoMap</strong></td>
+<td>Topographic map with contour lines and terrain shading</td>
+<td>Site and range planning: the terrain between nodes at a glance</td>
+</tr>
+</tbody>
+</table>
+<p>All three styles are available on the raster and the vector map alike. The <strong>vector map</strong> (MapLibre GL) renders them razor-sharp and additionally brings the optional special-purpose layers and 3D terrain:
+* <strong>Vector maps</strong> (switchable in settings, raster remains the default):
+  * Razor-sharp at every zoom level (MapLibre GL), much smaller offline data, style updates without a client update
+  * <strong>🚒 Fire service / rescue layer</strong> (see below)
+  * Layer selection in the settings and via the 🗂️ button directly on the map; while a layer is off, not a single byte is loaded for it
+  * <strong>Automatic offline cache:</strong> areas viewed online keep working without internet; plus a <strong>vector offline package downloader</strong> (federal state / custom bounding box, topo extras and extra layers as opt-in)
+  * Full feature set: node pins, traceroutes, neighbor lines, position tracks and the right-click menu also work on the vector map
+  * <strong>⛰ 3D terrain</strong> – a real elevation model (SRTM; DEM coverage up to ~52° N) with hillshading, toggled via the 🗂️ layer popup; Ctrl+drag tilts the map, a north arrow appears while rotated/tilted (click to re-north); areas viewed once keep working offline
+  * Requires the Microsoft WebView2 runtime (pre-installed on Windows 11); without it the client falls back to raster automatically</p>
 <p>The vector map (MapLibre GL) – razor-sharp at every zoom level, with node pins:
 <img alt="Meshhessen Client – vector map (MapLibre GL) with Meshtastic node positions on Windows" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/vector_in_action.png" /></p>
 <p><strong>⛰ 3D terrain</strong> – a real elevation model (SRTM) with hillshading on the vector map, tilted via Ctrl+drag:
@@ -840,12 +958,12 @@
 </thead>
 <tbody>
 <tr>
-<td><strong>Offline</strong> (default)</td>
+<td><strong>Offline (default)</strong></td>
 <td>Pre-downloaded tiles from the Meshhessen server. No internet required.</td>
 <td>Germany, Austria &amp; Switzerland (DACH)</td>
 </tr>
 <tr>
-<td><strong>Online – Meshhessen server</strong></td>
+<td><strong>Online – Meshhessen Server (DACH)</strong></td>
 <td>Tiles fetched on demand from <code>tile.meshhessenclient.de</code> and stored permanently. All three styles.</td>
 <td>Germany, Austria &amp; Switzerland (DACH)</td>
 </tr>
@@ -855,7 +973,7 @@
 <td>depends on server</td>
 </tr>
 <tr>
-<td><strong>Online – OpenStreetMap</strong></td>
+<td><strong>Online – OpenStreetMap (worldwide)</strong></td>
 <td>Worldwide coverage via <code>tile.openstreetmap.org</code>; standard map only; OSM tile policy compliant.</td>
 <td>Worldwide</td>
 </tr>
@@ -866,16 +984,16 @@
 </blockquote>
 <h2 id="downloading-tiles-offline-use">Downloading tiles (offline use)<a class="headerlink" href="#downloading-tiles-offline-use" title="Permanent link">&para;</a></h2>
 <blockquote>
-<p>⚠️ <strong>Important:</strong> Bulk tile download is intended only for the Meshhessen tile server (<code>tile.meshhessenclient.de</code>) – bulk downloads violate the OSM tile policy.</p>
+<p>✅ <strong>Downloading from the Meshhessen server is explicitly encouraged</strong> — <code>tile.meshhessenclient.de</code> exists for exactly this purpose; feel free to grab your whole region (be sensible about zoom level and area). Bulk downloads are only blocked from <strong>public servers</strong> such as OSM/OpenTopoMap — their tile policies forbid them.</p>
 </blockquote>
 <ol>
-<li><strong>Settings → Map:</strong> select map mode <strong>Offline</strong> (or "Online – Meshhessen") and pick a map style</li>
-<li>Click <strong>"Download Tiles"</strong> — the download dialog opens:</li>
+<li><strong>Settings → Map / Tiles:</strong> select map mode <strong>Offline</strong> and rendering <strong>Raster</strong> — the download button is only visible in this combination (the vector map has its own vector-package downloader, see above)</li>
+<li>Click <strong>"Download Tiles…"</strong> — the download dialog opens; you pick the map style right in the dialog:</li>
 </ol>
 <p><img width="567" alt="Meshhessen Client – offline map tile downloader: bounding box, zoom levels and progress" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/tile_downloader.png" /></p>
 <ol>
-<li><strong>Define the area:</strong> enter the bounding box as <code>latMin,lonMin,latMax,lonMax</code> — e.g. Hesse: <code>49.3,7.7,51.7,10.2</code></li>
-<li><strong>Pick zoom levels:</strong> <code>1-12</code> is enough for an overview, <code>1-14</code> is the recommendation for towns, <code>15+</code> only for small areas — <strong>every extra level quadruples</strong> the tile count</li>
+<li><strong>Define the area:</strong> pick a federal state from the list or enter the bounding box manually into the four fields <strong>North / South / East / West</strong> — Hesse is pre-filled (N 51.7 · S 49.4 · E 10.3 · W 7.8)</li>
+<li><strong>Pick zoom levels</strong> (min/max fields): up to <code>12</code> is enough for an overview, up to <code>14</code> (the default) for towns, <code>15+</code> only for small areas — <strong>every extra level quadruples</strong> the tile count</li>
 <li><strong>Start the download</strong> and watch the progress — existing tiles are skipped, so aborting + restarting is completely harmless</li>
 <li>Tiles land under <code>maptiles/</code>, stay available offline permanently and are portable via USB</li>
 <li>Don't forget the <strong>offline test</strong> (see below)</li>
@@ -888,12 +1006,12 @@
 </ul>
 <p><strong>How much storage?</strong> Rough raster-map figures: Hesse up to zoom 14 ≈ 2–4 GB per map style; all of Germany up to zoom 14 ≈ 20–30 GB. The vector map is far more compact — a vector offline package for a federal state is usually below 1 GB.</p>
 <blockquote>
-<p>⚠️ <strong>On SD cards, factor in the allocation unit size</strong> (e.g. for the T-Deck): many tiles are only a few hundred bytes but each occupies a full cluster. With the default formatting of large cards (often 128 KB clusters) the real usage multiplies compared to the figures above. Format exFAT with <strong>4096-byte allocation units</strong> — the <a href="../tools/">T-Deck assistant</a> recommends and does exactly that.</p>
+<p>⚠️ <strong>On SD cards, factor in the allocation unit size</strong> (e.g. for the T-Deck): many tiles are only a few hundred bytes but each occupies a full cluster. With the default formatting of large cards (often 128 KB clusters) the real usage multiplies compared to the figures above. Format exFAT with <strong>4096-byte allocation units</strong> — the <a href="../t-deck/">T-Deck assistant</a> recommends and does exactly that.</p>
 </blockquote>
 <p><strong>Offline test:</strong> switch the map mode to <strong>Offline</strong> (or briefly disconnect the network) and pan/zoom through your target region — whatever renders now is genuinely stored locally. Missing tiles show as blank areas; extend the download area/zoom in that case.</p>
 <h2 id="on-the-map">On the map<a class="headerlink" href="#on-the-map" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>Node positions</strong> as colored pins; right-click a node → set color, send DM, edit note, start traceroute, open telemetry</li>
+<li><strong>Node positions</strong> as colored pins; right-click a node → node info, send DM, set color, edit note, pin, start traceroute, open telemetry/position track, request information</li>
 <li><strong>Node paths</strong> – record and display GPS position history</li>
 <li><strong>Direct neighbor lines</strong> – toggle in the legend box: lines to every node received <strong>directly over RF (0 hops, no MQTT)</strong>; gradient by <strong>SNR</strong> or <strong>age</strong>; a <strong>"Permanent"</strong> option shows every neighbor ever heard directly</li>
 <li><strong>Waypoints</strong> – show received waypoints; create and send via right-click on the map</li>

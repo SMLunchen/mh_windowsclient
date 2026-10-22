@@ -1,0 +1,24 @@
+{#
+  Kapitelgenaue hreflang-Paare für beide Handbuch-Builds (Review R7, P1):
+  extra.hreflang_map in mkdocs.yml / mkdocs.en.yml bildet die URL der aktuellen
+  Seite auf ihr Gegenstück in der anderen Sprache ab. Seiten ohne Eintrag
+  (z. B. Architektur) bekommen keine hreflang-Links.
+#}
+{% extends "base.html" %}
+
+{% block extrahead %}
+  {{ super() }}
+  {% set other = config.extra.hreflang_map.get(page.url) if config.extra.hreflang_map else none %}
+  {% if other %}
+    {% set self_url = config.site_url ~ page.url %}
+    {% if config.theme.language == 'de' %}
+      <link rel="alternate" hreflang="de" href="{{ self_url }}" />
+      <link rel="alternate" hreflang="en" href="{{ other }}" />
+      <link rel="alternate" hreflang="x-default" href="{{ self_url }}" />
+    {% else %}
+      <link rel="alternate" hreflang="en" href="{{ self_url }}" />
+      <link rel="alternate" hreflang="de" href="{{ other }}" />
+      <link rel="alternate" hreflang="x-default" href="{{ other }}" />
+    {% endif %}
+  {% endif %}
+{% endblock %}

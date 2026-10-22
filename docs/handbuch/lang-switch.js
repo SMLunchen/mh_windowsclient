@@ -8,9 +8,12 @@
     'karte': 'map',
     'nachrichten': 'messaging',
     'telemetrie': 'telemetry',
+    'messwerte': 'metrics',
     'traceroute': 'traceroute',
     'node-verwaltung': 'node-management',
-    'tools': 'tools',
+    'virtual-node': 'virtual-node',
+    't-deck': 't-deck',
+    'kiosk': 'kiosk',
     'technik': 'technical',
     'glossar': 'glossary'
   };

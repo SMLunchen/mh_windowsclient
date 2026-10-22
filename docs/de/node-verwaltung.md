@@ -12,7 +12,7 @@
   * **SNR/RSSI nur bei direktem Empfang** – Signalwerte werden nur angezeigt, wenn wir den Node direkt (0 Hops, kein MQTT) hören; bei Relay-Nodes zeigt die Spalte stattdessen die Hop-Anzahl
   * **Erweiterte Filter** – nach „zuletzt gesehen" (5 Min bis 60 Tage), MQTT-Nodes ausblenden, nur Favoriten, SNR-Einfärbung an/aus; Sortier-Dropdown im Kachelmodus
 * **Informationen anfordern** – Rechtsklick-Untermenü (Liste, Kachel, Karte) fordert wie die Android-App gezielt Daten von einem Node an: Benutzer-Info, Position, Geräte-/Umwelt-/Luftqualität-/Strom-/Host-Metriken, Signalqualität/Mesh-Statistik, PAX-Zähler
-* **Firmware-Version & Hardware-Modell** – werden automatisch beim Verbinden abgefragt und im Node-Info-Fenster angezeigt:
+* **Node-Info-Fenster** – Rechtsklick auf einen Node (Liste, Kachel, Karte oder Nachricht) → „ℹ️ Node Info“: Hardware-Modell, Rolle, PKI-Status, Akku, Signal, Zuerst/Zuletzt gesehen und Position. Die Firmware-Version des eigenen Geräts steht unter Einstellungen → Geräteinfo; die eines entfernten Nodes zeigt das Fernverwaltungs-Fenster:
 
 <img alt="Meshhessen Client – Node-Info-Fenster mit Rolle, Akku, Signal, Zuerst/Zuletzt gesehen" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node-info-window.png" />
 * **PKI-Schlüssel-Indikator** – 🔑-Spalte zeigt, ob der Public Key des Nodes bekannt ist
@@ -36,11 +36,11 @@ Vollständige Remote-Admin-Oberfläche für Favoriten-Nodes — funktioniert auc
 ### So administrierst du einen entfernten Node (Schritt für Schritt)
 
 1. **Voraussetzungen:** Dein Public Key muss auf dem Ziel-Node als Admin-Schlüssel eingetragen sein (Security-Tab des Ziel-Nodes, Admin-Schlüssel 1–3) — oder du nutzt einen gemeinsamen Admin-Channel. Außerdem muss der Ziel-Node den Public Key deines Nodes kennen (PKI).
-2. Ziel-Node als **Favorit** markieren (★ im Rechtsklick-Menü) — nur Favoriten bekommen den Menüpunkt
-3. Rechtsklick auf den Node → **„Fernverwaltung"** — der Client handelt einen Session-Schlüssel aus und lädt die Konfiguration (wahlweise alles sofort oder pro Tab beim Öffnen)
+2. Ziel-Node als **Favorit** markieren (★ im Rechtsklick-Menü) — der Auswahl-Dialog der Fernverwaltung listet nur Favoriten
+3. **„🛠️ Fernverwaltung"** öffnen (Rechtsklick in der Kachelansicht oder Einstellungen → Fernverwaltung) und im Dialog den Favoriten wählen — der Client handelt einen Session-Schlüssel aus und lädt die Konfiguration (wahlweise alles sofort oder pro Tab beim Öffnen). Nach dem ersten gültigen Zugriff markiert der Ziel-Node deinen Admin-Node übrigens automatisch als Favorit, damit dein Schlüssel dort nicht aus der Node-Datenbank verdrängt wird
 4. Einstellungen ändern → **„Speichern"** schreibt sie über Funk zurück; der Ziel-Node startet bei Bedarf neu
-5. **Typische Fehler:** Timeout ohne Antwort → Admin-Schlüssel fehlt auf dem Ziel oder der Node ist gerade nicht erreichbar (Traceroute testen); „kein Schlüssel" → Public Key des Ziels fehlt lokal (Node einmal direkt empfangen oder Key in `node_keys.csv` eintragen). Ablehnungen meldet der Client mit konkretem Grund statt still zu scheitern.
-6. Über mehrere Hops dauert jede Antwort einige Sekunden — der **Timeout** ist im Fenster einstellbar (Standard 120 s), einzelne Tabs lassen sich per „↻ Tab neu laden" wiederholen
+5. **Typische Fehler:** Timeout ohne Antwort → Admin-Schlüssel fehlt auf dem Ziel oder der Node ist gerade nicht erreichbar (Traceroute testen); PKI-Fehler → Public Key des Ziels fehlt lokal (Node einmal direkt empfangen oder per „📥 Informationen anfordern → Benutzer-Info" den Key ziehen). Ablehnungen meldet der Client mit konkretem Grund statt still zu scheitern.
+6. Über mehrere Hops dauert jede Antwort einige Sekunden — der **Timeout** ist einstellbar (Standard 30 s; im Fenster live 5–300 s), einzelne Tabs lassen sich per „↻ Tab neu laden" wiederholen
 
 Auch **Favoriten auf dem entfernten Gerät** lassen sich remote setzen/entfernen:
 <img alt="Meshhessen Client – Favoriten-Node remote auf dem entfernten Meshtastic-Gerät setzen" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/remote-admin-set-favorite-node.png" />
@@ -64,6 +64,6 @@ Vollständige Gerätekonfiguration direkt aus dem Client, alle Module auf einer 
 * **MQTT:** Server, Credentials, TLS, JSON-Modus, Root-Topic, Proxy-Modus, Map-Reporting mit Genauigkeitsstufe (Bits 10–19), MQTT-Proxy-Client-Funktion
 * **Telemetrie:** Geräte-, Umgebungs-, Luftqualitäts- und Energiemetrik-Intervalle
 * **Bluetooth:** Aktivieren, Pairing-Modus, fixer PIN; **BT-PIN ändern** direkt aus dem Client
-* **Security:** Public/Private Key anzeigen & generieren, Admin-Schlüssel, Managed Mode
+* **Security:** Public Key anzeigen (read-only), Private Key anzeigen/ändern, Admin-Schlüssel, Managed Mode
 * **Kanäle:** Alle 8 Kanäle – Rolle, Name, Uplink, Downlink, Positions-Genauigkeit (Bits 10–19, ~23 km bis ~45 m)
 * **Weitere Module:** Nachbar-Info, Store & Forward, Externe Benachrichtigung, Canned Messages, Range Test, Serial

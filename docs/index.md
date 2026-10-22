@@ -13,15 +13,15 @@ Willkommen im Handbuch des **Meshhessen Clients** — dem kostenlosen Windows-Cl
 |---|---|---|
 | [🚀 Schnellstart & Verbindung](de/schnellstart.md) | [🗺️ Karte & Offline-Nutzung](de/karte.md) | [📖 Glossar](de/glossar.md) |
 | | [📨 Nachrichten & Kommunikation](de/nachrichten.md) | [🏗️ Technik & Protokoll](de/technik.md) |
-| | [📊 Telemetrie & Funkanalyse](de/telemetrie.md) | |
+| | [📊 Telemetrie & Funkanalyse](de/telemetrie.md) | [📈 Messwerte verstehen](de/messwerte.md) |
 | | [📡 Traceroute](de/traceroute.md) | |
 | | [🔧 Node-Verwaltung & Fernkonfiguration](de/node-verwaltung.md) | |
-| | [🧰 Virtual Node · T-Deck · Kiosk](de/tools.md) | |
+| | [🖧 Virtual Node](de/virtual-node.md) · [🔧 T-Deck](de/t-deck.md) · [🔒 Kiosk](de/kiosk.md) | |
 
 **🎯 How-tos — Schritt für Schritt:**
 [Dashboard anlegen & Alarm einrichten](de/telemetrie.md#how-to-dashboard-anlegen-alarm-einrichten-werte-deuten) ·
 [Erste Nachricht & verschlüsselte DM](de/nachrichten.md#how-to-erste-nachricht-verschlusselte-dm-senden) ·
-[Handy-App über den PC verbinden](de/tools.md#how-to-handy-app-uber-den-pc-verbinden)
+[Handy-App über den PC verbinden](de/virtual-node.md#how-to-handy-app-uber-den-pc-verbinden)
 
 ## 🇬🇧 English → [full English manual](https://meshhessenclient.de/handbuch/en/)
 
@@ -29,10 +29,10 @@ Willkommen im Handbuch des **Meshhessen Clients** — dem kostenlosen Windows-Cl
 |---|---|---|
 | [🚀 Getting started & connection](https://meshhessenclient.de/handbuch/en/getting-started/) | [🗺️ Map & offline use](https://meshhessenclient.de/handbuch/en/map/) | [📖 Glossary](https://meshhessenclient.de/handbuch/en/glossary/) |
 | | [📨 Messaging & communication](https://meshhessenclient.de/handbuch/en/messaging/) | [🏗️ Technology & protocol](https://meshhessenclient.de/handbuch/en/technical/) |
-| | [📊 Telemetry & radio analysis](https://meshhessenclient.de/handbuch/en/telemetry/) | |
+| | [📊 Telemetry & radio analysis](https://meshhessenclient.de/handbuch/en/telemetry/) | [📈 Understanding the values](https://meshhessenclient.de/handbuch/en/metrics/) |
 | | [📡 Traceroute](https://meshhessenclient.de/handbuch/en/traceroute/) | |
 | | [🔧 Node management & remote admin](https://meshhessenclient.de/handbuch/en/node-management/) | |
-| | [🧰 Virtual Node · T-Deck · kiosk](https://meshhessenclient.de/handbuch/en/tools/) | |
+| | [🖧 Virtual Node](https://meshhessenclient.de/handbuch/en/virtual-node/) · [🔧 T-Deck](https://meshhessenclient.de/handbuch/en/t-deck/) · [🔒 Kiosk](https://meshhessenclient.de/handbuch/en/kiosk/) | |
 
 ---
 

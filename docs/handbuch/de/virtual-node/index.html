@@ -1,22 +1,23 @@
 
+
 <!doctype html>
-<html lang="en" class="no-js">
+<html lang="de" class="no-js">
   <head>
     
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Manual for the Meshhessen Client – the free Windows client for Meshtastic devices.">
+        <meta name="description" content="Handbuch des Meshhessen Clients – dem kostenlosen Windows-Client für Meshtastic-Geräte.">
       
       
       
-        <link rel="canonical" href="https://meshhessenclient.de/handbuch/en/tools/">
+        <link rel="canonical" href="https://meshhessenclient.de/handbuch/de/virtual-node/">
       
       
-        <link rel="prev" href="../node-management/">
+        <link rel="prev" href="../node-verwaltung/">
       
       
-        <link rel="next" href="../technical/">
+        <link rel="next" href="../t-deck/">
       
       
         
@@ -31,14 +32,14 @@
     
     
       
-        <title>Virtual Node · T-Deck · kiosk - Meshhessen Client – Manual</title>
+        <title>Virtual Node - Meshhessen Client – Handbuch</title>
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
       
         
-        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -51,12 +52,23 @@
       
     
     
-    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
     
     
+  
+  
+  
+    
+    
+      <link rel="alternate" hreflang="de" href="https://meshhessenclient.de/handbuch/de/virtual-node/" />
+      <link rel="alternate" hreflang="en" href="https://meshhessenclient.de/handbuch/en/virtual-node/" />
+      <link rel="alternate" hreflang="x-default" href="https://meshhessenclient.de/handbuch/de/virtual-node/" />
+    
+  
+
   </head>
   
   
@@ -76,8 +88,8 @@
     <div data-md-component="skip">
       
         
-        <a href="#tools-virtual-node-t-deck-assistant-kiosk-mode" class="md-skip">
-          Skip to content
+        <a href="#virtual-node-handy-apps-uber-den-pc-anbinden" class="md-skip">
+          Zum Inhalt
         </a>
       
     </div>
@@ -91,8 +103,8 @@
   
 
 <header class="md-header md-header--shadow" data-md-component="header">
-  <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href=".." title="Meshhessen Client – Manual" class="md-header__button md-logo" aria-label="Meshhessen Client – Manual" data-md-component="logo">
+  <nav class="md-header__inner md-grid" aria-label="Kopfzeile">
+    <a href="../.." title="Meshhessen Client – Handbuch" class="md-header__button md-logo" aria-label="Meshhessen Client – Handbuch" data-md-component="logo">
       
   <img src="https://meshhessenclient.de/favicon.ico" alt="logo">
 
@@ -105,13 +117,13 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            Meshhessen Client – Manual
+            Meshhessen Client – Handbuch
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Virtual Node · T-Deck · kiosk
+              Virtual Node
             
           </span>
         </div>
@@ -124,9 +136,9 @@
     
     
     
-    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent="light-blue"  aria-label="Light mode"  type="radio" name="__palette" id="__palette_0">
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent="light-blue"  aria-label="Helles Design"  type="radio" name="__palette" id="__palette_0">
     
-      <label class="md-header__button md-icon" title="Light mode" for="__palette_1" hidden>
+      <label class="md-header__button md-icon" title="Helles Design" for="__palette_1" hidden>
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
       </label>
     
@@ -134,9 +146,9 @@
     
     
     
-    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="black" data-md-color-accent="light-blue"  aria-label="Dark mode"  type="radio" name="__palette" id="__palette_1">
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="black" data-md-color-accent="light-blue"  aria-label="Dunkles Design"  type="radio" name="__palette" id="__palette_1">
     
-      <label class="md-header__button md-icon" title="Dark mode" for="__palette_0" hidden>
+      <label class="md-header__button md-icon" title="Dunkles Design" for="__palette_0" hidden>
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
       </label>
     
@@ -151,7 +163,7 @@
       <div class="md-header__option">
   <div class="md-select">
     
-    <button class="md-header__button md-icon" aria-label="Select language">
+    <button class="md-header__button md-icon" aria-label="Sprache wechseln">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m12.87 15.07-2.54-2.51.03-.03A17.5 17.5 0 0 0 14.07 6H17V4h-7V2H8v2H1v2h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2zm-2.62 7 1.62-4.33L19.12 17z"/></svg>
     </button>
     <div class="md-select__inner">
@@ -185,16 +197,16 @@
   <label class="md-search__overlay" for="__search"></label>
   <div class="md-search__inner" role="search">
     <form class="md-search__form" name="search">
-      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <input type="text" class="md-search__input" name="query" aria-label="Suche" placeholder="Suche" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
       <label class="md-search__icon md-icon" for="__search">
         
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
         
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
       </label>
-      <nav class="md-search__options" aria-label="Search">
+      <nav class="md-search__options" aria-label="Suche">
         
-        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+        <button type="reset" class="md-search__icon md-icon" title="Zurücksetzen" aria-label="Zurücksetzen" tabindex="-1">
           
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
         </button>
@@ -207,7 +219,7 @@
       <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
         <div class="md-search-result" data-md-component="search-result">
           <div class="md-search-result__meta">
-            Initializing search
+            Suche wird initialisiert
           </div>
           <ol class="md-search-result__list" role="presentation"></ol>
         </div>
@@ -219,7 +231,7 @@
     
     
       <div class="md-header__source">
-        <a href="https://github.com/SMLunchen/mh_windowsclient" title="Go to repository" class="md-source" data-md-component="source">
+        <a href="https://github.com/SMLunchen/mh_windowsclient" title="Zum Repository" class="md-source" data-md-component="source">
   <div class="md-source__icon md-icon">
     
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
@@ -255,16 +267,16 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href=".." title="Meshhessen Client – Manual" class="md-nav__button md-logo" aria-label="Meshhessen Client – Manual" data-md-component="logo">
+    <a href="../.." title="Meshhessen Client – Handbuch" class="md-nav__button md-logo" aria-label="Meshhessen Client – Handbuch" data-md-component="logo">
       
   <img src="https://meshhessenclient.de/favicon.ico" alt="logo">
 
     </a>
-    Meshhessen Client – Manual
+    Meshhessen Client – Handbuch
   </label>
   
     <div class="md-nav__source">
-      <a href="https://github.com/SMLunchen/mh_windowsclient" title="Go to repository" class="md-source" data-md-component="source">
+      <a href="https://github.com/SMLunchen/mh_windowsclient" title="Zum Repository" class="md-source" data-md-component="source">
   <div class="md-source__icon md-icon">
     
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
@@ -284,14 +296,14 @@
   
   
     <li class="md-nav__item">
-      <a href=".." class="md-nav__link">
+      <a href="../.." class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Manual
+    Handbuch
   
 
     
@@ -311,14 +323,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../getting-started/" class="md-nav__link">
+      <a href="../schnellstart/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Getting started & connection
+    Schnellstart & Verbindung
   
 
     
@@ -338,14 +350,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../map/" class="md-nav__link">
+      <a href="../karte/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Map & offline use
+    Karte & Offline-Nutzung
   
 
     
@@ -365,14 +377,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../messaging/" class="md-nav__link">
+      <a href="../nachrichten/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Messaging & communication
+    Nachrichten & Kommunikation
   
 
     
@@ -392,14 +404,41 @@
   
   
     <li class="md-nav__item">
-      <a href="../telemetry/" class="md-nav__link">
+      <a href="../telemetrie/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Telemetry & radio analysis
+    Telemetrie & Funkanalyse
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../messwerte/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Messwerte verstehen
   
 
     
@@ -446,14 +485,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../node-management/" class="md-nav__link">
+      <a href="../node-verwaltung/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Node management & remote admin
+    Node-Verwaltung & Fernkonfiguration
   
 
     
@@ -489,7 +528,7 @@
   <span class="md-ellipsis">
     
   
-    Virtual Node · T-Deck · kiosk
+    Virtual Node
   
 
     
@@ -507,7 +546,7 @@
   <span class="md-ellipsis">
     
   
-    Virtual Node · T-Deck · kiosk
+    Virtual Node
   
 
     
@@ -519,7 +558,7 @@
       
         
 
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+<nav class="md-nav md-nav--secondary" aria-label="Inhaltsverzeichnis">
   
   
   
@@ -528,71 +567,15 @@
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
-      Table of contents
+      Inhaltsverzeichnis
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#virtual-node-tools-tab" class="md-nav__link">
+  <a href="#how-to-handy-app-uber-den-pc-verbinden" class="md-nav__link">
     <span class="md-ellipsis">
       
-        🖧 Virtual Node (Tools tab)
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="🖧 Virtual Node (Tools tab)">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#how-to-connect-your-phone-app-through-the-pc" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        How-to: connect your phone app through the PC
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#t-deck-map-assistant-tools-tab" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        🔧 T-Deck Map Assistant (Tools tab)
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="🔧 T-Deck Map Assistant (Tools tab)">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#the-wizard-in-pictures" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        The wizard in pictures
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#kiosk-training-mode" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        🔒 Kiosk / training mode
+        How-to: Handy-App über den PC verbinden
       
     </span>
   </a>
@@ -614,14 +597,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../technical/" class="md-nav__link">
+      <a href="../t-deck/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Technology & protocol
+    T-Deck Karten-Assistent
   
 
     
@@ -641,14 +624,95 @@
   
   
     <li class="md-nav__item">
-      <a href="../glossary/" class="md-nav__link">
+      <a href="../kiosk/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Glossary
+    Kiosk-Modus
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../technik/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Technik & Protokoll
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architektur (Entwickler)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../glossar/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Glossar
   
 
     
@@ -674,7 +738,7 @@
                   <div class="md-sidebar__inner">
                     
 
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+<nav class="md-nav md-nav--secondary" aria-label="Inhaltsverzeichnis">
   
   
   
@@ -683,71 +747,15 @@
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
-      Table of contents
+      Inhaltsverzeichnis
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#virtual-node-tools-tab" class="md-nav__link">
+  <a href="#how-to-handy-app-uber-den-pc-verbinden" class="md-nav__link">
     <span class="md-ellipsis">
       
-        🖧 Virtual Node (Tools tab)
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="🖧 Virtual Node (Tools tab)">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#how-to-connect-your-phone-app-through-the-pc" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        How-to: connect your phone app through the PC
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#t-deck-map-assistant-tools-tab" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        🔧 T-Deck Map Assistant (Tools tab)
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="🔧 T-Deck Map Assistant (Tools tab)">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#the-wizard-in-pictures" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        The wizard in pictures
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#kiosk-training-mode" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        🔒 Kiosk / training mode
+        How-to: Handy-App über den PC verbinden
       
     </span>
   </a>
@@ -771,7 +779,7 @@
 
 
   
-    <a href="https://github.com/SMLunchen/mh_windowsclient/edit/master/docs/en/tools.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/SMLunchen/mh_windowsclient/edit/master/docs/de/virtual-node.md" title="Seite editieren" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -779,68 +787,32 @@
   
 
 
-<h1 id="tools-virtual-node-t-deck-assistant-kiosk-mode">🧰 Tools: Virtual Node, T-Deck Assistant &amp; Kiosk Mode<a class="headerlink" href="#tools-virtual-node-t-deck-assistant-kiosk-mode" title="Permanent link">&para;</a></h1>
-<p><a href="../">← Handbook home</a> · <a href="https://meshhessenclient.de/handbuch/de/tools/">🇩🇪 Deutsche Version</a></p>
-<h2 id="virtual-node-tools-tab">🖧 Virtual Node (Tools tab)<a class="headerlink" href="#virtual-node-tools-tab" title="Permanent link">&para;</a></h2>
+<h1 id="virtual-node-handy-apps-uber-den-pc-anbinden">🖧 Virtual Node – Handy-Apps über den PC anbinden<a class="headerlink" href="#virtual-node-handy-apps-uber-den-pc-anbinden" title="Permanent link">&para;</a></h1>
+<p><a href="../../">← Handbuch-Übersicht</a> · <a href="https://meshhessenclient.de/handbuch/en/virtual-node/">🇬🇧 English version</a></p>
 <ul>
-<li><strong>TCP proxy server</strong> – connect Meshtastic apps (Android/iOS) to the Meshhessen Client as if it were a real Meshtastic device</li>
-<li><strong>Configurable in the Tools tab:</strong> port (default: 4404), enable/disable, optionally block admin commands</li>
-<li><strong>Auto-start</strong> as soon as a connection to the physical node is established (when enabled)</li>
-<li><strong>Config replay:</strong> connecting apps receive all channels, node list and device config immediately</li>
-<li><strong>Bidirectional visibility:</strong> messages sent in the app appear in connected apps – and vice versa</li>
-<li><strong>Multi-client:</strong> multiple apps can connect simultaneously; status and connected IPs are shown in the Tools tab</li>
+<li><strong>TCP-Proxy-Server</strong> – verbinde Meshtastic-Apps (Android/iOS) direkt mit dem Meshhessen Client, als wäre er ein echtes Meshtastic-Gerät</li>
+<li><strong>Konfigurierbar im Tools-Tab:</strong> Port (Standard: 4404), ein-/ausschalten, „Admin-Befehle von Clients blockieren“</li>
+<li><strong>Automatischer Start:</strong> Die Checkbox „Virtual Node aktivieren“ bleibt gespeichert — der Server startet dann automatisch, sobald eine Verbindung mit dem physischen Node besteht</li>
+<li><strong>Config-Replay:</strong> verbindende Apps erhalten sofort alle Kanäle, Node-Liste und Gerätekonfig</li>
+<li><strong>Bidirektionale Sichtbarkeit:</strong> Nachrichten aus der App erscheinen in verbundenen Apps – und umgekehrt</li>
+<li><strong>Multi-Client:</strong> mehrere Apps gleichzeitig verbindbar; Status und verbundene IPs werden im Tools-Tab angezeigt</li>
 </ul>
-<h3 id="how-to-connect-your-phone-app-through-the-pc">How-to: connect your phone app through the PC<a class="headerlink" href="#how-to-connect-your-phone-app-through-the-pc" title="Permanent link">&para;</a></h3>
-<p><strong>Goal:</strong> the Meshtastic app on your phone shares the node attached to the PC — as if the client were a device of its own on the Wi-Fi.</p>
+<h2 id="how-to-handy-app-uber-den-pc-verbinden">How-to: Handy-App über den PC verbinden<a class="headerlink" href="#how-to-handy-app-uber-den-pc-verbinden" title="Permanent link">&para;</a></h2>
+<p><strong>Ziel:</strong> Die Meshtastic-App auf dem Handy nutzt den am PC angeschlossenen Node mit — als wäre der Client ein eigenes Gerät im WLAN.</p>
 <ol>
-<li><strong>Prerequisite:</strong> the client is connected to the physical node; phone and PC are on the same network (Wi-Fi)</li>
-<li><strong>Enable:</strong> Tools tab → switch on Virtual Node (default port <strong>4404</strong>); optionally set "block admin commands" and auto-start</li>
-<li><strong>Connect the phone:</strong> Meshtastic app → device selection → <strong>Network/TCP</strong> → enter the PC's IP address + port 4404 (find the IP via <code>ipconfig</code>; connected clients are listed in the Tools tab)</li>
-<li><strong>Success check:</strong> the app immediately loads channels, node list and configuration; a test message from the phone shows up in the client — and vice versa</li>
-<li><strong>Multiple devices:</strong> more apps can connect in parallel; the Tools tab shows status and IPs</li>
+<li><strong>Voraussetzung:</strong> Der Client ist mit dem physischen Node verbunden; Handy und PC hängen im selben Netz (WLAN)</li>
+<li><strong>Aktivieren:</strong> Tools-Tab → „Virtual Node aktivieren“ anhaken (Standard-Port <strong>4404</strong>). Die Einstellung bleibt gespeichert — der Server startet künftig automatisch bei jeder Node-Verbindung. Optional: „Admin-Befehle von Clients blockieren“</li>
+<li><strong>Handy verbinden:</strong> Meshtastic-App → Geräteauswahl → <strong>Netzwerk/TCP</strong> → IP-Adresse des PCs + Port 4404 eintragen (die PC-IP zeigt z. B. <code>ipconfig</code>; verbundene Clients listet der Tools-Tab)</li>
+<li><strong>Erfolgskontrolle:</strong> Die App lädt sofort Kanäle, Node-Liste und Konfiguration; eine Testnachricht vom Handy erscheint im Client — und umgekehrt</li>
+<li><strong>Mehrere Geräte:</strong> Weitere Apps können sich parallel verbinden; der Tools-Tab zeigt Status und IPs</li>
 </ol>
-<p><strong>Typical pitfalls:</strong></p>
+<p><strong>Typische Fehler:</strong></p>
 <ul>
-<li><em>App can't find the PC</em> → Windows Firewall asks for permission on first start — allow it (or add an inbound rule for port 4404); also verify phone and PC really share the same Wi-Fi/subnet</li>
-<li><em>Connected but no data</em> → the client itself is not connected to the node right now; the order is client ↔ node, then phone ↔ client</li>
-<li><em>Admin changes from the app don't apply</em> → "block admin commands" is active (a locked kiosk mode blocks them additionally)</li>
+<li><em>App findet den PC nicht</em> → die Windows-Firewall fragt beim ersten Start nach der Freigabe — zulassen (oder eine eingehende Regel für Port 4404 anlegen); außerdem prüfen, ob Handy und PC wirklich im selben WLAN/Subnetz sind</li>
+<li><em>Verbindung steht, aber keine Daten</em> → der Client selbst ist gerade nicht mit dem Node verbunden; die Reihenfolge ist Client ↔ Node, dann Handy ↔ Client</li>
+<li><em>Admin-Änderungen aus der App wirken nicht</em> → „Admin-Befehle von Clients blockieren“ ist aktiv (auch der gesperrte <a href="../kiosk/">Kiosk-Modus</a> blockiert sie zusätzlich)</li>
 </ul>
-<!-- SCREENSHOT REQUEST: Tools tab with Virtual Node active + a connected client IP -->
-
-<h2 id="t-deck-map-assistant-tools-tab">🔧 T-Deck Map Assistant (Tools tab)<a class="headerlink" href="#t-deck-map-assistant-tools-tab" title="Permanent link">&para;</a></h2>
-<ul>
-<li><strong>Prepare an SD card</strong> – guided 6-step wizard for loading offline maps onto a Meshtastic T-Deck SD card</li>
-<li><strong>Step 1 – Welcome:</strong> explains the workflow; coverage = Meshhessen tile server (DACH region; the quick picker lists German federal states, the freestyle rectangle also covers Austria/Switzerland)</li>
-<li><strong>Step 2 – Drive:</strong> shows all removable drives with size, free space and file system</li>
-<li><strong>Step 3 – Formatting:</strong> recommends <strong>exFAT with 4096-byte allocation units</strong> (T-Deck-optimal; small tiles ≈ 100 bytes → small AU saves a lot of space); formatting via UAC-elevated PowerShell with two confirmations</li>
-<li><strong>Step 4 – Area:</strong> by federal state (checkboxes), all of Germany, or <strong>freestyle</strong> (draw a rectangle on an interactive map)</li>
-<li><strong>Step 5 – Zoom &amp; style:</strong> zoom 8–17 with warnings at high levels; OSM / OSM Dark / OpenTopoMap</li>
-<li><strong>Step 6 – Transfer:</strong> additive – SD tile exists → skip; available locally → copy; otherwise → fetch from the tile server + cache locally</li>
-<li><strong>SD directory structure:</strong> <code>{drive}:\maps\OSM\{z}\{x}\{y}.png</code> (T-Deck compatible)</li>
-<li><strong>ZIP export</strong> – export local tiles as a ZIP (filterable by map style)</li>
-<li>Fully multilingual (German/English)</li>
-</ul>
-<h3 id="the-wizard-in-pictures">The wizard in pictures<a class="headerlink" href="#the-wizard-in-pictures" title="Permanent link">&para;</a></h3>
-<p>Steps 1–3: welcome, drive selection and formatting recommendation (exFAT, 4096 bytes):
-<img alt="Meshhessen Client – T-Deck map assistant step 1: welcome" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/t-deck-assistant-stage1.png" />
-<img alt="Meshhessen Client – T-Deck map assistant step 2: drive selection" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/t-deck-assistant-stage2.png" />
-<img alt="Meshhessen Client – T-Deck map assistant step 3: formatting (exFAT 4096)" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/t-deck-assistant-stage3.png" /></p>
-<p>Step 4: choose the map area — federal state, all of Germany or a freestyle rectangle on the map:
-<img alt="Meshhessen Client – T-Deck map assistant step 4: select map area on an interactive map" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/t-deck-assistant-stage4-select-maprange.png" /></p>
-<p>Steps 5 + 6: zoom/map style and the transfer running onto the SD card:
-<img alt="Meshhessen Client – T-Deck map assistant step 5: zoom and map style" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/t-deck-assistant-stage5.png" />
-<img alt="Meshhessen Client – T-Deck map assistant step 6: tiles being transferred to the SD card" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/t-deck-assistant-stage6-downloading.png" /></p>
-<h2 id="kiosk-training-mode">🔒 Kiosk / training mode<a class="headerlink" href="#kiosk-training-mode" title="Permanent link">&para;</a></h2>
-<p>For shared stations (club room, training, events):</p>
-<ul>
-<li>Enable in settings, set a password and choose what gets hidden while locked: tabs (Nodes, Channels, Settings, Info, Tools, Debug), node configuration, remote admin, telemetry dashboard, SOS button, Meshhessen quick-config</li>
-<li><strong>🔒 lock in the footer bar</strong> to lock/unlock (only shown once a password is set); unlock via password, the app always starts locked in kiosk mode</li>
-<li>While locked, <strong>admin commands from Virtual Node clients are additionally blocked</strong> (regardless of the VNode setting)</li>
-<li>⚠️ <strong>Protects against accidents, not attacks</strong> – the password is stored as a PBKDF2 hash, but anyone who can edit the INI file can disable the mode</li>
-<li><strong>Forgot the password?</strong> Close the client and set <code>KioskModeEnabled=True</code> to <code>False</code> in <code>meshhessen-client.ini</code> (or clear the <code>KioskPasswordHash=…</code> line and set a new one)</li>
-</ul>
-<p>Kiosk / training mode – lockable UI for shared stations (settings):
-<img alt="Meshhessen Client – kiosk and training mode: lockable UI with password protection for shared stations" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/kiosk_settings.png" /></p>
+<!-- SCREENSHOT-WUNSCH: Tools-Tab mit aktivem Virtual Node + verbundener Client-IP -->
 
 
 
@@ -864,7 +836,7 @@
           <button type="button" class="md-top md-icon" data-md-component="top" hidden>
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
-  Back to top
+  Zurück zum Seitenanfang
 </button>
         
       </main>
@@ -873,33 +845,33 @@
   
     
       
-      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+      <nav class="md-footer__inner md-grid" aria-label="Fußzeile" >
         
           
-          <a href="../node-management/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Node management &amp; remote admin">
+          <a href="../node-verwaltung/" class="md-footer__link md-footer__link--prev" aria-label="Zurück: Node-Verwaltung &amp; Fernkonfiguration">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
             </div>
             <div class="md-footer__title">
               <span class="md-footer__direction">
-                Previous
+                Zurück
               </span>
               <div class="md-ellipsis">
-                Node management & remote admin
+                Node-Verwaltung & Fernkonfiguration
               </div>
             </div>
           </a>
         
         
           
-          <a href="../technical/" class="md-footer__link md-footer__link--next" aria-label="Next: Technology &amp; protocol">
+          <a href="../t-deck/" class="md-footer__link md-footer__link--next" aria-label="Weiter: T-Deck Karten-Assistent">
             <div class="md-footer__title">
               <span class="md-footer__direction">
-                Next
+                Weiter
               </span>
               <div class="md-ellipsis">
-                Technology & protocol
+                T-Deck Karten-Assistent
               </div>
             </div>
             <div class="md-footer__button md-icon">
@@ -916,7 +888,7 @@
       <div class="md-copyright">
   
     <div class="md-copyright__highlight">
-      Made with ❤ by the Meshhessen Community · <a href="https://meshhessenclient.de/?lang=en">meshhessenclient.de</a>
+      Made with ❤ by the Meshhessen Community · <a href="https://meshhessenclient.de/">meshhessenclient.de</a>
     </div>
   
   
@@ -940,12 +912,12 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.sections", "navigation.top", "navigation.footer", "search.suggest", "search.highlight", "content.action.edit"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.sections", "navigation.top", "navigation.footer", "search.suggest", "search.highlight", "content.action.edit"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "In Zwischenablage kopiert", "clipboard.copy": "In Zwischenablage kopieren", "search.result.more.one": "1 weiteres Suchergebnis auf dieser Seite", "search.result.more.other": "# weitere Suchergebnisse auf dieser Seite", "search.result.none": "Keine Suchergebnisse", "search.result.one": "1 Suchergebnis", "search.result.other": "# Suchergebnisse", "search.result.placeholder": "Suchbegriff eingeben", "search.result.term.missing": "Es fehlt", "select.version": "Version ausw\u00e4hlen"}, "version": null}</script>
     
     
-      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
       
-        <script src="https://meshhessenclient.de/handbuch/lang-switch.js"></script>
+        <script src="../../lang-switch.js"></script>
       
     
   </body>

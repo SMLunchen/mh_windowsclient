@@ -1,4 +1,5 @@
 
+
 <!doctype html>
 <html lang="en" class="no-js">
   <head>
@@ -57,6 +58,17 @@
 
     
     
+  
+  
+  
+    
+    
+      <link rel="alternate" hreflang="en" href="https://meshhessenclient.de/handbuch/en/messaging/" />
+      <link rel="alternate" hreflang="de" href="https://meshhessenclient.de/handbuch/de/nachrichten/" />
+      <link rel="alternate" hreflang="x-default" href="https://meshhessenclient.de/handbuch/de/nachrichten/" />
+    
+  
+
   </head>
   
   
@@ -488,6 +500,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../metrics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Understanding the values
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../traceroute/" class="md-nav__link">
         
   
@@ -542,14 +581,68 @@
   
   
     <li class="md-nav__item">
-      <a href="../tools/" class="md-nav__link">
+      <a href="../virtual-node/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Virtual Node · T-Deck · kiosk
+    Virtual Node
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../t-deck/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    T-Deck map assistant
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../kiosk/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Kiosk mode
   
 
     
@@ -696,31 +789,31 @@
 <li><strong>Multi-channel</strong> – all channels from your device loaded automatically</li>
 <li><strong>Direct Messages (DMs)</strong> with a dedicated chat window in a tabbed layout</li>
 <li><strong>PKI decryption</strong> – client-side decryption of PKI-encrypted DMs (X25519 + AES-256-CCM, firmware-accurate); private key is loaded automatically from the connected device</li>
-<li><strong>Node public key database</strong> – local CSV file (<code>node_keys.csv</code>) for managing public keys for PKI decryption</li>
+<li><strong>Node public key database</strong> – local CSV file (<code>node_keys.csv</code>) that the client maintains automatically with the public keys of received nodes (manual edits are read on the next start)</li>
 <li><strong>Tap-back reactions</strong> – react to messages with emoji (32 emojis, like the Android app); right-click a message → emoji picker; works in channel chat and DMs</li>
 <li><strong>Reply function</strong> – reply to individual messages (protocol-level), quoted block with accent-colored highlight</li>
 <li><strong>Selectable &amp; copyable messages</strong> – select text, copy to clipboard, click links; right-click any message → "Copy Message" (always copies the right-clicked message)</li>
-<li><strong>🚨 Alert Bell support</strong> – send and receive emergency alerts; 🚨 SOS button in chat and DMs; red blinking border + notification bar with "Jump to map" button</li>
-<li><strong>Persistent message database</strong> – store channel and DM messages in a local SQLite DB (optional, enable in settings)</li>
+<li><strong>🚨 Alert Bell support</strong> – send and receive emergency alerts; 🚨 SOS button in chat and DMs; red blinking border + notification bar with "📍 Go to map" button</li>
+<li><strong>Persistent message database</strong> – channel and DM messages in a local SQLite DB (enabled by default; can be turned off in the settings under "Message database")</li>
 <li>Last 24 hours loaded automatically on connect; older messages lazy-loaded when scrolling up</li>
 <li><strong>DM history:</strong> all conversations from the last 24 h appear automatically when the DM window is opened</li>
 <li><strong>Per-channel deletion</strong> directly in the Channels tab with a time-range dialog (All / 30 / 90 / 365 days)</li>
-<li>Confirmation before clearing a DM conversation; configurable retention period (30 / 90 / 365 days)</li>
+<li>Confirmation before clearing a DM conversation; configurable retention period (30 / 90 / 365 days / unlimited — default: 90 days)</li>
 </ul>
 <h2 id="how-to-send-your-first-message-an-encrypted-dm">How-to: send your first message &amp; an encrypted DM<a class="headerlink" href="#how-to-send-your-first-message-an-encrypted-dm" title="Permanent link">&para;</a></h2>
 <p><strong>Goal:</strong> send a broadcast into a channel, then an end-to-end encrypted direct message to a specific node.</p>
 <ol>
-<li><strong>Channel message:</strong> Messages tab → pick a channel at the bottom → type → Enter. Your own message shows right-aligned; replies arrive in the same thread</li>
-<li><strong>Start a DM:</strong> right-click the target node (node list, map, or one of its messages) → <strong>"Direct message"</strong> — the DM window opens the conversation as its own tab</li>
-<li><strong>Check encryption:</strong> the 🔑 column in the node list shows whether the target's public key is known. 🔑 = the DM goes out PKI-encrypted (X25519 + AES-256-CCM), 🔓 = channel encryption only</li>
-<li><strong>Success check:</strong> the sent message gets a delivery check mark (ACK); the reply appears in the tab. Received PKI DMs are decrypted by the client itself</li>
+<li><strong>Channel message:</strong> Messages tab → pick the channel in the "Channels" sidebar on the left → type at the bottom → Enter. Your own message shows right-aligned; replies arrive in the same thread</li>
+<li><strong>Start a DM:</strong> right-click the target node (node list, map, or one of its messages) → <strong>"💬 Send DM"</strong> — the conversation opens as its own tab in the DM window (or directly in the main window, depending on your settings)</li>
+<li><strong>Check encryption:</strong> the 🔑 column in the node list shows whether the target's public key is known. 🔑 = PKI DMs can be encrypted and decrypted (X25519 + AES-256-CCM); an empty cell (table) or 🔓 (tile view) means the key is unknown — then only channel encryption applies</li>
+<li><strong>Success check:</strong> the sent message gets delivery check marks: ✓ = sent, ✓✓ (green) = acknowledged by the recipient (ACK); the reply appears in the tab. Received PKI DMs are decrypted by the client itself</li>
 <li><strong>Extras:</strong> right-click a message → emoji reaction or "Reply" (quote block); text is selectable and copyable</li>
 </ol>
 <p><strong>Typical pitfalls:</strong></p>
 <ul>
-<li><em>🔓 instead of 🔑 on the target</em> → the public key is missing locally: receive the node directly once or pull its user info via right-click "Request information"</li>
+<li><em>No 🔑 on the target</em> → the public key is missing locally: receive the node directly once or pull its user info via right-click "📥 Request information → User info" (for encrypted received messages the 🔑 button right on the message works too)</li>
 <li><em>No ACK</em> → target currently unreachable (test with a <a href="../traceroute/">traceroute</a>) or the link is congested — wait briefly instead of resending (airtime!)</li>
-<li><em>Old conversation missing</em> → the message database is optional: enable it in the settings, otherwise history only starts at connect time</li>
+<li><em>Old conversation missing</em> → the message database is enabled by default; check whether it was turned off in the settings ("Message database") — without it, history only starts at connect time</li>
 </ul>
 <!-- SCREENSHOT REQUEST: DM window with a running conversation + visible 🔑 status in the node list -->
 

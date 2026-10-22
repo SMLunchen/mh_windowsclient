@@ -320,6 +320,7 @@
     <span class="chip">📴 Offline-fähig</span>
     <span class="chip">🔌 USB · WLAN · Bluetooth</span>
     <span class="chip">🪟 Windows 10/11</span>
+    <span class="chip">📦 Portable · keine separate Runtime</span>
   </div>
   <div>
     <a class="btn" id="hero-dl" href="https://github.com/SMLunchen/mh_windowsclient/releases/latest">⬇ Für Windows herunterladen</a>
@@ -329,7 +330,7 @@
   </div>
   <div class="badges" style="margin-top:1rem;">
     <img src="https://img.shields.io/badge/Windows-10%2F11-blue" alt="Windows 10/11" />
-    <img src="https://img.shields.io/badge/.NET-8.0-purple" alt=".NET 8.0" />
+    <img src="https://img.shields.io/badge/Portable-self--contained%20EXE-2ea44f" alt="Portable – self-contained EXE, keine separate Runtime nötig" />
     <img src="https://img.shields.io/github/v/release/SMLunchen/mh_windowsclient" alt="Release" />
     <img src="https://img.shields.io/github/license/SMLunchen/mh_windowsclient" alt="License" />
     <img src="https://img.shields.io/github/stars/SMLunchen/mh_windowsclient" alt="Stars" />
@@ -429,10 +430,12 @@
     <li><a href="handbuch/de/telemetrie/">📊 Telemetrie &amp; Funkanalyse</a></li>
     <li><a href="handbuch/de/traceroute/">📡 Traceroute</a></li>
     <li><a href="handbuch/de/node-verwaltung/">🔧 Node-Verwaltung &amp; Fernkonfiguration</a></li>
-    <li><a href="handbuch/de/tools/">🧰 Virtual Node · T-Deck · Kiosk</a></li>
+    <li><a href="handbuch/de/virtual-node/">🖧 Virtual Node (Handy-Apps anbinden)</a></li>
+    <li><a href="handbuch/de/t-deck/">🔧 T-Deck Karten-Assistent</a></li>
+    <li><a href="handbuch/de/kiosk/">🔒 Kiosk-/Trainingsmodus</a></li>
     <li><a href="handbuch/de/technik/">🏗️ Technik &amp; Protokoll</a></li>
     <li><a href="handbuch/de/glossar/">📖 Glossar (SNR, Airtime, MQTT …)</a></li>
-    <li><a href="#telemetrie">📊 Messwerte verstehen (Telemetrie-Hilfe)</a></li>
+    <li><a href="handbuch/de/messwerte/">📈 Messwerte verstehen</a> (auch <a href="#telemetrie">unten auf dieser Seite</a>)</li>
     <li><a href="changelog.html?lang=de">📝 Changelog</a></li>
   </ul>
 
@@ -562,7 +565,9 @@
     </div>
   </div>
 
-  <!-- ── Telemetrie-Analyse ── -->
+  <!-- ── Telemetrie-Analyse ──
+       Inhaltlich bewusst dupliziert nach docs/de/messwerte.md (Handbuch) —
+       Änderungen bitte an beiden Stellen nachziehen. -->
   <h2 id="telemetrie">📊 Telemetrie-Analyse – Messwerte verstehen</h2>
   <p>
     Der Meshhessen Client speichert alle empfangenen Telemetrie-Daten in einer lokalen SQLite-Datenbank
@@ -694,11 +699,11 @@
       <tr><th>LED</th><th><span class="led-green">Grün</span></th><th><span class="led-yellow">Gelb</span></th><th><span class="led-red">Rot</span></th><th><span class="led-gray">Grau</span></th></tr>
     </thead>
     <tbody>
-      <tr><td>📶 Signal</td><td>SNR &gt; 0 dB, stabiler Trend</td><td>SNR grenzwertig oder leicht fallend</td><td>SNR &lt; −5 dB oder stark fallend</td><td>Keine Daten</td></tr>
-      <tr><td>👥 Nachbarn</td><td>≥ 2 stabile Nachbarn</td><td>1 Nachbar oder sinkende SNRs</td><td>Keine Direktverbindungen</td><td>Keine Daten</td></tr>
-      <tr><td>🛤️ Pfad</td><td>Stabiler Pfad, ≤ 3 Hops</td><td>Gelegentliche Wechsel</td><td>Häufige Pfadwechsel</td><td>Kein Traceroute</td></tr>
-      <tr><td>🌐 Mesh-Health</td><td>Guter Gesamtzustand</td><td>Einzelne Problembereiche</td><td>Hohe Kanalauslastung oder viele instabile Nodes</td><td>Keine Daten</td></tr>
-      <tr><td>🌤️ Wetter</td><td>Sensor-Daten vorhanden</td><td>–</td><td>–</td><td>Kein Umweltsensor</td></tr>
+      <tr><td>Wetter/KT <small>(Signal-Wetter, 6 h)</small></td><td>SNRs stabil oder steigend</td><td>Leichter gemeinsamer Abfall</td><td>Deutlicher gemeinsamer Abfall (Wetter-Effekt)</td><td>Keine Daten</td></tr>
+      <tr><td>LZ-SNR <small>(Antennen-Gesundheit, 7 Tage)</small></td><td>Langzeittrend stabil/steigend</td><td>Schleichende Verschlechterung</td><td>Langfristig fallend – Antenne/Position prüfen</td><td>Keine Daten</td></tr>
+      <tr><td>NB <small>(Nachbar-Qualität)</small></td><td>≥ 2 stabile Nachbarn</td><td>1 Nachbar oder sinkende SNRs</td><td>Keine Direktverbindungen</td><td>Keine Daten</td></tr>
+      <tr><td>PS <small>(Routen-Stabilität)</small></td><td>Stabiler Pfad</td><td>Gelegentliche Wechsel</td><td>Häufige Pfadwechsel</td><td>Kein Traceroute</td></tr>
+      <tr><td>Mesh Health <small>(Score 0–100 %)</small></td><td>Guter Gesamtzustand</td><td>Einzelne Problembereiche</td><td>Hohe Kanalauslastung oder viele instabile Nodes</td><td>Keine Daten</td></tr>
     </tbody>
   </table>
 
@@ -913,10 +918,12 @@
     <li><a href="handbuch/en/telemetry/">📊 Telemetry &amp; radio analysis</a></li>
     <li><a href="handbuch/en/traceroute/">📡 Traceroute</a></li>
     <li><a href="handbuch/en/node-management/">🔧 Node management &amp; remote admin</a></li>
-    <li><a href="handbuch/en/tools/">🧰 Virtual Node · T-Deck · kiosk</a></li>
+    <li><a href="handbuch/en/virtual-node/">🖧 Virtual Node (connect phone apps)</a></li>
+    <li><a href="handbuch/en/t-deck/">🔧 T-Deck map assistant</a></li>
+    <li><a href="handbuch/en/kiosk/">🔒 Kiosk / training mode</a></li>
     <li><a href="handbuch/en/technical/">🏗️ Technology &amp; protocol</a></li>
     <li><a href="handbuch/en/glossary/">📖 Glossary (SNR, airtime, MQTT …)</a></li>
-    <li><a href="#telemetry">📊 Understanding the metrics (telemetry help)</a></li>
+    <li><a href="handbuch/en/metrics/">📈 Understanding the values</a> (also <a href="#telemetry">further down this page</a>)</li>
     <li><a href="changelog.html?lang=en">📝 Changelog</a></li>
   </ul>
 
@@ -1046,6 +1053,7 @@
   </div>
 
   <!-- ── Telemetry Analysis ── -->
+  <!-- Deliberately duplicated to docs/en/metrics.md (handbook) — keep both in sync. -->
   <h2 id="telemetry">📊 Telemetry Analysis – Understanding the Values</h2>
   <p>
     The Meshhessen Client stores all received telemetry data in a local SQLite database and
@@ -1177,11 +1185,11 @@
       <tr><th>LED</th><th><span class="led-green">Green</span></th><th><span class="led-yellow">Yellow</span></th><th><span class="led-red">Red</span></th><th><span class="led-gray">Grey</span></th></tr>
     </thead>
     <tbody>
-      <tr><td>📶 Signal</td><td>SNR &gt; 0 dB, stable trend</td><td>SNR marginal or slightly falling</td><td>SNR &lt; −5 dB or strongly falling</td><td>No data</td></tr>
-      <tr><td>👥 Neighbors</td><td>≥ 2 stable neighbors</td><td>1 neighbor or declining SNRs</td><td>No direct links</td><td>No data</td></tr>
-      <tr><td>🛤️ Path</td><td>Stable path, ≤ 3 hops</td><td>Occasional path changes</td><td>Frequent path changes</td><td>No traceroute</td></tr>
-      <tr><td>🌐 Mesh Health</td><td>Good overall state</td><td>Individual problem areas</td><td>High channel util. or many unstable nodes</td><td>No data</td></tr>
-      <tr><td>🌤️ Weather</td><td>Sensor data present</td><td>–</td><td>–</td><td>No env. sensor</td></tr>
+      <tr><td>Weather/ST <small>(signal weather, 6 h)</small></td><td>SNRs stable or rising</td><td>Slight simultaneous drop</td><td>Clear simultaneous drop (weather effect)</td><td>No data</td></tr>
+      <tr><td>LT-SNR <small>(antenna health, 7 days)</small></td><td>Long-term trend stable/rising</td><td>Creeping degradation</td><td>Falling long-term – check antenna/position</td><td>No data</td></tr>
+      <tr><td>Nbrs <small>(neighbor quality)</small></td><td>≥ 2 stable neighbors</td><td>1 neighbor or declining SNRs</td><td>No direct links</td><td>No data</td></tr>
+      <tr><td>Path <small>(route stability)</small></td><td>Stable path</td><td>Occasional changes</td><td>Frequent path changes</td><td>No traceroute</td></tr>
+      <tr><td>Mesh Health <small>(score 0–100 %)</small></td><td>Good overall state</td><td>Individual problem areas</td><td>High channel util. or many unstable nodes</td><td>No data</td></tr>
     </tbody>
   </table>
 
@@ -1326,14 +1334,14 @@
     de: {
       claim: 'Dein Mesh. Deine Karte. Deine Kontrolle.',
       sub: 'Meshtastic auf deinem Windows-PC: Nachrichten senden, Funkstrecken analysieren, Nodes verwalten – und auch ohne Internet den Überblick behalten. Aus Hessen, für jedes Meshtastic-Mesh.',
-      chips: ['✔ Kostenlos & Open Source', '📴 Offline-fähig', '🔌 USB · WLAN · Bluetooth', '🪟 Windows 10/11'],
+      chips: ['✔ Kostenlos & Open Source', '📴 Offline-fähig', '🔌 USB · WLAN · Bluetooth', '🪟 Windows 10/11', '📦 Portable · keine separate Runtime'],
       dl: '⬇ Für Windows herunterladen',
       manual: '📖 Handbuch'
     },
     en: {
       claim: 'Your mesh. Your map. Your control.',
       sub: 'Meshtastic on your Windows PC: send messages, analyze radio links, manage nodes – and keep the full picture even without internet. From Hesse, for every Meshtastic mesh.',
-      chips: ['✔ Free & open source', '📴 Offline-capable', '🔌 USB · WiFi · Bluetooth', '🪟 Windows 10/11'],
+      chips: ['✔ Free & open source', '📴 Offline-capable', '🔌 USB · WiFi · Bluetooth', '🪟 Windows 10/11', '📦 Portable · no separate runtime'],
       dl: '⬇ Download for Windows',
       manual: '📖 Manual'
     }
