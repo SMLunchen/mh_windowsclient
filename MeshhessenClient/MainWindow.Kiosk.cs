@@ -802,8 +802,9 @@ public partial class MainWindow
                 win.Activate();
             }
 
+            // Selected tab may be unchanged after Hide() — mark it read explicitly.
+            win.MarkSelectedConversationRead();
             OpenDmWindowButton.FontWeight = FontWeights.Normal;
-            // Pulse stops only when unread is cleared by viewing conversations.
             UpdateDmUnreadUi(win.TotalUnreadCount);
         }
         catch (Exception ex)

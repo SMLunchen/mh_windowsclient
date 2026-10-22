@@ -38,6 +38,14 @@ public partial class DirectMessagesWindow : Window
         _myNodeId = myNodeId;
         DmTabControl.SelectionChanged += DmTabControl_SelectionChanged;
         DmTabControl.SelectionChanged += DmTabControl_MarkReadOnSelect;
+        // Hide() keeps the selected tab — SelectionChanged won't fire on Show/Activate,
+        // so mark the visible tab as read when the window becomes visible again.
+        IsVisibleChanged += (_, _) =>
+        {
+            if (IsVisible)
+                MarkSelectedConversationRead();
+        };
+        Activated += (_, _) => MarkSelectedConversationRead();
     }
 
     // On switching to a DM tab, scroll its message list to the newest message.
@@ -69,6 +77,16 @@ public partial class DirectMessagesWindow : Window
         conversation.HasUnread = false;
         UpdateTabHeader(tab, conversation);
         UnreadCountChanged?.Invoke(TotalUnreadCount);
+    }
+
+    /// <summary>Clear unread for the currently selected tab (e.g. after Show/Activate).</summary>
+    public void MarkSelectedConversationRead()
+    {
+        if (DmTabControl.SelectedItem is not TabItem tab) return;
+        var conv = _conversations.FirstOrDefault(c =>
+            _tabByNodeId.TryGetValue(c.NodeId, out var t) && ReferenceEquals(t, tab));
+        if (conv != null)
+            MarkConversationRead(conv, tab);
     }
 
     public void UpdateProtocolService(MeshtasticProtocolService protocolService)
