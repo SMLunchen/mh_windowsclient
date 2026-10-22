@@ -35,11 +35,22 @@ The vector map (MapLibre GL) – razor-sharp at every zoom level, with node pins
 
 > ⚠️ **Important:** Bulk tile download is intended only for the Meshhessen tile server (`tile.meshhessenclient.de`) – bulk downloads violate the OSM tile policy.
 
-1. Open settings → select map mode **Offline** → choose a map style
-2. Click **"Download Tiles"**
-3. Enter bounding box and zoom levels – e.g. Hesse: `49.3,7.7,51.7,10.2`, zoom `1-14`
-4. Start the download
-5. Tiles are saved under `maptiles/` and are permanently available offline; portable via USB
+1. **Settings → Map:** select map mode **Offline** (or "Online – Meshhessen") and pick a map style
+2. Click **"Download Tiles"** — the download dialog opens:
+
+   <img width="567" alt="Meshhessen Client – offline map tile downloader: bounding box, zoom levels and progress" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/tile_downloader.png" />
+
+3. **Define the area:** enter the bounding box as `latMin,lonMin,latMax,lonMax` — e.g. Hesse: `49.3,7.7,51.7,10.2`
+4. **Pick zoom levels:** `1-12` is enough for an overview, `1-14` is the recommendation for towns, `15+` only for small areas — **every extra level quadruples** the tile count
+5. **Start the download** and watch the progress — existing tiles are skipped, so aborting + restarting is completely harmless
+6. Tiles land under `maptiles/`, stay available offline permanently and are portable via USB
+7. Don't forget the **offline test** (see below)
+
+**Typical pitfalls:**
+
+* **Download refuses to start** → public OSM/OpenTopoMap servers are blocked for bulk downloads (tile policy) — use the Meshhessen server or your own tile server
+* **Blank areas outside Germany** → the Meshhessen server covers Germany only; use the OSM online mode (viewing only, no bulk download) abroad
+* **Download gets huge** → lower the zoom cap or shrink the bounding box — going from zoom 14 to 15 alone quadruples the data
 
 **How much storage?** Rough raster-map figures: Hesse up to zoom 14 ≈ 2–4 GB per map style; all of Germany up to zoom 14 ≈ 20–30 GB. The vector map is far more compact — a vector offline package for a federal state is usually below 1 GB.
 
@@ -95,6 +106,3 @@ Direct RF neighbors as lines on the raster map (gradient by SNR or age):
 
 Node position history (GPS track) on the map:
 <img width="967" height="411" alt="Meshhessen Client – Meshtastic node position history GPS track on map" src="https://github.com/user-attachments/assets/0415083a-9f22-44fc-b767-be66b69892cd" />
-
-Offline tile downloader for Germany and surroundings:
-<img width="567" height="883" alt="Meshhessen Client – offline map tile downloader for Meshtastic devices on Windows (OSM, OpenTopoMap)" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/tile_downloader.png" />

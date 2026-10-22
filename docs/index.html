@@ -27,7 +27,7 @@
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Meshhessen Client – Windows App für Meshtastic-Geräte" />
   <meta name="twitter:description" content="Kostenloser Windows-Client für Meshtastic-Geräte. Offline-Karte, Telemetrie, Traceroute, PKI – USB/Serial/TCP/BLE." />
-  <meta name="twitter:image" content="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map.png" />
+  <meta name="twitter:image" content="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/map-with-dem-elevation-profile.png" />
 
   <!-- JSON-LD Structured Data -->
   <script type="application/ld+json">
@@ -39,7 +39,7 @@
     "applicationCategory": "CommunicationApplication",
     "operatingSystem": "Windows 10, Windows 11",
     "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" },
-    "url": "https://smlunchen.github.io/mh_windowsclient/",
+    "url": "https://meshhessenclient.de/",
     "downloadUrl": "https://github.com/SMLunchen/mh_windowsclient/releases/latest",
     "author": { "@type": "Organization", "name": "Meshhessen Community", "url": "https://www.meshhessen.de" },
     "softwareVersion": "1.6.4.7",
@@ -108,6 +108,7 @@
     .doc-links { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 0.5rem 1rem; list-style: none; margin-top: 0.8rem; padding: 0; }
     .doc-links a { display: block; padding: 0.55rem 0.9rem; background: #161b22; border: 1px solid #30363d; border-radius: 8px; color: #e6edf3; }
     .doc-links a:hover { border-color: #58a6ff; text-decoration: none; }
+    .dev-badge { display: inline-block; margin-left: 0.5rem; padding: 0.1rem 0.6rem; border-radius: 12px; font-size: 0.78rem; background: #3a2d10; color: #e3b341; border: 1px solid #9e6a03; }
     .dl-note { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 0.8rem 1rem; font-size: 0.92rem; margin-top: 0.8rem; }
 
     /* ── Language switcher ── */
@@ -353,7 +354,7 @@
   <div class="whats-new">
     <span class="vbadge">v1.6.4.7</span>
     <span class="summary">🛰️ Traceroute: ehrliche MQTT-Badges pro Teilstrecke · 🔗 Nachbar-Datenbank von falschen 0-dB-Links bereinigt · ✕ kaputte Symbole repariert · ℹ️ Node-Info zeigt „Zuerst/Zuletzt gesehen" (Node-Info-Rework &amp; Dashboard-Dark-Mode-Fix seit 1.6.4.6).</span>
-    <a href="changelog.html">Changelog ansehen →</a>
+    <a href="changelog.html?lang=de">Changelog ansehen →</a>
   </div>
 
   <h2>Was du damit machst</h2>
@@ -430,7 +431,7 @@
     <li><a href="https://github.com/SMLunchen/mh_windowsclient/blob/master/docs/de/tools.md">🧰 Virtual Node · T-Deck · Kiosk</a></li>
     <li><a href="https://github.com/SMLunchen/mh_windowsclient/blob/master/docs/de/technik.md">🏗️ Technik &amp; Protokoll</a></li>
     <li><a href="#telemetrie">📖 Messwerte verstehen (Telemetrie-Hilfe)</a></li>
-    <li><a href="changelog.html">📝 Changelog</a></li>
+    <li><a href="changelog.html?lang=de">📝 Changelog</a></li>
   </ul>
 
   <h2>Alle Funktionen im Überblick</h2>
@@ -836,7 +837,7 @@
   <div class="whats-new">
     <span class="vbadge">v1.6.4.7</span>
     <span class="summary">🛰️ Traceroute: honest per-segment MQTT badges · 🔗 neighbor database cleaned of fake 0 dB links · ✕ broken glyphs repaired · ℹ️ node info shows "first/last seen" (node-info rework &amp; dashboard dark-mode fix since 1.6.4.6).</span>
-    <a href="changelog.html">View changelog →</a>
+    <a href="changelog.html?lang=en">View changelog →</a>
   </div>
 
   <h2>What you do with it</h2>
@@ -912,7 +913,8 @@
     <li><a href="https://github.com/SMLunchen/mh_windowsclient/blob/master/docs/en/node-management.md">🔧 Node management &amp; remote admin</a></li>
     <li><a href="https://github.com/SMLunchen/mh_windowsclient/blob/master/docs/en/tools.md">🧰 Virtual Node · T-Deck · kiosk</a></li>
     <li><a href="https://github.com/SMLunchen/mh_windowsclient/blob/master/docs/en/technical.md">🏗️ Technology &amp; protocol</a></li>
-    <li><a href="changelog.html">📝 Changelog</a></li>
+    <li><a href="#telemetry">📖 Understanding the metrics (telemetry help)</a></li>
+    <li><a href="changelog.html?lang=en">📝 Changelog</a></li>
   </ul>
 
   <h2>All features at a glance</h2>
@@ -1363,12 +1365,24 @@
     }
   })();
 
-  // Keep the visible version badges in sync with the latest GitHub release
+  // Version reality check: the what's-new box describes the version at the top of
+  // the changelog — if that is NOT the published GitHub release yet, say so instead
+  // of silently showing mismatching numbers and notes.
   fetch('https://api.github.com/repos/SMLunchen/mh_windowsclient/releases/latest')
     .then(r => r.ok ? r.json() : null)
     .then(rel => {
       if (!rel || !rel.tag_name) return;
-      document.querySelectorAll('.vbadge').forEach(el => { el.textContent = rel.tag_name; });
+      document.querySelectorAll('.vbadge').forEach(el => {
+        const page = el.textContent.trim();
+        if (page === rel.tag_name) return;
+        const en = el.closest('#en') !== null;
+        const note = document.createElement('span');
+        note.className = 'dev-badge';
+        note.textContent = en
+          ? '🚧 in development · latest release: ' + rel.tag_name
+          : '🚧 in Entwicklung · aktuelles Release: ' + rel.tag_name;
+        el.insertAdjacentElement('afterend', note);
+      });
     })
     .catch(() => {});
 </script>

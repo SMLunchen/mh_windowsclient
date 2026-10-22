@@ -53,15 +53,17 @@ publish/
 # Claude Code
 .claude/
 
-# Unused assets
+# Unused assets / root-level scratch notes.
+# Leading "/" anchors to the repo root — an unanchored "SCHNELLSTART.md" matched
+# in EVERY directory (case-insensitively on Windows) and silently swallowed
+# docs/de/schnellstart.md.
 MeshhessenClient/MH_WebseitenLogo_nM.png
 MeshhessenClient/nul
-PROJECT_CONTEXT.md
-DEBUG.md
-SCHNELLSTART.md
-SCHNELLSTART.md
-backlog.txt
-PLAN.md
+/PROJECT_CONTEXT.md
+/DEBUG.md
+/SCHNELLSTART.md
+/backlog.txt
+/PLAN.md
 
 # Tile-auth: private ops docs & any secrets. MUST NOT be published (full
 # attack/defense logic + token material). Keep out of the public repo.

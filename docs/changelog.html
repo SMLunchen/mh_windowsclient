@@ -95,6 +95,7 @@
     }
     .tag-upcoming { background: #1a4a26; color: #3fb950; border: 1px solid #3fb950; }
     .tag-latest   { background: #1c2d5a; color: #58a6ff; border: 1px solid #58a6ff; }
+    .tag-dev      { display: inline-block; margin-left: 0.5rem; padding: 0.1rem 0.6rem; border-radius: 12px; font-size: 0.78rem; background: #3a2d10; color: #e3b341; border: 1px solid #9e6a03; }
     .tag-release  { background: #1c2128; color: #8b949e; border: 1px solid #30363d; }
     .tag-beta     { background: #2d1f54; color: #bc8cff; border: 1px solid #bc8cff; }
 
@@ -2372,10 +2373,37 @@
     document.getElementById(lang).classList.add('active');
     document.getElementById('btn-' + lang).classList.add('active');
     document.documentElement.lang = lang;
-    history.replaceState(null, '', '#' + lang);
+    const url = new URL(location.href);
+    url.searchParams.set('lang', lang);
+    history.replaceState(null, '', url);
+    // the back link keeps the chosen language
+    document.querySelectorAll('a[href^="index.html"]').forEach(a => { a.href = 'index.html?lang=' + lang; });
   }
-  const hash = location.hash.replace('#','');
-  if (hash === 'en') setLang('en');
+  (function() {
+    const params = new URLSearchParams(location.search);
+    let lang = params.get('lang');
+    const hash = location.hash.replace('#','');
+    if (!lang && (hash === 'en' || hash === 'de')) lang = hash;
+    setLang(lang === 'en' ? 'en' : 'de');
+  })();
+
+  // Mark an unreleased top entry honestly instead of calling it "latest"
+  fetch('https://api.github.com/repos/SMLunchen/mh_windowsclient/releases/latest')
+    .then(r => r.ok ? r.json() : null)
+    .then(rel => {
+      if (!rel || !rel.tag_name) return;
+      document.querySelectorAll('.version-tag.tag-latest').forEach(el => {
+        if (el.textContent.trim() === rel.tag_name) return;
+        const note = document.createElement('span');
+        note.className = 'tag-dev';
+        const en = el.closest('#en') !== null;
+        note.textContent = en
+          ? '🚧 in development · latest release: ' + rel.tag_name
+          : '🚧 in Entwicklung · aktuelles Release: ' + rel.tag_name;
+        el.insertAdjacentElement('afterend', note);
+      });
+    })
+    .catch(() => {});
 </script>
 </body>
 </html>

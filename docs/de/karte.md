@@ -35,12 +35,22 @@ Die Vektorkarte (MapLibre GL) – gestochen scharf in jeder Zoomstufe, mit Node-
 
 > ⚠️ **Wichtig:** Tile-Download ist nur für den Meshhessen-Tile-Server (`tile.meshhessenclient.de`) vorgesehen – Bulk-Downloads verstoßen gegen die OSM-Tile-Policy.
 
-1. Einstellungen öffnen → Karten-Modus **Offline** wählen → Kartenstil wählen
-2. **„Tiles herunterladen"** klicken
-3. Bereich (Bounding Box) und Zoom-Level eingeben – z. B. Hessen: `49.3,7.7,51.7,10.2`, Zoom `1-14`
-4. Download starten
-5. Tiles werden unter `maptiles/` gespeichert und sind dauerhaft offline verfügbar
-6. Tiles sind portabel – per USB übertragbar
+1. **Einstellungen → Karte:** Karten-Modus **Offline** (oder „Online – Meshhessen") wählen und den gewünschten Kartenstil einstellen
+2. **„Tiles herunterladen"** klicken — der Download-Dialog öffnet sich:
+
+   <img width="567" alt="Meshhessen Client – Offline-Karten-Tile-Downloader: Bounding Box, Zoomstufen und Fortschritt" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/tile_downloader.png" />
+
+3. **Gebiet festlegen:** Bounding Box als `latMin,lonMin,latMax,lonMax` eingeben — z. B. Hessen: `49.3,7.7,51.7,10.2`
+4. **Zoomstufen wählen:** `1-12` reicht für die Übersicht, `1-14` ist die Empfehlung für Ortslagen, ab `15` nur für kleine Gebiete — **jede weitere Stufe vervierfacht** die Kachelzahl
+5. **Download starten** und den Fortschritt beobachten — bereits vorhandene Kacheln werden übersprungen, ein Abbruch + Neustart ist also völlig harmlos
+6. Tiles landen unter `maptiles/`, sind dauerhaft offline verfügbar und portabel (per USB übertragbar)
+7. **Offline-Test** nicht vergessen (siehe unten)
+
+**Typische Stolpersteine:**
+
+* **Download startet nicht / wird abgelehnt** → öffentliche OSM-/OpenTopoMap-Server sind für Bulk-Downloads gesperrt (Tile-Policy) — den Meshhessen-Server oder einen eigenen Tile-Server verwenden
+* **Leere Flächen außerhalb Deutschlands** → der Meshhessen-Server liefert nur Deutschland; fürs Ausland den OSM-Online-Modus (nur Betrachten, kein Bulk-Download) nutzen
+* **Download wird riesig** → Zoom-Obergrenze senken oder die Bounding Box verkleinern — Zoom 14 → 15 allein vervierfacht die Datenmenge
 
 **Wieviel Speicher brauche ich?** Grobe Richtwerte für die Rasterkarte: Hessen bis Zoom 14 ≈ 2–4 GB je Kartenstil; ganz Deutschland bis Zoom 14 ≈ 20–30 GB. Die Vektorkarte ist deutlich kompakter — das Vektor-Offlinepaket für ein Bundesland liegt meist unter 1 GB.
 
@@ -125,6 +135,3 @@ Direkte HF-Nachbarn als Linien auf der Rasterkarte (Farbverlauf nach SNR oder Al
 
 Node-Standort-Verlauf (GPS-Track) auf der Karte:
 <img width="967" height="411" alt="Meshhessen Client – Meshtastic Node-Standort-Verlauf GPS-Track auf Karte" src="https://github.com/user-attachments/assets/0415083a-9f22-44fc-b767-be66b69892cd" />
-
-Offline-Tile-Downloader für Deutschland und Umgebung:
-<img width="567" height="883" alt="Meshhessen Client – Offline-Karten-Tile-Downloader für Meshtastic-Geräte unter Windows (OSM, OpenTopoMap)" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/tile_downloader.png" />
