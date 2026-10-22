@@ -1,6 +1,6 @@
 # 📊 Telemetrie & Funkanalyse
 
-[← Handbuch-Übersicht](../index.md) · [🇬🇧 English version](../en/telemetry.md)
+[← Handbuch-Übersicht](../index.md) · [🇬🇧 English version](https://meshhessenclient.de/handbuch/en/telemetry/)
 
 ## Telemetrie-Datenbank & Dashboard
 

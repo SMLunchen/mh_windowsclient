@@ -1,6 +1,6 @@
 # 📊 Telemetry & Radio Analysis
 
-[← Handbook home](../index.md) · [🇩🇪 Deutsche Version](../de/telemetrie.md)
+[← Handbook home](index.md) · [🇩🇪 Deutsche Version](https://meshhessenclient.de/handbuch/de/telemetrie/)
 
 ## Telemetry database & dashboard
 

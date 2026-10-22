@@ -1,6 +1,6 @@
 # 📖 Glossary — Meshtastic terms in a nutshell
 
-[← Handbook home](../index.md) · [🇩🇪 Deutsche Version](../de/glossar.md)
+[← Handbook home](index.md) · [🇩🇪 Deutsche Version](https://meshhessenclient.de/handbuch/de/glossar/)
 
 **SNR (signal-to-noise ratio, dB)**
 : How far the signal sits above the noise. Thanks to spreading, LoRa decodes signals *below* the noise floor — depending on the modem preset down to about −7 dB (short presets) or −20 dB (Long Slow). Rule of thumb: > 5 dB very good, around 0 dB solid, clearly negative = marginal.

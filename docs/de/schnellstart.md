@@ -1,6 +1,6 @@
 # 🚀 Schnellstart & Verbindung
 
-[← Handbuch-Übersicht](../index.md) · [🇬🇧 English version](../en/getting-started.md)
+[← Handbuch-Übersicht](../index.md) · [🇬🇧 English version](https://meshhessenclient.de/handbuch/en/getting-started/)
 
 ## Installation in 5 Schritten
 

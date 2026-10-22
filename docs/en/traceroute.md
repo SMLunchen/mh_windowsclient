@@ -1,6 +1,6 @@
 # 📡 Traceroute
 
-[← Handbook home](../index.md) · [🇩🇪 Deutsche Version](../de/traceroute.md)
+[← Handbook home](index.md) · [🇩🇪 Deutsche Version](https://meshhessenclient.de/handbuch/de/traceroute/)
 
 * **Start traceroute** – directly from the node context menu (node list, map, message list)
 * **"RF only" mode** – sends the request with the OK-to-MQTT bit cleared (pre-encrypted packet): MQTT gateways won't uplink it, the route runs over RF exclusively. Note: the *reply* may still come back via MQTT — that's up to the target node.

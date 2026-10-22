@@ -1,6 +1,6 @@
 # 🗺️ Karte & Offline-Nutzung
 
-[← Handbuch-Übersicht](../index.md) · [🇬🇧 English version](../en/map.md)
+[← Handbuch-Übersicht](../index.md) · [🇬🇧 English version](https://meshhessenclient.de/handbuch/en/map/)
 
 ## Kartentypen & Vektorkarte
 
@@ -24,8 +24,8 @@ Die Vektorkarte (MapLibre GL) – gestochen scharf in jeder Zoomstufe, mit Node-
 
 | Modus | Beschreibung | Abdeckung |
 |----|----|----|
-| **Offline** (Standard) | Vorher heruntergeladene Tiles vom Meshhessen-Server. Kein Internet erforderlich. | Nur Deutschland |
-| **Online – Meshhessen-Server** | Tiles werden bei Bedarf von `tile.meshhessenclient.de` geladen und dauerhaft lokal gespeichert. Alle drei Stile. | Nur Deutschland |
+| **Offline** (Standard) | Vorher heruntergeladene Tiles vom Meshhessen-Server. Kein Internet erforderlich. | Deutschland, Österreich & Schweiz (DACH) |
+| **Online – Meshhessen-Server** | Tiles werden bei Bedarf von `tile.meshhessenclient.de` geladen und dauerhaft lokal gespeichert. Alle drei Stile. | Deutschland, Österreich & Schweiz (DACH) |
 | **Online – eigener Tile-Server** | Wie oben, aber mit selbst konfigurierten Tile-URLs; öffentliche OSM-/OpenTopoMap-Server sind hier nicht zulässig (Tile-Usage-Policy). | je nach Server |
 | **Online – OpenStreetMap** | Weltweite Abdeckung über `tile.openstreetmap.org`; nur Standardkarte; OSM-Policy-konform (kein Bulk-Download, Tiles lokal gecacht). | Weltweit |
 
@@ -49,7 +49,7 @@ Die Vektorkarte (MapLibre GL) – gestochen scharf in jeder Zoomstufe, mit Node-
 **Typische Stolpersteine:**
 
 * **Download startet nicht / wird abgelehnt** → öffentliche OSM-/OpenTopoMap-Server sind für Bulk-Downloads gesperrt (Tile-Policy) — den Meshhessen-Server oder einen eigenen Tile-Server verwenden
-* **Leere Flächen außerhalb Deutschlands** → der Meshhessen-Server liefert nur Deutschland; fürs Ausland den OSM-Online-Modus (nur Betrachten, kein Bulk-Download) nutzen
+* **Leere Flächen außerhalb der DACH-Region** → der Meshhessen-Server liefert Deutschland, Österreich und die Schweiz; für andere Gebiete den OSM-Online-Modus (nur Betrachten, kein Bulk-Download) nutzen
 * **Download wird riesig** → Zoom-Obergrenze senken oder die Bounding Box verkleinern — Zoom 14 → 15 allein vervierfacht die Datenmenge
 
 **Wieviel Speicher brauche ich?** Grobe Richtwerte für die Rasterkarte: Hessen bis Zoom 14 ≈ 2–4 GB je Kartenstil; ganz Deutschland bis Zoom 14 ≈ 20–30 GB. Die Vektorkarte ist deutlich kompakter — das Vektor-Offlinepaket für ein Bundesland liegt meist unter 1 GB.

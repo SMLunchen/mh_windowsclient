@@ -1,6 +1,6 @@
 # 📖 Glossar — Meshtastic-Begriffe kurz erklärt
 
-[← Handbuch-Übersicht](../index.md) · [🇬🇧 English version](../en/glossary.md)
+[← Handbuch-Übersicht](../index.md) · [🇬🇧 English version](https://meshhessenclient.de/handbuch/en/glossary/)
 
 **SNR (Signal-Rausch-Abstand, dB)**
 : Wie weit das Nutzsignal über dem Rauschen liegt. LoRa dekodiert dank Spreizung auch Signale *unter* dem Rauschen — je nach Modem-Preset bis etwa −7 dB (kurze Presets) bzw. −20 dB (Long Slow). Faustregel: > 5 dB sehr gut, um 0 dB solide, deutlich negativ = grenzwertig.

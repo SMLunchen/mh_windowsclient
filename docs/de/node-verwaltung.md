@@ -1,6 +1,6 @@
 # 🔧 Node-Verwaltung & Fernkonfiguration
 
-[← Handbuch-Übersicht](../index.md) · [🇬🇧 English version](../en/node-management.md)
+[← Handbuch-Übersicht](../index.md) · [🇬🇧 English version](https://meshhessenclient.de/handbuch/en/node-management/)
 
 ## Knoten-Übersicht
 

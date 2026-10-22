@@ -9,10 +9,10 @@ on:
   push:
     branches: [master]
     paths:
-      - 'docs/de/**'
-      - 'docs/en/**'
-      - 'docs/index.md'
+      - 'docs/**/*.md'
+      - 'docs/*.md'
       - 'mkdocs.yml'
+      - 'mkdocs.en.yml'
       - '.github/workflows/handbuch.yml'
   workflow_dispatch:
 
@@ -32,13 +32,18 @@ jobs:
       - name: Install MkDocs Material
         run: pip install mkdocs-material
 
-      - name: Build (strict = Link-Check inklusive)
+      - name: Build German site (strict = Link-Check inklusive)
         run: mkdocs build --strict -d site_handbuch
 
-      - name: Publish into docs/handbuch
+      - name: Build English site
+        run: mkdocs build --strict -f mkdocs.en.yml -d site_handbuch_en
+
+      - name: Publish into docs/handbuch (EN nested under /en/)
         run: |
           rm -rf docs/handbuch
           mv site_handbuch docs/handbuch
+          rm -rf docs/handbuch/en
+          mv site_handbuch_en docs/handbuch/en
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add docs/handbuch

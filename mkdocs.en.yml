@@ -1,0 +1,74 @@
+# Meshhessen Client — manual, ENGLISH build (MkDocs Material)
+# Source: docs/en/*.md only (docs_dir points straight at that folder, so the
+# generated URLs stay /handbuch/en/<chapter>/ once the output lands in
+# docs/handbuch/en/). The German build lives in mkdocs.yml; language switching
+# between the two sites goes through extra.alternate.
+
+site_name: Meshhessen Client – Manual
+site_url: https://meshhessenclient.de/handbuch/en/
+site_description: Manual for the Meshhessen Client – the free Windows client for Meshtastic devices.
+repo_url: https://github.com/SMLunchen/mh_windowsclient
+repo_name: SMLunchen/mh_windowsclient
+edit_uri: edit/master/docs/en/
+copyright: Made with ❤ by the Meshhessen Community · <a href="https://meshhessenclient.de/?lang=en">meshhessenclient.de</a>
+
+docs_dir: docs/en
+site_dir: site_handbuch_en
+
+theme:
+  name: material
+  language: en
+  font: false            # no Google Fonts requests — system fonts
+  palette:
+    scheme: slate
+    primary: black
+    accent: light blue
+  features:
+    - navigation.sections
+    - navigation.top
+    - navigation.footer
+    - search.suggest
+    - search.highlight
+    - content.action.edit
+  icon:
+    repo: fontawesome/brands/github
+
+extra:
+  alternate:
+    - name: Deutsch
+      link: https://meshhessenclient.de/handbuch/
+      lang: de
+    - name: English
+      link: https://meshhessenclient.de/handbuch/en/
+      lang: en
+
+plugins:
+  - search:
+      lang:
+        - en
+
+markdown_extensions:
+  - admonition
+  - def_list
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+
+nav:
+  - Manual: index.md
+  - Getting started & connection: getting-started.md
+  - Map & offline use: map.md
+  - Messaging & communication: messaging.md
+  - Telemetry & radio analysis: telemetry.md
+  - Traceroute: traceroute.md
+  - Node management & remote admin: node-management.md
+  - Virtual Node · T-Deck · kiosk: tools.md
+  - Technology & protocol: technical.md
+  - Glossary: glossary.md

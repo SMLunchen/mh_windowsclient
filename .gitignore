@@ -80,3 +80,4 @@ legal/
 
 # MkDocs-Zwischenausgabe (fertiges Handbuch liegt committet in docs/handbuch/)
 /site_handbuch/
+/site_handbuch_en/
