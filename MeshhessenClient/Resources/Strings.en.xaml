@@ -1208,11 +1208,14 @@ Green ≤15% | Yellow 15–25% | Red &gt;25% | Gray = no airtime data</sys:Strin
     <sys:String x:Key="StrRaDeviceDebugLog">Debug logging enabled</sys:String>
     <!-- Position tab -->
     <sys:String x:Key="StrRaPosGpsMode">GPS mode</sys:String>
-    <sys:String x:Key="StrRaPosBroadcastInterval">Broadcast interval (s)</sys:String>
+    <sys:String x:Key="StrRaPosBroadcastInterval">Broadcast interval</sys:String>
+    <sys:String x:Key="StrRaPosBroadcastIntervalHours">{0} hours</sys:String>
+    <sys:String x:Key="StrRaPosBroadcastIntervalCustom">{0} s (current)</sys:String>
     <sys:String x:Key="StrRaPosBroadcastSmart">Smart broadcast enabled</sys:String>
-    <sys:String x:Key="StrRaPosGpsAttemptTime">GPS attempt time (s)</sys:String>
+    <sys:String x:Key="StrRaPosGpsUpdateInterval">GPS update interval (s, 0=default)</sys:String>
     <sys:String x:Key="StrRaPosFixed">Fixed position</sys:String>
     <sys:String x:Key="StrRaPosFixedEnabled">Fixed position enabled</sys:String>
+    <sys:String x:Key="StrRaPosFixedDesc">The last known latitude, longitude and altitude are broadcast over the mesh on the position interval, rather than a live GPS fix.</sys:String>
     <sys:String x:Key="StrRaPosLat">Latitude</sys:String>
     <sys:String x:Key="StrRaPosLon">Longitude</sys:String>
     <sys:String x:Key="StrRaPosAlt">Altitude (m)</sys:String>

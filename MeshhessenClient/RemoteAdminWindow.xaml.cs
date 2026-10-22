@@ -1,7 +1,9 @@
-﻿using System.Windows;
+﻿using System.Globalization;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using Google.Protobuf;
+using Mapsui.Tiling.Layers;
 using Meshtastic.Protobufs;
 using MeshhessenClient.Services;
 using ModelNodeInfo = MeshhessenClient.Models.NodeInfo;
@@ -12,6 +14,8 @@ public partial class RemoteAdminWindow : Window
 {
     private readonly MeshtasticProtocolService _svc;
     private readonly ModelNodeInfo _targetNode;
+    private readonly Func<(double lat, double lon)?>? _mapCenterProvider;
+    private readonly Func<TileLayer>? _tileLayerFactory;
     private int _timeoutMs;
     private bool _isFavorite;
     private bool _uiReady;
@@ -29,17 +33,27 @@ public partial class RemoteAdminWindow : Window
     private SecurityConfig? _loadedSecurity;
     private readonly Channel?[] _loadedChannels = new Channel?[8];
 
+    // Fixed-position coords as shown when the section was loaded (Android: only setFixedPosition if changed).
+    private double _loadedFixedLat;
+    private double _loadedFixedLon;
+    private int _loadedFixedAlt;
+    private bool _loadedFixedHadCoords;
+
     public RemoteAdminWindow(
         MeshtasticProtocolService svc,
         ModelNodeInfo targetNode,
         int timeoutMs = 30000,
-        bool isFavorite = false)
+        bool isFavorite = false,
+        Func<(double lat, double lon)?>? mapCenterProvider = null,
+        Func<TileLayer>? tileLayerFactory = null)
     {
         InitializeComponent();
         _svc = svc;
         _targetNode = targetNode;
         _timeoutMs = timeoutMs;
         _isFavorite = isFavorite;
+        _mapCenterProvider = mapCenterProvider;
+        _tileLayerFactory = tileLayerFactory;
 
         NodeNameLabel.Text = targetNode.Name;
         NodeIdLabel.Text = targetNode.Id;
@@ -322,6 +336,32 @@ public partial class RemoteAdminWindow : Window
             _loadedPosition = resp.GetConfigResponse.Position;
             Dispatcher.Invoke(() => ApplyPositionConfig(_loadedPosition));
         }
+
+        // Same as Android: coords come from the node position (NodeDB), not from PositionConfig.
+        // If we don't have them yet, request a POSITION reply (CLI: --request-position) and refresh.
+        bool missingCoords = (_targetNode.Latitude is null or 0.0) && (_targetNode.Longitude is null or 0.0);
+        if (missingCoords)
+        {
+            try
+            {
+                await _svc.RequestNodeInfoAsync(_targetNode.NodeId, MeshtasticProtocolService.InfoRequestType.Position);
+                var deadline = DateTime.UtcNow.AddMilliseconds(Math.Min(_timeoutMs, 15000));
+                while (DateTime.UtcNow < deadline)
+                {
+                    if (_targetNode.Latitude is double lat && _targetNode.Longitude is double lon &&
+                        (lat != 0 || lon != 0))
+                        break;
+                    await Task.Delay(250);
+                }
+            }
+            catch (Exception ex)
+            {
+                Services.Logger.WriteLine($"[RemoteAdmin] Position request failed: {ex.Message}");
+            }
+
+            if (_loadedPosition != null)
+                Dispatcher.Invoke(() => ApplyFixedCoordsFromNode());
+        }
     }
 
     private async Task LoadLoraSectionAsync()
@@ -440,10 +480,42 @@ public partial class RemoteAdminWindow : Window
     private void ApplyPositionConfig(PositionConfig p)
     {
         SelectComboByTag(PosGpsMode, (int)p.GpsMode);
-        PosBroadcastInterval.Text = p.PositionBroadcastSecs.ToString();
+        EnsureBroadcastIntervalItems();
+        SelectBroadcastIntervalSecs(p.PositionBroadcastSecs);
         PosBroadcastSmart.IsChecked = p.PositionBroadcastSmartEnabled;
+        PosGpsUpdateInterval.Text = p.GpsUpdateInterval.ToString();
         PosFixedEnabled.IsChecked = p.FixedPosition;
-        // Fixed position lat/lon/alt are stored separately — enter manually to override
+        // Android: lat/lon/alt come from the NodeDB entry for this node, not from PositionConfig.
+        ApplyFixedCoordsFromNode();
+    }
+
+    private void ApplyFixedCoordsFromNode()
+    {
+        if (_targetNode.Latitude is double lat && _targetNode.Longitude is double lon &&
+            (lat != 0 || lon != 0))
+        {
+            // Proto stores 1e-7° → up to 7 decimal places (matches Android UI).
+            PosFixedLat.Text = lat.ToString("0.#######", CultureInfo.InvariantCulture);
+            PosFixedLon.Text = lon.ToString("0.#######", CultureInfo.InvariantCulture);
+            _loadedFixedLat = lat;
+            _loadedFixedLon = lon;
+            _loadedFixedHadCoords = true;
+        }
+        else
+        {
+            _loadedFixedHadCoords = false;
+        }
+
+        if (_targetNode.Altitude is int alt)
+        {
+            PosFixedAlt.Text = alt.ToString(CultureInfo.InvariantCulture);
+            _loadedFixedAlt = alt;
+        }
+        else if (string.IsNullOrWhiteSpace(PosFixedAlt.Text))
+        {
+            PosFixedAlt.Text = "0";
+            _loadedFixedAlt = 0;
+        }
     }
 
     private void ApplyLoraConfig(LoRaConfig l)
@@ -641,33 +713,56 @@ public partial class RemoteAdminWindow : Window
                 await Task.Delay(200);
             }
 
-            // Position config
+            // Position config — mirrors Meshtastic Android RadioConfig:
+            // setConfig(position) always; setFixedPosition only when coords changed;
+            // removeFixedPosition when turning fixed off.
             if (_loadedPosition != null)
             {
                 var p = _loadedPosition.Clone();
                 p.GpsMode = (GpsMode)(GetComboTag(PosGpsMode) ?? 1);
-                if (uint.TryParse(PosBroadcastInterval.Text, out var pi)) p.PositionBroadcastSecs = pi;
+                if (GetComboTag(PosBroadcastInterval) is int broadcastSecs)
+                    p.PositionBroadcastSecs = (uint)broadcastSecs;
                 p.PositionBroadcastSmartEnabled = PosBroadcastSmart.IsChecked == true;
-                p.FixedPosition = PosFixedEnabled.IsChecked == true;
+                p.GpsUpdateInterval = uint.TryParse(PosGpsUpdateInterval.Text, out var gu) ? gu : 0;
+                bool fixedEnabled = PosFixedEnabled.IsChecked == true;
+                bool wasFixed = _loadedPosition.FixedPosition;
+                p.FixedPosition = fixedEnabled;
                 await _svc.SendRemoteAdminWriteAsync(_targetNode.NodeId,
                     new AdminMessage { SetConfig = new Config { Position = p } });
                 await Task.Delay(200);
 
-                // Fixed position coordinates sent via set_position
-                if (p.FixedPosition &&
-                    double.TryParse(PosFixedLat.Text, System.Globalization.NumberStyles.Any,
-                        System.Globalization.CultureInfo.InvariantCulture, out var lat) &&
-                    double.TryParse(PosFixedLon.Text, System.Globalization.NumberStyles.Any,
-                        System.Globalization.CultureInfo.InvariantCulture, out var lon) &&
-                    int.TryParse(PosFixedAlt.Text, out var alt))
+                if (fixedEnabled &&
+                    TryParseCoord(PosFixedLat.Text, out var lat) &&
+                    TryParseCoord(PosFixedLon.Text, out var lon))
+                {
+                    int alt = ParseAltitude(PosFixedAlt.Text);
+                    bool coordsChanged = !_loadedFixedHadCoords
+                        || Math.Abs(lat - _loadedFixedLat) > 1e-7
+                        || Math.Abs(lon - _loadedFixedLon) > 1e-7
+                        || alt != _loadedFixedAlt
+                        || !wasFixed;
+
+                    if (coordsChanged)
+                    {
+                        await _svc.SendRemoteAdminWriteAsync(_targetNode.NodeId,
+                            new AdminMessage { SetFixedPosition = new Position
+                            {
+                                LatitudeI  = (int)(lat * 1e7),
+                                LongitudeI = (int)(lon * 1e7),
+                                Altitude   = alt,
+                                Time       = (uint)DateTimeOffset.UtcNow.ToUnixTimeSeconds()
+                            }});
+                        // Android MeshService.handleReceivedPosition after setFixedPosition
+                        _targetNode.Latitude  = lat;
+                        _targetNode.Longitude = lon;
+                        _targetNode.Altitude  = alt;
+                        await Task.Delay(200);
+                    }
+                }
+                else if (!fixedEnabled && wasFixed)
                 {
                     await _svc.SendRemoteAdminWriteAsync(_targetNode.NodeId,
-                        new AdminMessage { SetFixedPosition = new Position
-                        {
-                            LatitudeI  = (int)(lat * 1e7),
-                            LongitudeI = (int)(lon * 1e7),
-                            Altitude   = alt
-                        }});
+                        new AdminMessage { RemoveFixedPosition = true });
                     await Task.Delay(200);
                 }
             }
@@ -895,4 +990,99 @@ public partial class RemoteAdminWindow : Window
             return v;
         return null;
     }
+
+    /// <summary>Populate 3–24 h choices (Tag = seconds). Keeps a one-off item if the node
+    /// already has a non-hour value so we don't silently rewrite it on save.</summary>
+    private void EnsureBroadcastIntervalItems()
+    {
+        if (PosBroadcastInterval.Items.Count > 0) return;
+        for (int h = 3; h <= 24; h++)
+        {
+            PosBroadcastInterval.Items.Add(new ComboBoxItem
+            {
+                Tag = (h * 3600).ToString(),
+                Content = string.Format(Loc("StrRaPosBroadcastIntervalHours"), h)
+            });
+        }
+    }
+
+    private void SelectBroadcastIntervalSecs(uint secs)
+    {
+        EnsureBroadcastIntervalItems();
+
+        // Drop any previous "current custom" entry (not a clean 3–24 h option).
+        for (int i = PosBroadcastInterval.Items.Count - 1; i >= 0; i--)
+        {
+            if (PosBroadcastInterval.Items[i] is ComboBoxItem { Tag: string ts } item &&
+                int.TryParse(ts, out int tagSecs) &&
+                (tagSecs < 3 * 3600 || tagSecs > 24 * 3600 || tagSecs % 3600 != 0))
+            {
+                PosBroadcastInterval.Items.RemoveAt(i);
+            }
+        }
+
+        foreach (ComboBoxItem item in PosBroadcastInterval.Items)
+        {
+            if (item.Tag is string ts && int.TryParse(ts, out int tagSecs) && tagSecs == (int)secs)
+            {
+                PosBroadcastInterval.SelectedItem = item;
+                return;
+            }
+        }
+
+        // Non-standard value from the node — keep it selectable until the user picks hours.
+        var custom = new ComboBoxItem
+        {
+            Tag = secs.ToString(),
+            Content = string.Format(Loc("StrRaPosBroadcastIntervalCustom"), secs)
+        };
+        PosBroadcastInterval.Items.Insert(0, custom);
+        PosBroadcastInterval.SelectedItem = custom;
+    }
+
+    /// <summary>Parse lat/lon accepting invariant (dot) or current-culture (comma) decimals.</summary>
+    private static bool TryParseCoord(string text, out double value)
+    {
+        if (double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out value))
+            return true;
+        return double.TryParse(text, NumberStyles.Float, CultureInfo.CurrentCulture, out value);
+    }
+
+    private static int ParseAltitude(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return 0;
+        if (int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out var alt) ||
+            int.TryParse(text, NumberStyles.Integer, CultureInfo.CurrentCulture, out alt))
+            return alt;
+        return 0;
+    }
+
+    private void PosPickFromMap_Click(object sender, RoutedEventArgs e)
+    {
+        double initLat = 50.5, initLon = 9.0;
+        if (TryParseCoord(PosFixedLat.Text, out var parsedLat) &&
+            TryParseCoord(PosFixedLon.Text, out var parsedLon) &&
+            (parsedLat != 0 || parsedLon != 0))
+        {
+            initLat = parsedLat;
+            initLon = parsedLon;
+        }
+        else if (_mapCenterProvider?.Invoke() is { } center)
+        {
+            initLat = center.lat;
+            initLon = center.lon;
+        }
+
+        var picker = new MapPickerWindow(initLat, initLon, _tileLayerFactory) { Owner = this };
+        if (picker.ShowDialog() == true && picker.SelectedPosition.HasValue)
+        {
+            var (lat, lon) = picker.SelectedPosition.Value;
+            PosFixedLat.Text = lat.ToString("0.#######", CultureInfo.InvariantCulture);
+            PosFixedLon.Text = lon.ToString("0.#######", CultureInfo.InvariantCulture);
+            if (string.IsNullOrWhiteSpace(PosFixedAlt.Text))
+                PosFixedAlt.Text = "0";
+            PosFixedEnabled.IsChecked = true;
+        }
+    }
+
 }

@@ -1208,11 +1208,14 @@ Grün ≤15% | Gelb 15–25% | Rot &gt;25% | Grau = keine Airtime-Daten</sys:Str
     <sys:String x:Key="StrRaDeviceDebugLog">Debug-Logging aktiviert</sys:String>
     <!-- Position tab -->
     <sys:String x:Key="StrRaPosGpsMode">GPS-Modus</sys:String>
-    <sys:String x:Key="StrRaPosBroadcastInterval">Sendeintervall (s)</sys:String>
+    <sys:String x:Key="StrRaPosBroadcastInterval">Sendeintervall</sys:String>
+    <sys:String x:Key="StrRaPosBroadcastIntervalHours">{0} Stunden</sys:String>
+    <sys:String x:Key="StrRaPosBroadcastIntervalCustom">{0} s (aktuell)</sys:String>
     <sys:String x:Key="StrRaPosBroadcastSmart">Smart-Broadcast aktiviert</sys:String>
-    <sys:String x:Key="StrRaPosGpsAttemptTime">GPS-Versuchszeit (s)</sys:String>
+    <sys:String x:Key="StrRaPosGpsUpdateInterval">GPS-Update-Intervall (s, 0=Standard)</sys:String>
     <sys:String x:Key="StrRaPosFixed">Feste Position</sys:String>
     <sys:String x:Key="StrRaPosFixedEnabled">Feste Position aktiviert</sys:String>
+    <sys:String x:Key="StrRaPosFixedDesc">Die zuletzt bekannte Breite, Länge und Höhe werden im Positionsintervall über das Mesh gesendet, statt eines Live-GPS-Fixes.</sys:String>
     <sys:String x:Key="StrRaPosLat">Breitengrad</sys:String>
     <sys:String x:Key="StrRaPosLon">Längengrad</sys:String>
     <sys:String x:Key="StrRaPosAlt">Höhe (m)</sys:String>

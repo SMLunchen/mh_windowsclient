@@ -3323,7 +3323,9 @@ public partial class MainWindow : Window
         if (!confirmed || listBox.SelectedItem is not ListBoxItem { Tag: NodeInfo selected }) return;
 
         var timeout = _currentSettings.RemoteAdminTimeoutSeconds * 1000;
-        var win = new RemoteAdminWindow(_protocolService, selected, timeout, selected.IsFavorite) { Owner = this };
+        var win = new RemoteAdminWindow(
+            _protocolService, selected, timeout, selected.IsFavorite,
+            GetMapCenter, BuildTileLayer) { Owner = this };
         win.Show();
         win.Activate();
     }
