@@ -20,7 +20,7 @@
 ## Screenshots
 
 Messaging view with channel chat and direct messages:
-<img width="1443" height="813" alt="Meshhessen Client – Meshtastic messages, channel chat and direct messages (DM) on Windows" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/messaging.png" />
+<img width="1443" height="813" alt="Meshhessen Client – Meshtastic messages, channel chat and direct messages (DM) on Windows" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/new-chat-layout.png" />
 
 Channel list with all Meshtastic channels:
 <img width="1443" height="814" alt="Meshhessen Client – Meshtastic channel list (multi-channel) on Windows" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/channel_list.png" />

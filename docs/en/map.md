@@ -41,6 +41,10 @@ The vector map (MapLibre GL) – razor-sharp at every zoom level, with node pins
 4. Start the download
 5. Tiles are saved under `maptiles/` and are permanently available offline; portable via USB
 
+**How much storage?** Rough raster-map figures: Hesse up to zoom 14 ≈ 2–4 GB per map style; all of Germany up to zoom 14 ≈ 20–30 GB. The vector map is far more compact — a vector offline package for a federal state is usually below 1 GB.
+
+**Offline test:** switch the map mode to **Offline** (or briefly disconnect the network) and pan/zoom through your target region — whatever renders now is genuinely stored locally. Missing tiles show as blank areas; extend the download area/zoom in that case.
+
 ## On the map
 
 * **Node positions** as colored pins; right-click a node → set color, send DM, edit note, start traceroute, open telemetry

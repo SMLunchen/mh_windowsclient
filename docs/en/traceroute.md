@@ -18,8 +18,8 @@
 
 ## Screenshots
 
-Traceroute window with hop table:
-<img width="780" height="868" alt="Meshhessen Client – traceroute for Meshtastic devices: hop table, distance and SNR on Windows" src="https://github.com/user-attachments/assets/10880a3d-9d94-4b07-84bc-ad64af56dab1" />
+Traceroute window with hop table, "RF only" checkbox and honest MQTT badges (only the bridged segment carries the badge):
+<img alt="Meshhessen Client – traceroute with hop table, RF-only mode and honest per-segment MQTT labeling" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/traceroute-true-mqtt-labeling.png" />
 
 Traceroute path on the map:
 <img width="1278" height="889" alt="Meshhessen Client – Meshtastic traceroute path visualized on the offline map" src="https://github.com/user-attachments/assets/800925ef-0d4e-41ad-a7f2-56cdd06da6b7" />

@@ -12,7 +12,9 @@
   * **SNR/RSSI only for direct reception** – signal values are shown only when we hear the node directly (0 hops, no MQTT); for relayed nodes the column shows the hop count instead
   * **Advanced filters** – by "last seen" (5 min to 60 days), hide MQTT nodes, favorites only, SNR coloring on/off; sort dropdown in tile mode
 * **Request information** – right-click submenu (list, tile, map) requests data from a node like the Android app: user info, position, device/environment/air-quality/power/host metrics, signal quality/mesh stats, PAX counter
-* **Firmware version & hardware model** – queried automatically on connect and shown in the node info window
+* **Firmware version & hardware model** – queried automatically on connect and shown in the node info window:
+
+<img alt="Meshhessen Client – node info window with role, battery, signal, first/last seen" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node-info-window.png" />
 * **PKI key indicator** – 🔑 column shows whether a node's public key is known
 * **Node colors** – color-code nodes individually (map + lists)
 * **Node notes** – free-text annotations per node
@@ -28,6 +30,22 @@ Node overview as tile view (Fancy View) – with telemetry, power and signal qua
 ## Remote administration
 
 Full remote admin UI for favorite nodes — also works across relay and MQTT paths:
+
+<img alt="Meshhessen Client – remote administration of a Meshtastic node: LoRa configuration over the air" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/remote-admin.png" />
+
+### How to administer a remote node (step by step)
+
+1. **Prerequisites:** your public key must be registered as an admin key on the target node (its security tab, admin keys 1–3) — or you share an admin channel. The target also needs to know your node's public key (PKI).
+2. Mark the target node as a **favorite** (★ in the right-click menu) — only favorites get the menu entry
+3. Right-click the node → **"Remote Administration"** — the client negotiates a session key and loads the configuration (either everything at once or per tab on demand)
+4. Change settings → **"Save"** writes them back over the air; the target reboots if required
+5. **Typical failures:** timeout without a response → admin key missing on the target or the node is currently unreachable (try a traceroute); "no key" → the target's public key is missing locally (receive the node directly once or add the key to `node_keys.csv`). Rejections are reported with a concrete reason instead of failing silently.
+6. Across multiple hops every answer takes a few seconds — the **timeout** is adjustable in the window (default 120 s); individual tabs can be retried via "↻ Reload Tab"
+
+**Favorites on the remote device** can be set/removed remotely, too:
+<img alt="Meshhessen Client – set a favorite node remotely on the remote Meshtastic device" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/remote-admin-set-favorite-node.png" />
+
+Feature overview:
 
 * All configuration tabs: Owner, Device, Position, LoRa, Bluetooth, Network, Display, Channels, **Security**, Control
 * **Security tab:** public key (read-only, Base64), admin keys 1–3 (Base64), flags (admin channel, managed mode, serial, debug log)

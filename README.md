@@ -19,12 +19,12 @@ Der kostenlose, native **Windows-Client für Meshtastic-Geräte**: Nachrichten s
 | | |
 |---|---|
 | **Download** | [Neueste `MeshhessenClient.exe` aus den Releases](https://github.com/SMLunchen/mh_windowsclient/releases) — eine Datei, ohne Installer startbar, portabel |
-| **Voraussetzung** | Windows 10/11 (x64) + [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) (einmalig, kostenlos) |
+| **Voraussetzung** | Windows 10/11 (x64) — sonst nichts: Die EXE bringt die komplette .NET-Laufzeitumgebung mit (self-contained) |
 | **Geräte** | Alle Meshtastic-Geräte: LILYGO T-Beam, T-Deck, RAK4631, Heltec, Seeed u. v. m. |
 | **Verbindung** | USB/Serial · TCP/WLAN · Bluetooth (BLE) |
 | **Privatsphäre** | Vollständig offline-fähig — keine Cloud, keine Registrierung, keine Telemetrie zum Entwickler |
 
-1. .NET 8 Desktop Runtime installieren → `MeshhessenClient.exe` herunterladen und starten
+1. `MeshhessenClient.exe` herunterladen und starten — keine Installation, keine separate Runtime nötig
 2. Meshtastic-Gerät anschließen (USB) oder IP/BT bereithalten → Verbindungstyp wählen → **Verbinden**
 3. 3–10 Sekunden warten, bis die Kanäle geladen sind — loslegen!
 
@@ -56,7 +56,7 @@ Frei konfigurierbares **Telemetrie-Dashboard** (11 Widget-Typen, Schwellwert-Ala
 ### 💬 Kommuniziere bequem am PC
 Kanal-Chat und Direktnachrichten mit Reaktionen, Antworten und optionaler Nachrichten-Historie — inklusive client-seitiger **PKI-Entschlüsselung** (X25519 + AES-256-CCM) und 🚨 Alert-Bell/SOS. Dazu **Fernverwaltung** entfernter Nodes (auch über Relay-/MQTT-Strecken) und vollständige Gerätekonfiguration.
 
-<img width="1443" height="813" alt="Meshhessen Client – Meshtastic Nachrichten, Kanal-Chat und Direktnachrichten (DM) unter Windows" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/messaging.png" />
+<img width="1443" height="813" alt="Meshhessen Client – Meshtastic Nachrichten, Kanal-Chat und Direktnachrichten (DM) unter Windows" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/new-chat-layout.png" />
 
 → [Nachrichten](docs/de/nachrichten.md) · [Node-Verwaltung & Fernkonfiguration](docs/de/node-verwaltung.md)
 
@@ -120,12 +120,12 @@ The free, native **Windows client for Meshtastic devices**: send messages, analy
 | | |
 |---|---|
 | **Download** | [Latest `MeshhessenClient.exe` from Releases](https://github.com/SMLunchen/mh_windowsclient/releases) — a single file, runs without an installer, portable |
-| **Requirements** | Windows 10/11 (x64) + [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) (one-time, free) |
+| **Requirements** | Windows 10/11 (x64) — nothing else: the EXE ships with the complete .NET runtime (self-contained) |
 | **Devices** | All Meshtastic devices: LILYGO T-Beam, T-Deck, RAK4631, Heltec, Seeed and more |
 | **Connection** | USB/Serial · TCP/WiFi · Bluetooth (BLE) |
 | **Privacy** | Fully offline-capable — no cloud, no registration, no telemetry to the developer |
 
-1. Install the .NET 8 Desktop Runtime → download and launch `MeshhessenClient.exe`
+1. Download and launch `MeshhessenClient.exe` — no installation, no separate runtime needed
 2. Plug in your Meshtastic device (USB) or have IP/BT ready → pick a connection type → **Connect**
 3. Wait 3–10 seconds for the channels to load — go!
 
@@ -147,9 +147,3 @@ The free, native **Windows client for Meshtastic devices**: send messages, analy
 ### Forks & reuse
 
 You are welcome to fork and adapt the source code within the terms of the license. **The Meshhessen tile server is not part of that:** the map infrastructure (`tile.meshhessenclient.de` and the associated vector/raster endpoints) is provided exclusively for the official Meshhessen Client and funded by community donations. Forks and derivative clients (including ports to other mesh protocols) must run their own tile infrastructure — the **"Online – custom tile server"** map mode accepts any tile URLs. Unauthorized access is blocked technically.
-
----
-
-## 🔍 Verwandte Suchbegriffe / Related Search Terms
-
-Meshhessen Client · Windows-Client für Meshtastic-Geräte · Meshtastic Windows App · Meshtastic PC Software · Meshtastic Desktop App · Meshtastic USB Windows · Meshtastic Serial Windows · Meshtastic WPF · Meshtastic .NET · LoRa Mesh Windows · Meshtastic Offline Karte · Meshtastic offline map · Meshtastic Telemetrie · Meshtastic telemetry · Meshtastic Traceroute · Meshtastic 3D terrain · Meshtastic Fresnel zone · Meshtastic Hessen · Meshtastic Deutschland · Meshtastic Germany · LILYGO T-Beam Windows · T-Deck Windows · RAK4631 Windows · Heltec Windows · Meshtastic BLE Windows · Meshtastic Bluetooth Windows · Meshtastic PKI · Meshhessen Community · Meshhessen

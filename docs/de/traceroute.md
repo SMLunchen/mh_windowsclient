@@ -24,8 +24,8 @@
 
 ## Screenshots
 
-Traceroute-Fenster mit Hop-Tabelle:
-<img width="780" height="868" alt="Meshhessen Client – Traceroute für Meshtastic-Geräte: Hop-Tabelle, Entfernung und SNR unter Windows" src="https://github.com/user-attachments/assets/10880a3d-9d94-4b07-84bc-ad64af56dab1" />
+Traceroute-Fenster mit Hop-Tabelle, „Nur HF"-Haken und ehrlichen MQTT-Badges (nur die gebrückte Teilstrecke trägt das Badge):
+<img alt="Meshhessen Client – Traceroute mit Hop-Tabelle, Nur-HF-Modus und ehrlicher MQTT-Kennzeichnung pro Teilstrecke" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/traceroute-true-mqtt-labeling.png" />
 
 Traceroute-Pfad auf der Karte:
 <img width="1278" height="889" alt="Meshhessen Client – Meshtastic Traceroute-Pfad auf Offline-Karte visualisiert" src="https://github.com/user-attachments/assets/800925ef-0d4e-41ad-a7f2-56cdd06da6b7" />

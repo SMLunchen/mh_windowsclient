@@ -12,7 +12,9 @@
   * **SNR/RSSI nur bei direktem Empfang** – Signalwerte werden nur angezeigt, wenn wir den Node direkt (0 Hops, kein MQTT) hören; bei Relay-Nodes zeigt die Spalte stattdessen die Hop-Anzahl
   * **Erweiterte Filter** – nach „zuletzt gesehen" (5 Min bis 60 Tage), MQTT-Nodes ausblenden, nur Favoriten, SNR-Einfärbung an/aus; Sortier-Dropdown im Kachelmodus
 * **Informationen anfordern** – Rechtsklick-Untermenü (Liste, Kachel, Karte) fordert wie die Android-App gezielt Daten von einem Node an: Benutzer-Info, Position, Geräte-/Umwelt-/Luftqualität-/Strom-/Host-Metriken, Signalqualität/Mesh-Statistik, PAX-Zähler
-* **Firmware-Version & Hardware-Modell** – werden automatisch beim Verbinden abgefragt und im Node-Info-Fenster angezeigt
+* **Firmware-Version & Hardware-Modell** – werden automatisch beim Verbinden abgefragt und im Node-Info-Fenster angezeigt:
+
+<img alt="Meshhessen Client – Node-Info-Fenster mit Rolle, Akku, Signal, Zuerst/Zuletzt gesehen" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/node-info-window.png" />
 * **PKI-Schlüssel-Indikator** – 🔑-Spalte zeigt, ob der Public Key des Nodes bekannt ist
 * **Node-Farben** – Nodes individuell einfärben (Karte + Listen)
 * **Node-Notizen** – Freitext-Notizen pro Node
@@ -28,6 +30,22 @@ Node-Übersicht als Kachelansicht (Fancy View) – mit Telemetrie, Strom und Sig
 ## Fernverwaltung (Remote Admin)
 
 Vollständige Remote-Admin-Oberfläche für Favoriten-Nodes — funktioniert auch über Relay- und MQTT-Strecken:
+
+<img alt="Meshhessen Client – Remote Administration eines Meshtastic-Nodes: LoRa-Konfiguration über Funk" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/remote-admin.png" />
+
+### So administrierst du einen entfernten Node (Schritt für Schritt)
+
+1. **Voraussetzungen:** Dein Public Key muss auf dem Ziel-Node als Admin-Schlüssel eingetragen sein (Security-Tab des Ziel-Nodes, Admin-Schlüssel 1–3) — oder du nutzt einen gemeinsamen Admin-Channel. Außerdem muss der Ziel-Node den Public Key deines Nodes kennen (PKI).
+2. Ziel-Node als **Favorit** markieren (★ im Rechtsklick-Menü) — nur Favoriten bekommen den Menüpunkt
+3. Rechtsklick auf den Node → **„Fernverwaltung"** — der Client handelt einen Session-Schlüssel aus und lädt die Konfiguration (wahlweise alles sofort oder pro Tab beim Öffnen)
+4. Einstellungen ändern → **„Speichern"** schreibt sie über Funk zurück; der Ziel-Node startet bei Bedarf neu
+5. **Typische Fehler:** Timeout ohne Antwort → Admin-Schlüssel fehlt auf dem Ziel oder der Node ist gerade nicht erreichbar (Traceroute testen); „kein Schlüssel" → Public Key des Ziels fehlt lokal (Node einmal direkt empfangen oder Key in `node_keys.csv` eintragen). Ablehnungen meldet der Client mit konkretem Grund statt still zu scheitern.
+6. Über mehrere Hops dauert jede Antwort einige Sekunden — der **Timeout** ist im Fenster einstellbar (Standard 120 s), einzelne Tabs lassen sich per „↻ Tab neu laden" wiederholen
+
+Auch **Favoriten auf dem entfernten Gerät** lassen sich remote setzen/entfernen:
+<img alt="Meshhessen Client – Favoriten-Node remote auf dem entfernten Meshtastic-Gerät setzen" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/remote-admin-set-favorite-node.png" />
+
+Features im Überblick:
 
 * Alle Konfigurations-Reiter: Besitzer, Gerät, Position, LoRa, Bluetooth, Netzwerk, Anzeige, Kanäle, **Sicherheit**, Steuerung
 * **Sicherheits-Reiter:** Public Key (read-only, Base64), Admin-Schlüssel 1–3 (Base64), Flags (Admin Channel, Managed Mode, Serial, Debug Log)

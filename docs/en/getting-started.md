@@ -2,14 +2,15 @@
 
 [← Back to project overview](../../README.md) · [🇩🇪 Deutsche Version](../de/schnellstart.md)
 
-## Installation in 6 steps
+## Installation in 5 steps
 
-1. Download and install the [**.NET 8 Desktop Runtime**](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) (one-time; already present on many systems)
-2. **Download:** Get the latest `MeshhessenClient.exe` from [Releases](https://github.com/SMLunchen/mh_windowsclient/releases)
-3. **Connect device:** Plug in your Meshtastic device via USB (or have TCP/Bluetooth ready)
-4. **Launch:** Double-click `MeshhessenClient.exe` – the app runs directly, no installer
-5. **Connect:** Select connection type (Serial, TCP, or Bluetooth) → click "Connect"
-6. **Start:** Wait 3–10 seconds for channels to load, then send messages
+1. **Download:** Get the latest `MeshhessenClient.exe` from [Releases](https://github.com/SMLunchen/mh_windowsclient/releases) — the EXE ships with the complete .NET runtime (self-contained), **nothing to install**
+2. **Connect device:** Plug in your Meshtastic device via USB (or have TCP/Bluetooth ready)
+3. **Launch:** Double-click `MeshhessenClient.exe` – the app runs directly, no installer
+4. **Connect:** Select connection type (Serial, TCP, or Bluetooth) → click "Connect"
+5. **Start:** Wait 3–10 seconds for channels to load, then send messages
+
+> Only if you [build the client from source](technical.md#building-from-source) do you need the .NET 8 SDK.
 
 > The app is fully offline-capable. No cloud, no registration, no telemetry to the developer.
 

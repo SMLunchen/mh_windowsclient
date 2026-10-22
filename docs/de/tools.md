@@ -26,6 +26,20 @@
 * **ZIP-Export** – lokale Tiles als ZIP exportieren (nach Kartentyp filterbar)
 * Vollständig mehrsprachig (Deutsch/Englisch)
 
+### Der Assistent in Bildern
+
+Schritt 1–3: Willkommen, Laufwerkswahl und Formatierungsempfehlung (exFAT, 4096 Bytes):
+<img alt="Meshhessen Client – T-Deck Karten-Assistent Schritt 1: Willkommen" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/t-deck-assistant-stage1.png" />
+<img alt="Meshhessen Client – T-Deck Karten-Assistent Schritt 2: Laufwerksauswahl" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/t-deck-assistant-stage2.png" />
+<img alt="Meshhessen Client – T-Deck Karten-Assistent Schritt 3: Formatierung (exFAT 4096)" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/t-deck-assistant-stage3.png" />
+
+Schritt 4: Kartenbereich wählen — Bundesland, ganz Deutschland oder Freestyle-Rechteck auf der Karte:
+<img alt="Meshhessen Client – T-Deck Karten-Assistent Schritt 4: Kartenbereich auf interaktiver Karte wählen" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/t-deck-assistant-stage4-select-maprange.png" />
+
+Schritt 5 + 6: Zoom/Kartentyp und der laufende Transfer auf die SD-Karte:
+<img alt="Meshhessen Client – T-Deck Karten-Assistent Schritt 5: Zoom und Kartentyp" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/t-deck-assistant-stage5.png" />
+<img alt="Meshhessen Client – T-Deck Karten-Assistent Schritt 6: Tiles werden auf die SD-Karte übertragen" src="https://github.com/SMLunchen/mh_windowsclient/blob/master/img/t-deck-assistant-stage6-downloading.png" />
+
 ## 🔒 Kiosk-/Trainingsmodus
 
 Für geteilte Stationen (Vereinslokal, Schulung, Veranstaltung):
