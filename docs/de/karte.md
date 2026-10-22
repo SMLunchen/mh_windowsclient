@@ -44,6 +44,8 @@ Die Vektorkarte (MapLibre GL) – gestochen scharf in jeder Zoomstufe, mit Node-
 
 **Wieviel Speicher brauche ich?** Grobe Richtwerte für die Rasterkarte: Hessen bis Zoom 14 ≈ 2–4 GB je Kartenstil; ganz Deutschland bis Zoom 14 ≈ 20–30 GB. Die Vektorkarte ist deutlich kompakter — das Vektor-Offlinepaket für ein Bundesland liegt meist unter 1 GB.
 
+> ⚠️ **Auf SD-Karten die Zuordnungseinheit mitdenken** (z. B. fürs T-Deck): Viele Tiles sind nur wenige hundert Bytes groß, belegen aber je einen vollen Cluster. Mit Standard-Formatierung großer Karten (oft 128-KB-Cluster) vervielfacht sich der tatsächliche Platzbedarf gegenüber den Richtwerten oben. Deshalb exFAT mit **4096-Byte-Zuordnungseinheiten** formatieren — der [T-Deck-Assistent](tools.md) empfiehlt und erledigt genau das.
+
 **Offline-Test:** Karten-Modus auf **Offline** stellen (oder kurz WLAN/LAN trennen) und die Zielregion durchzoomen — was jetzt sichtbar ist, ist wirklich lokal gespeichert. Fehlende Kacheln erscheinen als leere Flächen; dann den Download-Bereich/Zoom erweitern.
 
 ## Auf der Karte

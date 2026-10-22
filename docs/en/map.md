@@ -43,6 +43,8 @@ The vector map (MapLibre GL) – razor-sharp at every zoom level, with node pins
 
 **How much storage?** Rough raster-map figures: Hesse up to zoom 14 ≈ 2–4 GB per map style; all of Germany up to zoom 14 ≈ 20–30 GB. The vector map is far more compact — a vector offline package for a federal state is usually below 1 GB.
 
+> ⚠️ **On SD cards, factor in the allocation unit size** (e.g. for the T-Deck): many tiles are only a few hundred bytes but each occupies a full cluster. With the default formatting of large cards (often 128 KB clusters) the real usage multiplies compared to the figures above. Format exFAT with **4096-byte allocation units** — the [T-Deck assistant](tools.md) recommends and does exactly that.
+
 **Offline test:** switch the map mode to **Offline** (or briefly disconnect the network) and pan/zoom through your target region — whatever renders now is genuinely stored locally. Missing tiles show as blank areas; extend the download area/zoom in that case.
 
 ## On the map
