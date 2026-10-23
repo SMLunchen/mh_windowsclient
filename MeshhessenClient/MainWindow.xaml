@@ -457,12 +457,45 @@
                 </StackPanel>
 
                 <!-- Connection Status -->
-                <StackPanel Grid.Column="1" Orientation="Horizontal">
-                    <Button x:Name="OpenDmWindowButton"
-                           Content="💬 DMs"
-                           Margin="0,0,8,0"
-                           Click="OpenDmWindow_Click"
-                           ToolTip="{DynamicResource StrOpenDms}"/>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <!-- Hidden when DMs are shown inline (WhatsApp-style) in the client. -->
+                    <StackPanel x:Name="DmWindowControlsPanel" Orientation="Horizontal" VerticalAlignment="Center">
+                        <CheckBox x:Name="DmAutoPopupCheckBox"
+                                  Content="{DynamicResource StrDmAutoPopup}"
+                                  ToolTip="{DynamicResource StrDmAutoPopupTip}"
+                                  VerticalAlignment="Center"
+                                  Margin="0,0,8,0"
+                                  Checked="DmAutoPopup_Changed"
+                                  Unchecked="DmAutoPopup_Changed"/>
+                        <Border x:Name="DmUnreadBadge"
+                                Background="#E53935"
+                                CornerRadius="8"
+                                Padding="6,1"
+                                Margin="0,0,6,0"
+                                VerticalAlignment="Center"
+                                Visibility="Collapsed"
+                                ToolTip="{DynamicResource StrDmUnreadTip}">
+                            <TextBlock x:Name="DmUnreadBadgeText"
+                                       Text="0"
+                                       Foreground="White"
+                                       FontSize="11"
+                                       FontWeight="Bold"
+                                       HorizontalAlignment="Center"/>
+                        </Border>
+                        <!-- Red glow fades via Opacity on DmPulseGlow (reliable vs ColorAnimation). -->
+                        <Grid Margin="0,0,8,0" VerticalAlignment="Center">
+                            <Border x:Name="DmPulseGlow"
+                                    Background="#E53935"
+                                    CornerRadius="4"
+                                    Opacity="0"
+                                    IsHitTestVisible="False"/>
+                            <Button x:Name="OpenDmWindowButton"
+                                   Content="💬 DMs"
+                                   Margin="2"
+                                   Click="OpenDmWindow_Click"
+                                   ToolTip="{DynamicResource StrOpenDms}"/>
+                        </Grid>
+                    </StackPanel>
                     <Button x:Name="OpenDashboardButton"
                            Content="📊"
                            Margin="0,0,10,0"

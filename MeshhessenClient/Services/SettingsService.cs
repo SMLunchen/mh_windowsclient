@@ -31,6 +31,7 @@ public record AppSettings
     public bool AlertBellSound { get; init; } = true;           // Play sound on alert bell character
     public bool MessageToasts { get; init; } = true;            // Windows toast notification on new incoming message
     public string DmStyle { get; init; } = "window";           // Direct messages: "window" (separate) or "inline" (WhatsApp-style)
+    public bool DmAutoPopup { get; init; } = true;             // Auto-open DM window on incoming message
     public bool FunkEchoEnabled { get; init; } = true;         // Funk-Echo: show incoming-request pulse/journal
     public string FunkEchoTone { get; init; } = "casual";      // Funk-Echo message style: "casual" or "factual"
     public bool FunkEchoToasts { get; init; } = false;         // Windows toast on incoming requests
@@ -216,6 +217,7 @@ public static class SettingsService
                 AlertBellSound = !values.TryGetValue("AlertBellSound", out var abs) || !bool.TryParse(abs, out var absBool) || absBool,
                 MessageToasts = !values.TryGetValue("MessageToasts", out var mtb) || !bool.TryParse(mtb, out var mtbBool) || mtbBool,
                 DmStyle = values.TryGetValue("DmStyle", out var dmsv) ? dmsv : "window",
+                DmAutoPopup = !values.TryGetValue("DmAutoPopup", out var dap) || !bool.TryParse(dap, out var dapBool) || dapBool,
                 FunkEchoEnabled = !values.TryGetValue("FunkEchoEnabled", out var fee) || !bool.TryParse(fee, out var feeBool) || feeBool,
                 FunkEchoTone = values.TryGetValue("FunkEchoTone", out var fet) && fet == "factual" ? "factual" : "casual",
                 FunkEchoToasts = values.TryGetValue("FunkEchoToasts", out var fto) && bool.TryParse(fto, out var ftoBool) && ftoBool,
@@ -293,6 +295,7 @@ public static class SettingsService
                 $"AlertBellSound={settings.AlertBellSound}",
                 $"MessageToasts={settings.MessageToasts}",
                 $"DmStyle={settings.DmStyle}",
+                $"DmAutoPopup={settings.DmAutoPopup}",
                 $"FunkEchoEnabled={settings.FunkEchoEnabled}",
                 $"FunkEchoTone={settings.FunkEchoTone}",
                 $"FunkEchoToasts={settings.FunkEchoToasts}",
