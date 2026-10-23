@@ -7,6 +7,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
 using System.Windows.Navigation;
 using MeshhessenClient.Models;
 using MeshhessenClient.Services;
@@ -55,6 +56,7 @@ public partial class MainWindow : Window
     private bool _channelsInitialized = false;   // one-time: sidebar auto-selects the primary channel
     private bool _initialScrollDone = false;      // gates lazy-load so the startup scroll-to-bottom isn't hijacked
     private DirectMessagesWindow? _dmWindow = null;
+    private bool _dmUnreadPulseActive;
 
     // Inline (WhatsApp-style) DM state — used when Settings.DmStyle == "inline".
     private readonly ObservableCollection<DmSidebarItem> _dmSidebarItems = new();
@@ -375,6 +377,8 @@ public partial class MainWindow : Window
             AlertBellSoundCheckBox.IsChecked = settings.AlertBellSound;
             MessageToastsCheckBox.IsChecked = settings.MessageToasts;
             DmInlineCheckBox.IsChecked = settings.DmStyle == "inline";
+            if (DmAutoPopupCheckBox != null)
+                DmAutoPopupCheckBox.IsChecked = settings.DmAutoPopup;
             EnableLocationLoggingCheckBox.IsChecked = settings.EnableLocationLogging;
             ShowEnvironmentDataCheckBox.IsChecked = settings.ShowEnvironmentData;
 
@@ -723,13 +727,25 @@ public partial class MainWindow : Window
     }
 
     /// <summary>Show/hide the inline DM section per the DmStyle setting. In window mode the inline
-    /// selection is cleared (DMs go back to the separate window).</summary>
+    /// selection is cleared (DMs go back to the separate window). When inline, the top DM button
+    /// / popup checkbox are hidden (DMs live in the sidebar).</summary>
     private void ApplyDmStyle()
     {
         bool inline = DmInline;
         var vis = inline ? Visibility.Visible : Visibility.Collapsed;
         if (DmSectionHeader != null) DmSectionHeader.Visibility = vis;
         if (DmList != null) DmList.Visibility = vis;
+        if (DmWindowControlsPanel != null)
+            DmWindowControlsPanel.Visibility = inline ? Visibility.Collapsed : Visibility.Visible;
+        if (inline)
+        {
+            StopDmUnreadPulse();
+            if (DmUnreadBadge != null) DmUnreadBadge.Visibility = Visibility.Collapsed;
+        }
+        else
+        {
+            UpdateDmUnreadUi(_dmWindow?.TotalUnreadCount ?? 0);
+        }
         if (!inline && _currentDmPartner != 0)
         {
             // Leaving inline mode while a DM was open → fall back to a channel view.
@@ -745,6 +761,85 @@ public partial class MainWindow : Window
         _currentSettings = _currentSettings with { DmStyle = DmInlineCheckBox.IsChecked == true ? "inline" : "window" };
         ApplyDmStyle();
         try { Services.SettingsService.Save(_currentSettings); } catch { }
+    }
+
+    private void DmAutoPopup_Changed(object sender, RoutedEventArgs e)
+    {
+        if (_suppressDirtyTracking) return;
+        bool auto = DmAutoPopupCheckBox?.IsChecked != false;
+        _currentSettings = _currentSettings with { DmAutoPopup = auto };
+        if (_dmWindow != null)
+            _dmWindow.AutoPopup = auto;
+        try { Services.SettingsService.Save(_currentSettings); } catch { }
+        // Turning auto-popup off while unread exist → start pulse; turning on → stop pulse.
+        UpdateDmUnreadUi(_dmWindow?.TotalUnreadCount ?? 0);
+    }
+
+    /// <summary>Create or reuse the DM window with auto-popup + unread badge wiring.</summary>
+    private DirectMessagesWindow EnsureDmWindow()
+    {
+        if (_dmWindow == null)
+        {
+            _dmWindow = new DirectMessagesWindow(_protocolService, _myNodeId);
+            _dmWindow.SetMessageDbManager(_messageDbManager);
+            _dmWindow.AutoPopup = _currentSettings.DmAutoPopup;
+            _dmWindow.UnreadCountChanged += count =>
+                Dispatcher.BeginInvoke(() => UpdateDmUnreadUi(count));
+        }
+        else
+        {
+            _dmWindow.AutoPopup = _currentSettings.DmAutoPopup;
+        }
+        return _dmWindow;
+    }
+
+    private void UpdateDmUnreadUi(int unreadCount)
+    {
+        if (DmUnreadBadge == null || OpenDmWindowButton == null) return;
+
+        if (unreadCount > 0)
+        {
+            DmUnreadBadgeText.Text = unreadCount > 99 ? "99+" : unreadCount.ToString();
+            DmUnreadBadge.Visibility = Visibility.Visible;
+            if (_currentSettings.DmAutoPopup)
+                StopDmUnreadPulse();
+            else
+                StartDmUnreadPulse();
+        }
+        else
+        {
+            DmUnreadBadge.Visibility = Visibility.Collapsed;
+            DmUnreadBadgeText.Text = "0";
+            StopDmUnreadPulse();
+            OpenDmWindowButton.FontWeight = FontWeights.Normal;
+        }
+    }
+
+    private void StartDmUnreadPulse()
+    {
+        if (DmPulseGlow == null || _dmUnreadPulseActive) return;
+        _dmUnreadPulseActive = true;
+
+        // Fade the solid red glow behind the button (Opacity is reliable; ColorAnimation
+        // on brushes / ModernWPF button Background is not).
+        var anim = new DoubleAnimation
+        {
+            From = 0.15,
+            To = 0.85,
+            Duration = TimeSpan.FromSeconds(1.5),
+            AutoReverse = true,
+            RepeatBehavior = RepeatBehavior.Forever,
+            EasingFunction = new SineEase { EasingMode = EasingMode.EaseInOut }
+        };
+        DmPulseGlow.BeginAnimation(UIElement.OpacityProperty, anim);
+    }
+
+    private void StopDmUnreadPulse()
+    {
+        _dmUnreadPulseActive = false;
+        if (DmPulseGlow == null) return;
+        DmPulseGlow.BeginAnimation(UIElement.OpacityProperty, null);
+        DmPulseGlow.Opacity = 0;
     }
 
     private void RefreshPorts()
@@ -1855,6 +1950,7 @@ public partial class MainWindow : Window
                 AlertBellSound = AlertBellSoundCheckBox.IsChecked == true,
                 MessageToasts = MessageToastsCheckBox.IsChecked == true,
                 DmStyle = DmInlineCheckBox.IsChecked == true ? "inline" : "window",
+                DmAutoPopup = DmAutoPopupCheckBox?.IsChecked != false,
                 Language = (LanguageComboBox.SelectedItem as System.Windows.Controls.ComboBoxItem)?.Tag as string ?? "de",
                 EnableLocationLogging = EnableLocationLoggingCheckBox.IsChecked == true,
                 ShowEnvironmentData = ShowEnvironmentDataCheckBox.IsChecked == true,
@@ -2188,8 +2284,10 @@ public partial class MainWindow : Window
                     ShowAlertNotification(message.From, message.FromId);
                 }
 
-                // Prüfe ob es eine Direktnachricht ist (nicht Broadcast)
-                bool isDirectMessage = message.ToId != 0xFFFFFFFF && message.ToId != 0;
+                // Direct message = unicast. Incoming must be addressed to us; outgoing to a peer.
+                // (To≠broadcast alone is wrong: overheard packets to other nodes were treated as DMs.)
+                bool isDirectMessage = message.ToId != 0 && message.ToId != 0xFFFFFFFF
+                    && (message.IsOwnMessage || message.ToId == _myNodeId);
 
                 // Windows toast for new incoming messages (toggleable in settings), only while the
                 // app is not in the foreground — so it doesn't pop while the user is already reading.
@@ -2233,20 +2331,8 @@ public partial class MainWindow : Window
                         Services.Logger.WriteLine($"[MSG DEBUG] Message is DM, routing to DM window");
                     }
 
-                    // Leite an DM-Fenster weiter
-                    if (_dmWindow == null)
-                    {
-                        _dmWindow = new DirectMessagesWindow(_protocolService, _myNodeId);
-                        _dmWindow.SetMessageDbManager(_messageDbManager);
-                    }
-                    _dmWindow.AddOrUpdateMessage(message);
-
-                    // Optional: Zeige DM-Fenster automatisch bei neuer Nachricht
-                    if (!_dmWindow.IsVisible)
-                    {
-                        // Blinke den Button oder zeige Notification
-                        OpenDmWindowButton.FontWeight = FontWeights.Bold;
-                    }
+                    // Leite an DM-Fenster weiter (Auto-Popup / Badge steuert DirectMessagesWindow)
+                    EnsureDmWindow().AddOrUpdateMessage(message);
                     return; // Nicht in Hauptnachrichten anzeigen
                 }
 
