@@ -504,6 +504,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#radio-echo-whos-pinging-us" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📡 Radio echo: "Who's pinging us?"
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#node-statistics-real-rf-neighbors" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -809,6 +820,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#radio-echo-whos-pinging-us" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📡 Radio echo: "Who's pinging us?"
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#node-statistics-real-rf-neighbors" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -902,6 +924,22 @@
 </ul>
 <!-- SCREENSHOT REQUEST: widget editor open (type/node/metric/threshold visible) -->
 <!-- SCREENSHOT REQUEST: Windows toast of a threshold alert -->
+
+<h2 id="radio-echo-whos-pinging-us">📡 Radio echo: "Who's pinging us?"<a class="headerlink" href="#radio-echo-whos-pinging-us" title="Permanent link">&para;</a></h2>
+<p>Other stations constantly interact with your node without you noticing — they request NodeInfo, position or telemetry, trace the radio path to you or knock on the remote admin. The radio echo makes these invisible requests visible:</p>
+<ul>
+<li><strong>Radar in the status strip</strong> (next to Mesh Health): on a request the little antenna mast emits a colored wave (color = request type, traceroute pulses twice), a counter collects unread events, and a message like <em>"🛰️ KELL is tracing the radio path to us!"</em> appears for a few seconds</li>
+<li><strong>Click opens the journal:</strong> a chronological view of who asked what and when — request bursts from the same station are bundled as ×n, with a source badge (direct / n hops / ☁ MQTT); traceroute requests even show the inbound path ("via …"), telemetry requests the requested data group (environment, power, device metrics …)</li>
+<li><strong>Statistics tab:</strong> requests, stations, traces, "What did the others want to know?" (with a telemetry breakdown by data group) and the most curious node</li>
+<li><strong>📡 Curiosity radar (retro sonar):</strong> its own tab styled like a classic radar scope — black screen, phosphor-green rings, rotating sweep, your node glowing in the center, the requesting stations around it (the more curious, the closer, bigger and brighter). When a request arrives live, a sonar ping expands from the station to the center and gets "reflected" back. Clicking a station shows hourly request bars and the breakdown</li>
+<li><strong>Filters:</strong> time range (24 h / 7 / 30 days), request type and node search; right-clicking an entry opens node info, map or DM — for traceroute requests the <strong>request path can be drawn on the map</strong></li>
+<li><strong>Response airtime:</strong> a statistics tile estimates how much transmit time your node's auto-replies cost (LoRa formula at the current modem preset) — every request also costs <em>your</em> airtime</li>
+<li><strong>Message style</strong> switchable in the settings: casual ("KELL is tracing the path to us!") or factual ("Traceroute request received from KELL"); optional Windows toasts; right-clicking the radar icon toggles 🔕 quiet mode; the feature can be hidden entirely and locked in <a href="../kiosk/">kiosk mode</a></li>
+<li><strong>Honesty:</strong> what is detected is the <em>request</em> — whether your node answers is derived from local configuration only, and the journal says so: "✓ reply expected", for position requests including the configured channel precision ("±2.9 km"), "✕ no reply (no position)", "? depends on sensors" or "🔐 only with admin authorization". The actual transmission is invisible to the client; replies to your own requests and overheard packets to third parties deliberately do not show up here</li>
+<li><strong>Dashboard integration:</strong> the metric "📡 radio echo (requests to us/h)" is available as a time series in the telemetry dashboard — including warn/alarm zones</li>
+</ul>
+<!-- SCREENSHOT REQUEST: radio-echo journal with various request types (funk-echo-journal.png) -->
+<!-- SCREENSHOT REQUEST: status strip with antenna mast + flyout (funk-echo-pulse.png) -->
 
 <h2 id="node-statistics-real-rf-neighbors">Node statistics &amp; real RF neighbors<a class="headerlink" href="#node-statistics-real-rf-neighbors" title="Permanent link">&para;</a></h2>
 <ul>

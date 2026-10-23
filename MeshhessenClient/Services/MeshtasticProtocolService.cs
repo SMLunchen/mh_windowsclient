@@ -118,6 +118,10 @@ public class MeshtasticProtocolService
     /// <summary>Fired with each complete raw framed packet from the physical node (0x94 0xC3 + len + payload).</summary>
     public event EventHandler<byte[]>? RawFrameReceived;
 
+    /// <summary>Funk-Echo: another station sent a directed request to our node
+    /// (NodeInfo/Position/Telemetry/Traceroute with want_response, or any foreign admin packet).</summary>
+    public event EventHandler<MeshhessenClient.Models.RequestEchoEvent>? RequestEchoReceived;
+
     /// <summary>Injects a FromRadio payload originating from a VN client into the local processing pipeline.</summary>
     public void ProcessExternalPacket(byte[] fromRadioPayload)
     {
@@ -1827,6 +1831,30 @@ public class MeshtasticProtocolService
 
     private void RouteDecodedData(MeshPacket packet, Data data)
     {
+        // Funk-Echo: detect directed requests aimed at us. During the connect backlog
+        // (_isInitializing) the node replays stale packets — skip those.
+        if (!_isInitializing)
+        {
+            var echoType = MeshhessenClient.Models.RequestEchoClassifier.Classify(_myNodeId, packet);
+            if (echoType != null)
+            {
+                var evt = new MeshhessenClient.Models.RequestEchoEvent(
+                    FromId:       packet.From,
+                    Type:         echoType.Value,
+                    TimestampUtc: DateTime.UtcNow,
+                    Hops:         MeshhessenClient.Models.RequestEchoClassifier.HopsOf(packet),
+                    ViaMqtt:      packet.ViaMqtt,
+                    Channel:      packet.Channel,
+                    PacketId:     packet.Id,
+                    RouteTowards: MeshhessenClient.Models.RequestEchoClassifier.ExtractRoute(packet),
+                    Detail:       MeshhessenClient.Models.RequestEchoClassifier.ExtractTelemetryVariant(packet));
+                Logger.WriteLine($"[FunkEcho] {echoType}{(evt.Detail != null ? $"/{evt.Detail}" : "")} request from !{packet.From:x8} " +
+                    $"(hops={evt.Hops?.ToString() ?? "?"}, mqtt={evt.ViaMqtt})");
+                try { RequestEchoReceived?.Invoke(this, evt); }
+                catch (Exception ex) { Logger.WriteLine($"[FunkEcho] handler error: {ex.Message}"); }
+            }
+        }
+
         switch ((int)data.Portnum)
         {
             case 1: // TEXT_MESSAGE_APP

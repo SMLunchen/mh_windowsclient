@@ -39,6 +39,23 @@
 <!-- SCREENSHOT REQUEST: widget editor open (type/node/metric/threshold visible) -->
 <!-- SCREENSHOT REQUEST: Windows toast of a threshold alert -->
 
+## 📡 Radio echo: "Who's pinging us?"
+
+Other stations constantly interact with your node without you noticing — they request NodeInfo, position or telemetry, trace the radio path to you or knock on the remote admin. The radio echo makes these invisible requests visible:
+
+* **Radar in the status strip** (next to Mesh Health): on a request the little antenna mast emits a colored wave (color = request type, traceroute pulses twice), a counter collects unread events, and a message like *"🛰️ KELL is tracing the radio path to us!"* appears for a few seconds
+* **Click opens the journal:** a chronological view of who asked what and when — request bursts from the same station are bundled as ×n, with a source badge (direct / n hops / ☁ MQTT); traceroute requests even show the inbound path ("via …"), telemetry requests the requested data group (environment, power, device metrics …)
+* **Statistics tab:** requests, stations, traces, "What did the others want to know?" (with a telemetry breakdown by data group) and the most curious node
+* **📡 Curiosity radar (retro sonar):** its own tab styled like a classic radar scope — black screen, phosphor-green rings, rotating sweep, your node glowing in the center, the requesting stations around it (the more curious, the closer, bigger and brighter). When a request arrives live, a sonar ping expands from the station to the center and gets "reflected" back. Clicking a station shows hourly request bars and the breakdown
+* **Filters:** time range (24 h / 7 / 30 days), request type and node search; right-clicking an entry opens node info, map or DM — for traceroute requests the **request path can be drawn on the map**
+* **Response airtime:** a statistics tile estimates how much transmit time your node's auto-replies cost (LoRa formula at the current modem preset) — every request also costs *your* airtime
+* **Message style** switchable in the settings: casual ("KELL is tracing the path to us!") or factual ("Traceroute request received from KELL"); optional Windows toasts; right-clicking the radar icon toggles 🔕 quiet mode; the feature can be hidden entirely and locked in [kiosk mode](kiosk.md)
+* **Honesty:** what is detected is the *request* — whether your node answers is derived from local configuration only, and the journal says so: "✓ reply expected", for position requests including the configured channel precision ("±2.9 km"), "✕ no reply (no position)", "? depends on sensors" or "🔐 only with admin authorization". The actual transmission is invisible to the client; replies to your own requests and overheard packets to third parties deliberately do not show up here
+* **Dashboard integration:** the metric "📡 radio echo (requests to us/h)" is available as a time series in the telemetry dashboard — including warn/alarm zones
+
+<!-- SCREENSHOT REQUEST: radio-echo journal with various request types (funk-echo-journal.png) -->
+<!-- SCREENSHOT REQUEST: status strip with antenna mast + flyout (funk-echo-pulse.png) -->
+
 ## Node statistics & real RF neighbors
 
 * **Node statistics window** – detailed analysis per node:

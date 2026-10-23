@@ -31,6 +31,10 @@ public record AppSettings
     public bool AlertBellSound { get; init; } = true;           // Play sound on alert bell character
     public bool MessageToasts { get; init; } = true;            // Windows toast notification on new incoming message
     public string DmStyle { get; init; } = "window";           // Direct messages: "window" (separate) or "inline" (WhatsApp-style)
+    public bool FunkEchoEnabled { get; init; } = true;         // Funk-Echo: show incoming-request pulse/journal
+    public string FunkEchoTone { get; init; } = "casual";      // Funk-Echo message style: "casual" or "factual"
+    public bool FunkEchoToasts { get; init; } = false;         // Windows toast on incoming requests
+    public bool FunkEchoQuiet { get; init; } = false;          // quiet mode: no pulse/flyout/toast (badge + journal keep running)
     public string Language { get; init; } = "de";              // UI language: "de" or "en"
     public bool EnableLocationLogging { get; init; } = false;   // Log GPS positions to locationlogs/
     public Dictionary<uint, bool> PinnedNodes { get; init; } = new();     // NodeId -> pinned
@@ -212,6 +216,10 @@ public static class SettingsService
                 AlertBellSound = !values.TryGetValue("AlertBellSound", out var abs) || !bool.TryParse(abs, out var absBool) || absBool,
                 MessageToasts = !values.TryGetValue("MessageToasts", out var mtb) || !bool.TryParse(mtb, out var mtbBool) || mtbBool,
                 DmStyle = values.TryGetValue("DmStyle", out var dmsv) ? dmsv : "window",
+                FunkEchoEnabled = !values.TryGetValue("FunkEchoEnabled", out var fee) || !bool.TryParse(fee, out var feeBool) || feeBool,
+                FunkEchoTone = values.TryGetValue("FunkEchoTone", out var fet) && fet == "factual" ? "factual" : "casual",
+                FunkEchoToasts = values.TryGetValue("FunkEchoToasts", out var fto) && bool.TryParse(fto, out var ftoBool) && ftoBool,
+                FunkEchoQuiet = values.TryGetValue("FunkEchoQuiet", out var fq) && bool.TryParse(fq, out var fqBool) && fqBool,
                 Language = values.TryGetValue("Language", out var lang) && !string.IsNullOrEmpty(lang) ? lang : defaults.Language,
                 EnableLocationLogging = values.TryGetValue("EnableLocationLogging", out var ell) && bool.TryParse(ell, out var ellBool) && ellBool,
                 PinnedNodes = pinnedNodes,
@@ -285,6 +293,10 @@ public static class SettingsService
                 $"AlertBellSound={settings.AlertBellSound}",
                 $"MessageToasts={settings.MessageToasts}",
                 $"DmStyle={settings.DmStyle}",
+                $"FunkEchoEnabled={settings.FunkEchoEnabled}",
+                $"FunkEchoTone={settings.FunkEchoTone}",
+                $"FunkEchoToasts={settings.FunkEchoToasts}",
+                $"FunkEchoQuiet={settings.FunkEchoQuiet}",
                 $"Language={settings.Language}",
                 $"EnableLocationLogging={settings.EnableLocationLogging}",
                 $"TelemetryRetentionDays={settings.TelemetryRetentionDays}",

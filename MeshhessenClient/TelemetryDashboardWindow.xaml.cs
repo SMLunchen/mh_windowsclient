@@ -2533,6 +2533,7 @@ public partial class TelemetryDashboardWindow : Window
             // Cumulative since-boot counters — FinalizeChart widens the axis to the data
             "rx_bad" or "rx_dupe" or "tx_relay" or "tx_relay_canceled" or "tx_dropped"
                            => (0.0,    100.0,  ""),
+            "funk_echo"    => (0.0,     20.0,  Loc("StrUnitRequestsPerHour")),
             _              => (0.0,    100.0,  ""),
         };
 

@@ -150,11 +150,41 @@ CREATE TABLE IF NOT EXISTS waypoints (
     from_node    INTEGER,               -- Sender node ID
     received_at  INTEGER NOT NULL       -- local Unix timestamp when received
 );
+
+-- Funk-Echo: directed requests other stations sent to our node. One row per burst:
+-- repeats of the same (node, type) within the aggregation window bump count/last_ts.
+CREATE TABLE IF NOT EXISTS request_echo (
+    id        INTEGER PRIMARY KEY AUTOINCREMENT,
+    node_id   INTEGER NOT NULL,
+    req_type  TEXT    NOT NULL,          -- RequestEchoType name
+    first_ts  INTEGER NOT NULL,          -- Unix seconds (UTC)
+    last_ts   INTEGER NOT NULL,
+    count     INTEGER NOT NULL DEFAULT 1,
+    hops      INTEGER,                   -- NULL = unknown
+    via_mqtt  INTEGER NOT NULL DEFAULT 0,
+    route     TEXT,                      -- traceroute request path towards us ('!id,!id,…')
+    detail    TEXT,                      -- telemetry variant ('Device','Environment',…)
+    expected  TEXT                       -- reply expectation code ('yes','prec:13','no-pos','sensor','auth')
+);
+CREATE INDEX IF NOT EXISTS idx_reqecho_ts   ON request_echo(last_ts);
+CREATE INDEX IF NOT EXISTS idx_reqecho_node ON request_echo(node_id, req_type, last_ts);
 ";
         cmd.ExecuteNonQuery();
 
         // Extend environment_telemetry with the full sensor set (migration for existing DBs).
         EnsureEnvironmentColumns(con);
+
+        // request_echo.detail / .expected — added after the table shipped.
+        foreach (var col in new[] { "detail", "expected" })
+        {
+            try
+            {
+                using var add = con.CreateCommand();
+                add.CommandText = $"ALTER TABLE request_echo ADD COLUMN {col} TEXT";
+                add.ExecuteNonQuery();
+            }
+            catch { /* column already exists */ }
+        }
 
         // Cleanup (idempotent): SNR 0 in traceroute evidence means "no RF measurement"
         // (rx_snr of an MQTT-downlinked packet is 0; the firmware appends it unfiltered).
@@ -754,6 +784,12 @@ VALUES ($rid, $src, $dst, $ts, $hi, $nid, $st, $sb)";
                 cmd.Parameters.AddWithValue("$cutoff", cutoff);
                 cmd.ExecuteNonQuery();
             }
+            using (var echo = con.CreateCommand())
+            {
+                echo.CommandText = "DELETE FROM request_echo WHERE last_ts < $cutoff";
+                echo.Parameters.AddWithValue("$cutoff", cutoff);
+                echo.ExecuteNonQuery();
+            }
             using var vacuum = con.CreateCommand();
             vacuum.CommandText = "PRAGMA wal_checkpoint(TRUNCATE)";
             vacuum.ExecuteNonQuery();
@@ -1020,6 +1056,10 @@ LIMIT 50";
         // packet_count is an aggregate (packets per hour bucket) — handled separately
         if (string.Equals(metric, "packet_count", StringComparison.OrdinalIgnoreCase))
             return QueryPacketCountSeries(nodeIds, days);
+
+        // funk_echo: requests/h this node sent TO us (from the request_echo journal)
+        if (string.Equals(metric, "funk_echo", StringComparison.OrdinalIgnoreCase))
+            return QueryFunkEchoSeries(nodeIds, days);
 
         // Derived rates from cumulative LocalStats counters: delta between consecutive
         // polls ÷ elapsed time → packets per hour. Counter resets (reboot) are skipped.
@@ -1314,6 +1354,193 @@ ORDER BY bucket";
             int hour   = ts.Hour;
             if (dayIdx >= 0 && dayIdx < effectiveDays)
                 result[dayIdx, hour] = 1.0;
+        }
+        return result;
+    }
+
+    // ── Funk-Echo: directed requests other stations sent to us ───────────────
+
+    public record RequestEchoRow(long Id, uint NodeId, string Type, DateTime FirstUtc,
+        DateTime LastUtc, int Count, int? Hops, bool ViaMqtt, string? Route, string? Detail,
+        string? Expected);
+
+    /// <summary>Insert a request or bump an existing burst: the same (node, type, detail)
+    /// within <paramref name="aggregateWindowMinutes"/> of the burst's last activity counts
+    /// up instead of creating a new journal row. Returns the row's new count (1 = new entry).</summary>
+    public int UpsertRequestEcho(uint nodeId, string type, DateTime tsUtc,
+        int? hops, bool viaMqtt, string? route, string? detail = null,
+        string? expected = null, int aggregateWindowMinutes = 10)
+    {
+        long ts = ToUnix(tsUtc);
+        lock (_lock)
+        {
+            using var con = Open();
+            using (var find = con.CreateCommand())
+            {
+                find.CommandText = @"SELECT id, count FROM request_echo
+                    WHERE node_id=$n AND req_type=$t AND COALESCE(detail,'')=COALESCE($d,'')
+                      AND last_ts >= $windowStart
+                    ORDER BY last_ts DESC LIMIT 1";
+                find.Parameters.AddWithValue("$n", (long)nodeId);
+                find.Parameters.AddWithValue("$t", type);
+                find.Parameters.AddWithValue("$d", (object?)detail ?? DBNull.Value);
+                find.Parameters.AddWithValue("$windowStart", ts - aggregateWindowMinutes * 60L);
+                using var rdr = find.ExecuteReader();
+                if (rdr.Read())
+                {
+                    long id = rdr.GetInt64(0);
+                    int newCount = rdr.GetInt32(1) + 1;
+                    rdr.Close();
+                    using var upd = con.CreateCommand();
+                    upd.CommandText = @"UPDATE request_echo
+                        SET last_ts=$ts, count=$c, hops=$h, via_mqtt=$m,
+                            route=COALESCE($r, route), expected=COALESCE($e, expected)
+                        WHERE id=$id";
+                    upd.Parameters.AddWithValue("$ts", ts);
+                    upd.Parameters.AddWithValue("$c", newCount);
+                    upd.Parameters.AddWithValue("$h", (object?)hops ?? DBNull.Value);
+                    upd.Parameters.AddWithValue("$m", viaMqtt ? 1 : 0);
+                    upd.Parameters.AddWithValue("$r", (object?)route ?? DBNull.Value);
+                    upd.Parameters.AddWithValue("$e", (object?)expected ?? DBNull.Value);
+                    upd.Parameters.AddWithValue("$id", id);
+                    upd.ExecuteNonQuery();
+                    return newCount;
+                }
+            }
+            using var ins = con.CreateCommand();
+            ins.CommandText = @"INSERT INTO request_echo(node_id, req_type, first_ts, last_ts, count, hops, via_mqtt, route, detail, expected)
+                VALUES ($n, $t, $ts, $ts, 1, $h, $m, $r, $d, $e)";
+            ins.Parameters.AddWithValue("$n", (long)nodeId);
+            ins.Parameters.AddWithValue("$t", type);
+            ins.Parameters.AddWithValue("$ts", ts);
+            ins.Parameters.AddWithValue("$h", (object?)hops ?? DBNull.Value);
+            ins.Parameters.AddWithValue("$m", viaMqtt ? 1 : 0);
+            ins.Parameters.AddWithValue("$r", (object?)route ?? DBNull.Value);
+            ins.Parameters.AddWithValue("$d", (object?)detail ?? DBNull.Value);
+            ins.Parameters.AddWithValue("$e", (object?)expected ?? DBNull.Value);
+            ins.ExecuteNonQuery();
+            return 1;
+        }
+    }
+
+    public List<RequestEchoRow> GetRequestEchoJournal(DateTime sinceUtc, int limit = 500)
+    {
+        var result = new List<RequestEchoRow>();
+        lock (_lock)
+        {
+            using var con = Open();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = @"SELECT id, node_id, req_type, first_ts, last_ts, count, hops, via_mqtt, route, detail, expected
+                FROM request_echo WHERE last_ts >= $since ORDER BY last_ts DESC LIMIT $lim";
+            cmd.Parameters.AddWithValue("$since", ToUnix(sinceUtc));
+            cmd.Parameters.AddWithValue("$lim", limit);
+            using var rdr = cmd.ExecuteReader();
+            while (rdr.Read())
+            {
+                result.Add(new RequestEchoRow(
+                    rdr.GetInt64(0),
+                    (uint)rdr.GetInt64(1),
+                    rdr.GetString(2),
+                    FromUnix(rdr.GetInt64(3)),
+                    FromUnix(rdr.GetInt64(4)),
+                    rdr.GetInt32(5),
+                    rdr.IsDBNull(6) ? null : rdr.GetInt32(6),
+                    rdr.GetInt32(7) != 0,
+                    rdr.IsDBNull(8) ? null : rdr.GetString(8),
+                    rdr.IsDBNull(9) ? null : rdr.GetString(9),
+                    rdr.IsDBNull(10) ? null : rdr.GetString(10)));
+            }
+        }
+        return result;
+    }
+
+    public (int TotalRequests, int Stations, Dictionary<string, int> PerType,
+            Dictionary<string, int> TelemetryDetails,
+            List<(uint NodeId, int Count)> TopNodes) GetRequestEchoStats(int days)
+    {
+        long since = Since(days);
+        var perType = new Dictionary<string, int>();
+        var telemetryDetails = new Dictionary<string, int>();
+        var topNodes = new List<(uint, int)>();
+        int total = 0, stations = 0;
+        lock (_lock)
+        {
+            using var con = Open();
+            using (var cmd = con.CreateCommand())
+            {
+                cmd.CommandText = @"SELECT req_type, SUM(count) FROM request_echo
+                    WHERE last_ts >= $since GROUP BY req_type";
+                cmd.Parameters.AddWithValue("$since", since);
+                using var rdr = cmd.ExecuteReader();
+                while (rdr.Read())
+                {
+                    int c = rdr.GetInt32(1);
+                    perType[rdr.GetString(0)] = c;
+                    total += c;
+                }
+            }
+            using (var cmd = con.CreateCommand())
+            {
+                cmd.CommandText = @"SELECT COALESCE(detail,''), SUM(count) FROM request_echo
+                    WHERE last_ts >= $since AND req_type='Telemetry' GROUP BY COALESCE(detail,'')";
+                cmd.Parameters.AddWithValue("$since", since);
+                using var rdr = cmd.ExecuteReader();
+                while (rdr.Read())
+                    telemetryDetails[rdr.GetString(0)] = rdr.GetInt32(1);
+            }
+            using (var cmd = con.CreateCommand())
+            {
+                cmd.CommandText = @"SELECT node_id, SUM(count) AS c FROM request_echo
+                    WHERE last_ts >= $since GROUP BY node_id ORDER BY c DESC LIMIT 5";
+                cmd.Parameters.AddWithValue("$since", since);
+                using var rdr = cmd.ExecuteReader();
+                while (rdr.Read())
+                    topNodes.Add(((uint)rdr.GetInt64(0), rdr.GetInt32(1)));
+            }
+            using (var cmd = con.CreateCommand())
+            {
+                cmd.CommandText = "SELECT COUNT(DISTINCT node_id) FROM request_echo WHERE last_ts >= $since";
+                cmd.Parameters.AddWithValue("$since", since);
+                stations = Convert.ToInt32(cmd.ExecuteScalar());
+            }
+        }
+        return (total, stations, perType, telemetryDetails, topNodes);
+    }
+
+    /// <summary>Hourly request rate for the dashboard metric "funk_echo": sum of request
+    /// counts per hour bucket, per requesting node. Bursts span at most the aggregation
+    /// window (10 min), so attributing a burst to its last_ts hour is accurate enough.</summary>
+    private List<TimeSeriesPoint> QueryFunkEchoSeries(IEnumerable<uint> nodeIds, int days)
+    {
+        long since = Since(days);
+        const int bucketSec = 3600;
+        var result = new List<TimeSeriesPoint>();
+        lock (_lock)
+        {
+            using var con = Open();
+            foreach (var nodeId in nodeIds)
+            {
+                using var cmd = con.CreateCommand();
+                cmd.CommandText = $@"
+SELECT (last_ts / {bucketSec}) * {bucketSec} AS bucket, SUM(count) AS cnt
+FROM request_echo
+WHERE node_id = $n AND last_ts >= $s
+GROUP BY bucket
+ORDER BY bucket";
+                cmd.Parameters.AddWithValue("$n", (long)nodeId);
+                cmd.Parameters.AddWithValue("$s", since);
+                using var r = cmd.ExecuteReader();
+                while (r.Read())
+                {
+                    result.Add(new TimeSeriesPoint
+                    {
+                        NodeId    = nodeId,
+                        Timestamp = FromUnix(r.GetInt64(0)),
+                        Value     = r.GetInt64(1),
+                        Metric    = "funk_echo",
+                    });
+                }
+            }
         }
         return result;
     }

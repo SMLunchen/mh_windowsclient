@@ -40,6 +40,23 @@
 <!-- SCREENSHOT-WUNSCH: Widget-Editor offen (Typ/Node/Metrik/Threshold sichtbar) -->
 <!-- SCREENSHOT-WUNSCH: Windows-Toast einer Schwellwert-Warnung -->
 
+## 📡 Funk-Echo: „Wer funkt mich an?“
+
+Andere Stationen interagieren ständig mit deinem Node, ohne dass du es merkst — sie fragen NodeInfo, Position oder Telemetrie an, verfolgen per Traceroute den Funkweg zu dir oder klopfen an der Fernverwaltung an. Das Funk-Echo macht diese unsichtbaren Anfragen sichtbar:
+
+* **Radar in der Statusleiste** (neben Mesh Health): Bei einer Anfrage sendet der kleine Funkmast eine farbige Welle aus (Farbe = Anfrageart, Traceroute pulst doppelt), ein Zähler sammelt Ungelesenes, und für ein paar Sekunden erscheint eine Meldung wie *„🛰️ KELL verfolgt den Funkweg zu uns!“*
+* **Klick öffnet das Journal:** chronologische Übersicht, wer wann was angefragt hat — Anfrage-Serien derselben Station werden als ×n gebündelt, mit Quelle-Badge (direkt / n Hops / ☁ MQTT); bei Traceroute-Anfragen steht sogar der Hinweg („via …“), bei Telemetrie-Anfragen die angefragte Datengruppe (Umwelt-, Strom-, Gerätedaten …)
+* **Statistik-Tab:** Anfragen, Stationen, Traces, „Was wollten die anderen wissen?“ (mit Telemetrie-Aufschlüsselung nach Datengruppe) und der neugierigste Node
+* **📡 Neugier-Radar (Retro-Sonar):** eigener Tab im Stil eines klassischen Radarschirms — schwarzes Scope, phosphor-grüne Ringe, rotierender Sweep, dein Node leuchtet in der Mitte, die anfragenden Stationen drumherum (je neugieriger, desto näher, größer und heller). Trifft live eine Anfrage ein, breitet sich ein Sonar-Ping von der Station bis zur Mitte aus und wird „reflektiert“ zurückgeworfen. Klick auf eine Station zeigt stündliche Anfrage-Balken und die Aufschlüsselung
+* **Filter:** Zeitraum (24 h / 7 / 30 Tage), Anfrageart und Node-Suche; Rechtsklick auf einen Eintrag öffnet Node-Info, Karte oder DM — bei Traceroute-Anfragen lässt sich der **Anfrageweg als Linie auf der Karte** zeigen
+* **Antwort-Airtime:** eine Statistik-Kachel schätzt, wie viel Sendezeit die Auto-Antworten deines Nodes kosten (LoRa-Formel mit dem aktuellen Modem-Preset) — jede Anfrage kostet auch *deine* Airtime
+* **Meldungsstil** in den Einstellungen umschaltbar: Locker („KELL verfolgt den Weg zu uns!“) oder Sachlich („Traceroute-Anfrage von KELL empfangen“); optional Windows-Toasts; Rechtsklick auf das Radar-Icon schaltet den 🔕 Ruhemodus; das Feature lässt sich komplett ausblenden und im [Kiosk-Modus](kiosk.md) sperren
+* **Ehrlichkeit:** Erkannt wird die *Anfrage* — ob dein Node antwortet, leitet der Client nur aus der lokalen Konfiguration ab und sagt es dazu: „✓ Antwort erwartet“, bei Positionsanfragen inklusive der konfigurierten Kanal-Genauigkeit („±2,9 km“), „✕ keine Antwort (keine Position)“, „? je nach Sensorik“ oder „🔐 nur mit Admin-Berechtigung“. Die tatsächliche Aussendung ist im Client nicht sichtbar; Antworten auf deine eigenen Anfragen und mitgehörte Pakete an Dritte tauchen bewusst nicht auf
+* **Dashboard-Anbindung:** die Metrik „📡 Funk-Echo (Anfragen an uns/h)“ steht im Telemetrie-Dashboard als Zeitreihe zur Verfügung — inklusive Warn-/Alarm-Zonen
+
+<!-- SCREENSHOT-WUNSCH: Funk-Echo-Journal mit verschiedenen Anfragetypen (funk-echo-journal.png) -->
+<!-- SCREENSHOT-WUNSCH: Statusleiste mit Funkmast + Flyout (funk-echo-pulse.png) -->
+
 ## Node-Statistik & echte HF-Nachbarn
 
 * **Node-Statistik-Fenster** – detaillierte Auswertung pro Node:

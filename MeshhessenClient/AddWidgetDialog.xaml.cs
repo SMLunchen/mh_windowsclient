@@ -60,6 +60,7 @@ public class AddWidgetDialog : Window
         ("tx_relay",          "TX Relay (gesamt)"),
         ("tx_relay_canceled", "TX Relay abgebrochen (gesamt)"),
         ("tx_dropped",        "TX verworfen (gesamt)"),
+        ("funk_echo",         "📡 Funk-Echo (Anfragen an uns/h)"),
     };
 
     private static readonly (string key, string labelKey, bool multiNode)[] WidgetTypes =
