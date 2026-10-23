@@ -2421,6 +2421,14 @@ public partial class MainWindow : Window
                     }
                 }
 
+                // While an inline DM conversation is open, the visible list shows that DM —
+                // a channel message must not render into it (the stale channel filter still
+                // matched, so e.g. a public-channel post by the DM partner appeared inside
+                // the DM until the next view rebuild). It stays in _allMessages/DB and shows
+                // up when the channel view is reopened; meanwhile the sidebar badge counts it.
+                if (DmInline && _currentDmPartner != 0)
+                    passesFilter = false;
+
                 if (_currentSettings.DebugMessages)
                 {
                     Services.Logger.WriteLine($"[MSG DEBUG] Message passes filter: {passesFilter}, adding to display");
