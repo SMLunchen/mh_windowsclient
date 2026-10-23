@@ -63,6 +63,11 @@ public partial class RemoteAdminWindow : Window
         PopulateFavoriteNodeCombo();
 
         Loaded += async (_, _) => await ConnectAndLoadAsync();
+
+        // Win32 quirk (same as TelemetryWindow): when the ACTIVE owned window is
+        // destroyed, Windows may activate-and-minimize past the owner — activating
+        // the owner BEFORE destruction keeps the main window in front (issue #53).
+        Closing += (_, _) => { try { Owner?.Activate(); } catch { } };
     }
 
     private void TimeoutBox_TextChanged(object sender, TextChangedEventArgs e)

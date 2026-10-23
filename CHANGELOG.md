@@ -9,6 +9,9 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+### 🛠️ Fernverwaltung
+- **Fix:** Das Schließen des Fernverwaltungs-Fensters konnte das Hauptfenster in die Taskleiste minimieren (gleiche Win32-Eigenheit wie zuvor beim Telemetrie-Fenster) — der Owner wird jetzt vor dem Schließen aktiviert. (#53)
+
 ### 🗺️ Karte
 - **Abdeckungstexte auf DACH korrigiert:** Die In-App-Texte zu Karten-Modi, Tile-Download und T-Deck-Assistent sagten noch „nur Deutschland" — der Meshhessen-Tile-Server liefert aber Deutschland, Österreich und die Schweiz (DACH). Alle betroffenen Strings (de/en) aktualisiert; der veraltete Downloader-Hinweis auf OSM-Ratenlimits wurde durch den tatsächlichen Stand ersetzt (öffentliche OSM-/OpenTopoMap-Server sind für Downloads gesperrt, geladen wird vom Meshhessen- oder eigenen Server).
 
