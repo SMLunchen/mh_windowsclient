@@ -9,7 +9,8 @@
   * **14 widget types:** line, area, bar, scatter, gauge, stat value, heatmap, histogram, candlestick, state timeline, ranking, multi-stat, mesh health, clock
   * Multi-node support, all metrics: SNR, RSSI, battery, voltage, channel/TX utilization, temperature, humidity, pressure, packets/h, noise floor, RX/TX stats
   * Drag-and-drop arrangement, freely resizable, editable, duplicatable, auto-refresh
-  * **Zoom/pan in charts** (survives auto-refresh), day/night shading, threshold lines with **Windows toast alerts** on crossings
+  * **Zoom/pan on the time axis** (survives auto-refresh; double-click resets), day/night shading
+  * **Warn & alarm zones (Grafana-style):** per widget one warning and one alarm bound in each direction; gauge/stat/charts color green/orange/red by zone, **Windows toasts** report every zone transition (incl. ✅ all-clear)
   * **Export:** CSV (incl. a German-Excel flavour), widget as PNG, copy image, share whole dashboards as JSON (export/import)
   * **Fullscreen mode (F11)** for wall monitors; window placement and last active dashboard are remembered
   * **Automatic telemetry polling (📥):** up to 4 nodes are actively polled for LocalStats/environment/device data (mesh-friendly: LocalStats at most 1×/h, others every 30 min max); counter deltas yield packets/h rates
@@ -24,19 +25,36 @@
 
 1. **Open:** 📊 button in the main window toolbar → on first open the window is empty; "+ New" creates your first dashboard (suggested name "Dashboard 1" — call it e.g. "Solar monitoring")
 2. **Add a widget:** "+ Add Widget" → pick a type (for battery: **time series/line**), tick the node(s), metric **battery (%)**, range **7 days** (the default) → save. On the finished card you can switch via the 1d/7d/14d/30d buttons, reorder via the ⠿ grip and resize via the grip in the lower right
-3. **Set the alert:** enter your limit into the widget's **Threshold** field (e.g. `30`). The threshold line appears in the chart; when the value **crosses** it on a refresh you get a **Windows toast** (transition only — no constant nagging)
+3. **Set the alert:** in the widget editor under **"Thresholds & alerts"** set your bounds — for battery e.g. ⚠ warning low `30` and 🚨 alarm low `15`. The lines appear in the chart (orange/red), gauge and stat value color by zone; when the value **changes zone** on a refresh you get a **Windows toast** with severity (transition only — no constant nagging; returning to normal reports ✅)
 4. **Keep it fresh:** auto-refresh top right (e.g. 30 s); if the node rarely sends on its own, add it to the polling plan via the **📥 Polling** button (max. 4 nodes, mesh-friendly)
-5. **Success check & alert test:** the widget shows a curve with day/night shading; the last refresh time is shown at the bottom. Test the alert in two steps: first set the threshold on the same side as the current value (e.g. well below the battery level) and wait for one refresh — this first check silently records the baseline. Then move the threshold past the current value and press "↺ Refresh" (or wait for the auto-refresh): now the toast fires
+5. **Success check & alert test:** the widget shows a curve with day/night shading; the last refresh time is shown at the bottom. Test the alert in two steps: first set the bounds so the current value sits in the normal zone and wait for one refresh — this first check silently records the baseline. Then move a bound past the current value and press "↺ Refresh" (or wait for the auto-refresh): now the toast fires
 6. **Reading the values:** if the battery drops more than ~15–20 % overnight, see the chapter [Understanding the values](metrics.md) (night drop, voltage); SNR/RSSI interpretation lives there and in the [glossary](glossary.md)
 
 **Typical pitfalls:**
 
 * *Widget stays empty* → no data for this node/metric in the telemetry database yet (the node doesn't send that metric → enable polling or right-click "Request information")
-* *No toast despite threshold* → checks only happen on a **refresh** (auto-refresh, "↺" or saving in the editor), never while typing — and the very first check after opening silently records the baseline; only the next **transition** is reported. Also check: are Windows notifications allowed for apps?
+* *No toast despite alarm bounds* → checks only happen on a **refresh** (auto-refresh, "↺" or saving in the editor), never while typing — and the very first check after opening silently records the baseline; only the next **zone transition** is reported. Also check: are Windows notifications allowed for apps?
 * *Zoom keeps resetting* → zoom/pan survives auto-refresh; the manual "Refresh" button deliberately resets the view
 
 <!-- SCREENSHOT REQUEST: widget editor open (type/node/metric/threshold visible) -->
 <!-- SCREENSHOT REQUEST: Windows toast of a threshold alert -->
+
+## 📡 Radio echo: "Who's pinging us?"
+
+Other stations constantly interact with your node without you noticing — they request NodeInfo, position or telemetry, trace the radio path to you or knock on the remote admin. The radio echo makes these invisible requests visible:
+
+* **Radar in the status strip** (next to Mesh Health): on a request the little antenna mast emits a colored wave (color = request type, traceroute pulses twice), a counter collects unread events, and a message like *"🛰️ KELL is tracing the radio path to us!"* appears for a few seconds
+* **Click opens the journal:** a chronological view of who asked what and when — request bursts from the same station are bundled as ×n, with a source badge (direct / n hops / ☁ MQTT); traceroute requests even show the inbound path ("via …"), telemetry requests the requested data group (environment, power, device metrics …)
+* **Statistics tab:** requests, stations, traces, "What did the others want to know?" (with a telemetry breakdown by data group) and the most curious node
+* **📡 Curiosity radar (retro sonar):** its own tab styled like a classic radar scope — black screen, phosphor-green rings, rotating sweep, your node glowing in the center, the requesting stations around it (the more curious, the closer, bigger and brighter). When a request arrives live, a sonar ping expands from the station to the center and gets "reflected" back. Clicking a station shows hourly request bars and the breakdown
+* **Filters:** time range (24 h / 7 / 30 days), request type and node search; right-clicking an entry opens node info, map or DM — for traceroute requests the **request path can be drawn on the map**
+* **Response airtime:** a statistics tile estimates how much transmit time your node's auto-replies cost (LoRa formula at the current modem preset) — every request also costs *your* airtime
+* **Message style** switchable in the settings: casual ("KELL is tracing the path to us!") or factual ("Traceroute request received from KELL"); optional Windows toasts; right-clicking the radar icon toggles 🔕 quiet mode; the feature can be hidden entirely and locked in [kiosk mode](kiosk.md)
+* **Honesty:** what is detected is the *request* — whether your node answers is derived from local configuration only, and the journal says so: "✓ reply expected", for position requests including the configured channel precision ("±2.9 km"), "✕ no reply (no position)", "? depends on sensors" or "🔐 only with admin authorization". The actual transmission is invisible to the client; replies to your own requests and overheard packets to third parties deliberately do not show up here
+* **Dashboard integration:** the metric "📡 radio echo (requests to us/h)" is available as a time series in the telemetry dashboard — including warn/alarm zones
+
+<!-- SCREENSHOT REQUEST: radio-echo journal with various request types (funk-echo-journal.png) -->
+<!-- SCREENSHOT REQUEST: status strip with antenna mast + flyout (funk-echo-pulse.png) -->
 
 ## Node statistics & real RF neighbors
 

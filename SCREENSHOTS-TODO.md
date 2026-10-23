@@ -23,6 +23,8 @@ Dark Mode passend zur restlichen Galerie.
 |---|---|---|---|---|
 | 7 | `map-style-comparison.png` | Kartenstil-Vergleich | Gleicher Ausschnitt dreimal: OSM Standard / OSM Dark / OpenTopoMap (gern als eine Montage) | `docs/de/karte.md` + `docs/en/map.md` (neue Stil-Tabelle) |
 | 8 | `handbuch-hero.png` | Handbuch-Startseite | Neues Handbuch live mit Logo/Favicon und Dark Mode (für README/Website) | README / `docs/index.html` |
+| 9 | `funk-echo-journal.png` | Funk-Echo-Fenster | „📡 Wer funkt mich an?" mit gefülltem Journal (verschiedene Anfragetypen, ×n-Bündel, Quelle-Badges) | `docs/de/telemetrie.md` + `docs/en/telemetry.md` |
+| 10 | `funk-echo-pulse.png` | Statusleiste mit Funk-Echo | Kopfzeile mit Funkmast-Element, Zähler-Badge und sichtbarem Flyout („… verfolgt den Funkweg zu uns!") | `docs/de/telemetrie.md` + `docs/en/telemetry.md` |
 
 ## Erledigt ✅
 

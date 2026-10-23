@@ -530,6 +530,8 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
                 <!-- "Netz:" label -->
@@ -608,6 +610,69 @@
                                    VerticalAlignment="Center" Margin="3,0,0,0"/>
                     </StackPanel>
                 </StackPanel>
+
+                <!-- Separator before Funk-Echo -->
+                <Rectangle x:Name="FunkEchoSeparator" Grid.Column="7" Width="1" Height="20"
+                           Fill="{DynamicResource SystemControlForegroundBaseLowBrush}"
+                           Margin="10,0,10,0" SnapsToDevicePixels="True" VerticalAlignment="Center"/>
+
+                <!-- Funk-Echo: incoming-request radar (click opens the journal) -->
+                <StackPanel x:Name="FunkEchoPanel" Grid.Column="8" Orientation="Vertical"
+                            VerticalAlignment="Center" Cursor="Hand"
+                            MouseLeftButtonDown="FunkEchoIndicator_Click"
+                            ToolTip="{DynamicResource StrFunkEchoTooltip}">
+                    <StackPanel.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem x:Name="FunkEchoQuietMenuItem" IsCheckable="True"
+                                      Header="{DynamicResource StrFunkEchoQuiet}"
+                                      Checked="FunkEchoQuiet_Toggled" Unchecked="FunkEchoQuiet_Toggled"/>
+                        </ContextMenu>
+                    </StackPanel.ContextMenu>
+                    <TextBlock Text="{DynamicResource StrFunkEchoHdr}" FontSize="9" Opacity="0.55"
+                               HorizontalAlignment="Center" Margin="0,0,0,1"/>
+                    <Grid HorizontalAlignment="Center" Width="30" Height="18">
+                        <!-- expanding pulse ring (animated from code; color = request type) -->
+                        <Ellipse x:Name="FunkEchoPulse" Width="14" Height="14" Opacity="0"
+                                 Stroke="#20C997" StrokeThickness="2.2"
+                                 HorizontalAlignment="Center" VerticalAlignment="Center"
+                                 RenderTransformOrigin="0.5,0.5">
+                            <Ellipse.RenderTransform>
+                                <ScaleTransform x:Name="FunkEchoPulseScale" ScaleX="1" ScaleY="1"/>
+                            </Ellipse.RenderTransform>
+                        </Ellipse>
+                        <!-- static radar ring + mast (simplified from img/HF_ICON.svg);
+                             mast uses the theme foreground so it reads in light AND dark -->
+                        <Ellipse Width="17" Height="17" Stroke="#20C997" StrokeThickness="1.2"
+                                 StrokeDashArray="2 2" Opacity="0.95"
+                                 HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <Path x:Name="FunkEchoMast"
+                              Stroke="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                              StrokeThickness="1.6"
+                              StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                              HorizontalAlignment="Center" VerticalAlignment="Center"
+                              Data="M0,-5 L-3.4,5 H3.4 Z M-2.2,2 H2.2 M-1.4,-1 H1.4 M0,-5 V-7"/>
+                        <!-- unread badge -->
+                        <Border x:Name="FunkEchoBadge" Background="#20C997" CornerRadius="7"
+                                MinWidth="14" Height="14" Padding="3,0"
+                                HorizontalAlignment="Right" VerticalAlignment="Top"
+                                Margin="0,-3,-4,0" Visibility="Collapsed">
+                            <TextBlock x:Name="FunkEchoBadgeText" Text="0" FontSize="9" FontWeight="Bold"
+                                       Foreground="#0D1117" HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"/>
+                        </Border>
+                    </Grid>
+                </StackPanel>
+
+                <!-- Funk-Echo flyout: transient "KELL is tracing us!" message -->
+                <Popup x:Name="FunkEchoFlyout" PlacementTarget="{Binding ElementName=FunkEchoPanel}"
+                       Placement="Bottom" HorizontalOffset="-40" VerticalOffset="6"
+                       AllowsTransparency="True" StaysOpen="True" IsHitTestVisible="False">
+                    <Border Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}"
+                            BorderBrush="#20C997" BorderThickness="1" CornerRadius="6"
+                            Padding="10,6" MaxWidth="340">
+                        <TextBlock x:Name="FunkEchoFlyoutText" FontSize="12" TextWrapping="Wrap"/>
+                    </Border>
+                </Popup>
             </Grid>
         </Border>
 
@@ -2015,6 +2080,20 @@
                                              Margin="0,10,0,4"/>
                                     <TextBlock Text="{DynamicResource StrMessageToastsHint}"
                                               FontStyle="Italic" Foreground="Gray" TextWrapping="Wrap" FontSize="11"/>
+                                    <CheckBox x:Name="FunkEchoCheckBox"
+                                             Content="{DynamicResource StrFunkEchoEnable}"
+                                             Margin="0,10,0,4"/>
+                                    <StackPanel Orientation="Horizontal" Margin="0,2,0,4">
+                                        <TextBlock Text="{DynamicResource StrFunkEchoToneLabel}" FontSize="12"
+                                                   VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                        <ComboBox x:Name="FunkEchoToneComboBox" MinWidth="260">
+                                            <ComboBoxItem Tag="casual"  Content="{DynamicResource StrFunkEchoToneCasual}"/>
+                                            <ComboBoxItem Tag="factual" Content="{DynamicResource StrFunkEchoToneFactual}"/>
+                                        </ComboBox>
+                                    </StackPanel>
+                                    <CheckBox x:Name="FunkEchoToastsCheckBox"
+                                             Content="{DynamicResource StrFunkEchoToasts}"
+                                             Margin="0,2,0,4"/>
                                     <CheckBox x:Name="DmInlineCheckBox"
                                              Content="{DynamicResource StrDmInline}"
                                              Checked="DmInline_Changed" Unchecked="DmInline_Changed"
@@ -2363,6 +2442,7 @@
                                         <CheckBox x:Name="KioskLockDashboardCheckBox"   Content="{DynamicResource StrKioskLockDashboard}"   Margin="0,0,14,4"/>
                                         <CheckBox x:Name="KioskLockSosCheckBox"         Content="{DynamicResource StrKioskLockSos}"         Margin="0,0,14,4"/>
                                         <CheckBox x:Name="KioskLockMeshHessenCheckBox"  Content="{DynamicResource StrKioskLockMeshHessen}"  Margin="0,0,14,4"/>
+                                        <CheckBox x:Name="KioskLockFunkEchoCheckBox"    Content="{DynamicResource StrKioskLockFunkEcho}"    Margin="0,0,14,4"/>
                                     </WrapPanel>
                                     <TextBlock Text="{DynamicResource StrKioskForgotHint}"
                                               FontStyle="Italic" Foreground="Gray" FontSize="11"

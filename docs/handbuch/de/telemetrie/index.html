@@ -504,6 +504,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#funk-echo-wer-funkt-mich-an" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📡 Funk-Echo: „Wer funkt mich an?“
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#node-statistik-echte-hf-nachbarn" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -836,6 +847,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#funk-echo-wer-funkt-mich-an" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📡 Funk-Echo: „Wer funkt mich an?“
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#node-statistik-echte-hf-nachbarn" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -902,7 +924,8 @@
 <li><strong>14 Widget-Typen:</strong> Linie, Fläche, Balken, Scatter, Gauge, Stat-Wert, Heatmap, Histogramm, Candlestick, State-Timeline, Ranking, Multi-Stat, Mesh-Health, Uhrzeit</li>
 <li>Multi-Node-Support, alle Metriken: SNR, RSSI, Batterie, Spannung, Kanal-/TX-Auslastung, Temperatur, Luftfeuchtigkeit, Luftdruck, Pakete/h, Noise Floor, RX/TX-Statistiken</li>
 <li>Widgets per Drag-and-Drop anordnen, frei skalierbar (Resize-Griff), editierbar, duplizierbar, Auto-Refresh</li>
-<li><strong>Zoom/Pan in Charts</strong> (bleibt über den Auto-Refresh erhalten), Tag/Nacht-Schattierung, Schwellwert-Linien mit <strong>Windows-Toast-Alarm</strong> bei Über-/Unterschreitung</li>
+<li><strong>Zoom/Pan auf der Zeitachse</strong> (bleibt über den Auto-Refresh erhalten; Doppelklick setzt zurück), Tag/Nacht-Schattierung</li>
+<li><strong>Warn- &amp; Alarm-Zonen (Grafana-Stil):</strong> pro Widget je eine Warn- und Alarm-Grenze nach oben und unten; Gauge/Stat/Charts färben sich grün/orange/rot nach Zone, <strong>Windows-Toasts</strong> melden jeden Zonen-Wechsel (inkl. ✅ Entwarnung)</li>
 <li><strong>Export:</strong> CSV (wahlweise für deutsches Excel), Widget als PNG, Bild in Zwischenablage, ganze Dashboards als JSON teilen (Export/Import)</li>
 <li><strong>Vollbild-Modus (F11)</strong> für Wandmonitore; Fensterposition und zuletzt aktives Dashboard werden gemerkt</li>
 <li><strong>Automatische Telemetrie-Abfragen (📥):</strong> bis zu 4 Nodes werden aktiv nach LocalStats/Umwelt-/Gerätedaten gefragt (mesh-schonend: LocalStats max. 1×/h, anderes max. alle 30 min); aus den Zähler-Deltas entstehen Raten in Pakete/h</li>
@@ -916,19 +939,35 @@
 <ol>
 <li><strong>Öffnen:</strong> 📊-Button in der Toolbar des Hauptfensters → beim ersten Öffnen ist das Fenster leer; mit „+ Neu“ legst du dein erstes Dashboard an (Namensvorschlag „Dashboard 1“ — nenn es z. B. „Solar-Monitoring“)</li>
 <li><strong>Widget hinzufügen:</strong> „+ Widget hinzufügen“ → Typ wählen (für Batterie: <strong>Zeitverlauf/Linie</strong>), Node(s) anhaken, Metrik <strong>Batterie (%)</strong>, Zeitraum <strong>7 Tage</strong> (voreingestellt) → Speichern. Auf der fertigen Karte schaltest du per 1d/7d/14d/30d-Buttons um, sortierst per ⠿-Griff um und skalierst am Griff unten rechts</li>
-<li><strong>Alarm einrichten:</strong> Im Widget den gewünschten Grenzwert ins <strong>Schwellwert</strong>-Feld eintragen (z. B. <code>30</code>). Die Schwellwert-Linie erscheint im Chart; <strong>kreuzt</strong> der Wert die Schwelle bei einer Aktualisierung, kommt ein <strong>Windows-Toast</strong> (nur beim Übergang — kein Dauer-Gepiepe)</li>
+<li><strong>Alarm einrichten:</strong> Im Widget-Editor unter <strong>„Schwellwerte &amp; Alarme“</strong> die Grenzen setzen — für die Batterie z. B. ⚠ Warnung tief <code>30</code> und 🚨 Alarm tief <code>15</code>. Die Linien erscheinen im Chart (orange/rot), Gauge und Stat-Wert färben sich nach Zone; <strong>wechselt</strong> der Wert bei einer Aktualisierung die Zone, kommt ein <strong>Windows-Toast</strong> mit Schweregrad (nur beim Übergang — kein Dauer-Gepiepe, Rückkehr in den Normalbereich meldet ✅)</li>
 <li><strong>Aktuell halten:</strong> Auto-Refresh oben rechts (z. B. 30 s); sendet der Node selbst zu selten, nimm ihn über den <strong>📥 Abfragen</strong>-Button in den Abfrageplan (max. 4 Nodes, mesh-schonend)</li>
-<li><strong>Erfolgskontrolle &amp; Alarm-Test:</strong> Das Widget zeigt eine Kurve mit Tag/Nacht-Schattierung; unten steht die letzte Aktualisierungszeit. Den Alarm testest du in zwei Schritten: Schwellwert erst auf dieselbe Seite wie der aktuelle Wert legen (z. B. deutlich unter den Batteriestand) und eine Aktualisierung abwarten — dieser erste Check merkt sich still die Ausgangslage. Dann die Schwelle über den aktuellen Wert schieben und „↺ Aktualisieren“ drücken (oder den Auto-Refresh abwarten): jetzt kommt der Toast</li>
+<li><strong>Erfolgskontrolle &amp; Alarm-Test:</strong> Das Widget zeigt eine Kurve mit Tag/Nacht-Schattierung; unten steht die letzte Aktualisierungszeit. Den Alarm testest du in zwei Schritten: Grenzen erst so setzen, dass der aktuelle Wert im Normalbereich liegt, und eine Aktualisierung abwarten — dieser erste Check merkt sich still die Ausgangslage. Dann eine Grenze über/unter den aktuellen Wert schieben und „↺ Aktualisieren“ drücken (oder den Auto-Refresh abwarten): jetzt kommt der Toast</li>
 <li><strong>Werte deuten:</strong> Fällt die Batterie nachts um mehr als ~15–20 %, lohnt der Blick ins Kapitel <a href="../messwerte/">Messwerte verstehen</a> (Nachtabfall, Spannung); die SNR/RSSI-Interpretation steht dort und im <a href="../glossar/">Glossar</a></li>
 </ol>
 <p><strong>Typische Fehler:</strong></p>
 <ul>
 <li><em>Widget bleibt leer</em> → für diesen Node/diese Metrik liegen noch keine Daten in der Telemetrie-Datenbank (der Node sendet die Metrik nicht → Polling aktivieren oder per Rechtsklick „Informationen anfordern“)</li>
-<li><em>Kein Toast trotz Schwellwert</em> → geprüft wird nur bei einer <strong>Aktualisierung</strong> (Auto-Refresh, „↺“ oder Editor-Speichern), nicht schon beim Eintippen — und der allererste Check nach dem Öffnen setzt stumm die Ausgangslage, gemeldet wird erst der nächste <strong>Übergang</strong>. Außerdem prüfen: Sind Windows-Benachrichtigungen für Apps erlaubt?</li>
+<li><em>Kein Toast trotz Alarm-Grenze</em> → geprüft wird nur bei einer <strong>Aktualisierung</strong> (Auto-Refresh, „↺“ oder Editor-Speichern), nicht schon beim Eintippen — und der allererste Check nach dem Öffnen setzt stumm die Ausgangslage, gemeldet wird erst der nächste <strong>Zonen-Wechsel</strong>. Außerdem prüfen: Sind Windows-Benachrichtigungen für Apps erlaubt?</li>
 <li><em>Zoom springt zurück</em> → Zoom/Pan bleibt beim Auto-Refresh erhalten; der manuelle „Aktualisieren“-Knopf setzt die Ansicht bewusst zurück</li>
 </ul>
 <!-- SCREENSHOT-WUNSCH: Widget-Editor offen (Typ/Node/Metrik/Threshold sichtbar) -->
 <!-- SCREENSHOT-WUNSCH: Windows-Toast einer Schwellwert-Warnung -->
+
+<h2 id="funk-echo-wer-funkt-mich-an">📡 Funk-Echo: „Wer funkt mich an?“<a class="headerlink" href="#funk-echo-wer-funkt-mich-an" title="Permanent link">&para;</a></h2>
+<p>Andere Stationen interagieren ständig mit deinem Node, ohne dass du es merkst — sie fragen NodeInfo, Position oder Telemetrie an, verfolgen per Traceroute den Funkweg zu dir oder klopfen an der Fernverwaltung an. Das Funk-Echo macht diese unsichtbaren Anfragen sichtbar:</p>
+<ul>
+<li><strong>Radar in der Statusleiste</strong> (neben Mesh Health): Bei einer Anfrage sendet der kleine Funkmast eine farbige Welle aus (Farbe = Anfrageart, Traceroute pulst doppelt), ein Zähler sammelt Ungelesenes, und für ein paar Sekunden erscheint eine Meldung wie <em>„🛰️ KELL verfolgt den Funkweg zu uns!“</em></li>
+<li><strong>Klick öffnet das Journal:</strong> chronologische Übersicht, wer wann was angefragt hat — Anfrage-Serien derselben Station werden als ×n gebündelt, mit Quelle-Badge (direkt / n Hops / ☁ MQTT); bei Traceroute-Anfragen steht sogar der Hinweg („via …“), bei Telemetrie-Anfragen die angefragte Datengruppe (Umwelt-, Strom-, Gerätedaten …)</li>
+<li><strong>Statistik-Tab:</strong> Anfragen, Stationen, Traces, „Was wollten die anderen wissen?“ (mit Telemetrie-Aufschlüsselung nach Datengruppe) und der neugierigste Node</li>
+<li><strong>📡 Neugier-Radar (Retro-Sonar):</strong> eigener Tab im Stil eines klassischen Radarschirms — schwarzes Scope, phosphor-grüne Ringe, rotierender Sweep, dein Node leuchtet in der Mitte, die anfragenden Stationen drumherum (je neugieriger, desto näher, größer und heller). Trifft live eine Anfrage ein, breitet sich ein Sonar-Ping von der Station bis zur Mitte aus und wird „reflektiert“ zurückgeworfen. Klick auf eine Station zeigt stündliche Anfrage-Balken und die Aufschlüsselung</li>
+<li><strong>Filter:</strong> Zeitraum (24 h / 7 / 30 Tage), Anfrageart und Node-Suche; Rechtsklick auf einen Eintrag öffnet Node-Info, Karte oder DM — bei Traceroute-Anfragen lässt sich der <strong>Anfrageweg als Linie auf der Karte</strong> zeigen</li>
+<li><strong>Antwort-Airtime:</strong> eine Statistik-Kachel schätzt, wie viel Sendezeit die Auto-Antworten deines Nodes kosten (LoRa-Formel mit dem aktuellen Modem-Preset) — jede Anfrage kostet auch <em>deine</em> Airtime</li>
+<li><strong>Meldungsstil</strong> in den Einstellungen umschaltbar: Locker („KELL verfolgt den Weg zu uns!“) oder Sachlich („Traceroute-Anfrage von KELL empfangen“); optional Windows-Toasts; Rechtsklick auf das Radar-Icon schaltet den 🔕 Ruhemodus; das Feature lässt sich komplett ausblenden und im <a href="../kiosk/">Kiosk-Modus</a> sperren</li>
+<li><strong>Ehrlichkeit:</strong> Erkannt wird die <em>Anfrage</em> — ob dein Node antwortet, leitet der Client nur aus der lokalen Konfiguration ab und sagt es dazu: „✓ Antwort erwartet“, bei Positionsanfragen inklusive der konfigurierten Kanal-Genauigkeit („±2,9 km“), „✕ keine Antwort (keine Position)“, „? je nach Sensorik“ oder „🔐 nur mit Admin-Berechtigung“. Die tatsächliche Aussendung ist im Client nicht sichtbar; Antworten auf deine eigenen Anfragen und mitgehörte Pakete an Dritte tauchen bewusst nicht auf</li>
+<li><strong>Dashboard-Anbindung:</strong> die Metrik „📡 Funk-Echo (Anfragen an uns/h)“ steht im Telemetrie-Dashboard als Zeitreihe zur Verfügung — inklusive Warn-/Alarm-Zonen</li>
+</ul>
+<!-- SCREENSHOT-WUNSCH: Funk-Echo-Journal mit verschiedenen Anfragetypen (funk-echo-journal.png) -->
+<!-- SCREENSHOT-WUNSCH: Statusleiste mit Funkmast + Flyout (funk-echo-pulse.png) -->
 
 <h2 id="node-statistik-echte-hf-nachbarn">Node-Statistik &amp; echte HF-Nachbarn<a class="headerlink" href="#node-statistik-echte-hf-nachbarn" title="Permanent link">&para;</a></h2>
 <ul>

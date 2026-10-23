@@ -18,13 +18,18 @@ public class AddWidgetDialog : Window
     private readonly ComboBox   _daysCombo;
     private readonly TextBox    _titleBox;
     private readonly TextBox    _nodeSearchBox;
-    private readonly ListBox    _nodeListBox;
+    private readonly StackPanel _nodeListPanel;
     private readonly TextBlock  _nodeHintText;
+    private readonly TextBlock  _selCountText;
     private readonly StackPanel _metricSection;
     private readonly StackPanel _daysSection;
     private readonly StackPanel _nodeSection;
     private readonly StackPanel _chartOptionsSection;
-    private readonly TextBox    _thresholdBox;
+    private readonly StackPanel _alarmSection;
+    private readonly TextBox    _warnLowBox;
+    private readonly TextBox    _warnHighBox;
+    private readonly TextBox    _alarmLowBox;
+    private readonly TextBox    _alarmHighBox;
     private readonly CheckBox   _maCheckBox;
     private readonly Dictionary<uint, string> _nodeNames;
     private readonly Dictionary<uint, string> _nodeShortNames;
@@ -55,6 +60,7 @@ public class AddWidgetDialog : Window
         ("tx_relay",          "TX Relay (gesamt)"),
         ("tx_relay_canceled", "TX Relay abgebrochen (gesamt)"),
         ("tx_dropped",        "TX verworfen (gesamt)"),
+        ("funk_echo",         "📡 Funk-Echo (Anfragen an uns/h)"),
     };
 
     private static readonly (string key, string labelKey, bool multiNode)[] WidgetTypes =
@@ -95,7 +101,7 @@ public class AddWidgetDialog : Window
 
         Title  = existing != null ? Loc("StrDashboardEditWidget") : Loc("StrAddWidgetTitle");
         Width  = 460;
-        Height = 640;
+        Height = 740;
         ResizeMode = ResizeMode.NoResize;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
         Background = new SolidColorBrush(bgColor);
@@ -159,6 +165,36 @@ public class AddWidgetDialog : Window
         nodeLabelRow.Children.Add(nodeLabel);
         _nodeSection.Children.Add(nodeLabelRow);
 
+        // Selection summary + select-all/none for the filtered view
+        var selRow = new DockPanel { Margin = new Thickness(0, 0, 0, 4) };
+        _selCountText = new TextBlock
+        {
+            FontSize   = 10,
+            Foreground = new SolidColorBrush(fgSubColor),
+            VerticalAlignment = VerticalAlignment.Center,
+        };
+        DockPanel.SetDock(_selCountText, Dock.Left);
+        var selBtnRow = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
+        var selAllBtn  = MakeLinkButton(Loc("StrAddWidgetSelAll"));
+        var selNoneBtn = MakeLinkButton(Loc("StrAddWidgetSelNone"));
+        selAllBtn.Click += (_, _) =>
+        {
+            if (!CurrentTypeAllowsMulti()) return;
+            foreach (var n in FilteredNodes(_nodeSearchBox.Text)) _selectedNodeIds.Add(n.id);
+            PopulateNodeList(_nodeSearchBox.Text);
+        };
+        selNoneBtn.Click += (_, _) =>
+        {
+            _selectedNodeIds.Clear();
+            PopulateNodeList(_nodeSearchBox.Text);
+        };
+        selBtnRow.Children.Add(selAllBtn);
+        selBtnRow.Children.Add(selNoneBtn);
+        DockPanel.SetDock(selBtnRow, Dock.Right);
+        selRow.Children.Add(selBtnRow);
+        selRow.Children.Add(_selCountText);
+        _nodeSection.Children.Add(selRow);
+
         _nodeSearchBox = new TextBox
         {
             Padding  = new Thickness(6, 4, 6, 4),
@@ -184,16 +220,20 @@ public class AddWidgetDialog : Window
         };
         _nodeSection.Children.Add(searchGrid);
 
-        _nodeListBox = new ListBox
+        // Checkbox list (explicit, unlike the old selection-highlight ListBox): selected
+        // nodes are pinned on top and stay visible even when the filter doesn't match them.
+        _nodeListPanel = new StackPanel();
+        var nodeScroll = new ScrollViewer
         {
-            SelectionMode = SelectionMode.Multiple,
-            Height        = 130,
-            Margin        = new Thickness(0, 0, 0, 12),
+            Content = _nodeListPanel,
+            Height  = 150,
+            Margin  = new Thickness(0, 0, 0, 12),
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+            BorderThickness = new Thickness(1),
+            BorderBrush     = new SolidColorBrush(isDark ? Color.FromRgb(48, 54, 61) : Color.FromRgb(216, 222, 228)),
         };
-        ScrollViewer.SetCanContentScroll(_nodeListBox, false);
-        _nodeListBox.SelectionChanged += NodeList_SelectionChanged;
         PopulateNodeList(null);
-        _nodeSection.Children.Add(_nodeListBox);
+        _nodeSection.Children.Add(nodeScroll);
         outerStack.Children.Add(_nodeSection);
 
         // ── Title ──
@@ -201,15 +241,71 @@ public class AddWidgetDialog : Window
         _titleBox = new TextBox { Margin = new Thickness(0, 0, 0, 12) };
         outerStack.Children.Add(_titleBox);
 
-        // ── Chart options (threshold + MA) — only for line/area ──
-        _chartOptionsSection = new StackPanel { Margin = new Thickness(0, 0, 0, 6) };
-        _chartOptionsSection.Children.Add(MakeLabel(Loc("StrDashboardThreshold") + " (leer = aus):", fgSubColor));
-        _thresholdBox = new TextBox
+        // ── Warn/alarm zones (Grafana-style) — for value-based widget types ──
+        _alarmSection = new StackPanel { Margin = new Thickness(0, 0, 0, 6) };
+        _alarmSection.Children.Add(MakeLabel(Loc("StrDashAlarmSection"), fgSubColor));
+
+        var alarmGrid = new Grid { Margin = new Thickness(0, 0, 0, 4) };
+        alarmGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto, MinWidth = 90 });
+        alarmGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        alarmGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(10) });
+        alarmGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        alarmGrid.RowDefinitions.Add(new RowDefinition());
+        alarmGrid.RowDefinitions.Add(new RowDefinition());
+        alarmGrid.RowDefinitions.Add(new RowDefinition());
+
+        TextBlock RowLabel(string text, Color color, int row)
         {
-            Margin  = new Thickness(0, 0, 0, 8),
-            ToolTip = Loc("StrDashboardThresholdTip"),
-        };
-        _chartOptionsSection.Children.Add(_thresholdBox);
+            var tb = new TextBlock
+            {
+                Text = text, FontSize = 11, VerticalAlignment = VerticalAlignment.Center,
+                Foreground = new SolidColorBrush(color), Margin = new Thickness(0, 0, 8, 6),
+            };
+            Grid.SetRow(tb, row); Grid.SetColumn(tb, 0);
+            return tb;
+        }
+        TextBox ZoneBox(int row, int col)
+        {
+            var box = new TextBox { Margin = new Thickness(0, 0, 0, 6), FontSize = 11, MinWidth = 0 };
+            Grid.SetRow(box, row); Grid.SetColumn(box, col);
+            return box;
+        }
+        TextBlock ColHeader(string text, int col)
+        {
+            var tb = new TextBlock
+            {
+                Text = text, FontSize = 10, Foreground = new SolidColorBrush(fgSubColor),
+                Margin = new Thickness(0, 0, 0, 2),
+            };
+            Grid.SetRow(tb, 0); Grid.SetColumn(tb, col);
+            return tb;
+        }
+
+        alarmGrid.Children.Add(ColHeader(Loc("StrDashAlarmLowCol"), 1));
+        alarmGrid.Children.Add(ColHeader(Loc("StrDashAlarmHighCol"), 3));
+        alarmGrid.Children.Add(RowLabel(Loc("StrDashWarnLabel"),  Color.FromRgb(255, 171, 76), 1));
+        alarmGrid.Children.Add(RowLabel(Loc("StrDashAlarmLabel"), Color.FromRgb(240,  76, 76), 2));
+        _warnLowBox   = ZoneBox(1, 1);
+        _warnHighBox  = ZoneBox(1, 3);
+        _alarmLowBox  = ZoneBox(2, 1);
+        _alarmHighBox = ZoneBox(2, 3);
+        alarmGrid.Children.Add(_warnLowBox);
+        alarmGrid.Children.Add(_warnHighBox);
+        alarmGrid.Children.Add(_alarmLowBox);
+        alarmGrid.Children.Add(_alarmHighBox);
+        _alarmSection.Children.Add(alarmGrid);
+        _alarmSection.Children.Add(new TextBlock
+        {
+            Text = Loc("StrDashAlarmHint"),
+            FontSize = 10,
+            Foreground = new SolidColorBrush(hintColor),
+            TextWrapping = TextWrapping.Wrap,
+            Margin = new Thickness(0, 0, 0, 8),
+        });
+        outerStack.Children.Add(_alarmSection);
+
+        // ── Chart options (MA overlay) — only for line/area ──
+        _chartOptionsSection = new StackPanel { Margin = new Thickness(0, 0, 0, 6) };
         _maCheckBox = new CheckBox
         {
             Content = Loc("StrDashboardMovingAvg"),
@@ -257,27 +353,19 @@ public class AddWidgetDialog : Window
             if (item.Tag is int d && d == existing.Days) { _daysCombo.SelectedItem = item; break; }
 
         _titleBox.Text        = existing.Title;
-        _thresholdBox.Text    = double.IsNaN(existing.Threshold) ? "" : existing.Threshold.ToString("G4");
         _maCheckBox.IsChecked = existing.ShowMovingAverage;
+
+        static string Fmt(double v) => double.IsNaN(v) ? "" : v.ToString("G4", System.Globalization.CultureInfo.InvariantCulture);
+        var migrated = DashboardAlarms.Migrate(existing);
+        _warnLowBox.Text   = Fmt(migrated.WarnLow);
+        _warnHighBox.Text  = Fmt(migrated.WarnHigh);
+        _alarmLowBox.Text  = Fmt(migrated.AlarmLow);
+        _alarmHighBox.Text = Fmt(migrated.AlarmHigh);
 
         // Pre-seed _selectedNodeIds so filter changes preserve selection
         _selectedNodeIds.Clear();
         foreach (var id in existing.NodeIds) _selectedNodeIds.Add(id);
-
-        // Apply to listbox (UnselectAll works in both Single and Multiple mode)
-        _suppressSelectionTracking = true;
-        _nodeListBox.UnselectAll();
-        foreach (ListBoxItem item in _nodeListBox.Items)
-        {
-            if (item.Tag is not uint id || !_selectedNodeIds.Contains(id)) continue;
-            if (_nodeListBox.SelectionMode == SelectionMode.Single)
-            {
-                _nodeListBox.SelectedItem = item;
-                break;
-            }
-            _nodeListBox.SelectedItems.Add(item);
-        }
-        _suppressSelectionTracking = false;
+        PopulateNodeList(_nodeSearchBox.Text);
     }
 
     // ── Filtering ────────────────────────────────────────────────────────────
@@ -299,47 +387,68 @@ public class AddWidgetDialog : Window
         return false;
     }
 
-    private void NodeList_SelectionChanged(object sender, SelectionChangedEventArgs e)
-    {
-        if (_suppressSelectionTracking) return;
-        foreach (ListBoxItem item in e.AddedItems.OfType<ListBoxItem>())
-            if (item.Tag is uint id) _selectedNodeIds.Add(id);
-        foreach (ListBoxItem item in e.RemovedItems.OfType<ListBoxItem>())
-            if (item.Tag is uint id) _selectedNodeIds.Remove(id);
-    }
+    private IEnumerable<(uint id, string label, string shortName)> FilteredNodes(string? filter) =>
+        string.IsNullOrWhiteSpace(filter) ? _allNodes : _allNodes.Where(n => MatchesNode(filter, n));
 
+    private bool CurrentTypeAllowsMulti() =>
+        WidgetTypes.FirstOrDefault(t => t.key == CurrentType).multiNode;
+
+    /// <summary>Rebuild the checkbox list: selected nodes pinned on top (always visible,
+    /// even when the filter doesn't match them), then the filtered rest. No auto-select.</summary>
     private void PopulateNodeList(string? filter)
     {
         _suppressSelectionTracking = true;
-        _nodeListBox.Items.Clear();
+        _nodeListPanel.Children.Clear();
 
-        IEnumerable<(uint id, string label, string shortName)> query = string.IsNullOrWhiteSpace(filter)
-            ? _allNodes
-            : _allNodes.Where(n => MatchesNode(filter, n));
+        var selected = _allNodes.Where(n => _selectedNodeIds.Contains(n.id));
+        var rest     = FilteredNodes(filter).Where(n => !_selectedNodeIds.Contains(n.id));
 
-        foreach (var (id, label, _) in query)
-            _nodeListBox.Items.Add(new ListBoxItem { Tag = id, Content = label });
-
-        // Restore previously-selected nodes; only auto-select first if nothing was selected before
-        bool anyRestored = false;
-        foreach (ListBoxItem item in _nodeListBox.Items)
+        foreach (var (id, label, _) in selected.Concat(rest))
         {
-            if (item.Tag is not uint id || !_selectedNodeIds.Contains(id)) continue;
-            if (_nodeListBox.SelectionMode == SelectionMode.Single)
+            var cb = new CheckBox
             {
-                _nodeListBox.SelectedItem = item;
-                anyRestored = true;
-                break;
-            }
-            _nodeListBox.SelectedItems.Add(item);
-            anyRestored = true;
+                Content   = label,
+                Tag       = id,
+                FontSize  = 11,
+                MinWidth  = 0,
+                Margin    = new Thickness(6, 2, 6, 2),
+                IsChecked = _selectedNodeIds.Contains(id),
+            };
+            cb.Checked += (_, _) =>
+            {
+                if (_suppressSelectionTracking) return;
+                uint nid = (uint)cb.Tag;
+                if (!CurrentTypeAllowsMulti())
+                {
+                    // Radio behavior for single-node widget types
+                    _selectedNodeIds.Clear();
+                    _selectedNodeIds.Add(nid);
+                    _suppressSelectionTracking = true;
+                    foreach (CheckBox other in _nodeListPanel.Children.OfType<CheckBox>())
+                        if (!ReferenceEquals(other, cb)) other.IsChecked = false;
+                    _suppressSelectionTracking = false;
+                }
+                else
+                {
+                    _selectedNodeIds.Add(nid);
+                }
+                UpdateSelectionSummary();
+            };
+            cb.Unchecked += (_, _) =>
+            {
+                if (_suppressSelectionTracking) return;
+                _selectedNodeIds.Remove((uint)cb.Tag);
+                UpdateSelectionSummary();
+            };
+            _nodeListPanel.Children.Add(cb);
         }
 
-        if (!anyRestored && _nodeListBox.Items.Count > 0 && _selectedNodeIds.Count == 0)
-            _nodeListBox.SelectedIndex = 0;
-
         _suppressSelectionTracking = false;
+        UpdateSelectionSummary();
     }
+
+    private void UpdateSelectionSummary() =>
+        _selCountText.Text = string.Format(Loc("StrAddWidgetSelCount"), _selectedNodeIds.Count);
 
     // ── Widget type changed ───────────────────────────────────────────────────
 
@@ -355,34 +464,29 @@ public class AddWidgetDialog : Window
     private void UpdateSectionVisibility()
     {
         string type = CurrentType;
-        bool isClock   = type == "clock";
-        bool showChart = type is "line" or "area";
+        bool isClock = type == "clock";
+        bool showMA  = type is "line" or "area";
+        // Zones make sense wherever a single metric value is judged against limits
+        bool showAlarms = type is "line" or "area" or "bar" or "scatter"
+                               or "gauge" or "stat" or "candlestick" or "histogram";
         _metricSection.Visibility       = isClock ? Visibility.Collapsed : Visibility.Visible;
         _daysSection.Visibility         = isClock ? Visibility.Collapsed : Visibility.Visible;
         _nodeSection.Visibility         = isClock ? Visibility.Collapsed : Visibility.Visible;
-        _chartOptionsSection.Visibility = showChart ? Visibility.Visible : Visibility.Collapsed;
+        _chartOptionsSection.Visibility = showMA ? Visibility.Visible : Visibility.Collapsed;
+        _alarmSection.Visibility        = showAlarms ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void UpdateNodeSelectionMode()
     {
-        bool allowMulti = WidgetTypes.FirstOrDefault(t => t.key == CurrentType).multiNode;
-
-        if (allowMulti)
+        bool allowMulti = CurrentTypeAllowsMulti();
+        _nodeHintText.Visibility = allowMulti ? Visibility.Collapsed : Visibility.Visible;
+        if (!allowMulti && _selectedNodeIds.Count > 1)
         {
-            _nodeListBox.SelectionMode = SelectionMode.Multiple;
-            _nodeHintText.Visibility   = Visibility.Collapsed;
+            var keep = _allNodes.FirstOrDefault(n => _selectedNodeIds.Contains(n.id)).id;
+            _selectedNodeIds.Clear();
+            if (keep != 0) _selectedNodeIds.Add(keep);
         }
-        else
-        {
-            _nodeListBox.SelectionMode = SelectionMode.Single;
-            _nodeHintText.Visibility   = Visibility.Visible;
-            if (_nodeListBox.SelectedItems.Count > 1)
-            {
-                var first = _nodeListBox.SelectedItem;
-                _nodeListBox.UnselectAll();
-                _nodeListBox.SelectedItem = first;
-            }
-        }
+        PopulateNodeList(_nodeSearchBox.Text);
     }
 
     // ── OK handler ───────────────────────────────────────────────────────────
@@ -408,10 +512,10 @@ public class AddWidgetDialog : Window
             return;
         }
 
-        var nodeIds = _nodeListBox.SelectedItems.OfType<ListBoxItem>()
-                                  .Select(i => (uint)(i.Tag ?? 0u))
-                                  .Where(id => id != 0)
-                                  .ToList();
+        // Stable order: as listed (alphabetical), not insertion order of the HashSet
+        var nodeIds = _allNodes.Where(n => _selectedNodeIds.Contains(n.id))
+                               .Select(n => n.id)
+                               .ToList();
         if (nodeIds.Count == 0)
         {
             MessageBox.Show(Loc("StrAddWidgetNoNode"), Title,
@@ -431,11 +535,11 @@ public class AddWidgetDialog : Window
         if (singleOnly && nodeIds.Count > 1)
             nodeIds = nodeIds.Take(1).ToList();
 
-        double threshold = double.TryParse(
-            _thresholdBox.Text.Replace(",", "."),
+        static double ParseZone(TextBox box) => double.TryParse(
+            box.Text.Replace(",", "."),
             System.Globalization.NumberStyles.Any,
-            System.Globalization.CultureInfo.InvariantCulture, out double tv)
-            ? tv : double.NaN;
+            System.Globalization.CultureInfo.InvariantCulture, out double v)
+            ? v : double.NaN;
         bool showMA = _maCheckBox.IsChecked == true;
 
         Result = new DashboardWidget(
@@ -445,11 +549,23 @@ public class AddWidgetDialog : Window
             NodeIds:           nodeIds,
             Days:              days,
             Title:             title,
-            Threshold:         threshold,
-            ShowMovingAverage: showMA);
+            ShowMovingAverage: showMA,
+            WarnLow:           ParseZone(_warnLowBox),
+            WarnHigh:          ParseZone(_warnHighBox),
+            AlarmLow:          ParseZone(_alarmLowBox),
+            AlarmHigh:         ParseZone(_alarmHighBox));
         DialogResult = true;
         Close();
     }
+
+    private static Button MakeLinkButton(string text) => new()
+    {
+        Content  = text,
+        FontSize = 10,
+        Padding  = new Thickness(6, 0, 6, 0),
+        Margin   = new Thickness(4, 0, 0, 0),
+        MinWidth = 0,
+    };
 
     private static TextBlock MakeLabel(string text, Color color) => new()
     {

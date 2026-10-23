@@ -69,6 +69,7 @@ public partial class MainWindow
         if (KioskLockDashboardCheckBox?.IsChecked == true)   f.Add("Dashboard");
         if (KioskLockSosCheckBox?.IsChecked == true)         f.Add("Sos");
         if (KioskLockMeshHessenCheckBox?.IsChecked == true)  f.Add("MeshHessen");
+        if (KioskLockFunkEchoCheckBox?.IsChecked == true)    f.Add("FunkEcho");
         return string.Join(",", f);
     }
 
@@ -86,6 +87,7 @@ public partial class MainWindow
         if (KioskLockDashboardCheckBox   != null) KioskLockDashboardCheckBox.IsChecked   = set.Contains("Dashboard");
         if (KioskLockSosCheckBox         != null) KioskLockSosCheckBox.IsChecked         = set.Contains("Sos");
         if (KioskLockMeshHessenCheckBox  != null) KioskLockMeshHessenCheckBox.IsChecked  = set.Contains("MeshHessen");
+        if (KioskLockFunkEchoCheckBox    != null) KioskLockFunkEchoCheckBox.IsChecked    = set.Contains("FunkEcho");
     }
 
     private bool IsKioskFeatureLocked(string feature) =>
@@ -118,6 +120,19 @@ public partial class MainWindow
         OpenDashboardButton.Visibility = vis("Dashboard");
         AlertBellButton.Visibility     = vis("Sos");
         MeshHessenButton.Visibility    = vis("MeshHessen");
+
+        // Funk-Echo: kiosk lock wins; otherwise the user setting decides
+        if (locked && vis("FunkEcho") == Visibility.Collapsed)
+        {
+            if (FunkEchoPanel != null)     FunkEchoPanel.Visibility     = Visibility.Collapsed;
+            if (FunkEchoSeparator != null) FunkEchoSeparator.Visibility = Visibility.Collapsed;
+            if (FunkEchoFlyout != null)    FunkEchoFlyout.IsOpen        = false;
+            _funkEchoWindow?.Close();
+        }
+        else
+        {
+            ApplyFunkEchoVisibility();
+        }
 
         // Enforce VNode admin blocking while locked (revert to setting when unlocked)
         if (_virtualNodeService != null)

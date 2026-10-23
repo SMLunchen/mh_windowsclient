@@ -242,6 +242,7 @@ public partial class MainWindow : Window
         _protocolService.PacketCountChanged += OnPacketCountChanged;
         _protocolService.TracerouteReceived += OnTracerouteReceived;
         _protocolService.ReactionReceived += OnReactionReceived;
+        _protocolService.RequestEchoReceived += OnRequestEchoReceived;
         _protocolService.DeviceTelemetryReceived += OnDeviceTelemetryReceived;
         _protocolService.TimeDriftDetected += OnTimeDriftDetected;
         _protocolService.WaypointReceived  += OnWaypointReceived;
@@ -376,6 +377,13 @@ public partial class MainWindow : Window
             DebugBluetoothCheckBox.IsChecked = settings.DebugBluetooth;
             AlertBellSoundCheckBox.IsChecked = settings.AlertBellSound;
             MessageToastsCheckBox.IsChecked = settings.MessageToasts;
+            FunkEchoCheckBox.IsChecked = settings.FunkEchoEnabled;
+            foreach (System.Windows.Controls.ComboBoxItem item in FunkEchoToneComboBox.Items)
+                if (item.Tag as string == settings.FunkEchoTone) { FunkEchoToneComboBox.SelectedItem = item; break; }
+            if (FunkEchoToneComboBox.SelectedItem == null) FunkEchoToneComboBox.SelectedIndex = 0;
+            FunkEchoToastsCheckBox.IsChecked = settings.FunkEchoToasts;
+            if (FunkEchoQuietMenuItem != null) FunkEchoQuietMenuItem.IsChecked = settings.FunkEchoQuiet;
+            ApplyFunkEchoVisibility();
             DmInlineCheckBox.IsChecked = settings.DmStyle == "inline";
             if (DmAutoPopupCheckBox != null)
                 DmAutoPopupCheckBox.IsChecked = settings.DmAutoPopup;
@@ -1144,6 +1152,7 @@ public partial class MainWindow : Window
                 _protocolService.PacketCountChanged += OnPacketCountChanged;
                 _protocolService.TracerouteReceived += OnTracerouteReceived;
                 _protocolService.ReactionReceived += OnReactionReceived;
+                _protocolService.RequestEchoReceived += OnRequestEchoReceived;
                 _protocolService.DeviceTelemetryReceived += OnDeviceTelemetryReceived;
                 _protocolService.MqttConfigReceived += OnMqttConfigReceived;
                 if (_db != null) _protocolService.SetDatabase(_db);
@@ -1949,6 +1958,9 @@ public partial class MainWindow : Window
                 DebugBluetooth = DebugBluetoothCheckBox.IsChecked == true,
                 AlertBellSound = AlertBellSoundCheckBox.IsChecked == true,
                 MessageToasts = MessageToastsCheckBox.IsChecked == true,
+                FunkEchoEnabled = FunkEchoCheckBox.IsChecked == true,
+                FunkEchoTone = (FunkEchoToneComboBox.SelectedItem as System.Windows.Controls.ComboBoxItem)?.Tag as string ?? "casual",
+                FunkEchoToasts = FunkEchoToastsCheckBox.IsChecked == true,
                 DmStyle = DmInlineCheckBox.IsChecked == true ? "inline" : "window",
                 DmAutoPopup = DmAutoPopupCheckBox?.IsChecked != false,
                 Language = (LanguageComboBox.SelectedItem as System.Windows.Controls.ComboBoxItem)?.Tag as string ?? "de",
@@ -1983,6 +1995,7 @@ public partial class MainWindow : Window
             _currentSettings = settings;
             SettingsService.Save(settings);
             ApplyVirtualNodeSettings();
+            ApplyFunkEchoVisibility();
 
             // Enable/disable message DB manager
             if (settings.EnableMessageDb && _messageDbManager == null)
@@ -2133,6 +2146,7 @@ public partial class MainWindow : Window
                 _protocolService.PacketCountChanged += OnPacketCountChanged;
                 _protocolService.TracerouteReceived += OnTracerouteReceived;
                 _protocolService.ReactionReceived += OnReactionReceived;
+                _protocolService.RequestEchoReceived += OnRequestEchoReceived;
                 _protocolService.DeviceTelemetryReceived += OnDeviceTelemetryReceived;
                 _protocolService.MqttConfigReceived += OnMqttConfigReceived;
                 if (_db != null) _protocolService.SetDatabase(_db);
