@@ -147,31 +147,55 @@
             <TabItem Header="{DynamicResource StrRaTabPosition}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="12,12,12,8">
-                        <TextBlock Text="{DynamicResource StrRaPosGpsMode}" FontSize="12"
-                                   Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"/>
-                        <ComboBox x:Name="PosGpsMode" Margin="0,4,0,12" Width="200"
-                                  HorizontalAlignment="Left">
-                            <ComboBoxItem Tag="0" Content="Disabled"/>
-                            <ComboBoxItem Tag="1" Content="Enabled"/>
-                            <ComboBoxItem Tag="2" Content="Not Present"/>
-                        </ComboBox>
-                        <TextBlock Text="{DynamicResource StrRaPosBroadcastInterval}" FontSize="12"
-                                   Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"/>
-                        <TextBox x:Name="PosBroadcastInterval" Width="100"
-                                 HorizontalAlignment="Left" Margin="0,4,0,12"/>
-                        <TextBlock Text="{DynamicResource StrRaPosBroadcastSmart}" FontSize="12"
-                                   Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"/>
-                        <CheckBox x:Name="PosBroadcastSmart" Margin="0,4,0,12"/>
-                        <TextBlock Text="{DynamicResource StrRaPosGpsAttemptTime}" FontSize="12"
-                                   Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"/>
-                        <TextBox x:Name="PosGpsAttemptTime" Width="100"
-                                 HorizontalAlignment="Left" Margin="0,4,0,12"/>
-                        <Separator Margin="0,4,0,8"/>
+                        <Grid Margin="0,0,0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" MinWidth="160"/>
+                                <ColumnDefinition Width="16"/>
+                                <ColumnDefinition Width="*" MinWidth="160"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,0,10">
+                                <TextBlock Text="{DynamicResource StrRaPosGpsMode}" FontSize="12"
+                                           Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"/>
+                                <ComboBox x:Name="PosGpsMode" Margin="0,4,0,0" HorizontalAlignment="Stretch">
+                                    <ComboBoxItem Tag="0" Content="Disabled"/>
+                                    <ComboBoxItem Tag="1" Content="Enabled"/>
+                                    <ComboBoxItem Tag="2" Content="Not Present"/>
+                                </ComboBox>
+                            </StackPanel>
+                            <StackPanel Grid.Row="0" Grid.Column="2" Margin="0,0,0,10">
+                                <TextBlock Text="{DynamicResource StrRaPosBroadcastInterval}" FontSize="12"
+                                           Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"/>
+                                <ComboBox x:Name="PosBroadcastInterval" Margin="0,4,0,0"
+                                          HorizontalAlignment="Stretch"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,0,4"
+                                        VerticalAlignment="Bottom">
+                                <CheckBox x:Name="PosBroadcastSmart"
+                                          Content="{DynamicResource StrRaPosBroadcastSmart}"
+                                          Margin="0,18,0,0" VerticalAlignment="Center"/>
+                            </StackPanel>
+                            <StackPanel Grid.Row="1" Grid.Column="2" Margin="0,0,0,4">
+                                <TextBlock Text="{DynamicResource StrRaPosGpsUpdateInterval}" FontSize="12"
+                                           Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"/>
+                                <TextBox x:Name="PosGpsUpdateInterval" Margin="0,4,0,0"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <Separator Margin="0,8,0,10"/>
                         <TextBlock Text="{DynamicResource StrRaPosFixed}" FontWeight="SemiBold"
                                    Margin="0,0,0,6"/>
                         <CheckBox x:Name="PosFixedEnabled" Content="{DynamicResource StrRaPosFixedEnabled}"
-                                  Margin="0,0,0,6"/>
-                        <Grid Margin="0,0,0,4">
+                                  Margin="0,0,0,4"/>
+                        <TextBlock Text="{DynamicResource StrRaPosFixedDesc}" FontSize="11" TextWrapping="Wrap"
+                                   Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                                   Margin="0,0,0,8"/>
+                        <Grid Margin="0,0,0,8">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="12"/>
@@ -195,6 +219,10 @@
                                 <TextBox x:Name="PosFixedAlt" Margin="0,2,0,0"/>
                             </StackPanel>
                         </Grid>
+                        <Button Content="{DynamicResource StrNcPickFromMap}"
+                                ToolTip="{DynamicResource StrNcPickFromMapTip}"
+                                Click="PosPickFromMap_Click" Padding="10,4"
+                                HorizontalAlignment="Left"/>
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
