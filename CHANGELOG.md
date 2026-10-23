@@ -9,6 +9,12 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+---
+
+## [1.7.0] - 2026-10-23
+
+_Hinweis: enthält auch alle Änderungen der nie veröffentlichten 1.6.4.7 (Abschnitte ab „📍 Standort-Triangulation" unten)._
+
 ### 📡 Funk-Echo: „Wer funkt mich an?" (V1, #66)
 - **Unsichtbare Anfragen sichtbar gemacht:** Wenn eine andere Station gezielt etwas von deinem Node wissen will (NodeInfo, Position, Telemetrie, Traceroute — jeweils mit `want_response` — sowie Admin-Pakete), erkennt der Client das jetzt und zeigt es an. Grundlage: Die Firmware reicht jedes empfangene Paket an den Client weiter — nur ihre eigenen Auto-Antworten nicht, deshalb gibt es ehrlich nur „Anfrage erkannt" (kein erfundenes „beantwortet"). Antworten auf *eigene* Anfragen und mitgehörte Fremd-Pakete werden sauber ausgefiltert (request_id/Adressat), ebenso der Verbindungs-Backlog.
 - **Radar in der Statusleiste:** Neues Funkmast-Element (nach dem Vorbild von `img/HF_ICON.svg`) neben Mesh Health — bei einer Anfrage läuft eine farbige Welle nach außen (Farbe = Anfrageart, Traceroute pulst doppelt), dazu ein Zähler-Badge und für ein paar Sekunden ein Flyout wie „🛰️ KELL verfolgt den Funkweg zu uns!". Meldungsstil umschaltbar **Locker/Sachlich** (Einstellungen), das ganze Feature abschaltbar.
@@ -44,10 +50,6 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ### 🗺️ Karte
 - **Abdeckungstexte auf DACH korrigiert:** Die In-App-Texte zu Karten-Modi, Tile-Download und T-Deck-Assistent sagten noch „nur Deutschland" — der Meshhessen-Tile-Server liefert aber Deutschland, Österreich und die Schweiz (DACH). Alle betroffenen Strings (de/en) aktualisiert; der veraltete Downloader-Hinweis auf OSM-Ratenlimits wurde durch den tatsächlichen Stand ersetzt (öffentliche OSM-/OpenTopoMap-Server sind für Downloads gesperrt, geladen wird vom Meshhessen- oder eigenen Server).
-
----
-
-## [1.6.4.7] - 2026-10-21
 
 ### 📍 Standort-Triangulation (Easteregg)
 - **Standort-Triangulation (Easteregg):** Dreifachklick auf die „Analyse der letzten X Tage"-Zeile im Telemetriefenster blendet den Button „📍 Standort triangulieren" ein. Der schätzt die Position eines Nodes ohne GPS aus seinen HF-Nachbarn: Signal → Distanz über ein Log-Distance-Pfadverlust-Modell (868 MHz, RSSI@1 km ≈ −90 dBm, Exponent 2,5; SNR wird über den Noise Floor des Ankers in Pseudo-RSSI umgerechnet, beim eigenen Node zählt der gemessene RSSI), dann gewichtete Least-Squares-Trilateration. Auf der Karte (Raster + Vektor) erscheinen gestrichelte **Triangulationskreise** um die Anker (inkl. Distanz-Label) und die geschätzte Position — bewusst als grobe Schätzung dargestellt, das Gelände dominiert LoRa-Links. Der Layer hängt in der Traceroute-Legende und ist dort per ✕ entfernbar. Mindestens 2 Anker mit Position und Signalwert nötig; mit Unit-Tests abgesichert.

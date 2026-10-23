@@ -1,6 +1,6 @@
 # Architektur – Meshhessen Client
 
-Stand: v1.6.4.7 · abgeleitet aus dem Quellcode (`Services/`, `Models/`, Fenster im Projektroot). Die Kernmuster (geteilter Protokoll-Service, `IConnectionService`-Abstraktion, Event-Fluss) sind seit v1.5 stabil; seither kamen u. a. Vektorkarte (WebView2/MapLibre), Telemetrie-Dashboard, rf_links/Triangulation und TerrainService hinzu.
+Stand: v1.7.0 · abgeleitet aus dem Quellcode (`Services/`, `Models/`, Fenster im Projektroot). Die Kernmuster (geteilter Protokoll-Service, `IConnectionService`-Abstraktion, Event-Fluss) sind seit v1.5 stabil; seither kamen u. a. Vektorkarte (WebView2/MapLibre), Telemetrie-Dashboard, rf_links/Triangulation, TerrainService und das Funk-Echo (RequestEcho-Pipeline) hinzu.
 
 Der Client ist schichtweise aufgebaut mit `MainWindow` als zentraler Drehscheibe.
 Empfangsdaten fließen von unten (Gerät) nach oben (UI) über **Events**, Befehle den

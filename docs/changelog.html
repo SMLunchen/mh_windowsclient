@@ -190,19 +190,35 @@
 <div class="section active" id="de">
 <main>
 
-  <!-- ── v1.6.4.7 ── -->
+  <!-- ── v1.7.0 ── -->
   <div class="version-entry current">
     <div class="version-header">
-      <span class="version-tag tag-latest">v1.6.4.7</span>
-      <span class="version-date">2026-10-21</span>
-      Traceroute-Ehrlichkeit &amp; Symbol-Fixes
+      <span class="version-tag tag-latest">v1.7.0</span>
+      <span class="version-date">2026-10-23</span>
+      Funk-Echo, Grafana-Dashboard &amp; 3D-Gelände
     </div>
-    <p class="version-desc">Ehrliche MQTT-Kennzeichnung im Traceroute, bereinigte Nachbar-Datenbank, reparierte Symbole und „Zuerst/Zuletzt gesehen" im Node-Info-Fenster.</p>
+    <p class="version-desc">Großes Feature-Release: Funk-Echo macht sichtbar, wer deinen Node anfragt (inkl. Retro-Sonar), das Telemetrie-Dashboard bekommt Warn-/Alarm-Zonen im Grafana-Stil, dazu 3D-Gelände, Höhenprofile pro Funkstrecke und Community-Fixes. Enthält alle Änderungen der nie veröffentlichten 1.6.4.7.</p>
+
+    <div class="cl-section added">
+      <h3>✨ Neu</h3>
+      <div class="cl-group">
+        <ul class="cl-list">
+          <li><strong>📡 Funk-Echo — „Wer funkt mich an?":</strong> Fragt eine andere Station gezielt NodeInfo, Position, Telemetrie oder einen Traceroute bei deinem Node an, zeigt das ein kleines Radar in der Statusleiste (farbige Welle je Anfrageart, Zähler, Meldung wie <em>„KELL verfolgt den Funkweg zu uns!"</em> — Stil Locker/Sachlich umschaltbar). Klick öffnet das Journal mit Statistik und Filtern; Telemetrie-Anfragen zeigen die Datengruppe (Umwelt, Strom, …), Traceroute-Anfragen ihren Hinweg (auf Wunsch als Linie auf der Karte). Ehrliches <strong>„Antwort erwartet"</strong> aus deiner Konfiguration — Positionsanfragen inklusive der konfigurierten Genauigkeit („±2,9 km"). Dazu: <strong>Retro-Sonar-Radar</strong> (schwarzes Scope, Phosphor-Grün, rotierender Sweep — bei Live-Anfragen läuft ein Ping von der Station zur Mitte und wird „reflektiert"), Stunden-Drilldown pro Station, <strong>Antwort-Airtime-Quittung</strong>, optionale Toasts, 🔕 Ruhemodus, Kiosk-Sperre und die Dashboard-Metrik „Anfragen an uns/h".</li>
+          <li><strong>📊 Telemetrie-Dashboard — Grafana-Runde:</strong> Pro Widget vier Grenzen (⚠ Warnung / 🚨 Alarm, jeweils tief/hoch) statt eines Schwellwerts — Gauge, Stat-Wert und Charts färben sich grün/orange/rot nach Zone (der Gauge zeigt die Grenzen als Zonen-Ring), Windows-Toasts melden Zonen-Wechsel inkl. ✅ Entwarnung; bestehende Schwellwerte werden automatisch übernommen. Neue Checkbox-Node-Auswahl im Widget-Editor (Ausgewählte bleiben trotz Suchfilter sichtbar, „Alle/Keine"), Zoom nur noch auf der Zeitachse mit Doppelklick-Reset, Heatmap-Farbskala und Histogramm-Klassen folgen dem echten Datenbereich, Candlesticks nach lokalen Kalendertagen mit neutralen Doji-Kerzen.</li>
+          <li><strong>💬 DM-Popup &amp; Ungelesen-Badge</strong> (Community-Beitrag von @chrishaef): Neue Option, ob das DM-Fenster bei eingehenden Nachrichten aufspringt — ausgeschaltet zählt stattdessen ein roter Badge mit sanftem Pulsieren am DM-Button.</li>
+          <li><strong>🛠️ Remote Admin:</strong> GPS-Festposition lässt sich jetzt auslesen und setzen (inkl. Karten-Auswahl; Koordinaten kommen wie in der Android-App aus der Node-Datenbank), Sendeintervall als 3–24-h-Auswahl, GPS-Update-Intervall statt veralteter Versuchszeit; Geräterollen um <code>CLIENT_BASE</code> und <code>ROUTER_LATE</code> ergänzt (Community-Beiträge von @chrishaef).</li>
+        </ul>
+      </div>
+    </div>
 
     <div class="cl-section fixed">
       <h3>🐛 Behoben / ✨ Verbessert</h3>
       <div class="cl-group">
         <ul class="cl-list">
+          <li><strong>Verschlüsselte Fake-DMs gestoppt</strong> (Community-Beitrag von @chrishaef): Mitgehörte Pakete an andere Nodes und unentschlüsselbare Antworten auf eigene Abfragen öffneten das DM-Fenster mit „[Verschlüsselte Nachricht]"-Geisterchats — solche Pakete erreichen die Chat-Ansicht jetzt gar nicht mehr; echte PKI-DMs (inkl. Platzhalter + 🔑-Button) bleiben erhalten.</li>
+          <li><strong>Traceroute-Distanz:</strong> Fehlte einem Zwischen-Hop die Position, zeigte die Distanz-Spalte „?" — jetzt wird zum letzten Hop mit bekannter Position gerechnet (Community-Beitrag von @chrishaef).</li>
+          <li><strong>Fernverwaltung:</strong> Das Schließen des Fensters konnte das Hauptfenster in die Taskleiste minimieren — behoben.</li>
+          <li><strong>Karten-Texte auf DACH korrigiert:</strong> Der Meshhessen-Tile-Server liefert Deutschland, Österreich und die Schweiz — die In-App-Texte sagten noch „nur Deutschland".</li>
           <li><strong>⛰ 3D-Gelände auf der Vektorkarte:</strong> Neuer Haken im Layer-Popup — echtes Höhenmodell (SRTM) mit Schummerung, Strg+Ziehen zum Neigen. Einmal angesehene Gebiete funktionieren auch offline. Bei gedrehter/geneigter Karte erscheint ein Nordpfeil (Klick = einnorden).</li>
           <li><strong>⛰ Höhenprofil pro Funkstrecke:</strong> Rechtsklick auf einen Nachbarn im Telemetriefenster oder einen Hop im Traceroute-Fenster zeigt das Geländeprofil mit Sichtlinie und Fresnel-Zone — inklusive Einschätzung, ob die Strecke frei ist oder Gelände im Weg steht.</li>
           <li><strong>Traceroute: ehrliche MQTT-Badges.</strong> Hops bekommen das MQTT-Badge nur noch, wenn für die Teilstrecke keine Funk-Messung vorliegt — vorher wurde jeder Hop markiert, sobald die Antwort über MQTT ankam. Das Kopf-Badge „via MQTT" sagt jetzt nur noch: die <em>Antwort</em> hat uns über MQTT erreicht — das bestimmt der Ziel-Node, auch bei „Nur HF"-Anfragen.</li>
@@ -1316,19 +1332,35 @@
 <div class="section" id="en">
 <main>
 
-  <!-- ── v1.6.4.7 (EN) ── -->
+  <!-- ── v1.7.0 (EN) ── -->
   <div class="version-entry current">
     <div class="version-header">
-      <span class="version-tag tag-latest">v1.6.4.7</span>
-      <span class="version-date">2026-10-21</span>
-      Traceroute honesty &amp; glyph fixes
+      <span class="version-tag tag-latest">v1.7.0</span>
+      <span class="version-date">2026-10-23</span>
+      Radio echo, Grafana dashboard &amp; 3D terrain
     </div>
-    <p class="version-desc">Honest MQTT badges in traceroutes, a cleaned-up neighbor database, repaired symbols and "first/last seen" in the node info window.</p>
+    <p class="version-desc">Big feature release: the radio echo shows who is querying your node (incl. a retro sonar), the telemetry dashboard gains Grafana-style warn/alarm zones, plus 3D terrain, per-link elevation profiles and community fixes. Includes everything from the never-released 1.6.4.7.</p>
+
+    <div class="cl-section added">
+      <h3>✨ New</h3>
+      <div class="cl-group">
+        <ul class="cl-list">
+          <li><strong>📡 Radio echo — "Who's pinging us?":</strong> when another station requests NodeInfo, position, telemetry or a traceroute from your node, a little radar in the status strip reacts (colored wave per request type, counter, a message like <em>"KELL is tracing the radio path to us!"</em> — casual/factual style switchable). Click opens the journal with statistics and filters; telemetry requests show the data group (environment, power, …), traceroute requests their inbound path (optionally drawn on the map). Honest <strong>"reply expected"</strong> derived from your configuration — position requests include the configured precision ("±2.9 km"). Plus: a <strong>retro sonar radar</strong> (black scope, phosphor green, rotating sweep — live requests ping from the station to the center and get "reflected"), per-station hourly drilldown, a <strong>response-airtime receipt</strong>, optional toasts, 🔕 quiet mode, kiosk lock and the dashboard metric "requests to us/h".</li>
+          <li><strong>📊 Telemetry dashboard — Grafana round:</strong> four bounds per widget (⚠ warning / 🚨 alarm, low/high each) instead of a single threshold — gauge, stat value and charts color green/orange/red by zone (the gauge shows the bounds as a zone ring), Windows toasts report zone transitions incl. ✅ all-clear; existing thresholds migrate automatically. New checkbox node picker in the widget editor (selected nodes stay visible despite the search filter, "all/none"), zooming now happens on the time axis only with double-click reset, heatmap color scale and histogram bins follow the actual data range, candlesticks use local calendar days with neutral doji candles.</li>
+          <li><strong>💬 DM popup &amp; unread badge</strong> (community contribution by @chrishaef): a new option controls whether the DM window pops up on incoming messages — turned off, a red badge with a gentle pulse counts unread DMs on the DM button instead.</li>
+          <li><strong>🛠️ Remote admin:</strong> fixed GPS position can now be read and set (incl. map picker; coordinates come from the node DB like in the Android app), broadcast interval as a 3–24 h picker, GPS update interval instead of the deprecated attempt time; device roles extended by <code>CLIENT_BASE</code> and <code>ROUTER_LATE</code> (community contributions by @chrishaef).</li>
+        </ul>
+      </div>
+    </div>
 
     <div class="cl-section fixed">
       <h3>🐛 Fixed / ✨ Improved</h3>
       <div class="cl-group">
         <ul class="cl-list">
+          <li><strong>Encrypted fake DMs stopped</strong> (community contribution by @chrishaef): overheard packets addressed to other nodes and undecryptable replies to our own queries used to open the DM window with "[encrypted message]" ghost chats — such packets no longer reach the chat view at all; real PKI DMs (incl. placeholder + 🔑 button) are preserved.</li>
+          <li><strong>Traceroute distance:</strong> when an intermediate hop had no position, the distance column showed "?" — it now measures from the last hop with a known position (community contribution by @chrishaef).</li>
+          <li><strong>Remote admin:</strong> closing the window could minimize the main window to the taskbar — fixed.</li>
+          <li><strong>Map texts corrected to DACH:</strong> the Meshhessen tile server covers Germany, Austria and Switzerland — the in-app texts still said "Germany only".</li>
           <li><strong>⛰ 3D terrain on the vector map:</strong> new checkbox in the layer popup — a real elevation model (SRTM) with hillshading, Ctrl+drag to tilt. Areas viewed once keep working offline. A north arrow appears while the map is rotated/tilted (click to re-north).</li>
           <li><strong>⛰ Elevation profile per radio link:</strong> right-click a neighbor in the telemetry window or a hop in the traceroute window to see the terrain profile with line of sight and Fresnel zone — including a verdict whether the path is clear or terrain is in the way.</li>
           <li><strong>Traceroute: honest MQTT badges.</strong> Hops only get the MQTT badge when no radio measurement exists for that segment — previously every hop was marked as soon as the reply arrived via MQTT. The header badge "via MQTT" now only means: the <em>reply</em> reached us via MQTT — that's up to the target node, even for "RF only" requests.</li>

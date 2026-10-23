@@ -821,7 +821,7 @@
 
 
 <h1 id="architektur-meshhessen-client">Architektur – Meshhessen Client<a class="headerlink" href="#architektur-meshhessen-client" title="Permanent link">&para;</a></h1>
-<p>Stand: v1.6.4.7 · abgeleitet aus dem Quellcode (<code>Services/</code>, <code>Models/</code>, Fenster im Projektroot). Die Kernmuster (geteilter Protokoll-Service, <code>IConnectionService</code>-Abstraktion, Event-Fluss) sind seit v1.5 stabil; seither kamen u. a. Vektorkarte (WebView2/MapLibre), Telemetrie-Dashboard, rf_links/Triangulation und TerrainService hinzu.</p>
+<p>Stand: v1.7.0 · abgeleitet aus dem Quellcode (<code>Services/</code>, <code>Models/</code>, Fenster im Projektroot). Die Kernmuster (geteilter Protokoll-Service, <code>IConnectionService</code>-Abstraktion, Event-Fluss) sind seit v1.5 stabil; seither kamen u. a. Vektorkarte (WebView2/MapLibre), Telemetrie-Dashboard, rf_links/Triangulation, TerrainService und das Funk-Echo (RequestEcho-Pipeline) hinzu.</p>
 <p>Der Client ist schichtweise aufgebaut mit <code>MainWindow</code> als zentraler Drehscheibe.
 Empfangsdaten fließen von unten (Gerät) nach oben (UI) über <strong>Events</strong>, Befehle den
 umgekehrten Weg über <code>SendXxxAsync</code>-Methoden. Zwei Muster prägen alles: der

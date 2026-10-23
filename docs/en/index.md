@@ -26,4 +26,4 @@ Welcome to the manual of the **Meshhessen Client** — the free Windows client f
 >
 > ✍️ Found a mistake? Every page has an edit pencil — corrections via pull request are welcome.
 >
-> 📌 Manual written for: **Meshhessen Client v1.6.4.7**
+> 📌 Manual written for: **Meshhessen Client v1.7.0**
