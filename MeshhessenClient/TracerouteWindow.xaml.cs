@@ -62,6 +62,9 @@ public partial class TracerouteWindow : Window
     {
         _lastResult = result;
 
+        // Positions may have arrived after the window was opened — refresh before measuring.
+        RefreshPositionsFromKnownNodes();
+
         // Build hop list: [us] → relay1 → relay2 → ... → destination
         var hops = BuildHopList(result);
 
@@ -91,13 +94,9 @@ public partial class TracerouteWindow : Window
             NodeId = $"!{_myNodeId:x8}",
             NodeName = Loc("StrSentFrom") + " (Quelle)",
             IsSource = true,
+            Distance = "—", // no previous hop
         };
-        if (_myPosition.HasValue)
-        {
-            myHop.HasPosition = true;
-            myHop.Latitude = _myPosition.Value.Lat;
-            myHop.Longitude = _myPosition.Value.Lon;
-        }
+        ApplyPosition(myHop, _myNodeId, preferMyPosition: true);
         hops.Add(myHop);
 
         // --- Relay nodes in forward route ---
@@ -113,9 +112,10 @@ public partial class TracerouteWindow : Window
             if (i < result.SnrTowards.Count)
                 ApplySegmentSnr(hop, result.SnrTowards[i]);
 
-            // Distance from previous hop
-            TracerouteHopItem prevHop = hops[^1];
-            hop.Distance = CalcDistance(prevHop, hop);
+            // Distance from the nearest earlier hop that has a position (skip unknowns).
+            // Otherwise Me→Dest stays "?" when only the middle hop is missing — even though
+            // both ends are known (issue #52).
+            hop.Distance = CalcDistanceFromLastKnown(hops, hop);
 
             hops.Add(hop);
         }
@@ -123,13 +123,21 @@ public partial class TracerouteWindow : Window
         // --- Destination ---
         var destHop = MakeHopItem(hops.Count, _targetNode.NodeId);
         destHop.IsDestination = true;
-        destHop.NodeName = _targetNode.LongName;
+        if (!string.IsNullOrWhiteSpace(_targetNode.LongName))
+            destHop.NodeName = _targetNode.LongName;
+        // Prefer live target coordinates if the snapshot missed them.
+        if (!destHop.HasPosition && _targetNode.Latitude is double tLat && _targetNode.Longitude is double tLon)
+        {
+            destHop.HasPosition = true;
+            destHop.Latitude = tLat;
+            destHop.Longitude = tLon;
+        }
 
         // Last SNR towards: after all relays, the final link is from last relay to dest
         if (result.SnrTowards.Count > result.RouteForward.Count)
             ApplySegmentSnr(destHop, result.SnrTowards[result.RouteForward.Count]);
 
-        destHop.Distance = CalcDistance(hops[^1], destHop);
+        destHop.Distance = CalcDistanceFromLastKnown(hops, destHop);
         hops.Add(destHop);
 
         return hops;
@@ -159,16 +167,11 @@ public partial class TracerouteWindow : Window
             NodeName = $"!{nodeId:x8}",
         };
 
-        if (_nodePositions.TryGetValue(nodeId, out var pos))
-        {
-            hop.HasPosition = true;
-            hop.Latitude = pos.Lat;
-            hop.Longitude = pos.Lon;
-        }
+        ApplyPosition(hop, nodeId, preferMyPosition: false);
 
-        // Try to get the name from the protocol service known nodes
         var knownNodes = _protocolService.GetKnownNodes();
-        if (knownNodes.TryGetValue(nodeId, out var nodeInfo))
+        if (knownNodes.TryGetValue(nodeId, out var nodeInfo) &&
+            !string.IsNullOrWhiteSpace(nodeInfo.LongName))
         {
             hop.NodeName = nodeInfo.LongName;
         }
@@ -176,13 +179,76 @@ public partial class TracerouteWindow : Window
         return hop;
     }
 
-    private string CalcDistance(TracerouteHopItem from, TracerouteHopItem to)
+    /// <summary>
+    /// Resolve lat/lon from the open-time snapshot, then live NodeDB / own map pin.
+    /// </summary>
+    private void ApplyPosition(TracerouteHopItem hop, uint nodeId, bool preferMyPosition)
     {
-        if (!from.HasPosition || !to.HasPosition) return "?";
-        double dist = HaversineKm(from.Latitude!.Value, from.Longitude!.Value,
-                                   to.Latitude!.Value, to.Longitude!.Value);
-        return dist < 1.0 ? $"{dist * 1000:F0} m" : $"{dist:F1} km";
+        if (preferMyPosition && _myPosition.HasValue)
+        {
+            hop.HasPosition = true;
+            hop.Latitude = _myPosition.Value.Lat;
+            hop.Longitude = _myPosition.Value.Lon;
+            return;
+        }
+
+        if (_nodePositions.TryGetValue(nodeId, out var pos))
+        {
+            hop.HasPosition = true;
+            hop.Latitude = pos.Lat;
+            hop.Longitude = pos.Lon;
+            return;
+        }
+
+        var knownNodes = _protocolService.GetKnownNodes();
+        if (knownNodes.TryGetValue(nodeId, out var nodeInfo) &&
+            nodeInfo.Latitude is double lat && nodeInfo.Longitude is double lon)
+        {
+            hop.HasPosition = true;
+            hop.Latitude = lat;
+            hop.Longitude = lon;
+        }
     }
+
+    /// <summary>
+    /// Refresh the position snapshot from live known nodes so traceroute distances
+    /// match the node list even if coords arrived after the window opened.
+    /// </summary>
+    private void RefreshPositionsFromKnownNodes()
+    {
+        foreach (var (id, info) in _protocolService.GetKnownNodes())
+        {
+            if (info.Latitude is double lat && info.Longitude is double lon)
+                _nodePositions[id] = (lat, lon);
+        }
+
+        if (!_myPosition.HasValue &&
+            _protocolService.GetKnownNodes().TryGetValue(_myNodeId, out var me) &&
+            me.Latitude is double myLat && me.Longitude is double myLon)
+        {
+            _myPosition = (myLat, myLon);
+        }
+    }
+
+    /// <summary>
+    /// Distance from the nearest earlier hop that has coordinates to <paramref name="to"/>.
+    /// Skips intermediate hops without a position so Me→Dest still shows when a relay is unknown.
+    /// </summary>
+    private static string CalcDistanceFromLastKnown(List<TracerouteHopItem> priorHops, TracerouteHopItem to)
+    {
+        if (!to.HasPosition) return "?";
+        for (int i = priorHops.Count - 1; i >= 0; i--)
+        {
+            if (priorHops[i].HasPosition)
+                return FormatDistanceKm(HaversineKm(
+                    priorHops[i].Latitude!.Value, priorHops[i].Longitude!.Value,
+                    to.Latitude!.Value, to.Longitude!.Value));
+        }
+        return "?";
+    }
+
+    private static string FormatDistanceKm(double distKm) =>
+        distKm < 1.0 ? $"{distKm * 1000:F0} m" : $"{distKm:F1} km";
 
     private static double HaversineKm(double lat1, double lon1, double lat2, double lon2)
     {
