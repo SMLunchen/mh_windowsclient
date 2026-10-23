@@ -45,6 +45,9 @@ _Hinweis: enthält auch alle Änderungen der nie veröffentlichten 1.6.4.7 (Absc
 - **Candlestick entflackert:** Kerzen werden nach **lokalen** Kalendertagen gebildet (vorher UTC — der Schnitt um 1/2 Uhr nachts ließ Mitternachts-Rauschen die Farbe quasi zufällig rot/grün kippen); Kerzen ohne echte Richtung (Open ≈ Close) sind jetzt neutral grau.
 - **⌀ MA-Button nur noch dort, wo er wirkt** (Linie/Fläche) — auf Heatmap & Co. schaltete er bisher eine Einstellung ohne jede sichtbare Wirkung.
 
+### 📨 Nachrichten
+- **Fix: Kanal-Nachrichten rutschten in offene Inline-DM-Chats.** War im Hauptfenster eine Direktnachrichten-Konversation geöffnet, wurden live eintreffende Kanal-Nachrichten (z. B. ein Public-Post des DM-Partners) in die sichtbare DM-Ansicht eingefügt — der Kanal-Anzeigefilter stand noch auf dem zuletzt offenen Kanal. Beim Ansichtswechsel verschwanden sie wieder (DB war korrekt). Jetzt rendern Kanal-Nachrichten nie in eine offene DM-Ansicht; stattdessen zählt der Ungelesen-Badge des Kanals in der Seitenleiste hoch.
+
 ### 🧭 Node-Liste
 - **Fix: Positionen bekannter Nodes verschwanden immer wieder.** Zwei Ursachen, kein Timer: (1) Jeder NodeInfo-**Broadcast** über Funk (reines User-Paket, enthält nie eine Position) ersetzte den Node-Listeneintrag durch ein frisches Objekt ohne Koordinaten — ebenso jeder NodeDB-Eintrag des Geräts beim (Re-)Connect, wenn das Gerät die Position gerade nicht (mehr) kannte (NodeDB-Eviction/Neustart). NodeInfo-Schnappschüsse werden jetzt **gemergt statt ersetzt**: Eine bekannte Position wird nur noch von einer echten neuen Position überschrieben, nie auf „leer" zurückgesetzt (gleiches gilt für Batterie, Hardware, SNR, Favoriten-Flag & Co.). (2) Zusätzlich **füllt der Client nach dem Verbinden fehlende Positionen aus der eigenen Telemetrie-Datenbank zurück** (letzter gespeicherter Fix der vergangenen 30 Tage) — das Gerät vergisst, der Client nicht. Mit Regressionstests abgesichert.
 
