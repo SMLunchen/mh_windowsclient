@@ -121,7 +121,6 @@
                             <ComboBoxItem Tag="0" Content="Client"/>
                             <ComboBoxItem Tag="1" Content="Client Mute"/>
                             <ComboBoxItem Tag="2" Content="Router"/>
-                            <ComboBoxItem Tag="3" Content="Router Client"/>
                             <ComboBoxItem Tag="4" Content="Repeater"/>
                             <ComboBoxItem Tag="5" Content="Tracker"/>
                             <ComboBoxItem Tag="6" Content="Sensor"/>
@@ -129,6 +128,8 @@
                             <ComboBoxItem Tag="8" Content="Client Hidden"/>
                             <ComboBoxItem Tag="9" Content="Lost and Found"/>
                             <ComboBoxItem Tag="10" Content="ATAK Tracker"/>
+                            <ComboBoxItem Tag="11" Content="Router Late"/>
+                            <ComboBoxItem Tag="12" Content="Client Base"/>
                         </ComboBox>
                         <TextBlock Text="{DynamicResource StrRaDeviceNodeInfoInterval}" FontSize="12"
                                    Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"/>
