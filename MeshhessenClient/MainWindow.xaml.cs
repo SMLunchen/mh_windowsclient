@@ -2306,15 +2306,6 @@ public partial class MainWindow : Window
 
                 if (isDirectMessage)
                 {
-                    // Encrypted placeholders are not real chat — protocol buffers them for late
-                    // PKI decrypt. Don't open/spam DM UI; clear text arrives after decrypt.
-                    if (message.IsEncrypted)
-                    {
-                        if (_currentSettings.DebugMessages)
-                            Services.Logger.WriteLine($"[MSG DEBUG] Skipping encrypted DM placeholder from !{message.FromId:x8}");
-                        return;
-                    }
-
                     // Inline (WhatsApp-style) mode: show the DM in the main overview instead of a window.
                     if (DmInline)
                     {

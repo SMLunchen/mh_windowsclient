@@ -156,13 +156,6 @@ public partial class DirectMessagesWindow : Window
         {
             try
             {
-                // Undecrypted placeholders are buffered in the protocol layer for late PKI
-                // decrypt. Showing them here created fake DM tabs (and used to pop this
-                // window) for NodeInfo/Telemetry/traceroute replies we couldn't decrypt.
-                // Real text arrives after decrypt via MessageReceived / PkiMessageDecrypted.
-                if (message.IsEncrypted)
-                    return;
-
                 // Dedup: late decrypt may re-deliver a packet we already have.
                 if (message.Id != 0 && _dmMessageById.ContainsKey(message.Id))
                 {
