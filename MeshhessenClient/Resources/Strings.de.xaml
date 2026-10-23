@@ -1365,6 +1365,22 @@ Grün ≤15% | Gelb 15–25% | Rot &gt;25% | Grau = keine Airtime-Daten</sys:Str
     <sys:String x:Key="StrDashPollErrMaxNodes">Maximal 4 Nodes im Abfrage-Plan (Mesh-Schonung).</sys:String>
     <sys:String x:Key="StrDashThresholdAbove">{0}: Wert {1} hat den Schwellwert {2} überschritten</sys:String>
     <sys:String x:Key="StrDashThresholdBelow">{0}: Wert {1} hat den Schwellwert {2} unterschritten</sys:String>
+    <!-- Grafana-style warn/alarm zones -->
+    <sys:String x:Key="StrDashAlarmSection">Schwellwerte &amp; Alarme (leer = aus):</sys:String>
+    <sys:String x:Key="StrDashWarnLabel">⚠ Warnung</sys:String>
+    <sys:String x:Key="StrDashAlarmLabel">🚨 Alarm</sys:String>
+    <sys:String x:Key="StrDashAlarmLowCol">tief (≤)</sys:String>
+    <sys:String x:Key="StrDashAlarmHighCol">hoch (≥)</sys:String>
+    <sys:String x:Key="StrDashAlarmHint">Färbt Gauge, Stat-Wert und Diagramme nach Zone (grün/orange/rot) und meldet Zonen-Wechsel als Windows-Benachrichtigung — geprüft wird bei jeder Aktualisierung.</sys:String>
+    <sys:String x:Key="StrDashToastAlarmHigh">🚨 {0}: {1} — Alarm (≥ {2})</sys:String>
+    <sys:String x:Key="StrDashToastAlarmLow">🚨 {0}: {1} — Alarm (≤ {2})</sys:String>
+    <sys:String x:Key="StrDashToastWarnHigh">⚠ {0}: {1} — Warnung (≥ {2})</sys:String>
+    <sys:String x:Key="StrDashToastWarnLow">⚠ {0}: {1} — Warnung (≤ {2})</sys:String>
+    <sys:String x:Key="StrDashToastNormal">✅ {0}: {1} — wieder im Normalbereich</sys:String>
+    <sys:String x:Key="StrAddWidgetSelAll">Alle</sys:String>
+    <sys:String x:Key="StrAddWidgetSelNone">Keine</sys:String>
+    <sys:String x:Key="StrAddWidgetSelCount">{0} ausgewählt</sys:String>
+    <sys:String x:Key="StrDashboardZoomHint">Ziehen/Mausrad = Zeitachse zoomen · Rechtsklick-Ziehen = verschieben · Doppelklick = zurücksetzen</sys:String>
 
     <!-- Tools tab -->
     <sys:String x:Key="StrTabTools">🔧 Tools</sys:String>

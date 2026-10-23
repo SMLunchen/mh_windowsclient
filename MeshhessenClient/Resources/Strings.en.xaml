@@ -1365,6 +1365,22 @@ Green ≤15% | Yellow 15–25% | Red &gt;25% | Gray = no airtime data</sys:Strin
     <sys:String x:Key="StrDashPollErrMaxNodes">At most 4 nodes in the polling plan (mesh etiquette).</sys:String>
     <sys:String x:Key="StrDashThresholdAbove">{0}: value {1} has risen above the threshold {2}</sys:String>
     <sys:String x:Key="StrDashThresholdBelow">{0}: value {1} has dropped below the threshold {2}</sys:String>
+    <!-- Grafana-style warn/alarm zones -->
+    <sys:String x:Key="StrDashAlarmSection">Thresholds &amp; alerts (empty = off):</sys:String>
+    <sys:String x:Key="StrDashWarnLabel">⚠ Warning</sys:String>
+    <sys:String x:Key="StrDashAlarmLabel">🚨 Alarm</sys:String>
+    <sys:String x:Key="StrDashAlarmLowCol">low (≤)</sys:String>
+    <sys:String x:Key="StrDashAlarmHighCol">high (≥)</sys:String>
+    <sys:String x:Key="StrDashAlarmHint">Colors gauge, stat value and charts by zone (green/orange/red) and reports zone transitions as Windows notifications — checked on every refresh.</sys:String>
+    <sys:String x:Key="StrDashToastAlarmHigh">🚨 {0}: {1} — alarm (≥ {2})</sys:String>
+    <sys:String x:Key="StrDashToastAlarmLow">🚨 {0}: {1} — alarm (≤ {2})</sys:String>
+    <sys:String x:Key="StrDashToastWarnHigh">⚠ {0}: {1} — warning (≥ {2})</sys:String>
+    <sys:String x:Key="StrDashToastWarnLow">⚠ {0}: {1} — warning (≤ {2})</sys:String>
+    <sys:String x:Key="StrDashToastNormal">✅ {0}: {1} — back to normal</sys:String>
+    <sys:String x:Key="StrAddWidgetSelAll">All</sys:String>
+    <sys:String x:Key="StrAddWidgetSelNone">None</sys:String>
+    <sys:String x:Key="StrAddWidgetSelCount">{0} selected</sys:String>
+    <sys:String x:Key="StrDashboardZoomHint">Drag/mouse wheel = zoom time axis · right-drag = pan · double-click = reset</sys:String>
 
     <!-- Tools tab -->
     <sys:String x:Key="StrTabTools">🔧 Tools</sys:String>

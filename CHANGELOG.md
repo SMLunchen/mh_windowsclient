@@ -9,6 +9,16 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+### 📊 Telemetrie-Dashboard (Grafana-Runde, #49/#50)
+- **Warn- & Alarm-Zonen statt Einzel-Schwellwert:** Pro Widget lassen sich jetzt vier Grenzen setzen — ⚠ Warnung tief/hoch und 🚨 Alarm tief/hoch (leer = aus). Konfiguriert wird im Widget-Editor (✎); das Schwellwert-Feld auf der Widget-Karte ist weg. Bestehende Schwellwerte werden automatisch als „Alarm hoch" übernommen. Windows-Toasts melden jeden **Zonen-Wechsel** mit Schweregrad (🚨/⚠/✅ Entwarnung), weiterhin übergangsbasiert ohne Dauer-Gepiepe. Mit Unit-Tests abgesichert.
+- **Gauge & Stat färben nach Zone:** Wert und Bogen zeigen grün/orange/rot je nach Zone; ein äußerer Zonen-Ring am Gauge markiert, wo die Grenzen auf der Skala liegen (Grafana-Stil). Die alte „tief=rot → hoch=grün"-Rampe war für „hoch ist schlecht"-Metriken (z. B. Kanalauslastung) schlicht falsch — ohne konfigurierte Grenzen ist der Gauge jetzt neutral gefärbt. In Linien-/Flächen-/Scatter-/Candlestick-Charts erscheinen die Grenzen als orange/rote Linien plus rote Alarm-Zone, im Balken-/Histogramm-Chart als vertikale Linien.
+- **Node-Auswahl im Widget-Editor neu:** Checkbox-Liste statt Klick-Markierung — ausgewählte Nodes bleiben oben angepinnt sichtbar (auch wenn der Suchfilter sie nicht trifft), dazu „Alle/Keine", ein „n ausgewählt"-Zähler und kein stilles Auto-Anwählen des ersten Nodes mehr. Bei Einzel-Node-Widgets verhält sich die Liste wie Radio-Buttons.
+- **Zoom aufgeräumt:** Zeit-Charts zoomen nur noch auf der Zeitachse (die Werteachse bleibt fix — kein diagonales Verzerren mehr), Doppelklick setzt die Ansicht zurück (Tooltip erklärt's). Heatmap, Histogramm, Balken und State-Timeline sind nicht mehr zoombar — dort erzeugte der Zoom nur Unsinn wie eine Stunden-Achse von −24 h bis +42 h.
+- **Heatmap:** Farbskala folgt jetzt dem tatsächlichen Datenbereich statt der theoretischen Metrik-Spanne (−20…20 dB machten typische SNR-Werte fast einfarbig); die X-Achse zeigt Datumsangaben statt eines Tag-Index.
+- **Histogramm:** Klassen über den echten Datenbereich statt der Metrik-Spanne — vorher quetschten sich alle RSSI-Werte in zwei Balken auf einer fast leeren Achse.
+- **Candlestick entflackert:** Kerzen werden nach **lokalen** Kalendertagen gebildet (vorher UTC — der Schnitt um 1/2 Uhr nachts ließ Mitternachts-Rauschen die Farbe quasi zufällig rot/grün kippen); Kerzen ohne echte Richtung (Open ≈ Close) sind jetzt neutral grau.
+- **⌀ MA-Button nur noch dort, wo er wirkt** (Linie/Fläche) — auf Heatmap & Co. schaltete er bisher eine Einstellung ohne jede sichtbare Wirkung.
+
 ### 🛠️ Fernverwaltung
 - **Fix:** Das Schließen des Fernverwaltungs-Fensters konnte das Hauptfenster in die Taskleiste minimieren (gleiche Win32-Eigenheit wie zuvor beim Telemetrie-Fenster) — der Owner wird jetzt vor dem Schließen aktiviert. (#53)
 

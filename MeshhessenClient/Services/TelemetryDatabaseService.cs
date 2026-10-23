@@ -1272,13 +1272,16 @@ ORDER BY bucket";
                   .OrderBy(p => p.Timestamp).ToList();
         if (pts.Count == 0) return new();
 
-        return pts.GroupBy(p => p.Timestamp.Date)
+        // Group by LOCAL calendar day: UTC day boundaries cut candles at 01:00/02:00
+        // local time, so close(n) ≈ open(n+1) and midnight noise flipped the candle
+        // color pseudo-randomly. Candle timestamp = local noon (renders mid-day).
+        return pts.GroupBy(p => p.Timestamp.ToLocalTime().Date)
                   .OrderBy(g => g.Key)
                   .Select(g =>
                   {
                       var vals = g.OrderBy(x => x.Timestamp).Select(x => x.Value).ToList();
                       return new CandlePoint(
-                          DateTime.SpecifyKind(g.Key, DateTimeKind.Utc),
+                          DateTime.SpecifyKind(g.Key.AddHours(12), DateTimeKind.Local),
                           vals.First(), vals.Max(), vals.Min(), vals.Last());
                   })
                   .ToList();

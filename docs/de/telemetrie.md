@@ -9,7 +9,8 @@
   * **14 Widget-Typen:** Linie, Fläche, Balken, Scatter, Gauge, Stat-Wert, Heatmap, Histogramm, Candlestick, State-Timeline, Ranking, Multi-Stat, Mesh-Health, Uhrzeit
   * Multi-Node-Support, alle Metriken: SNR, RSSI, Batterie, Spannung, Kanal-/TX-Auslastung, Temperatur, Luftfeuchtigkeit, Luftdruck, Pakete/h, Noise Floor, RX/TX-Statistiken
   * Widgets per Drag-and-Drop anordnen, frei skalierbar (Resize-Griff), editierbar, duplizierbar, Auto-Refresh
-  * **Zoom/Pan in Charts** (bleibt über den Auto-Refresh erhalten), Tag/Nacht-Schattierung, Schwellwert-Linien mit **Windows-Toast-Alarm** bei Über-/Unterschreitung
+  * **Zoom/Pan auf der Zeitachse** (bleibt über den Auto-Refresh erhalten; Doppelklick setzt zurück), Tag/Nacht-Schattierung
+  * **Warn- & Alarm-Zonen (Grafana-Stil):** pro Widget je eine Warn- und Alarm-Grenze nach oben und unten; Gauge/Stat/Charts färben sich grün/orange/rot nach Zone, **Windows-Toasts** melden jeden Zonen-Wechsel (inkl. ✅ Entwarnung)
   * **Export:** CSV (wahlweise für deutsches Excel), Widget als PNG, Bild in Zwischenablage, ganze Dashboards als JSON teilen (Export/Import)
   * **Vollbild-Modus (F11)** für Wandmonitore; Fensterposition und zuletzt aktives Dashboard werden gemerkt
   * **Automatische Telemetrie-Abfragen (📥):** bis zu 4 Nodes werden aktiv nach LocalStats/Umwelt-/Gerätedaten gefragt (mesh-schonend: LocalStats max. 1×/h, anderes max. alle 30 min); aus den Zähler-Deltas entstehen Raten in Pakete/h
@@ -25,15 +26,15 @@
 
 1. **Öffnen:** 📊-Button in der Toolbar des Hauptfensters → beim ersten Öffnen ist das Fenster leer; mit „+ Neu“ legst du dein erstes Dashboard an (Namensvorschlag „Dashboard 1“ — nenn es z. B. „Solar-Monitoring“)
 2. **Widget hinzufügen:** „+ Widget hinzufügen“ → Typ wählen (für Batterie: **Zeitverlauf/Linie**), Node(s) anhaken, Metrik **Batterie (%)**, Zeitraum **7 Tage** (voreingestellt) → Speichern. Auf der fertigen Karte schaltest du per 1d/7d/14d/30d-Buttons um, sortierst per ⠿-Griff um und skalierst am Griff unten rechts
-3. **Alarm einrichten:** Im Widget den gewünschten Grenzwert ins **Schwellwert**-Feld eintragen (z. B. `30`). Die Schwellwert-Linie erscheint im Chart; **kreuzt** der Wert die Schwelle bei einer Aktualisierung, kommt ein **Windows-Toast** (nur beim Übergang — kein Dauer-Gepiepe)
+3. **Alarm einrichten:** Im Widget-Editor unter **„Schwellwerte & Alarme“** die Grenzen setzen — für die Batterie z. B. ⚠ Warnung tief `30` und 🚨 Alarm tief `15`. Die Linien erscheinen im Chart (orange/rot), Gauge und Stat-Wert färben sich nach Zone; **wechselt** der Wert bei einer Aktualisierung die Zone, kommt ein **Windows-Toast** mit Schweregrad (nur beim Übergang — kein Dauer-Gepiepe, Rückkehr in den Normalbereich meldet ✅)
 4. **Aktuell halten:** Auto-Refresh oben rechts (z. B. 30 s); sendet der Node selbst zu selten, nimm ihn über den **📥 Abfragen**-Button in den Abfrageplan (max. 4 Nodes, mesh-schonend)
-5. **Erfolgskontrolle & Alarm-Test:** Das Widget zeigt eine Kurve mit Tag/Nacht-Schattierung; unten steht die letzte Aktualisierungszeit. Den Alarm testest du in zwei Schritten: Schwellwert erst auf dieselbe Seite wie der aktuelle Wert legen (z. B. deutlich unter den Batteriestand) und eine Aktualisierung abwarten — dieser erste Check merkt sich still die Ausgangslage. Dann die Schwelle über den aktuellen Wert schieben und „↺ Aktualisieren“ drücken (oder den Auto-Refresh abwarten): jetzt kommt der Toast
+5. **Erfolgskontrolle & Alarm-Test:** Das Widget zeigt eine Kurve mit Tag/Nacht-Schattierung; unten steht die letzte Aktualisierungszeit. Den Alarm testest du in zwei Schritten: Grenzen erst so setzen, dass der aktuelle Wert im Normalbereich liegt, und eine Aktualisierung abwarten — dieser erste Check merkt sich still die Ausgangslage. Dann eine Grenze über/unter den aktuellen Wert schieben und „↺ Aktualisieren“ drücken (oder den Auto-Refresh abwarten): jetzt kommt der Toast
 6. **Werte deuten:** Fällt die Batterie nachts um mehr als ~15–20 %, lohnt der Blick ins Kapitel [Messwerte verstehen](messwerte.md) (Nachtabfall, Spannung); die SNR/RSSI-Interpretation steht dort und im [Glossar](glossar.md)
 
 **Typische Fehler:**
 
 * *Widget bleibt leer* → für diesen Node/diese Metrik liegen noch keine Daten in der Telemetrie-Datenbank (der Node sendet die Metrik nicht → Polling aktivieren oder per Rechtsklick „Informationen anfordern“)
-* *Kein Toast trotz Schwellwert* → geprüft wird nur bei einer **Aktualisierung** (Auto-Refresh, „↺“ oder Editor-Speichern), nicht schon beim Eintippen — und der allererste Check nach dem Öffnen setzt stumm die Ausgangslage, gemeldet wird erst der nächste **Übergang**. Außerdem prüfen: Sind Windows-Benachrichtigungen für Apps erlaubt?
+* *Kein Toast trotz Alarm-Grenze* → geprüft wird nur bei einer **Aktualisierung** (Auto-Refresh, „↺“ oder Editor-Speichern), nicht schon beim Eintippen — und der allererste Check nach dem Öffnen setzt stumm die Ausgangslage, gemeldet wird erst der nächste **Zonen-Wechsel**. Außerdem prüfen: Sind Windows-Benachrichtigungen für Apps erlaubt?
 * *Zoom springt zurück* → Zoom/Pan bleibt beim Auto-Refresh erhalten; der manuelle „Aktualisieren“-Knopf setzt die Ansicht bewusst zurück
 
 <!-- SCREENSHOT-WUNSCH: Widget-Editor offen (Typ/Node/Metrik/Threshold sichtbar) -->

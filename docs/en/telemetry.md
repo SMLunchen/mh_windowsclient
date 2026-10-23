@@ -9,7 +9,8 @@
   * **14 widget types:** line, area, bar, scatter, gauge, stat value, heatmap, histogram, candlestick, state timeline, ranking, multi-stat, mesh health, clock
   * Multi-node support, all metrics: SNR, RSSI, battery, voltage, channel/TX utilization, temperature, humidity, pressure, packets/h, noise floor, RX/TX stats
   * Drag-and-drop arrangement, freely resizable, editable, duplicatable, auto-refresh
-  * **Zoom/pan in charts** (survives auto-refresh), day/night shading, threshold lines with **Windows toast alerts** on crossings
+  * **Zoom/pan on the time axis** (survives auto-refresh; double-click resets), day/night shading
+  * **Warn & alarm zones (Grafana-style):** per widget one warning and one alarm bound in each direction; gauge/stat/charts color green/orange/red by zone, **Windows toasts** report every zone transition (incl. ✅ all-clear)
   * **Export:** CSV (incl. a German-Excel flavour), widget as PNG, copy image, share whole dashboards as JSON (export/import)
   * **Fullscreen mode (F11)** for wall monitors; window placement and last active dashboard are remembered
   * **Automatic telemetry polling (📥):** up to 4 nodes are actively polled for LocalStats/environment/device data (mesh-friendly: LocalStats at most 1×/h, others every 30 min max); counter deltas yield packets/h rates
@@ -24,15 +25,15 @@
 
 1. **Open:** 📊 button in the main window toolbar → on first open the window is empty; "+ New" creates your first dashboard (suggested name "Dashboard 1" — call it e.g. "Solar monitoring")
 2. **Add a widget:** "+ Add Widget" → pick a type (for battery: **time series/line**), tick the node(s), metric **battery (%)**, range **7 days** (the default) → save. On the finished card you can switch via the 1d/7d/14d/30d buttons, reorder via the ⠿ grip and resize via the grip in the lower right
-3. **Set the alert:** enter your limit into the widget's **Threshold** field (e.g. `30`). The threshold line appears in the chart; when the value **crosses** it on a refresh you get a **Windows toast** (transition only — no constant nagging)
+3. **Set the alert:** in the widget editor under **"Thresholds & alerts"** set your bounds — for battery e.g. ⚠ warning low `30` and 🚨 alarm low `15`. The lines appear in the chart (orange/red), gauge and stat value color by zone; when the value **changes zone** on a refresh you get a **Windows toast** with severity (transition only — no constant nagging; returning to normal reports ✅)
 4. **Keep it fresh:** auto-refresh top right (e.g. 30 s); if the node rarely sends on its own, add it to the polling plan via the **📥 Polling** button (max. 4 nodes, mesh-friendly)
-5. **Success check & alert test:** the widget shows a curve with day/night shading; the last refresh time is shown at the bottom. Test the alert in two steps: first set the threshold on the same side as the current value (e.g. well below the battery level) and wait for one refresh — this first check silently records the baseline. Then move the threshold past the current value and press "↺ Refresh" (or wait for the auto-refresh): now the toast fires
+5. **Success check & alert test:** the widget shows a curve with day/night shading; the last refresh time is shown at the bottom. Test the alert in two steps: first set the bounds so the current value sits in the normal zone and wait for one refresh — this first check silently records the baseline. Then move a bound past the current value and press "↺ Refresh" (or wait for the auto-refresh): now the toast fires
 6. **Reading the values:** if the battery drops more than ~15–20 % overnight, see the chapter [Understanding the values](metrics.md) (night drop, voltage); SNR/RSSI interpretation lives there and in the [glossary](glossary.md)
 
 **Typical pitfalls:**
 
 * *Widget stays empty* → no data for this node/metric in the telemetry database yet (the node doesn't send that metric → enable polling or right-click "Request information")
-* *No toast despite threshold* → checks only happen on a **refresh** (auto-refresh, "↺" or saving in the editor), never while typing — and the very first check after opening silently records the baseline; only the next **transition** is reported. Also check: are Windows notifications allowed for apps?
+* *No toast despite alarm bounds* → checks only happen on a **refresh** (auto-refresh, "↺" or saving in the editor), never while typing — and the very first check after opening silently records the baseline; only the next **zone transition** is reported. Also check: are Windows notifications allowed for apps?
 * *Zoom keeps resetting* → zoom/pan survives auto-refresh; the manual "Refresh" button deliberately resets the view
 
 <!-- SCREENSHOT REQUEST: widget editor open (type/node/metric/threshold visible) -->

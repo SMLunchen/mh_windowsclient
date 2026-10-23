@@ -875,7 +875,8 @@
 <li><strong>14 widget types:</strong> line, area, bar, scatter, gauge, stat value, heatmap, histogram, candlestick, state timeline, ranking, multi-stat, mesh health, clock</li>
 <li>Multi-node support, all metrics: SNR, RSSI, battery, voltage, channel/TX utilization, temperature, humidity, pressure, packets/h, noise floor, RX/TX stats</li>
 <li>Drag-and-drop arrangement, freely resizable, editable, duplicatable, auto-refresh</li>
-<li><strong>Zoom/pan in charts</strong> (survives auto-refresh), day/night shading, threshold lines with <strong>Windows toast alerts</strong> on crossings</li>
+<li><strong>Zoom/pan on the time axis</strong> (survives auto-refresh; double-click resets), day/night shading</li>
+<li><strong>Warn &amp; alarm zones (Grafana-style):</strong> per widget one warning and one alarm bound in each direction; gauge/stat/charts color green/orange/red by zone, <strong>Windows toasts</strong> report every zone transition (incl. ✅ all-clear)</li>
 <li><strong>Export:</strong> CSV (incl. a German-Excel flavour), widget as PNG, copy image, share whole dashboards as JSON (export/import)</li>
 <li><strong>Fullscreen mode (F11)</strong> for wall monitors; window placement and last active dashboard are remembered</li>
 <li><strong>Automatic telemetry polling (📥):</strong> up to 4 nodes are actively polled for LocalStats/environment/device data (mesh-friendly: LocalStats at most 1×/h, others every 30 min max); counter deltas yield packets/h rates</li>
@@ -888,15 +889,15 @@
 <ol>
 <li><strong>Open:</strong> 📊 button in the main window toolbar → on first open the window is empty; "+ New" creates your first dashboard (suggested name "Dashboard 1" — call it e.g. "Solar monitoring")</li>
 <li><strong>Add a widget:</strong> "+ Add Widget" → pick a type (for battery: <strong>time series/line</strong>), tick the node(s), metric <strong>battery (%)</strong>, range <strong>7 days</strong> (the default) → save. On the finished card you can switch via the 1d/7d/14d/30d buttons, reorder via the ⠿ grip and resize via the grip in the lower right</li>
-<li><strong>Set the alert:</strong> enter your limit into the widget's <strong>Threshold</strong> field (e.g. <code>30</code>). The threshold line appears in the chart; when the value <strong>crosses</strong> it on a refresh you get a <strong>Windows toast</strong> (transition only — no constant nagging)</li>
+<li><strong>Set the alert:</strong> in the widget editor under <strong>"Thresholds &amp; alerts"</strong> set your bounds — for battery e.g. ⚠ warning low <code>30</code> and 🚨 alarm low <code>15</code>. The lines appear in the chart (orange/red), gauge and stat value color by zone; when the value <strong>changes zone</strong> on a refresh you get a <strong>Windows toast</strong> with severity (transition only — no constant nagging; returning to normal reports ✅)</li>
 <li><strong>Keep it fresh:</strong> auto-refresh top right (e.g. 30 s); if the node rarely sends on its own, add it to the polling plan via the <strong>📥 Polling</strong> button (max. 4 nodes, mesh-friendly)</li>
-<li><strong>Success check &amp; alert test:</strong> the widget shows a curve with day/night shading; the last refresh time is shown at the bottom. Test the alert in two steps: first set the threshold on the same side as the current value (e.g. well below the battery level) and wait for one refresh — this first check silently records the baseline. Then move the threshold past the current value and press "↺ Refresh" (or wait for the auto-refresh): now the toast fires</li>
+<li><strong>Success check &amp; alert test:</strong> the widget shows a curve with day/night shading; the last refresh time is shown at the bottom. Test the alert in two steps: first set the bounds so the current value sits in the normal zone and wait for one refresh — this first check silently records the baseline. Then move a bound past the current value and press "↺ Refresh" (or wait for the auto-refresh): now the toast fires</li>
 <li><strong>Reading the values:</strong> if the battery drops more than ~15–20 % overnight, see the chapter <a href="../metrics/">Understanding the values</a> (night drop, voltage); SNR/RSSI interpretation lives there and in the <a href="../glossary/">glossary</a></li>
 </ol>
 <p><strong>Typical pitfalls:</strong></p>
 <ul>
 <li><em>Widget stays empty</em> → no data for this node/metric in the telemetry database yet (the node doesn't send that metric → enable polling or right-click "Request information")</li>
-<li><em>No toast despite threshold</em> → checks only happen on a <strong>refresh</strong> (auto-refresh, "↺" or saving in the editor), never while typing — and the very first check after opening silently records the baseline; only the next <strong>transition</strong> is reported. Also check: are Windows notifications allowed for apps?</li>
+<li><em>No toast despite alarm bounds</em> → checks only happen on a <strong>refresh</strong> (auto-refresh, "↺" or saving in the editor), never while typing — and the very first check after opening silently records the baseline; only the next <strong>zone transition</strong> is reported. Also check: are Windows notifications allowed for apps?</li>
 <li><em>Zoom keeps resetting</em> → zoom/pan survives auto-refresh; the manual "Refresh" button deliberately resets the view</li>
 </ul>
 <!-- SCREENSHOT REQUEST: widget editor open (type/node/metric/threshold visible) -->

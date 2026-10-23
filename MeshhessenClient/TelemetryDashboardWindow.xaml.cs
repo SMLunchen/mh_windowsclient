@@ -470,6 +470,17 @@ public partial class TelemetryDashboardWindow : Window
                     ReadAllText(StoreFile), _jsonOptions) ?? new();
         }
         catch { _store = new(); }
+
+        // Legacy single Threshold → AlarmHigh (Grafana-style zones since this version)
+        for (int i = 0; i < _store.Dashboards.Count; i++)
+        {
+            var d = _store.Dashboards[i];
+            if (!d.Widgets.Any(w => !double.IsNaN(w.Threshold))) continue;
+            _store.Dashboards[i] = d with
+            {
+                Widgets = d.Widgets.Select(DashboardAlarms.Migrate).ToList()
+            };
+        }
     }
 
     private static readonly JsonSerializerOptions _jsonOptions = new()
@@ -801,7 +812,7 @@ public partial class TelemetryDashboardWindow : Window
 
             // Fresh widget IDs (avoid collisions with existing widgets) + unique name
             var widgets = imported.Widgets
-                .Select(w => w with { Id = Guid.NewGuid().ToString("N")[..8] })
+                .Select(w => DashboardAlarms.Migrate(w) with { Id = Guid.NewGuid().ToString("N")[..8] })
                 .ToList();
             string name = string.IsNullOrWhiteSpace(imported.Name) ? "Import" : imported.Name;
             string unique = name;
@@ -822,17 +833,17 @@ public partial class TelemetryDashboardWindow : Window
         }
     }
 
-    // ── Threshold alerts (Windows toasts) ────────────────────────────────────
+    // ── Zone alerts (Windows toasts) ─────────────────────────────────────────
 
-    // Last observed side of the threshold per widget+node; notify only on transitions
-    // (first observation sets the baseline silently so opening the window never spams).
-    private readonly Dictionary<string, bool> _thresholdAbove = new();
+    // Last observed zone per widget+node; notify only on transitions (the first
+    // observation sets the baseline silently so opening the window never spams).
+    private readonly Dictionary<string, AlarmZone> _alarmZones = new();
 
     private void CheckThresholdAlerts(IEnumerable<DashboardWidget> widgets)
     {
         foreach (var w in widgets)
         {
-            if (double.IsNaN(w.Threshold)) continue;
+            if (!w.HasAlarmLevels) continue;
             foreach (var nodeId in w.NodeIds)
             {
                 List<TimeSeriesPoint> pts;
@@ -840,17 +851,33 @@ public partial class TelemetryDashboardWindow : Window
                 catch { continue; }
                 if (pts.Count == 0) continue;
                 double val = pts.OrderByDescending(p => p.Timestamp).First().Value;
-                bool above = val >= w.Threshold;
+                var zone = DashboardAlarms.Classify(w, val);
 
                 string key = $"{w.Id}|{nodeId}";
-                if (_thresholdAbove.TryGetValue(key, out bool wasAbove) && wasAbove != above)
+                if (_alarmZones.TryGetValue(key, out var wasZone) && wasZone != zone)
                 {
+                    double limit = zone switch
+                    {
+                        AlarmZone.AlarmHigh => w.AlarmHigh,
+                        AlarmZone.AlarmLow  => w.AlarmLow,
+                        AlarmZone.WarnHigh  => w.WarnHigh,
+                        AlarmZone.WarnLow   => w.WarnLow,
+                        _                   => double.NaN,
+                    };
+                    string msgKey = zone switch
+                    {
+                        AlarmZone.AlarmHigh => "StrDashToastAlarmHigh",
+                        AlarmZone.AlarmLow  => "StrDashToastAlarmLow",
+                        AlarmZone.WarnHigh  => "StrDashToastWarnHigh",
+                        AlarmZone.WarnLow   => "StrDashToastWarnLow",
+                        _                   => "StrDashToastNormal",
+                    };
                     ToastService.ShowMessage(
                         w.Title,
-                        string.Format(Loc(above ? "StrDashThresholdAbove" : "StrDashThresholdBelow"),
-                            NodeLabel(nodeId), val.ToString("G4"), w.Threshold.ToString("G4")));
+                        string.Format(Loc(msgKey),
+                            NodeLabel(nodeId), val.ToString("G4"), limit.ToString("G4")));
                 }
-                _thresholdAbove[key] = above;
+                _alarmZones[key] = zone;
             }
         }
     }
@@ -1334,6 +1361,20 @@ public partial class TelemetryDashboardWindow : Window
                     _zoomedWidgets.Remove(w.Id);
             };
 
+        // Double-click = reset zoom/pan (discoverable, unlike OxyPlot's default bindings).
+        // Hint tooltip only where zooming is actually possible (time charts).
+        if (model.Axes.Any(a => a.IsZoomEnabled))
+        {
+            view.MouseDoubleClick += (_, _) =>
+            {
+                model.ResetAllAxes();
+                _zoomedWidgets.Remove(w.Id);
+                view.InvalidatePlot(false);
+            };
+            view.ToolTip = Loc("StrDashboardZoomHint");
+            ToolTipService.SetInitialShowDelay(view, 1500);
+        }
+
         if (ModelHasData(model)) return view;
 
         // Empty chart: overlay a "no data" hint instead of a bare coordinate system
@@ -1439,10 +1480,24 @@ public partial class TelemetryDashboardWindow : Window
             ? 0
             : Math.Clamp((val - min) / (max - min), 0, 1);
 
-        // Color ramp: red (low) → amber → green (high)
-        Color arcColor = pct < 0.5
-            ? InterpolateColor(Color.FromRgb(240,  76,  76), Color.FromRgb(255, 171,  76), pct * 2)
-            : InterpolateColor(Color.FromRgb(255, 171,  76), Color.FromRgb( 63, 185, 126), (pct - 0.5) * 2);
+        // Zone-based color when warn/alarm levels are configured (Grafana-style) —
+        // the old low=red→high=green ramp was simply wrong for "high is bad" metrics
+        // like channel utilization. Without levels: neutral accent.
+        Color zoneGreen = Color.FromRgb( 63, 185, 126);
+        Color zoneWarn  = Color.FromRgb(255, 171,  76);
+        Color zoneAlarm = Color.FromRgb(240,  76,  76);
+        Color arcColor;
+        if (w.HasAlarmLevels)
+        {
+            var zone = DashboardAlarms.Classify(w, val);
+            arcColor = DashboardAlarms.IsAlarm(zone) ? zoneAlarm
+                     : DashboardAlarms.IsWarn(zone)  ? zoneWarn
+                     : zoneGreen;
+        }
+        else
+        {
+            arcColor = _uiPalette.Length > 0 ? _uiPalette[0] : Color.FromRgb(82, 174, 255);
+        }
 
         string nodeName = nodeId != 0 && _nodeNames.TryGetValue(nodeId, out var nn) ? nn : "–";
 
@@ -1469,6 +1524,29 @@ public partial class TelemetryDashboardWindow : Window
         canvas.Children.Add(BuildArcPath(cx, cy, r, startVisual, sweep,
             _isDark ? Color.FromRgb(33, 38, 45) : Color.FromRgb(226, 229, 234),
             strokeW));
+
+        // Zone ring just outside the track: green/orange/red segments show where the
+        // configured warn/alarm bounds sit on the scale (Grafana gauge style).
+        if (w.HasAlarmLevels)
+        {
+            double ringR = r + 9;
+            const double ringW = 3;
+            double P(double v) => Math.Clamp((v - min) / (max - min), 0, 1);
+            var cuts = new List<(double from, double to, Color color)>();
+            double lo = 0;
+            if (!double.IsNaN(w.AlarmLow)) { cuts.Add((lo, P(w.AlarmLow), zoneAlarm)); lo = P(w.AlarmLow); }
+            if (!double.IsNaN(w.WarnLow) && P(w.WarnLow) > lo) { cuts.Add((lo, P(w.WarnLow), zoneWarn)); lo = P(w.WarnLow); }
+            double hi = 1;
+            var tail = new List<(double from, double to, Color color)>();
+            if (!double.IsNaN(w.AlarmHigh)) { tail.Add((P(w.AlarmHigh), hi, zoneAlarm)); hi = P(w.AlarmHigh); }
+            if (!double.IsNaN(w.WarnHigh) && P(w.WarnHigh) < hi) { tail.Add((P(w.WarnHigh), hi, zoneWarn)); hi = P(w.WarnHigh); }
+            if (hi > lo) cuts.Add((lo, hi, zoneGreen));
+            cuts.AddRange(tail);
+            foreach (var (from, to, color) in cuts)
+                if (to - from > 0.004)
+                    canvas.Children.Add(BuildArcPath(cx, cy, ringR,
+                        startVisual + sweep * from, sweep * (to - from), color, ringW));
+        }
 
         // Value arc
         if (pct > 0.002)
@@ -1644,12 +1722,22 @@ public partial class TelemetryDashboardWindow : Window
         };
         Grid.SetRow(chip, 0);
 
+        // Value color follows the configured warn/alarm zones (stale wins: a dead node
+        // must not look like a healthy green one)
+        Color valColor = _fgMain;
+        if (!stale && w.HasAlarmLevels && !double.IsNaN(current))
+        {
+            var zone = DashboardAlarms.Classify(w, current);
+            valColor = DashboardAlarms.IsAlarm(zone) ? Color.FromRgb(240,  76,  76)
+                     : DashboardAlarms.IsWarn(zone)  ? Color.FromRgb(255, 171,  76)
+                     : Color.FromRgb( 63, 185, 126);
+        }
         var bigVal = new TextBlock
         {
             Text = double.IsNaN(current) ? "–" : $"{current:F1}",
             FontSize   = 48,
             FontWeight = System.Windows.FontWeights.Light,
-            Foreground = new SolidColorBrush(stale ? _fgMuted : _fgMain),
+            Foreground = new SolidColorBrush(stale ? _fgMuted : valColor),
             HorizontalAlignment = System.Windows.HorizontalAlignment.Center,
             VerticalAlignment   = System.Windows.VerticalAlignment.Center,
         };
@@ -1754,7 +1842,7 @@ public partial class TelemetryDashboardWindow : Window
             ci++;
         }
         AddNightBands(model);
-        AddThresholdAnnotation(model, w);
+        AddAlarmAnnotations(model, w);
         FinalizeChart(model);
         return model;
     }
@@ -1809,25 +1897,53 @@ public partial class TelemetryDashboardWindow : Window
             ci++;
         }
         AddNightBands(model);
-        AddThresholdAnnotation(model, w);
+        AddAlarmAnnotations(model, w);
         FinalizeChart(model);
         return model;
     }
 
-    private static void AddThresholdAnnotation(PlotModel model, DashboardWidget w)
+    private static readonly OxyColor AlarmColor = OxyColor.FromRgb(240,  76,  76);
+    private static readonly OxyColor WarnColor  = OxyColor.FromRgb(255, 171,  76);
+
+    /// <summary>Grafana-style zone annotations: dashed warn (orange) / alarm (red) lines,
+    /// plus a faint red fill beyond the alarm bounds. Horizontal for time charts; for the
+    /// bar chart (values on X) the lines are vertical instead.</summary>
+    private static void AddAlarmAnnotations(PlotModel model, DashboardWidget w, bool vertical = false)
     {
-        if (double.IsNaN(w.Threshold)) return;
-        model.Annotations.Add(new LineAnnotation
+        void AddLine(double y, OxyColor color, string prefix)
         {
-            Type            = LineAnnotationType.Horizontal,
-            Y               = w.Threshold,
-            Color           = OxyColor.FromArgb(200, 240, 76, 76),
-            StrokeThickness = 1.5,
-            LineStyle       = LineStyle.Dash,
-            Text            = $"⊥ {w.Threshold:G4}",
-            TextColor       = OxyColor.FromArgb(200, 240, 76, 76),
-            FontSize        = 9,
-        });
+            if (double.IsNaN(y)) return;
+            model.Annotations.Add(new LineAnnotation
+            {
+                Type            = vertical ? LineAnnotationType.Vertical : LineAnnotationType.Horizontal,
+                Y               = vertical ? 0 : y,
+                X               = vertical ? y : 0,
+                Color           = OxyColor.FromAColor(200, color),
+                StrokeThickness = 1.5,
+                LineStyle       = LineStyle.Dash,
+                Text            = $"{prefix} {y:G4}",
+                TextColor       = OxyColor.FromAColor(220, color),
+                FontSize        = 9,
+            });
+        }
+        void AddZone(double from, double to)
+        {
+            var rect = new RectangleAnnotation
+            {
+                Fill  = OxyColor.FromAColor(14, AlarmColor),
+                Layer = AnnotationLayer.BelowSeries,
+            };
+            if (vertical) { rect.MinimumX = from; rect.MaximumX = to; }
+            else          { rect.MinimumY = from; rect.MaximumY = to; }
+            model.Annotations.Add(rect);
+        }
+
+        AddLine(w.WarnLow,   WarnColor,  "⚠");
+        AddLine(w.WarnHigh,  WarnColor,  "⚠");
+        AddLine(w.AlarmLow,  AlarmColor, "🚨");
+        AddLine(w.AlarmHigh, AlarmColor, "🚨");
+        if (!double.IsNaN(w.AlarmHigh)) AddZone(w.AlarmHigh,  w.AlarmHigh + 1e6);
+        if (!double.IsNaN(w.AlarmLow))  AddZone(w.AlarmLow - 1e6, w.AlarmLow);
     }
 
     /// <summary>Trailing moving average over a TIME window (previously 12 data points,
@@ -1910,6 +2026,9 @@ public partial class TelemetryDashboardWindow : Window
         }
 
         categoryAxis.Maximum = Math.Max(0.5, ci - 0.5);
+        // Category snapshot: zooming has no meaning here
+        foreach (var ax in model.Axes) { ax.IsZoomEnabled = false; ax.IsPanEnabled = false; }
+        AddAlarmAnnotations(model, w, vertical: true);
         return model;
     }
 
@@ -1932,17 +2051,34 @@ public partial class TelemetryDashboardWindow : Window
             for (int h = 0; h < 24; h++)
                 clean[d, h] = data[d, h];
 
-        // Auto-scale packet_count based on actual max
+        // Color scale from the ACTUAL data range (not the theoretical metric range):
+        // an SNR map pinned to -20..20 dB left typical -8..+8 data nearly monochrome.
         double colorMin = isCount ? 0 : min;
-        double colorMax = isCount
-            ? Math.Max(1, Enumerable.Range(0, days)
-                .SelectMany(d => Enumerable.Range(0, 24).Select(h => data[d, h]))
-                .DefaultIfEmpty(1).Max())
-            : max;
+        double colorMax = isCount ? 1 : max;
+        {
+            double lo = double.PositiveInfinity, hi = double.NegativeInfinity;
+            for (int d = 0; d < days; d++)
+                for (int h = 0; h < 24; h++)
+                {
+                    double v = data[d, h];
+                    if (double.IsNaN(v)) continue;
+                    if (v < lo) lo = v;
+                    if (v > hi) hi = v;
+                }
+            if (!double.IsPositiveInfinity(lo))
+            {
+                if (hi - lo < 1.0) { double mid = (hi + lo) / 2; lo = mid - 0.5; hi = mid + 0.5; }
+                colorMin = isCount ? 0 : lo;
+                colorMax = hi;
+            }
+        }
 
         var model = MakeBaseModel();
         model.Legends.Clear();
 
+        // Fixed day×hour grid — zooming/panning only ever produced nonsense ranges
+        // like "-24 h … +42 h", so interaction is disabled entirely.
+        var startDate = DateTime.Now.Date.AddDays(-(days - 1));
         model.Axes.Add(new LinearAxis
         {
             Position  = AxisPosition.Left,
@@ -1950,12 +2086,15 @@ public partial class TelemetryDashboardWindow : Window
             Minimum   = -0.5, Maximum = 23.5,
             MajorStep = 6,
             TextColor = _oxyText, TitleColor = _oxyText,
+            IsZoomEnabled = false, IsPanEnabled = false,
         });
         model.Axes.Add(new LinearAxis
         {
             Position   = AxisPosition.Bottom,
-            Title      = Loc("StrDashboardDayIndex"),
+            Minimum    = -0.5, Maximum = days - 0.5,
             TextColor  = _oxyText, TitleColor = _oxyText,
+            IsZoomEnabled  = false, IsPanEnabled = false,
+            LabelFormatter = d => startDate.AddDays(Math.Round(d)).ToString("dd.MM"),
         });
         model.Axes.Add(new LinearColorAxis
         {
@@ -1964,6 +2103,7 @@ public partial class TelemetryDashboardWindow : Window
             Palette    = OxyPalettes.Viridis(64),
             Title      = unit,
             TextColor  = _oxyText, TitleColor = _oxyText,
+            IsZoomEnabled = false, IsPanEnabled = false,
             // NaN cells ("no data") get a neutral background color clearly outside the
             // Viridis ramp — previously they were mapped to min-1 and looked like minima
             InvalidNumberColor = _isDark ? OxyColor.FromRgb(33, 38, 45) : OxyColor.FromRgb(230, 232, 236),
@@ -2007,6 +2147,7 @@ public partial class TelemetryDashboardWindow : Window
             ci++;
         }
         AddNightBands(model);
+        AddAlarmAnnotations(model, w);
         FinalizeChart(model);
         return model;
     }
@@ -2015,9 +2156,24 @@ public partial class TelemetryDashboardWindow : Window
 
     private PlotModel BuildHistogramModel(DashboardWidget w)
     {
-        (double min, double max, string unit) = MetricRange(w.Metric);
+        (double rangeMin, double rangeMax, string unit) = MetricRange(w.Metric);
         var nodeId = w.NodeIds.FirstOrDefault();
         var pts    = GetSeries(nodeId, w.Metric, w.Days);
+
+        // Bin over the ACTUAL data range, not the theoretical metric range — RSSI pinned
+        // to -130..-20 dBm squeezed all data into two bars on a mostly empty axis.
+        double min = rangeMin, max = rangeMax;
+        if (pts.Count > 0)
+        {
+            min = pts.Min(p => p.Value);
+            max = pts.Max(p => p.Value);
+            if (max - min < 1e-6) { min -= 0.5; max += 0.5; }   // constant metric
+            else
+            {
+                double pad = (max - min) * 0.02;                 // small visual margin
+                min -= pad; max += pad;
+            }
+        }
 
         const int buckets = 20;
         double range = Math.Max(max - min, 1e-6);
@@ -2044,6 +2200,7 @@ public partial class TelemetryDashboardWindow : Window
             TitleColor         = _oxyText,
             MajorGridlineStyle = LineStyle.Dot,
             MajorGridlineColor = _oxyGrid,
+            IsZoomEnabled      = false, IsPanEnabled = false,
         });
         model.Axes.Add(new LinearAxis
         {
@@ -2055,6 +2212,7 @@ public partial class TelemetryDashboardWindow : Window
             TitleColor         = _oxyText,
             MajorGridlineStyle = LineStyle.Dot,
             MajorGridlineColor = _oxyGrid,
+            IsZoomEnabled      = false, IsPanEnabled = false,
         });
 
         var series = new RectangleBarSeries
@@ -2070,6 +2228,7 @@ public partial class TelemetryDashboardWindow : Window
             series.Items.Add(new RectangleBarItem(x0, 0, x1, counts[i]));
         }
         model.Series.Add(series);
+        AddAlarmAnnotations(model, w, vertical: true);
         return model;
     }
 
@@ -2096,11 +2255,29 @@ public partial class TelemetryDashboardWindow : Window
             CandleWidth     = 0.6,
             StrokeThickness = 1.5,
         };
+        // Doji candles: open ≈ close (within 3 % of the visible value span) carry no real
+        // direction — tiny noise around the day boundary used to flip them red/green at
+        // random. Render them neutral via a second series (OxyPlot colors per series).
+        double span = candles.Max(c => c.High) - candles.Min(c => c.Low);
+        double dojiEps = Math.Max(span * 0.03, 1e-9);
+        var neutral = new CandleStickSeries
+        {
+            IncreasingColor = OxyColor.FromRgb(139, 148, 158),
+            DecreasingColor = OxyColor.FromRgb(139, 148, 158),
+            CandleWidth     = 0.6,
+            StrokeThickness = 1.5,
+        };
         foreach (var c in candles)
-            series.Items.Add(new HighLowItem(
-                DateTimeAxis.ToDouble(c.Time.ToLocalTime()), c.High, c.Low, c.Open, c.Close));
+        {
+            var item = new HighLowItem(
+                DateTimeAxis.ToDouble(c.Time.ToLocalTime()), c.High, c.Low, c.Open, c.Close);
+            if (Math.Abs(c.Close - c.Open) <= dojiEps) neutral.Items.Add(item);
+            else series.Items.Add(item);
+        }
 
         model.Series.Add(series);
+        if (neutral.Items.Count > 0) model.Series.Add(neutral);
+        AddAlarmAnnotations(model, w);
         FinalizeChart(model);
         return model;
     }
@@ -2116,6 +2293,7 @@ public partial class TelemetryDashboardWindow : Window
         var model = MakeBaseModel();
         model.Legends.Clear();
 
+        var startDate = DateTime.Now.Date.AddDays(-(days - 1));
         model.Axes.Add(new LinearAxis
         {
             Position   = AxisPosition.Left,
@@ -2123,12 +2301,15 @@ public partial class TelemetryDashboardWindow : Window
             Minimum    = -0.5, Maximum = 23.5,
             MajorStep  = 6,
             TextColor  = _oxyText, TitleColor = _oxyText,
+            IsZoomEnabled = false, IsPanEnabled = false,
         });
         model.Axes.Add(new LinearAxis
         {
             Position   = AxisPosition.Bottom,
-            Title      = Loc("StrDashboardDayIndex"),
+            Minimum    = -0.5, Maximum = days - 0.5,
             TextColor  = _oxyText, TitleColor = _oxyText,
+            IsZoomEnabled  = false, IsPanEnabled = false,
+            LabelFormatter = d => startDate.AddDays(Math.Round(d)).ToString("dd.MM"),
         });
         model.Axes.Add(new LinearColorAxis
         {
@@ -2231,6 +2412,10 @@ public partial class TelemetryDashboardWindow : Window
             TextColor          = _oxyText,
             TicklineColor      = _oxyTick,
             TitleColor         = _oxyText,
+            // Grafana-style interaction: zoom/pan happen on the TIME axis only; the
+            // value axis stays fixed so wheel-zoom never shears the chart diagonally.
+            IsZoomEnabled      = false,
+            IsPanEnabled       = false,
         });
     }
 
@@ -2429,59 +2614,34 @@ public partial class TelemetryDashboardWindow : Window
             panel.Children.Add(btn);
         }
 
-        panel.Children.Add(new TextBlock
+        // ⌀ MA only where it is actually rendered (line/area) — on heatmaps & co. the
+        // button used to toggle a setting with zero visible effect. Thresholds moved
+        // into the widget editor (✎) entirely.
+        if (w.Type is "line" or "area")
         {
-            Text = " | ",
-            Foreground = new SolidColorBrush(_fgMuted),
-            VerticalAlignment = System.Windows.VerticalAlignment.Center,
-            FontSize = 10,
-        });
+            panel.Children.Add(new TextBlock
+            {
+                Text = " | ",
+                Foreground = new SolidColorBrush(_fgMuted),
+                VerticalAlignment = System.Windows.VerticalAlignment.Center,
+                FontSize = 10,
+            });
 
-        var maBtn = new Button
-        {
-            Content    = "⌀ MA",
-            Margin     = new Thickness(0, 0, 3, 0),
-            Padding    = new Thickness(5, 1, 5, 1),
-            FontSize   = 10,
-            ToolTip    = Loc("StrDashboardMovingAvg"),
-            Tag        = w.Id,
-            Foreground = new SolidColorBrush(w.ShowMovingAverage ? _uiPalette[0] : _fgSub),
-            FontWeight = w.ShowMovingAverage ? System.Windows.FontWeights.SemiBold
-                                             : System.Windows.FontWeights.Normal,
-        };
-        maBtn.Click += (_, _) => ToggleMovingAverage((string)maBtn.Tag!);
-        panel.Children.Add(maBtn);
-
-        panel.Children.Add(new TextBlock
-        {
-            Text = " " + Loc("StrDashboardThreshold") + ":",
-            Foreground = new SolidColorBrush(_fgSub),
-            FontSize = 10,
-            VerticalAlignment = System.Windows.VerticalAlignment.Center,
-        });
-
-        var threshBox = new TextBox
-        {
-            Width   = 52,
-            Height  = 20,
-            FontSize = 10,
-            Padding = new Thickness(3, 0, 3, 0),
-            Text    = double.IsNaN(w.Threshold) ? "" : w.Threshold.ToString("G4"),
-            Tag     = w.Id,
-            VerticalAlignment = System.Windows.VerticalAlignment.Center,
-            Margin  = new Thickness(3, 0, 0, 0),
-            ToolTip = Loc("StrDashboardThresholdTip"),
-        };
-        threshBox.LostFocus += (_, _) =>
-        {
-            string id  = (string)threshBox.Tag!;
-            double val = double.TryParse(threshBox.Text.Replace(",", "."),
-                System.Globalization.NumberStyles.Any,
-                System.Globalization.CultureInfo.InvariantCulture, out double v)
-                ? v : double.NaN;
-            UpdateWidgetThreshold(id, val);
-        };
-        panel.Children.Add(threshBox);
+            var maBtn = new Button
+            {
+                Content    = "⌀ MA",
+                Margin     = new Thickness(0, 0, 3, 0),
+                Padding    = new Thickness(5, 1, 5, 1),
+                FontSize   = 10,
+                ToolTip    = Loc("StrDashboardMovingAvg"),
+                Tag        = w.Id,
+                Foreground = new SolidColorBrush(w.ShowMovingAverage ? _uiPalette[0] : _fgSub),
+                FontWeight = w.ShowMovingAverage ? System.Windows.FontWeights.SemiBold
+                                                 : System.Windows.FontWeights.Normal,
+            };
+            maBtn.Click += (_, _) => ToggleMovingAverage((string)maBtn.Tag!);
+            panel.Children.Add(maBtn);
+        }
 
         return new Border
         {
@@ -2514,23 +2674,6 @@ public partial class TelemetryDashboardWindow : Window
         if (wIdx < 0) return;
         var old     = _current.Widgets[wIdx];
         var updated = old with { ShowMovingAverage = !old.ShowMovingAverage };
-        CommitWidgetUpdate(dashIdx, wIdx, updated);
-        RefreshCardById(widgetId, updated);
-    }
-
-    private void UpdateWidgetThreshold(string widgetId, double threshold)
-    {
-        if (_current == null) return;
-        int dashIdx = _store.Dashboards.IndexOf(_current);
-        if (dashIdx < 0) return;
-        int wIdx = _current.Widgets.FindIndex(x => x.Id == widgetId);
-        if (wIdx < 0) return;
-        var old = _current.Widgets[wIdx];
-        bool sameNaN = double.IsNaN(old.Threshold) && double.IsNaN(threshold);
-        if (sameNaN) return;
-        if (!double.IsNaN(old.Threshold) && !double.IsNaN(threshold) &&
-            Math.Abs(old.Threshold - threshold) < 1e-9) return;
-        var updated = old with { Threshold = threshold };
         CommitWidgetUpdate(dashIdx, wIdx, updated);
         RefreshCardById(widgetId, updated);
     }
