@@ -45,6 +45,9 @@ _Hinweis: enthält auch alle Änderungen der nie veröffentlichten 1.6.4.7 (Absc
 - **Candlestick entflackert:** Kerzen werden nach **lokalen** Kalendertagen gebildet (vorher UTC — der Schnitt um 1/2 Uhr nachts ließ Mitternachts-Rauschen die Farbe quasi zufällig rot/grün kippen); Kerzen ohne echte Richtung (Open ≈ Close) sind jetzt neutral grau.
 - **⌀ MA-Button nur noch dort, wo er wirkt** (Linie/Fläche) — auf Heatmap & Co. schaltete er bisher eine Einstellung ohne jede sichtbare Wirkung.
 
+### 🧭 Node-Liste
+- **Fix: Positionen bekannter Nodes verschwanden immer wieder.** Zwei Ursachen, kein Timer: (1) Jeder NodeInfo-**Broadcast** über Funk (reines User-Paket, enthält nie eine Position) ersetzte den Node-Listeneintrag durch ein frisches Objekt ohne Koordinaten — ebenso jeder NodeDB-Eintrag des Geräts beim (Re-)Connect, wenn das Gerät die Position gerade nicht (mehr) kannte (NodeDB-Eviction/Neustart). NodeInfo-Schnappschüsse werden jetzt **gemergt statt ersetzt**: Eine bekannte Position wird nur noch von einer echten neuen Position überschrieben, nie auf „leer" zurückgesetzt (gleiches gilt für Batterie, Hardware, SNR, Favoriten-Flag & Co.). (2) Zusätzlich **füllt der Client nach dem Verbinden fehlende Positionen aus der eigenen Telemetrie-Datenbank zurück** (letzter gespeicherter Fix der vergangenen 30 Tage) — das Gerät vergisst, der Client nicht. Mit Regressionstests abgesichert.
+
 ### 🛠️ Fernverwaltung
 - **Fix:** Das Schließen des Fernverwaltungs-Fensters konnte das Hauptfenster in die Taskleiste minimieren (gleiche Win32-Eigenheit wie zuvor beim Telemetrie-Fenster) — der Owner wird jetzt vor dem Schließen aktiviert. (#53)
 

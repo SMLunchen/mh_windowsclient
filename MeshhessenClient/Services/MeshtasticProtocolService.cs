@@ -499,6 +499,33 @@ public class MeshtasticProtocolService
             Logger.WriteLine("  WARNING: NO channels received during init!");
         }
 
+        // Backfill positions from our local history: the device's NodeDB forgets
+        // coordinates (eviction, reboot), but node_positions remembers the last fix —
+        // without this, every reconnect silently stripped positions from the node list.
+        try
+        {
+            if (_db != null)
+            {
+                var lastPositions = _db.GetLatestPositions();   // query outside the lock
+                int filled = 0;
+                lock (_dataLock)
+                {
+                    foreach (var node in _knownNodes.Values)
+                    {
+                        if (node.Latitude.HasValue) continue;
+                        if (!lastPositions.TryGetValue(node.NodeId, out var p)) continue;
+                        node.Latitude  = p.Lat;
+                        node.Longitude = p.Lon;
+                        node.Altitude  = p.Alt is double a ? (int)a : null;
+                        filled++;
+                    }
+                }
+                if (filled > 0)
+                    Logger.WriteLine($"Backfilled {filled} node positions from local DB (device NodeDB had none)");
+            }
+        }
+        catch (Exception ex) { Logger.WriteLine($"Position backfill failed: {ex.Message}"); }
+
         // Events erlauben
         lock (_dataLock)
         {
@@ -2496,7 +2523,16 @@ public class MeshtasticProtocolService
             bool shouldFireEvent;
             lock (_dataLock)
             {
-                _knownNodes[protoNodeInfo.Num] = nodeInfo;
+                if (_knownNodes.TryGetValue(protoNodeInfo.Num, out var existing))
+                {
+                    MergeNodeInfo_NoLock(existing, nodeInfo,
+                        hasUser: protoNodeInfo.User != null, deviceFlags: true);
+                    nodeInfo = existing;
+                }
+                else
+                {
+                    _knownNodes[protoNodeInfo.Num] = nodeInfo;
+                }
                 ApplyPendingPosition_NoLock(nodeInfo);
                 shouldFireEvent = !_isInitializing;
             }
@@ -2569,7 +2605,16 @@ public class MeshtasticProtocolService
             bool shouldFireEvent;
             lock (_dataLock)
             {
-                _knownNodes[packet.From] = nodeInfo;
+                if (_knownNodes.TryGetValue(packet.From, out var existing))
+                {
+                    // RF NodeInfo = User proto only: no position, no device flags
+                    MergeNodeInfo_NoLock(existing, nodeInfo, hasUser: true, deviceFlags: false);
+                    nodeInfo = existing;
+                }
+                else
+                {
+                    _knownNodes[packet.From] = nodeInfo;
+                }
                 ApplyPendingPosition_NoLock(nodeInfo);
                 shouldFireEvent = !_isInitializing;
             }
@@ -2588,6 +2633,61 @@ public class MeshtasticProtocolService
         catch (Exception ex)
         {
             Logger.WriteLine($"Error handling node info packet: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Merge an incoming NodeInfo snapshot into the EXISTING entry instead of replacing
+    /// it. Replacing wiped everything the snapshot didn't carry — most visibly the
+    /// position: RF NodeInfo broadcasts (User proto) never contain one, and the device's
+    /// NodeDB may have evicted it, so every broadcast/reconnect silently dropped known
+    /// coordinates from the node list ("positions keep disappearing" bug). Keeping the
+    /// instance also preserves live-maintained fields (DirectNeighborAt/Snr, ViaMqtt…).
+    /// Must be called while holding _dataLock.
+    /// </summary>
+    private static void MergeNodeInfo_NoLock(ModelNodeInfo target, ModelNodeInfo incoming,
+        bool hasUser, bool deviceFlags)
+    {
+        if (hasUser)
+        {
+            target.ShortName = incoming.ShortName;
+            target.LongName  = incoming.LongName;
+            target.Name      = incoming.Name;
+            if (!string.IsNullOrEmpty(incoming.Role)) target.Role = incoming.Role;
+        }
+        if (!string.IsNullOrEmpty(incoming.HardwareModel))
+            target.HardwareModel = incoming.HardwareModel;
+
+        // Position: only ever overwrite with a REAL new position, never back to null
+        if (incoming.Latitude.HasValue && incoming.Longitude.HasValue)
+        {
+            target.Latitude  = incoming.Latitude;
+            target.Longitude = incoming.Longitude;
+            target.Altitude  = incoming.Altitude;
+            if (incoming.PositionPrecisionBits is int pb) target.PositionPrecisionBits = pb;
+        }
+
+        if (!string.IsNullOrEmpty(incoming.Battery)) target.Battery = incoming.Battery;
+        if (incoming.Snr  is not (null or "-")) target.Snr  = incoming.Snr;
+        if (incoming.Rssi is not (null or "-")) target.Rssi = incoming.Rssi;
+        if (incoming.SnrValue.HasValue) target.SnrValue = incoming.SnrValue;
+
+        // Last seen: never travel back in time (device NodeDB timestamps can be stale)
+        if (incoming.LastSeenDateTime > target.LastSeenDateTime)
+        {
+            target.LastSeenDateTime = incoming.LastSeenDateTime;
+            target.LastSeen         = incoming.LastSeen;
+        }
+
+        target.PkiKeyKnown = incoming.PkiKeyKnown;
+
+        // Device-NodeDB snapshots carry authoritative flags; RF User packets don't
+        // set them (defaults would reset favorites / hop info).
+        if (deviceFlags)
+        {
+            target.IsFavorite  = incoming.IsFavorite;
+            target.IsViaMqtt   = incoming.IsViaMqtt;
+            target.HopsToReach = incoming.HopsToReach;
         }
     }
 

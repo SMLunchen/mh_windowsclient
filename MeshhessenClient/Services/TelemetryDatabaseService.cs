@@ -1358,6 +1358,35 @@ ORDER BY bucket";
         return result;
     }
 
+    /// <summary>Latest stored position per node (for backfilling the node list after a
+    /// connect: the device's NodeDB forgets positions on eviction/reboot, but we logged
+    /// them). SQLite's bare-column-with-MAX() semantics pick the newest row per group.</summary>
+    public Dictionary<uint, (double Lat, double Lon, double? Alt)> GetLatestPositions(int maxAgeDays = 30)
+    {
+        var result = new Dictionary<uint, (double, double, double?)>();
+        long since = DateTimeOffset.UtcNow.ToUnixTimeSeconds() - (long)maxAgeDays * 86400;
+        lock (_lock)
+        {
+            using var con = Open();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = @"
+SELECT node_id, latitude, longitude, altitude, MAX(timestamp)
+FROM node_positions
+WHERE timestamp >= $since AND latitude != 0 AND longitude != 0
+GROUP BY node_id";
+            cmd.Parameters.AddWithValue("$since", since);
+            using var rdr = cmd.ExecuteReader();
+            while (rdr.Read())
+            {
+                result[(uint)rdr.GetInt64(0)] = (
+                    rdr.GetDouble(1),
+                    rdr.GetDouble(2),
+                    rdr.IsDBNull(3) ? null : rdr.GetDouble(3));
+            }
+        }
+        return result;
+    }
+
     // ── Funk-Echo: directed requests other stations sent to us ───────────────
 
     public record RequestEchoRow(long Id, uint NodeId, string Type, DateTime FirstUtc,
