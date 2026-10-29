@@ -156,7 +156,7 @@ public partial class MainWindow
         _funkEchoFlyoutTimer.Start();
     }
 
-    private void FunkEchoIndicator_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    private void FunkEchoIndicator_Click(object sender, RoutedEventArgs e)
     {
         _funkEchoUnread = 0;
         UpdateFunkEchoBadge();

@@ -616,59 +616,88 @@
                            Fill="{DynamicResource SystemControlForegroundBaseLowBrush}"
                            Margin="10,0,10,0" SnapsToDevicePixels="True" VerticalAlignment="Center"/>
 
-                <!-- Funk-Echo: incoming-request radar (click opens the journal).
-                     Background stays Transparent so the gray gap between the mast and the
-                     green ring is part of the hit target; a null background is not hit-testable. -->
-                <StackPanel x:Name="FunkEchoPanel" Grid.Column="8" Orientation="Vertical"
-                            VerticalAlignment="Center" Cursor="Hand"
-                            Background="Transparent"
-                            MouseLeftButtonDown="FunkEchoIndicator_Click"
-                            ToolTip="{DynamicResource StrFunkEchoTooltip}">
-                    <StackPanel.ContextMenu>
+                <!-- Funk-Echo: a real button (opens the journal). The chrome face is an
+                     opaque theme surface, so the whole control is the hit target. The icon
+                     is decoration only and does not own the click. -->
+                <Button x:Name="FunkEchoPanel" Grid.Column="8"
+                        VerticalAlignment="Center" Cursor="Hand"
+                        MinWidth="72" MinHeight="40" Padding="10,4"
+                        Click="FunkEchoIndicator_Click"
+                        ToolTip="{DynamicResource StrFunkEchoTooltip}">
+                    <Button.ContextMenu>
                         <ContextMenu>
                             <MenuItem x:Name="FunkEchoQuietMenuItem" IsCheckable="True"
                                       Header="{DynamicResource StrFunkEchoQuiet}"
                                       Checked="FunkEchoQuiet_Toggled" Unchecked="FunkEchoQuiet_Toggled"/>
                         </ContextMenu>
-                    </StackPanel.ContextMenu>
-                    <TextBlock Text="{DynamicResource StrFunkEchoHdr}" FontSize="9" Opacity="0.55"
-                               HorizontalAlignment="Center" Margin="0,0,0,1"/>
-                    <Grid HorizontalAlignment="Center" Width="30" Height="18" Background="Transparent">
-                        <!-- expanding pulse ring (animated from code; color = request type).
-                             Not hit-testable: at opacity 0 its stroke would still steal clicks. -->
-                        <Ellipse x:Name="FunkEchoPulse" Width="14" Height="14" Opacity="0"
-                                 Stroke="#20C997" StrokeThickness="2.2"
-                                 IsHitTestVisible="False"
-                                 HorizontalAlignment="Center" VerticalAlignment="Center"
-                                 RenderTransformOrigin="0.5,0.5">
-                            <Ellipse.RenderTransform>
-                                <ScaleTransform x:Name="FunkEchoPulseScale" ScaleX="1" ScaleY="1"/>
-                            </Ellipse.RenderTransform>
-                        </Ellipse>
-                        <!-- static radar ring + mast (simplified from img/HF_ICON.svg);
-                             mast uses the theme foreground so it reads in light AND dark.
-                             Fill is Transparent so the interior between mast and ring clicks. -->
-                        <Ellipse Width="17" Height="17" Stroke="#20C997" StrokeThickness="1.2"
-                                 StrokeDashArray="2 2" Opacity="0.95" Fill="Transparent"
-                                 HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        <Path x:Name="FunkEchoMast"
-                              Stroke="{DynamicResource SystemControlForegroundBaseHighBrush}"
-                              Fill="Transparent"
-                              StrokeThickness="1.6"
-                              StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
-                              HorizontalAlignment="Center" VerticalAlignment="Center"
-                              Data="M0,-5 L-3.4,5 H3.4 Z M-2.2,2 H2.2 M-1.4,-1 H1.4 M0,-5 V-7"/>
-                        <!-- unread badge -->
-                        <Border x:Name="FunkEchoBadge" Background="#20C997" CornerRadius="7"
-                                MinWidth="14" Height="14" Padding="3,0"
-                                HorizontalAlignment="Right" VerticalAlignment="Top"
-                                Margin="0,-3,-4,0" Visibility="Collapsed">
-                            <TextBlock x:Name="FunkEchoBadgeText" Text="0" FontSize="9" FontWeight="Bold"
-                                       Foreground="#0D1117" HorizontalAlignment="Center"
-                                       VerticalAlignment="Center"/>
-                        </Border>
-                    </Grid>
-                </StackPanel>
+                    </Button.ContextMenu>
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="Chrome"
+                                    Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                                    BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}"
+                                    BorderThickness="1" CornerRadius="4"
+                                    Padding="{TemplateBinding Padding}"
+                                    SnapsToDevicePixels="True">
+                                <Grid>
+                                    <Border x:Name="PressTint" Background="#20C997" Opacity="0"
+                                            CornerRadius="3" IsHitTestVisible="False"/>
+                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                      IsHitTestVisible="False"/>
+                                </Grid>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Chrome" Property="BorderBrush" Value="#20C997"/>
+                                    <Setter TargetName="PressTint" Property="Opacity" Value="0.16"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter TargetName="Chrome" Property="BorderBrush" Value="#20C997"/>
+                                    <Setter TargetName="PressTint" Property="Opacity" Value="0.36"/>
+                                </Trigger>
+                                <Trigger Property="IsKeyboardFocused" Value="True">
+                                    <Setter TargetName="Chrome" Property="BorderBrush" Value="#20C997"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Button.Template>
+                    <StackPanel Orientation="Vertical">
+                        <TextBlock Text="{DynamicResource StrFunkEchoHdr}" FontSize="9" Opacity="0.55"
+                                   HorizontalAlignment="Center" Margin="0,0,0,1"/>
+                        <Grid HorizontalAlignment="Center" Width="30" Height="18">
+                            <!-- expanding pulse ring (animated from code; color = request type) -->
+                            <Ellipse x:Name="FunkEchoPulse" Width="14" Height="14" Opacity="0"
+                                     Stroke="#20C997" StrokeThickness="2.2"
+                                     IsHitTestVisible="False"
+                                     HorizontalAlignment="Center" VerticalAlignment="Center"
+                                     RenderTransformOrigin="0.5,0.5">
+                                <Ellipse.RenderTransform>
+                                    <ScaleTransform x:Name="FunkEchoPulseScale" ScaleX="1" ScaleY="1"/>
+                                </Ellipse.RenderTransform>
+                            </Ellipse>
+                            <!-- static radar ring + mast (simplified from img/HF_ICON.svg);
+                                 mast uses the theme foreground so it reads in light AND dark -->
+                            <Ellipse Width="17" Height="17" Stroke="#20C997" StrokeThickness="1.2"
+                                     StrokeDashArray="2 2" Opacity="0.95"
+                                     HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <Path x:Name="FunkEchoMast"
+                                  Stroke="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                                  StrokeThickness="1.6"
+                                  StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                  HorizontalAlignment="Center" VerticalAlignment="Center"
+                                  Data="M0,-5 L-3.4,5 H3.4 Z M-2.2,2 H2.2 M-1.4,-1 H1.4 M0,-5 V-7"/>
+                            <!-- unread badge -->
+                            <Border x:Name="FunkEchoBadge" Background="#20C997" CornerRadius="7"
+                                    MinWidth="14" Height="14" Padding="3,0"
+                                    HorizontalAlignment="Right" VerticalAlignment="Top"
+                                    Margin="0,-3,-4,0" Visibility="Collapsed">
+                                <TextBlock x:Name="FunkEchoBadgeText" Text="0" FontSize="9" FontWeight="Bold"
+                                           Foreground="#0D1117" HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"/>
+                            </Border>
+                        </Grid>
+                    </StackPanel>
+                </Button>
 
                 <!-- Funk-Echo flyout: transient "KELL is tracing us!" message -->
                 <Popup x:Name="FunkEchoFlyout" PlacementTarget="{Binding ElementName=FunkEchoPanel}"
