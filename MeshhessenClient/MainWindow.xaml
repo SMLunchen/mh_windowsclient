@@ -616,9 +616,12 @@
                            Fill="{DynamicResource SystemControlForegroundBaseLowBrush}"
                            Margin="10,0,10,0" SnapsToDevicePixels="True" VerticalAlignment="Center"/>
 
-                <!-- Funk-Echo: incoming-request radar (click opens the journal) -->
+                <!-- Funk-Echo: incoming-request radar (click opens the journal).
+                     Background stays Transparent so the gray gap between the mast and the
+                     green ring is part of the hit target; a null background is not hit-testable. -->
                 <StackPanel x:Name="FunkEchoPanel" Grid.Column="8" Orientation="Vertical"
                             VerticalAlignment="Center" Cursor="Hand"
+                            Background="Transparent"
                             MouseLeftButtonDown="FunkEchoIndicator_Click"
                             ToolTip="{DynamicResource StrFunkEchoTooltip}">
                     <StackPanel.ContextMenu>
@@ -630,10 +633,12 @@
                     </StackPanel.ContextMenu>
                     <TextBlock Text="{DynamicResource StrFunkEchoHdr}" FontSize="9" Opacity="0.55"
                                HorizontalAlignment="Center" Margin="0,0,0,1"/>
-                    <Grid HorizontalAlignment="Center" Width="30" Height="18">
-                        <!-- expanding pulse ring (animated from code; color = request type) -->
+                    <Grid HorizontalAlignment="Center" Width="30" Height="18" Background="Transparent">
+                        <!-- expanding pulse ring (animated from code; color = request type).
+                             Not hit-testable: at opacity 0 its stroke would still steal clicks. -->
                         <Ellipse x:Name="FunkEchoPulse" Width="14" Height="14" Opacity="0"
                                  Stroke="#20C997" StrokeThickness="2.2"
+                                 IsHitTestVisible="False"
                                  HorizontalAlignment="Center" VerticalAlignment="Center"
                                  RenderTransformOrigin="0.5,0.5">
                             <Ellipse.RenderTransform>
@@ -641,12 +646,14 @@
                             </Ellipse.RenderTransform>
                         </Ellipse>
                         <!-- static radar ring + mast (simplified from img/HF_ICON.svg);
-                             mast uses the theme foreground so it reads in light AND dark -->
+                             mast uses the theme foreground so it reads in light AND dark.
+                             Fill is Transparent so the interior between mast and ring clicks. -->
                         <Ellipse Width="17" Height="17" Stroke="#20C997" StrokeThickness="1.2"
-                                 StrokeDashArray="2 2" Opacity="0.95"
+                                 StrokeDashArray="2 2" Opacity="0.95" Fill="Transparent"
                                  HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         <Path x:Name="FunkEchoMast"
                               Stroke="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                              Fill="Transparent"
                               StrokeThickness="1.6"
                               StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
                               HorizontalAlignment="Center" VerticalAlignment="Center"
