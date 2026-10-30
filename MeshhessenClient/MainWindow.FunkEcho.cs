@@ -156,7 +156,7 @@ public partial class MainWindow
         _funkEchoFlyoutTimer.Start();
     }
 
-    private void FunkEchoIndicator_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    private void FunkEchoIndicator_Click(object sender, RoutedEventArgs e)
     {
         _funkEchoUnread = 0;
         UpdateFunkEchoBadge();
@@ -228,6 +228,27 @@ public partial class MainWindow
         _currentSettings = _currentSettings with { FunkEchoQuiet = quiet };
         try { Services.SettingsService.Save(_currentSettings); } catch { }
         if (quiet && FunkEchoFlyout != null) FunkEchoFlyout.IsOpen = false;
+        ApplyFunkEchoQuietVisual();
+    }
+
+    /// <summary>Listening: teal radar. Quiet: gray ring plus a slash, same size, no chrome.</summary>
+    private void ApplyFunkEchoQuietVisual()
+    {
+        bool quiet = FunkEchoQuietMenuItem != null
+            ? FunkEchoQuietMenuItem.IsChecked == true
+            : _currentSettings.FunkEchoQuiet;
+
+        if (FunkEchoRing != null)
+        {
+            FunkEchoRing.Stroke = new SolidColorBrush(quiet
+                ? Color.FromRgb(0x75, 0x75, 0x75)
+                : Color.FromRgb(0x20, 0xC9, 0x97));
+            FunkEchoRing.Opacity = quiet ? 0.7 : 0.95;
+        }
+        if (FunkEchoMast != null)
+            FunkEchoMast.Opacity = quiet ? 0.4 : 1;
+        if (FunkEchoQuietMark != null)
+            FunkEchoQuietMark.Visibility = quiet ? Visibility.Visible : Visibility.Collapsed;
     }
 
     /// <summary>Show/hide the header element per the FunkEchoEnabled setting.</summary>
@@ -238,5 +259,6 @@ public partial class MainWindow
         if (FunkEchoSeparator != null) FunkEchoSeparator.Visibility = vis;
         if (!_currentSettings.FunkEchoEnabled && FunkEchoFlyout != null)
             FunkEchoFlyout.IsOpen = false;
+        ApplyFunkEchoQuietVisual();
     }
 }

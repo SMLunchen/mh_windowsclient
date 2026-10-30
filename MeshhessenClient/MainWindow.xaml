@@ -33,6 +33,30 @@
             <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
         </Style>
 
+        <!-- Funk-Echo header control: same padded hit target, no button chrome.
+             Transparent is a real brush, so the whole rectangle still clicks. -->
+        <Style x:Key="FunkEchoHeaderButton" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="8,4"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="SnapsToDevicePixels" Value="True"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                Padding="{TemplateBinding Padding}"
+                                SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <!-- ── Fancy Node Tile DataTemplate ─────────────────────────────── -->
         <DataTemplate x:Key="NodeTileTemplate">
             <Border Width="280" Margin="4,4" CornerRadius="8" BorderThickness="2"
@@ -616,21 +640,22 @@
                            Fill="{DynamicResource SystemControlForegroundBaseLowBrush}"
                            Margin="10,0,10,0" SnapsToDevicePixels="True" VerticalAlignment="Center"/>
 
-                <!-- Funk-Echo: incoming-request radar (click opens the journal) -->
-                <StackPanel x:Name="FunkEchoPanel" Grid.Column="8" Orientation="Vertical"
-                            VerticalAlignment="Center" Cursor="Hand"
-                            MouseLeftButtonDown="FunkEchoIndicator_Click"
-                            ToolTip="{DynamicResource StrFunkEchoTooltip}">
-                    <StackPanel.ContextMenu>
+                <!-- Funk-Echo: incoming-request radar. Padded area opens the journal; looks like a status icon. -->
+                <Button x:Name="FunkEchoPanel" Grid.Column="8"
+                        Style="{StaticResource FunkEchoHeaderButton}"
+                        Click="FunkEchoIndicator_Click"
+                        ToolTip="{DynamicResource StrFunkEchoTooltip}">
+                    <Button.ContextMenu>
                         <ContextMenu>
                             <MenuItem x:Name="FunkEchoQuietMenuItem" IsCheckable="True"
                                       Header="{DynamicResource StrFunkEchoQuiet}"
                                       Checked="FunkEchoQuiet_Toggled" Unchecked="FunkEchoQuiet_Toggled"/>
                         </ContextMenu>
-                    </StackPanel.ContextMenu>
-                    <TextBlock Text="{DynamicResource StrFunkEchoHdr}" FontSize="9" Opacity="0.55"
-                               HorizontalAlignment="Center" Margin="0,0,0,1"/>
-                    <Grid HorizontalAlignment="Center" Width="30" Height="18">
+                    </Button.ContextMenu>
+                    <StackPanel Orientation="Vertical">
+                        <TextBlock Text="{DynamicResource StrFunkEchoHdr}" FontSize="9" Opacity="0.55"
+                                   HorizontalAlignment="Center" Margin="0,0,0,1"/>
+                        <Grid HorizontalAlignment="Center" Width="30" Height="18">
                         <!-- expanding pulse ring (animated from code; color = request type) -->
                         <Ellipse x:Name="FunkEchoPulse" Width="14" Height="14" Opacity="0"
                                  Stroke="#20C997" StrokeThickness="2.2"
@@ -642,7 +667,7 @@
                         </Ellipse>
                         <!-- static radar ring + mast (simplified from img/HF_ICON.svg);
                              mast uses the theme foreground so it reads in light AND dark -->
-                        <Ellipse Width="17" Height="17" Stroke="#20C997" StrokeThickness="1.2"
+                        <Ellipse x:Name="FunkEchoRing" Width="17" Height="17" Stroke="#20C997" StrokeThickness="1.2"
                                  StrokeDashArray="2 2" Opacity="0.95"
                                  HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         <Path x:Name="FunkEchoMast"
@@ -651,6 +676,14 @@
                               StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
                               HorizontalAlignment="Center" VerticalAlignment="Center"
                               Data="M0,-5 L-3.4,5 H3.4 Z M-2.2,2 H2.2 M-1.4,-1 H1.4 M0,-5 V-7"/>
+                        <!-- quiet mode: gray slash, hidden while listening -->
+                        <Path x:Name="FunkEchoQuietMark"
+                              Stroke="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                              StrokeThickness="1.5"
+                              StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                              HorizontalAlignment="Center" VerticalAlignment="Center"
+                              IsHitTestVisible="False" Visibility="Collapsed"
+                              Data="M-7,-6 L7,6"/>
                         <!-- unread badge -->
                         <Border x:Name="FunkEchoBadge" Background="#20C997" CornerRadius="7"
                                 MinWidth="14" Height="14" Padding="3,0"
@@ -660,8 +693,9 @@
                                        Foreground="#0D1117" HorizontalAlignment="Center"
                                        VerticalAlignment="Center"/>
                         </Border>
-                    </Grid>
-                </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </Button>
 
                 <!-- Funk-Echo flyout: transient "KELL is tracing us!" message -->
                 <Popup x:Name="FunkEchoFlyout" PlacementTarget="{Binding ElementName=FunkEchoPanel}"
