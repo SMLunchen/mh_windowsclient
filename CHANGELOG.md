@@ -9,6 +9,12 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+### 📨 Nachrichten
+- **Mehrzeilige Nachrichten mit Umschalt+Enter (#72):** Im Nachrichteneingabefeld (Hauptfenster und DM-Fenster) fügt **Umschalt+Enter** jetzt einen Zeilenumbruch ein — wie in der Android-App. **Enter** allein sendet weiterhin. Das Eingabefeld wächst dabei bis zu einer Maximalhöhe mit und zeigt dann einen Scrollbalken.
+
+### 🛠️ Node-Konfiguration
+- **Kanalnamen wurden beim Speichern gelöscht (#69, kritisch):** Wer in der Node-Konfiguration Positions-Genauigkeit oder MQTT-Up-/Downlink eines Kanals speicherte, verlor dabei die **Kanalnamen** auf dem Gerät (nach dem Neustart nur noch „Channel 1, 2, …"). Ursache: `set_channel` ersetzt den **kompletten** Kanal auf dem Gerät, der Client baute die Nachricht aber nur aus den im Dialog bearbeiteten Feldern zusammen — Name (und weitere Felder wie die Kanal-ID) fehlten und wurden damit geleert. Jetzt wird der vom Gerät geladene Original-Kanal geklont und nur die drei tatsächlich bearbeiteten Felder geändert; ohne geladenen Original-Kanal wird sicherheitshalber gar nicht geschrieben. Mit Regressionstests bis auf die Funk-Schnittstelle (Name/PSK/ID bleiben im gesendeten Paket erhalten).
+
 ---
 
 ## [1.7.0] - 2026-10-23

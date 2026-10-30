@@ -1357,10 +1357,12 @@ public partial class MainWindow : Window
         }
     }
 
-    private async void MessageTextBox_KeyDown(object sender, KeyEventArgs e)
+    private async void MessageTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
     {
-        if (e.Key == Key.Enter)
+        // Enter sends; Shift+Enter falls through to AcceptsReturn and inserts a line break (#72)
+        if (e.Key == Key.Enter && (Keyboard.Modifiers & ModifierKeys.Shift) == 0)
         {
+            e.Handled = true;
             await SendMessage();
         }
     }

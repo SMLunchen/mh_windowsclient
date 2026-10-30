@@ -3487,6 +3487,25 @@ public class MeshtasticProtocolService
         await EnsureSessionKeyAsync();
         var adminMsg = new AdminMessage { SetChannel = channel };
         await SendAdminMessageAsync(adminMsg);
+
+        // Keep the raw-channel cache coherent with what was just written
+        lock (_dataLock)
+        {
+            var existing = _tempChannels.FirstOrDefault(c => c.Index == channel.Index);
+            if (existing != null) _tempChannels.Remove(existing);
+            _tempChannels.Add(channel.Clone());
+        }
+    }
+
+    /// <summary>Raw channel proto as last reported by the device (deep clone), or null if
+    /// unknown. set_channel replaces the whole channel on the device, so partial edits must
+    /// start from this proto to preserve the fields they do not touch (name, PSK, id — #69).</summary>
+    public Channel? GetRawChannel(int index)
+    {
+        lock (_dataLock)
+        {
+            return _tempChannels.FirstOrDefault(c => c.Index == index)?.Clone();
+        }
     }
 
     public async Task SetSerialConfigAsync(SerialConfig config)
