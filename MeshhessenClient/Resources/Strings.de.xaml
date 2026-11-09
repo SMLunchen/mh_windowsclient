@@ -216,6 +216,23 @@
     <sys:String x:Key="StrEnvSoilMoisture">Bodenfeuchte</sys:String>
     <sys:String x:Key="StrEnvSoilTemp">Bodentemperatur</sys:String>
     <sys:String x:Key="StrEnvRadiation">Strahlung</sys:String>
+    <sys:String x:Key="StrEnvLightning1h">Blitze (1 h)</sys:String>
+    <sys:String x:Key="StrEnvLightningKm">Gewitter-Distanz</sys:String>
+    <sys:String x:Key="StrEnvSoilPh">Boden-pH</sys:String>
+    <sys:String x:Key="StrEnvWaterPh">Wasser-pH</sys:String>
+    <sys:String x:Key="StrEnvConductivity">Leitfähigkeit</sys:String>
+    <sys:String x:Key="StrEnvSalinity">Salzgehalt</sys:String>
+    <sys:String x:Key="StrEnvNitrogen">Stickstoff (N)</sys:String>
+    <sys:String x:Key="StrEnvPhosphorus">Phosphor (P)</sys:String>
+    <sys:String x:Key="StrEnvPotassium">Kalium (K)</sys:String>
+    <sys:String x:Key="StrEnvDissolvedO2">Gelöster Sauerstoff</sys:String>
+    <sys:String x:Key="StrEnvOrp">Redoxpotential (ORP)</sys:String>
+    <sys:String x:Key="StrEnvCod">Chem. Sauerstoffbedarf</sys:String>
+    <sys:String x:Key="StrEnvTurbidity">Trübung</sys:String>
+    <sys:String x:Key="StrEnvNitrate">Nitrat</sys:String>
+    <sys:String x:Key="StrEnvAmmonium">Ammonium</sys:String>
+    <sys:String x:Key="StrEnvBod">Biochem. Sauerstoffbedarf</sys:String>
+    <sys:String x:Key="StrEnvSolarIrradiance">Sonneneinstrahlung</sys:String>
     <sys:String x:Key="StrEnvDistance">Distanz</sys:String>
     <sys:String x:Key="StrEnvWeight">Gewicht</sys:String>
     <sys:String x:Key="StrDownloadVectorTiles">Vektor-Paket herunterladen…</sys:String>
@@ -618,6 +635,120 @@
     <sys:String x:Key="StrGeneratePsk">Generieren</sys:String>
     <sys:String x:Key="StrChannelNameLimitTip">Maximal 11 Zeichen (Umlaute und Sonderzeichen zählen doppelt)</sys:String>
     <sys:String x:Key="StrChannelNameTooLong">Der Kanalname ist zu lang: Das Gerät erlaubt maximal 11 Byte (Umlaute und Sonderzeichen zählen doppelt).</sys:String>
+    <sys:String x:Key="StrLongNameTooLong">Der Name ist zu lang: Das Gerät erlaubt maximal {0} Byte (Umlaute und Sonderzeichen zählen doppelt).</sys:String>
+
+    <!-- Node status (StatusMessage module) -->
+    <sys:String x:Key="StrNodeStatusHdr">Status</sys:String>
+    <sys:String x:Key="StrNodeStatusTooltip">Eigenen Status setzen – wird regelmäßig ins Mesh gefunkt</sys:String>
+    <sys:String x:Key="StrNodeStatusDialogTitle">Mein Status</sys:String>
+    <sys:String x:Key="StrNodeStatusDialogHint">Freitext-Status deines Nodes (z. B. „Im Urlaub bis 20.11." oder „Solar, Akku schwach"). Wird bei Änderung und danach ca. alle 12 Stunden gefunkt. Leer lassen löscht den Status. Benötigt Firmware 2.7.20 oder neuer.</sys:String>
+    <sys:String x:Key="StrNodeStatusTooLong">Der Status ist zu lang: maximal 79 Byte (Umlaute und Sonderzeichen zählen doppelt).</sys:String>
+    <sys:String x:Key="StrNodeStatusSaved">Status gesetzt: „{0}"</sys:String>
+    <sys:String x:Key="StrNodeStatusCleared">Status gelöscht</sys:String>
+    <sys:String x:Key="StrNodeStatusNotConnected">Nicht verbunden – Status kann erst mit Geräteverbindung gesetzt werden</sys:String>
+    <sys:String x:Key="StrNodeStatusLabel">Status</sys:String>
+    <sys:String x:Key="StrRfHeardTooltip">Direkt per Funk gehört (auf dem aktuellen LoRa-Slot, laut Gerät)</sys:String>
+    <sys:String x:Key="StrChannelAeadTooltip">AEAD-Kanal (AES-CCM, authentifiziert, Firmware 2.8, experimentell) – alle Nodes auf dem Kanal müssen AEAD aktiviert haben</sys:String>
+    <sys:String x:Key="StrRadiationSievert">Strahlung in µSv/h anzeigen (statt µR/h)</sys:String>
+    <sys:String x:Key="StrRadiationSievertTip">Umrechnung 1 µSv/h = 100 µR/h. Gilt für Karten-Infoboxen und Dashboard; gespeichert wird weiter in µR/h.</sys:String>
+
+    <!-- Security: packet signature policy (FW 2.8) -->
+    <sys:String x:Key="StrSecSignaturePolicy">Paket-Signaturen (Firmware 2.8)</sys:String>
+    <sys:String x:Key="StrSecSigPolicyCompatible">Kompatibel – unsignierte Pakete akzeptieren (Standard)</sys:String>
+    <sys:String x:Key="StrSecSigPolicyBalanced">Ausgewogen – signierte bevorzugen, unsignierte weiter annehmen</sys:String>
+    <sys:String x:Key="StrSecSigPolicyStrict">Strikt – nur verifizierte Signaturen/PKI (ältere Nodes werden ignoriert!)</sys:String>
+    <sys:String x:Key="StrNcDescSecSignaturePolicy">Wie das Gerät mit kryptografisch signierten Paketen umgeht (benötigt Firmware 2.8). Eine prüfbar falsche Signatur wird immer verworfen. Empfehlung: Kompatibel, solange ältere Nodes im Netz sind.</sys:String>
+    <sys:String x:Key="StrMsgAckVerified">Empfangsbestätigung kryptografisch verifiziert 🛡</sys:String>
+    <sys:String x:Key="StrMsgAckForged">Empfangsbestätigung mit UNGÜLTIGER Signatur – möglicherweise gefälscht!</sys:String>
+    <sys:String x:Key="StrMsgAckNoKey">Empfangsbestätigung nicht prüfbar (kein Schlüssel)</sys:String>
+
+    <!-- Display mirroring (FW 2.8) -->
+    <sys:String x:Key="StrToolsMirrorSection">📺 Geräte-Display spiegeln</sys:String>
+    <sys:String x:Key="StrToolsMirrorDesc">Zeigt das Display des verbundenen Nodes live im Client (Firmware 2.8, nur lokale Verbindung). Das Gerät sendet nach jeder Bildschirmänderung ein neues Bild; Schließen des Fensters beendet die Spiegelung.</sys:String>
+    <sys:String x:Key="StrToolsMirrorBtn">📺 Display spiegeln</sys:String>
+    <sys:String x:Key="StrMirrorWindowTitle">Geräte-Display</sys:String>
+    <sys:String x:Key="StrMirrorWaiting">Warte auf erstes Bild vom Gerät …</sys:String>
+
+    <!-- Mesh Beacon module (FW 2.8) -->
+    <sys:String x:Key="StrNcNavMeshBeacon">Mesh Beacon</sys:String>
+    <sys:String x:Key="StrNcMbUnsupported">⚠ Mesh Beacon benötigt Firmware 2.8 — das verbundene Gerät meldet eine ältere Version, Einstellungen können nicht geladen werden.</sys:String>
+    <sys:String x:Key="StrNcMbListen">Beacons empfangen (Listen)</sys:String>
+    <sys:String x:Key="StrNcDescMbListen">Empfängt Mesh-Beacon-Pakete anderer Nodes: der Text landet im Posteingang, angebotene Kanäle/Presets werden für die App gespeichert.</sys:String>
+    <sys:String x:Key="StrNcMbBroadcast">Beacons aussenden (Broadcast)</sys:String>
+    <sys:String x:Key="StrNcDescMbBroadcast">Sendet regelmäßig eigene Mesh-Beacon-Pakete mit der Nachricht und optionalen Kanal-/Preset-Angeboten unten.</sys:String>
+    <sys:String x:Key="StrNcMbLegacySplit">Legacy-Split (Text separat senden)</sys:String>
+    <sys:String x:Key="StrNcDescMbLegacySplit">Sendet den Text zusätzlich als normale Textnachricht, damit ältere Firmware ohne Beacon-Modul ihn trotzdem lesen kann.</sys:String>
+    <sys:String x:Key="StrNcMbMessage">Beacon-Nachricht</sys:String>
+    <sys:String x:Key="StrNcDescMbMessage">Text in jedem Beacon (max. 60 Byte — Umlaute zählen doppelt). Größter Airtime-Kostenfaktor des Beacons.</sys:String>
+    <sys:String x:Key="StrNcMbMessageTooLong">Die Beacon-Nachricht ist zu lang: maximal 60 Byte (Umlaute und Sonderzeichen zählen doppelt).</sys:String>
+    <sys:String x:Key="StrNcMbInterval">Sendeintervall (Sekunden)</sys:String>
+    <sys:String x:Key="StrNcDescMbInterval">Wie oft der Beacon gesendet wird. Minimum 3600 (1 Stunde).</sys:String>
+    <sys:String x:Key="StrNcMbOfferChannel">Kanal anbieten</sys:String>
+    <sys:String x:Key="StrNcMbOfferChannelNone">— kein Kanal-Angebot —</sys:String>
+    <sys:String x:Key="StrNcDescMbOfferChannel">Optional: Name + PSK dieses Kanals werden im Beacon mitgesendet, damit Empfänger ihn per Klick übernehmen können. Achtung: Der PSK geht damit an alle Mithörer des Beacon-Kanals!</sys:String>
+    <sys:String x:Key="StrNcMbPresetLikeDevice">— wie Gerät —</sys:String>
+    <sys:String x:Key="StrNcMbOfferPreset">Preset anbieten</sys:String>
+    <sys:String x:Key="StrNcDescMbOfferPreset">Optional: Modem-Preset, das im Beacon beworben wird. „wie Gerät" sendet kein eigenes Angebot.</sys:String>
+    <sys:String x:Key="StrNcMbRadioSwitchWarn">⚠ Achtung: Sendet der Beacon auf einem anderen Modem-Preset als dem eigenen, muss das Funkmodul dafür umschalten — währenddessen empfängt der Node NICHTS auf seinem primären Preset. Für Router/Infrastruktur-Nodes ist das sehr ungünstig!</sys:String>
+    <sys:String x:Key="StrNcMbOfferSlot">Frequenz-Slot anbieten</sys:String>
+    <sys:String x:Key="StrNcDescMbOfferSlot">Optional, 1-basiert (wie LoRa „Frequency Slot"). Leer lassen, wenn der Empfänger den Slot aus Region/Kanalname ableiten soll — nur setzen, wenn euer Mesh bewusst einen festen Slot nutzt.</sys:String>
+
+    <!-- Audio module -->
+    <sys:String x:Key="StrNcNavAudio">Audio (Codec2)</sys:String>
+    <sys:String x:Key="StrNcAuEnabled">Codec2-Sprachfunk aktivieren</sys:String>
+    <sys:String x:Key="StrNcDescAuEnabled">Walkie-Talkie-Audio über LoRa (nur ESP32 mit I2S-Mikrofon/Verstärker, z. B. Native-Audio-Boards). Erhöht die Airtime deutlich.</sys:String>
+    <sys:String x:Key="StrNcAuBitrate">Codec2-Bitrate</sys:String>
+    <sys:String x:Key="StrNcAuPtt">PTT-GPIO</sys:String>
+    <sys:String x:Key="StrNcAuI2s">I2S-Pins (WS / SD / DIN / SCK)</sys:String>
+    <sys:String x:Key="StrNcDescAuI2s">GPIO-Pins des I2S-Audio-Interfaces. 0 = Board-Standard.</sys:String>
+
+    <!-- Remote Hardware module -->
+    <sys:String x:Key="StrNcNavRemoteHw">Remote Hardware</sys:String>
+    <sys:String x:Key="StrNcRhEnabled">Remote-Hardware-Modul aktivieren</sys:String>
+    <sys:String x:Key="StrNcDescRhEnabled">Erlaubt anderen Nodes, GPIO-Pins dieses Geräts über das Mesh zu lesen/schalten (REMOTE_HARDWARE_APP). Freigegebene Pins bleiben beim Speichern erhalten.</sys:String>
+    <sys:String x:Key="StrNcRhUndefinedPins">Zugriff auf nicht freigegebene Pins erlauben</sys:String>
+    <sys:String x:Key="StrNcDescRhUndefinedPins">⚠ Sicherheitsrisiko: Ohne Pin-Freigabeliste darf jeder Kanal-Teilnehmer beliebige GPIOs schalten.</sys:String>
+
+    <!-- Ambient Lighting module -->
+    <sys:String x:Key="StrNcNavAmbient">Ambient Lighting</sys:String>
+    <sys:String x:Key="StrNcAlLedState">LED dauerhaft an</sys:String>
+    <sys:String x:Key="StrNcDescAlLedState">Steuert NeoPixel-/RGB-LEDs am Gerät (sofern verbaut).</sys:String>
+    <sys:String x:Key="StrNcAlCurrent">Stromstärke (0–31)</sys:String>
+    <sys:String x:Key="StrNcAlRgb">Farbe (R / G / B, je 0–255)</sys:String>
+    <sys:String x:Key="StrNcDescAlRgb">Rot-, Grün- und Blau-Anteil der LED-Farbe.</sys:String>
+
+    <!-- Detection Sensor module -->
+    <sys:String x:Key="StrNcNavDetection">Detection Sensor</sys:String>
+    <sys:String x:Key="StrNcDsEnabled">Detection-Sensor-Modul aktivieren</sys:String>
+    <sys:String x:Key="StrNcDescDsEnabled">Meldet Zustandsänderungen eines GPIO-Pins als Nachricht ins Mesh (z. B. Türkontakt, Bewegungsmelder).</sys:String>
+    <sys:String x:Key="StrNcDsName">Sensor-Name</sys:String>
+    <sys:String x:Key="StrNcDescDsName">Erscheint in der Meldung, z. B. „Garagentor" (max. 19 Zeichen).</sys:String>
+    <sys:String x:Key="StrNcDsPin">Monitor-GPIO</sys:String>
+    <sys:String x:Key="StrNcDsTrigger">Auslöser</sys:String>
+    <sys:String x:Key="StrNcDsPullup">Internen Pull-up verwenden</sys:String>
+    <sys:String x:Key="StrNcDsBell">Mit Alarm-Glocke senden (🔔)</sys:String>
+    <sys:String x:Key="StrNcDsMinBroadcast">Mindestabstand zwischen Meldungen (s)</sys:String>
+    <sys:String x:Key="StrNcDsStateBroadcast">Zustand regelmäßig senden alle (s)</sys:String>
+    <sys:String x:Key="StrNcDescDsBroadcast">0 = Zustand nur bei Änderung senden.</sys:String>
+
+    <!-- Paxcounter module -->
+    <sys:String x:Key="StrNcNavPaxcounter">Paxcounter</sys:String>
+    <sys:String x:Key="StrNcPxEnabled">Paxcounter aktivieren</sys:String>
+    <sys:String x:Key="StrNcDescPxEnabled">Zählt WLAN-/Bluetooth-Geräte in der Umgebung (Personen-Näherung) und sendet die Zahl als Telemetrie. Nur ESP32; deaktiviert dessen WLAN-Verbindung.</sys:String>
+    <sys:String x:Key="StrNcPxInterval">Sendeintervall (Sekunden)</sys:String>
+    <sys:String x:Key="StrNcPxWifiThreshold">WLAN-RSSI-Schwelle (dBm)</sys:String>
+    <sys:String x:Key="StrNcPxBleThreshold">BLE-RSSI-Schwelle (dBm)</sys:String>
+    <sys:String x:Key="StrNcDescPxThreshold">Nur Geräte mit stärkerem Signal als der Schwelle werden gezählt (z. B. -80). 0 = Standard.</sys:String>
+
+    <!-- TAK module (FW 2.8) -->
+    <sys:String x:Key="StrRaTabMeshBeacon">Mesh Beacon</sys:String>
+    <sys:String x:Key="StrRaMbOfferUnchanged">— unverändert lassen (aktuell: {0}) —</sys:String>
+    <sys:String x:Key="StrNcNavTak">TAK / ATAK</sys:String>
+    <sys:String x:Key="StrNcTakUnsupported">⚠ Das TAK-Modul benötigt Firmware 2.8 — das verbundene Gerät meldet eine ältere Version.</sys:String>
+    <sys:String x:Key="StrNcTakTeam">Team (Farbe)</sys:String>
+    <sys:String x:Key="StrNcTakRole">Rolle</sys:String>
+    <sys:String x:Key="StrNcDescTak">Team und Rolle für ATAK-Integration (TAK-Geräterolle vorausgesetzt). Wird in ATAK-PLI-Broadcasts verwendet.</sys:String>
+    <sys:String x:Key="StrShortNameTooLong">Der Kurzname darf höchstens 4 Byte lang sein (Umlaute und Sonderzeichen zählen doppelt).</sys:String>
 
     <!-- TileDownloader window -->
     <sys:String x:Key="StrTdWindowTitle">Karten-Tiles herunterladen</sys:String>

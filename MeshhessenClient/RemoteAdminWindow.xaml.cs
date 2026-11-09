@@ -20,6 +20,7 @@ public partial class RemoteAdminWindow : Window
     private bool _isFavorite;
     private bool _uiReady;
     private bool _lazyMode;
+    private string? _remoteFirmwareVersion;
     private readonly HashSet<string> _loadedSections = new();
 
     // Loaded config state
@@ -31,6 +32,7 @@ public partial class RemoteAdminWindow : Window
     private NetworkConfig? _loadedNetwork;
     private DisplayConfig? _loadedDisplay;
     private SecurityConfig? _loadedSecurity;
+    private MeshBeaconConfig? _loadedMeshBeacon;
     private readonly Channel?[] _loadedChannels = new Channel?[8];
 
     // Fixed-position coords as shown when the section was loaded (Android: only setFixedPosition if changed).
@@ -154,6 +156,7 @@ public partial class RemoteAdminWindow : Window
         if (metaResp.PayloadVariantCase == AdminMessage.PayloadVariantOneofCase.GetDeviceMetadataResponse)
         {
             var meta = metaResp.GetDeviceMetadataResponse;
+            _remoteFirmwareVersion = meta.FirmwareVersion;
             Dispatcher.Invoke(() =>
             {
                 FirmwareLabel.Text = meta.FirmwareVersion ?? "-";
@@ -231,6 +234,7 @@ public partial class RemoteAdminWindow : Window
                 await LoadChannelsSectionAsync();
                 break;
             case "security":  await LoadSecuritySectionAsync(); break;
+            case "meshbeacon": await LoadMeshBeaconSectionAsync(); break;
         }
 
         _loadedSections.Add(section);
@@ -248,7 +252,8 @@ public partial class RemoteAdminWindow : Window
         6 => "display",
         7 => "channels",
         8 => "security",
-        _ => null // Control tab (9)
+        9 => "meshbeacon",
+        _ => null // Control tab (10)
     };
 
     private async void MainTabs_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -304,6 +309,10 @@ public partial class RemoteAdminWindow : Window
             await Task.Delay(180);
         }
         _loadedSections.Add("channels");
+
+        // Mesh Beacon (FW 2.8) — after the channels, so the offer-channel picker is filled
+        SetStatusStep(Loc("StrRaTabMeshBeacon"), total, total);
+        await LoadMeshBeaconSectionAsync(); _loadedSections.Add("meshbeacon");
     }
 
     // ===== Individual section loaders =====
@@ -429,6 +438,58 @@ public partial class RemoteAdminWindow : Window
             _loadedSecurity = resp.GetConfigResponse.Security;
             Dispatcher.Invoke(() => ApplySecurityConfig(_loadedSecurity));
         }
+    }
+
+    private async Task LoadMeshBeaconSectionAsync()
+    {
+        // Module exists only from firmware 2.8 — skip the round trip on older targets.
+        if (!FirmwareCaps.AtLeast(_remoteFirmwareVersion, 2, 8))
+        {
+            Dispatcher.Invoke(() => RaMbUnsupportedText.Visibility = Visibility.Visible);
+            return;
+        }
+        var resp = await _svc.SendRemoteAdminRequestAsync(
+            _targetNode.NodeId,
+            new AdminMessage { GetModuleConfigRequest = (global::Meshtastic.Protobufs.AdminMessage.Types.ModuleConfigType)16 }, // MESHBEACON
+            _timeoutMs);
+        if (resp?.PayloadVariantCase == AdminMessage.PayloadVariantOneofCase.GetModuleConfigResponse &&
+            resp.GetModuleConfigResponse.PayloadVariantCase == ModuleConfig.PayloadVariantOneofCase.MeshBeacon)
+        {
+            _loadedMeshBeacon = resp.GetModuleConfigResponse.MeshBeacon;
+            Dispatcher.Invoke(() => ApplyMeshBeaconConfig(_loadedMeshBeacon));
+        }
+    }
+
+    private void ApplyMeshBeaconConfig(MeshBeaconConfig c)
+    {
+        RaMbUnsupportedText.Visibility = Visibility.Collapsed;
+        RaMbListen.IsChecked      = (c.Flags & 1) != 0;
+        RaMbBroadcast.IsChecked   = (c.Flags & 2) != 0;
+        RaMbLegacySplit.IsChecked = (c.Flags & 4) != 0;
+        RaMbMessage.Text  = c.BroadcastMessage ?? "";
+        RaMbInterval.Text = (c.BroadcastIntervalSecs > 0 ? c.BroadcastIntervalSecs : 3600).ToString();
+        RaMbOfferSlot.Text = c.HasBroadcastOfferFrequencySlot ? c.BroadcastOfferFrequencySlot.ToString() : string.Empty;
+        SelectComboByTag(RaMbOfferPresetCombo, c.HasBroadcastOfferPreset ? (int)c.BroadcastOfferPreset : -1);
+
+        // Offer channel: "unchanged" keeps whatever is set (channels tab may not be
+        // loaded); explicit picks come from the remote channel table once loaded.
+        RaMbOfferChannelCombo.Items.Clear();
+        string current = string.IsNullOrEmpty(c.BroadcastOfferChannel?.Name)
+            ? Loc("StrNcMbOfferChannelNone")
+            : c.BroadcastOfferChannel!.Name;
+        RaMbOfferChannelCombo.Items.Add(new ComboBoxItem
+        {
+            Content = string.Format(Loc("StrRaMbOfferUnchanged"), current), Tag = -2
+        });
+        RaMbOfferChannelCombo.Items.Add(new ComboBoxItem { Content = Loc("StrNcMbOfferChannelNone"), Tag = -1 });
+        for (int i = 0; i < 8; i++)
+        {
+            var ch = _loadedChannels[i];
+            if (ch == null || ch.Role == ChannelRole.Disabled) continue;
+            var name = string.IsNullOrEmpty(ch.Settings?.Name) ? $"Kanal {i}" : ch.Settings!.Name;
+            RaMbOfferChannelCombo.Items.Add(new ComboBoxItem { Content = $"{i}: {name}", Tag = i });
+        }
+        RaMbOfferChannelCombo.SelectedIndex = 0;
     }
 
     private async Task LoadChannelsSectionAsync()
@@ -572,6 +633,7 @@ public partial class RemoteAdminWindow : Window
         SecIsManaged.IsChecked           = s.IsManaged;
         SecSerialEnabled.IsChecked       = s.SerialEnabled;
         SecDebugLogEnabled.IsChecked     = s.DebugLogApiEnabled;
+        SelectComboByTag(SecSignaturePolicyCombo, (int)s.PacketSignaturePolicy);
     }
 
     private void PopulateFavoriteNodeCombo()
@@ -686,6 +748,33 @@ public partial class RemoteAdminWindow : Window
 
     private async void SaveButton_Click(object sender, RoutedEventArgs e)
     {
+        if (_loadedMeshBeacon != null && Utf8Text.ByteCount(RaMbMessage.Text.Trim()) > 60)
+        {
+            MessageBox.Show(Loc("StrNcMbMessageTooLong"), Loc("StrError"),
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        // Name limits are UTF-8 BYTES on the wire; the TARGET node's firmware decides:
+        // 2.8 clamps long names to 24 bytes, older firmware allowed 39.
+        if (_loadedOwner != null)
+        {
+            int longMax = FirmwareCaps.AtLeast(_remoteFirmwareVersion, 2, 8)
+                ? Utf8Text.LongNameMaxBytes : Utf8Text.LongNameMaxBytesLegacy;
+            if (Utf8Text.ByteCount(OwnerLongName.Text.Trim()) > longMax)
+            {
+                MessageBox.Show(string.Format(Loc("StrLongNameTooLong"), longMax),
+                    Loc("StrError"), MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            if (Utf8Text.ByteCount(OwnerShortName.Text.Trim()) > Utf8Text.ShortNameMaxBytes)
+            {
+                MessageBox.Show(Loc("StrShortNameTooLong"),
+                    Loc("StrError"), MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+        }
+
         SaveButton.IsEnabled = false;
         SetStatus("StrRemoteAdminSaving", "#FF9800");
 
@@ -833,6 +922,9 @@ public partial class RemoteAdminWindow : Window
                 s.IsManaged           = SecIsManaged.IsChecked           == true;
                 s.SerialEnabled       = SecSerialEnabled.IsChecked       == true;
                 s.DebugLogApiEnabled  = SecDebugLogEnabled.IsChecked     == true;
+                // Signing policy (FW 2.8): default Compatible; enforcement is firmware-side
+                s.PacketSignaturePolicy =
+                    (global::Meshtastic.Protobufs.Config.Types.SecurityConfig.Types.PacketSignaturePolicy)(GetComboTag(SecSignaturePolicyCombo) ?? 0);
 
                 // Rebuild admin keys from the three text boxes
                 s.AdminKey.Clear();
@@ -845,6 +937,39 @@ public partial class RemoteAdminWindow : Window
 
                 await _svc.SendRemoteAdminWriteAsync(_targetNode.NodeId,
                     new AdminMessage { SetConfig = new Config { Security = s } });
+                await Task.Delay(200);
+            }
+
+            // Mesh Beacon (FW 2.8) — clone-and-update; broadcast_targets stay untouched
+            if (_loadedMeshBeacon != null)
+            {
+                var mb = _loadedMeshBeacon.Clone();
+                uint mbFlags = 0;
+                if (RaMbListen.IsChecked == true)      mbFlags |= 1;
+                if (RaMbBroadcast.IsChecked == true)   mbFlags |= 2;
+                if (RaMbLegacySplit.IsChecked == true) mbFlags |= 4;
+                mb.Flags = mbFlags;
+                mb.BroadcastMessage = Utf8Text.Clamp(RaMbMessage.Text.Trim(), 60);
+                mb.BroadcastIntervalSecs = uint.TryParse(RaMbInterval.Text, out var mbi) ? Math.Max(3600u, mbi) : 3600u;
+
+                int presetTag = GetComboTag(RaMbOfferPresetCombo) ?? -1;
+                if (presetTag >= 0) mb.BroadcastOfferPreset = (ModemPreset)presetTag;
+                else mb.ClearBroadcastOfferPreset();
+
+                if (uint.TryParse(RaMbOfferSlot.Text, out var mbSlot) && mbSlot > 0)
+                    mb.BroadcastOfferFrequencySlot = mbSlot;
+                else
+                    mb.ClearBroadcastOfferFrequencySlot();
+
+                int chTag = RaMbOfferChannelCombo.SelectedItem is ComboBoxItem mbCi && mbCi.Tag is int mbT ? mbT : -2;
+                if (chTag >= 0 && _loadedChannels[chTag]?.Settings is { } mbOffer)
+                    mb.BroadcastOfferChannel = new ChannelSettings { Name = mbOffer.Name, Psk = mbOffer.Psk };
+                else if (chTag == -1)
+                    mb.BroadcastOfferChannel = null;
+                // chTag == -2 → "unverändert": the clone keeps the current offer
+
+                await _svc.SendRemoteAdminWriteAsync(_targetNode.NodeId,
+                    new AdminMessage { SetModuleConfig = new ModuleConfig { MeshBeacon = mb } });
                 await Task.Delay(200);
             }
 

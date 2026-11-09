@@ -36,6 +36,7 @@ public record AppSettings
     public string FunkEchoTone { get; init; } = "casual";      // Funk-Echo message style: "casual" or "factual"
     public bool FunkEchoToasts { get; init; } = false;         // Windows toast on incoming requests
     public bool FunkEchoQuiet { get; init; } = false;          // quiet mode: no pulse/flyout/toast (badge + journal keep running)
+    public bool RadiationInSievert { get; init; } = false;     // display radiation as µSv/h (1 µSv/h = 100 µR/h); storage stays µR/h
     public string Language { get; init; } = "de";              // UI language: "de" or "en"
     public bool EnableLocationLogging { get; init; } = false;   // Log GPS positions to locationlogs/
     public Dictionary<uint, bool> PinnedNodes { get; init; } = new();     // NodeId -> pinned
@@ -222,6 +223,7 @@ public static class SettingsService
                 FunkEchoTone = values.TryGetValue("FunkEchoTone", out var fet) && fet == "factual" ? "factual" : "casual",
                 FunkEchoToasts = values.TryGetValue("FunkEchoToasts", out var fto) && bool.TryParse(fto, out var ftoBool) && ftoBool,
                 FunkEchoQuiet = values.TryGetValue("FunkEchoQuiet", out var fq) && bool.TryParse(fq, out var fqBool) && fqBool,
+                RadiationInSievert = values.TryGetValue("RadiationInSievert", out var ris) && bool.TryParse(ris, out var risBool) && risBool,
                 Language = values.TryGetValue("Language", out var lang) && !string.IsNullOrEmpty(lang) ? lang : defaults.Language,
                 EnableLocationLogging = values.TryGetValue("EnableLocationLogging", out var ell) && bool.TryParse(ell, out var ellBool) && ellBool,
                 PinnedNodes = pinnedNodes,
@@ -300,6 +302,7 @@ public static class SettingsService
                 $"FunkEchoTone={settings.FunkEchoTone}",
                 $"FunkEchoToasts={settings.FunkEchoToasts}",
                 $"FunkEchoQuiet={settings.FunkEchoQuiet}",
+                $"RadiationInSievert={settings.RadiationInSievert}",
                 $"Language={settings.Language}",
                 $"EnableLocationLogging={settings.EnableLocationLogging}",
                 $"TelemetryRetentionDays={settings.TelemetryRetentionDays}",

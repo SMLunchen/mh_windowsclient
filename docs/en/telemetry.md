@@ -7,7 +7,8 @@
 * **Persistent telemetry database** – received packet and device data is stored locally in a SQLite database
 * **Telemetry Dashboard** – freely configurable widget dashboard with named dashboards (📊 button in the toolbar):
   * **14 widget types:** line, area, bar, scatter, gauge, stat value, heatmap, histogram, candlestick, state timeline, ranking, multi-stat, mesh health, clock
-  * Multi-node support, all metrics: SNR, RSSI, battery, voltage, channel/TX utilization, temperature, humidity, pressure, packets/h, noise floor, RX/TX stats
+  * Multi-node support, all metrics: SNR, RSSI, battery, voltage, channel/TX utilization, temperature, humidity, pressure, **radiation** (µR/h, optionally in µSv/h — setting "Show radiation in µSv/h", 1 µSv/h = 100 µR/h), **⚡ lightning strikes/1 h and storm distance** (AS3935 lightning sensor; for storm alerts use the *lower* alarm bound: "alarm when distance < 10 km"), **soil moisture and soil pH** (soil/water probes), packets/h, noise floor, RX/TX stats, Funk-Echo
+  * Soil/water chemistry (pH, conductivity, NPK, dissolved oxygen, turbidity and more) is fully recorded and also selectable as a map overlay
   * Drag-and-drop arrangement, freely resizable, editable, duplicatable, auto-refresh
   * **Zoom/pan on the time axis** (survives auto-refresh; double-click resets), day/night shading
   * **Warn & alarm zones (Grafana-style):** per widget one warning and one alarm bound in each direction; gauge/stat/charts color green/orange/red by zone, **Windows toasts** report every zone transition (incl. ✅ all-clear)

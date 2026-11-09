@@ -111,6 +111,8 @@ public static class RequestEchoClassifier
             {
                 Telemetry.VariantOneofCase.DeviceMetrics      => "Device",
                 Telemetry.VariantOneofCase.EnvironmentMetrics => "Environment",
+                // Soil/water probes (new in proto 2.8) count as environment data by decision
+                Telemetry.VariantOneofCase.SoilWaterMetrics   => "Environment",
                 Telemetry.VariantOneofCase.AirQualityMetrics  => "AirQuality",
                 Telemetry.VariantOneofCase.PowerMetrics       => "Power",
                 Telemetry.VariantOneofCase.LocalStats         => "LocalStats",

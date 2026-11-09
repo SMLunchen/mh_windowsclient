@@ -33,6 +33,13 @@ public partial class NodeConfigWindow : Window
     private RangeTestConfig?           _loadedRangeTest;
     private SerialConfig?              _loadedSerial;
     private SecurityConfig?            _loadedSecurity;
+    private MeshBeaconConfig?          _loadedMeshBeacon;
+    private AudioConfig?               _loadedAudio;
+    private RemoteHardwareConfig?      _loadedRemoteHw;
+    private AmbientLightingConfig?     _loadedAmbient;
+    private DetectionSensorConfig?     _loadedDetection;
+    private PaxcounterConfig?          _loadedPaxcounter;
+    private TAKConfig?                 _loadedTak;
     private readonly ChannelInfo?[] _loadedChannels = new ChannelInfo?[8];
 
     // Loading progress tracking
@@ -70,6 +77,13 @@ public partial class NodeConfigWindow : Window
         _protocolService.RangeTestConfigReceived          += OnRangeTestConfigReceived;
         _protocolService.SerialConfigReceived             += OnSerialConfigReceived;
         _protocolService.SecurityConfigReceived           += OnSecurityConfigReceived;
+        _protocolService.MeshBeaconConfigReceived         += OnMeshBeaconConfigReceived;
+        _protocolService.AudioConfigReceived              += OnAudioConfigReceived;
+        _protocolService.RemoteHardwareConfigReceived     += OnRemoteHardwareConfigReceived;
+        _protocolService.AmbientLightingConfigReceived    += OnAmbientLightingConfigReceived;
+        _protocolService.DetectionSensorConfigReceived    += OnDetectionSensorConfigReceived;
+        _protocolService.PaxcounterConfigReceived         += OnPaxcounterConfigReceived;
+        _protocolService.TakConfigReceived                += OnTakConfigReceived;
         _protocolService.ChannelInfoReceived              += OnChannelInfoReceived;
 
         Closed += (s, e) =>
@@ -92,6 +106,13 @@ public partial class NodeConfigWindow : Window
             _protocolService.RangeTestConfigReceived          -= OnRangeTestConfigReceived;
             _protocolService.SerialConfigReceived             -= OnSerialConfigReceived;
             _protocolService.SecurityConfigReceived           -= OnSecurityConfigReceived;
+            _protocolService.MeshBeaconConfigReceived         -= OnMeshBeaconConfigReceived;
+            _protocolService.AudioConfigReceived              -= OnAudioConfigReceived;
+            _protocolService.RemoteHardwareConfigReceived     -= OnRemoteHardwareConfigReceived;
+            _protocolService.AmbientLightingConfigReceived    -= OnAmbientLightingConfigReceived;
+            _protocolService.DetectionSensorConfigReceived    -= OnDetectionSensorConfigReceived;
+            _protocolService.PaxcounterConfigReceived         -= OnPaxcounterConfigReceived;
+            _protocolService.TakConfigReceived                -= OnTakConfigReceived;
             _protocolService.ChannelInfoReceived              -= OnChannelInfoReceived;
         };
 
@@ -116,6 +137,13 @@ public partial class NodeConfigWindow : Window
                 ["CannedMsg"]   = PanelCannedMsg,
                 ["RangeTest"]   = PanelRangeTest,
                 ["Serial"]      = PanelSerial,
+                ["MeshBeacon"]  = PanelMeshBeacon,
+                ["Audio"]           = PanelAudio,
+                ["RemoteHardware"]  = PanelRemoteHardware,
+                ["AmbientLighting"] = PanelAmbientLighting,
+                ["DetectionSensor"] = PanelDetectionSensor,
+                ["Paxcounter"]      = PanelPaxcounter,
+                ["Tak"]             = PanelTak,
                 ["Security"]    = PanelSecurity,
                 ["Channels"]    = PanelChannels,
             };
@@ -159,8 +187,15 @@ public partial class NodeConfigWindow : Window
                 "owner", "device", "lora", "position", "power", "network",
                 "display", "bluetooth", "mqtt", "telemetry", "neighborinfo",
                 "storeforward", "extnotif", "cannedmsg", "rangetest", "serial",
-                "security"
+                "security", "audio", "remotehw", "ambient", "detection", "paxcounter"
             });
+
+            // Mesh Beacon and TAK exist only from firmware 2.8 — don't burn an 8 s
+            // timeout per module on older devices, show the hint instead.
+            bool has28 = FirmwareCaps.AtLeast(_protocolService.GetFirmwareVersion(), 2, 8);
+            if (has28) { _expectedConfigs.Add("meshbeacon"); _expectedConfigs.Add("tak"); }
+            MbUnsupportedText.Visibility  = has28 ? Visibility.Collapsed : Visibility.Visible;
+            TakUnsupportedText.Visibility = has28 ? Visibility.Collapsed : Visibility.Visible;
 
             UpdateStatus(Loc("StrNcLoadingProgress", "0", _expectedConfigs.Count.ToString()));
             SaveButton.IsEnabled = false;
@@ -237,6 +272,37 @@ public partial class NodeConfigWindow : Window
             await Seq<SecurityConfig>(_protocolService.RequestSecurityConfigAsync,
                 h => _protocolService.SecurityConfigReceived += h,
                 h => _protocolService.SecurityConfigReceived -= h, T);
+
+            await Seq<AudioConfig>(_protocolService.RequestAudioConfigAsync,
+                h => _protocolService.AudioConfigReceived += h,
+                h => _protocolService.AudioConfigReceived -= h, T);
+
+            await Seq<RemoteHardwareConfig>(_protocolService.RequestRemoteHardwareConfigAsync,
+                h => _protocolService.RemoteHardwareConfigReceived += h,
+                h => _protocolService.RemoteHardwareConfigReceived -= h, T);
+
+            await Seq<AmbientLightingConfig>(_protocolService.RequestAmbientLightingConfigAsync,
+                h => _protocolService.AmbientLightingConfigReceived += h,
+                h => _protocolService.AmbientLightingConfigReceived -= h, T);
+
+            await Seq<DetectionSensorConfig>(_protocolService.RequestDetectionSensorConfigAsync,
+                h => _protocolService.DetectionSensorConfigReceived += h,
+                h => _protocolService.DetectionSensorConfigReceived -= h, T);
+
+            await Seq<PaxcounterConfig>(_protocolService.RequestPaxcounterConfigAsync,
+                h => _protocolService.PaxcounterConfigReceived += h,
+                h => _protocolService.PaxcounterConfigReceived -= h, T);
+
+            if (has28)
+            {
+                await Seq<MeshBeaconConfig>(_protocolService.RequestMeshBeaconConfigAsync,
+                    h => _protocolService.MeshBeaconConfigReceived += h,
+                    h => _protocolService.MeshBeaconConfigReceived -= h, T);
+
+                await Seq<TAKConfig>(_protocolService.RequestTakConfigAsync,
+                    h => _protocolService.TakConfigReceived += h,
+                    h => _protocolService.TakConfigReceived -= h, T);
+            }
 
             // Channels — disabled channels never respond, so timeout is expected
             for (int i = 0; i < 8; i++)
@@ -395,6 +461,18 @@ public partial class NodeConfigWindow : Window
             SelectComboBoxByTag(GpsModeComboBox, (int)config.GpsMode);
             FixedPositionCheckBox.IsChecked  = config.FixedPosition;
             FixedPositionPanel.Visibility    = config.FixedPosition ? Visibility.Visible : Visibility.Collapsed;
+            // Lat/lon/alt live in the device's NodeDB entry, not in PositionConfig
+            // (same as the Android app and our remote admin) — prefill from our own node.
+            if (_protocolService.GetKnownNodes().TryGetValue(_protocolService.GetMyNodeId(), out var myNode))
+            {
+                if (myNode.Latitude is double plat && myNode.Longitude is double plon && (plat != 0 || plon != 0))
+                {
+                    FixedLatTextBox.Text = plat.ToString("0.#######", System.Globalization.CultureInfo.InvariantCulture);
+                    FixedLonTextBox.Text = plon.ToString("0.#######", System.Globalization.CultureInfo.InvariantCulture);
+                }
+                if (myNode.Altitude is int palt && string.IsNullOrWhiteSpace(FixedAltTextBox.Text))
+                    FixedAltTextBox.Text = palt.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            }
             PosBroadcastSecsTextBox.Text     = SecondsToHumanTime(config.PositionBroadcastSecs);
             SmartBroadcastCheckBox.IsChecked = config.PositionBroadcastSmartEnabled;
             MinDistanceTextBox.Text          = config.BroadcastSmartMinimumDistance.ToString();
@@ -643,7 +721,134 @@ public partial class NodeConfigWindow : Window
             SecDebugLogCheckBox.IsChecked      = config.DebugLogApiEnabled;
             SecIsManagedCheckBox.IsChecked     = config.IsManaged;
             SecAdminChannelCheckBox.IsChecked  = config.AdminChannelEnabled;
+            SelectComboBoxByTag(SecSignaturePolicyCombo, (int)config.PacketSignaturePolicy);
             MarkReceived("security");
+        });
+    }
+
+    private void OnMeshBeaconConfigReceived(object? sender, MeshBeaconConfig config)
+    {
+        _loadedMeshBeacon = config;
+        Dispatcher.BeginInvoke(() =>
+        {
+            MbListenCheckBox.IsChecked      = (config.Flags & 1) != 0; // FLAG_LISTEN_ENABLED
+            MbBroadcastCheckBox.IsChecked   = (config.Flags & 2) != 0; // FLAG_BROADCAST_ENABLED
+            MbLegacySplitCheckBox.IsChecked = (config.Flags & 4) != 0; // FLAG_LEGACY_SPLIT
+            MbMessageTextBox.Text           = config.BroadcastMessage ?? "";
+            MbIntervalTextBox.Text          = (config.BroadcastIntervalSecs > 0 ? config.BroadcastIntervalSecs : 3600).ToString();
+            MbOfferSlotTextBox.Text         = config.HasBroadcastOfferFrequencySlot
+                ? config.BroadcastOfferFrequencySlot.ToString() : string.Empty;
+            SelectComboBoxByTag(MbOfferPresetCombo,
+                config.HasBroadcastOfferPreset ? (int)config.BroadcastOfferPreset : -1);
+
+            // Offer channel: pick from the device's configured channels (name + PSK are
+            // copied from the channel table on save — the proto embeds them).
+            MbOfferChannelCombo.Items.Clear();
+            MbOfferChannelCombo.Items.Add(new ComboBoxItem
+            {
+                Content = Loc("StrNcMbOfferChannelNone"), Tag = -1
+            });
+            for (int i = 0; i < 8; i++)
+            {
+                var raw = _protocolService.GetRawChannel(i);
+                if (raw == null || raw.Role == ChannelRole.Disabled) continue;
+                var name = string.IsNullOrEmpty(raw.Settings?.Name) ? $"Kanal {i}" : raw.Settings!.Name;
+                MbOfferChannelCombo.Items.Add(new ComboBoxItem { Content = $"{i}: {name}", Tag = i });
+            }
+            string? offerName = config.BroadcastOfferChannel?.Name;
+            int selectIdx = 0;
+            if (!string.IsNullOrEmpty(offerName))
+            {
+                for (int i = 1; i < MbOfferChannelCombo.Items.Count; i++)
+                {
+                    int chIdx = (int)((ComboBoxItem)MbOfferChannelCombo.Items[i]).Tag;
+                    if (_protocolService.GetRawChannel(chIdx)?.Settings?.Name == offerName) { selectIdx = i; break; }
+                }
+            }
+            MbOfferChannelCombo.SelectedIndex = selectIdx;
+            MarkReceived("meshbeacon");
+        });
+    }
+
+    private void OnAudioConfigReceived(object? sender, AudioConfig config)
+    {
+        _loadedAudio = config;
+        Dispatcher.BeginInvoke(() =>
+        {
+            AuEnabledCheckBox.IsChecked = config.Codec2Enabled;
+            SelectComboBoxByTag(AuBitrateCombo, (int)config.Bitrate);
+            AuPttTextBox.Text    = config.PttPin.ToString();
+            AuI2sWsTextBox.Text  = config.I2SWs.ToString();
+            AuI2sSdTextBox.Text  = config.I2SSd.ToString();
+            AuI2sDinTextBox.Text = config.I2SDin.ToString();
+            AuI2sSckTextBox.Text = config.I2SSck.ToString();
+            MarkReceived("audio");
+        });
+    }
+
+    private void OnRemoteHardwareConfigReceived(object? sender, RemoteHardwareConfig config)
+    {
+        _loadedRemoteHw = config;
+        Dispatcher.BeginInvoke(() =>
+        {
+            RhEnabledCheckBox.IsChecked       = config.Enabled;
+            RhUndefinedPinsCheckBox.IsChecked = config.AllowUndefinedPinAccess;
+            MarkReceived("remotehw");
+        });
+    }
+
+    private void OnAmbientLightingConfigReceived(object? sender, AmbientLightingConfig config)
+    {
+        _loadedAmbient = config;
+        Dispatcher.BeginInvoke(() =>
+        {
+            AlLedStateCheckBox.IsChecked = config.LedState;
+            AlCurrentTextBox.Text = config.Current.ToString();
+            AlRedTextBox.Text     = config.Red.ToString();
+            AlGreenTextBox.Text   = config.Green.ToString();
+            AlBlueTextBox.Text    = config.Blue.ToString();
+            MarkReceived("ambient");
+        });
+    }
+
+    private void OnDetectionSensorConfigReceived(object? sender, DetectionSensorConfig config)
+    {
+        _loadedDetection = config;
+        Dispatcher.BeginInvoke(() =>
+        {
+            DsEnabledCheckBox.IsChecked = config.Enabled;
+            DsNameTextBox.Text          = config.Name ?? "";
+            DsPinTextBox.Text           = config.MonitorPin.ToString();
+            SelectComboBoxByTag(DsTriggerCombo, (int)config.DetectionTriggerType);
+            DsPullupCheckBox.IsChecked  = config.UsePullup;
+            DsBellCheckBox.IsChecked    = config.SendBell;
+            DsMinBroadcastTextBox.Text  = config.MinimumBroadcastSecs.ToString();
+            DsStateBroadcastTextBox.Text = config.StateBroadcastSecs.ToString();
+            MarkReceived("detection");
+        });
+    }
+
+    private void OnPaxcounterConfigReceived(object? sender, PaxcounterConfig config)
+    {
+        _loadedPaxcounter = config;
+        Dispatcher.BeginInvoke(() =>
+        {
+            PxEnabledCheckBox.IsChecked = config.Enabled;
+            PxIntervalTextBox.Text = config.PaxcounterUpdateInterval.ToString();
+            PxWifiTextBox.Text     = config.WifiThreshold.ToString();
+            PxBleTextBox.Text      = config.BleThreshold.ToString();
+            MarkReceived("paxcounter");
+        });
+    }
+
+    private void OnTakConfigReceived(object? sender, TAKConfig config)
+    {
+        _loadedTak = config;
+        Dispatcher.BeginInvoke(() =>
+        {
+            SelectComboBoxByTag(TakTeamCombo, (int)config.Team);
+            SelectComboBoxByTag(TakRoleCombo, (int)config.Role);
+            MarkReceived("tak");
         });
     }
 
@@ -944,6 +1149,35 @@ public partial class NodeConfigWindow : Window
 
     private async void Save_Click(object sender, RoutedEventArgs e)
     {
+        // Name limits are UTF-8 BYTES on the wire, not characters (umlauts count twice).
+        // Firmware 2.8 clamps long names to 24 bytes; older firmware allowed 39.
+        int longMax = FirmwareCaps.AtLeast(_protocolService.GetFirmwareVersion(), 2, 8)
+            ? Utf8Text.LongNameMaxBytes : Utf8Text.LongNameMaxBytesLegacy;
+        if (Utf8Text.ByteCount(LongNameTextBox.Text.Trim()) > longMax)
+        {
+            MessageBox.Show(
+                string.Format((string)Application.Current.FindResource("StrLongNameTooLong"), longMax),
+                (string)Application.Current.FindResource("StrError"),
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+        if (Utf8Text.ByteCount(ShortNameTextBox.Text.Trim()) > Utf8Text.ShortNameMaxBytes)
+        {
+            MessageBox.Show(
+                (string)Application.Current.FindResource("StrShortNameTooLong"),
+                (string)Application.Current.FindResource("StrError"),
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+        if (_loadedMeshBeacon != null && Utf8Text.ByteCount(MbMessageTextBox.Text.Trim()) > 60)
+        {
+            MessageBox.Show(
+                (string)Application.Current.FindResource("StrNcMbMessageTooLong"),
+                (string)Application.Current.FindResource("StrError"),
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
         var confirm = MessageBox.Show(
             (string)Application.Current.TryFindResource("StrNcSaveRebootWarning")
                 ?? "Konfiguration speichern und Gerät neu starten?",
@@ -1219,6 +1453,9 @@ public partial class NodeConfigWindow : Window
                 newSec.DebugLogApiEnabled  = SecDebugLogCheckBox.IsChecked == true;
                 newSec.IsManaged           = SecIsManagedCheckBox.IsChecked == true;
                 newSec.AdminChannelEnabled = SecAdminChannelCheckBox.IsChecked == true;
+                // Signing policy (FW 2.8): default Compatible; enforcement is firmware-side
+                newSec.PacketSignaturePolicy =
+                    (global::Meshtastic.Protobufs.Config.Types.SecurityConfig.Types.PacketSignaturePolicy)GetComboBoxTag(SecSignaturePolicyCombo);
 
                 // Private key: only overwrite if user typed a new hex key (different from loaded)
                 var privHex = SecPrivKeyBox.Text.Trim().Replace(" ", "");
@@ -1242,6 +1479,120 @@ public partial class NodeConfigWindow : Window
                 }
 
                 await _protocolService.SetSecurityConfigAsync(newSec);
+                await Delay();
+            }
+
+            // Mesh Beacon (FW 2.8) — clone-and-update; broadcast_targets stay untouched
+            if (_loadedMeshBeacon != null)
+            {
+                var mb = _loadedMeshBeacon.Clone();
+                uint flags = 0;
+                if (MbListenCheckBox.IsChecked == true)      flags |= 1;
+                if (MbBroadcastCheckBox.IsChecked == true)   flags |= 2;
+                if (MbLegacySplitCheckBox.IsChecked == true) flags |= 4;
+                mb.Flags = flags;
+                mb.BroadcastMessage = MbMessageTextBox.Text.Trim();
+                mb.BroadcastIntervalSecs = uint.TryParse(MbIntervalTextBox.Text, out var mbi)
+                    ? Math.Max(3600u, mbi) : 3600u;
+
+                int presetTag = (int)GetComboBoxTag(MbOfferPresetCombo);
+                if (presetTag >= 0)
+                    mb.BroadcastOfferPreset = (ModemPreset)presetTag;
+                else
+                    mb.ClearBroadcastOfferPreset();
+
+                if (uint.TryParse(MbOfferSlotTextBox.Text, out var slot) && slot > 0)
+                    mb.BroadcastOfferFrequencySlot = slot;
+                else
+                    mb.ClearBroadcastOfferFrequencySlot();
+
+                int chTag = MbOfferChannelCombo.SelectedItem is ComboBoxItem ci && ci.Tag is int t ? t : -1;
+                if (chTag >= 0 && _protocolService.GetRawChannel(chTag)?.Settings is { } offer)
+                {
+                    mb.BroadcastOfferChannel = new ChannelSettings { Name = offer.Name, Psk = offer.Psk };
+                }
+                else
+                {
+                    mb.BroadcastOfferChannel = null;
+                }
+
+                await _protocolService.SetMeshBeaconConfigAsync(mb);
+                await Delay();
+            }
+
+            // Audio (clone-and-update, like every module below)
+            if (_loadedAudio != null)
+            {
+                var c = _loadedAudio.Clone();
+                c.Codec2Enabled = AuEnabledCheckBox.IsChecked == true;
+                c.Bitrate = (global::Meshtastic.Protobufs.ModuleConfig.Types.AudioConfig.Types.Audio_Baud)GetComboBoxTag(AuBitrateCombo);
+                c.PttPin = uint.TryParse(AuPttTextBox.Text, out var ptt) ? ptt : 0;
+                c.I2SWs  = uint.TryParse(AuI2sWsTextBox.Text,  out var ws)  ? ws  : 0;
+                c.I2SSd  = uint.TryParse(AuI2sSdTextBox.Text,  out var sd)  ? sd  : 0;
+                c.I2SDin = uint.TryParse(AuI2sDinTextBox.Text, out var din) ? din : 0;
+                c.I2SSck = uint.TryParse(AuI2sSckTextBox.Text, out var sck) ? sck : 0;
+                await _protocolService.SetAudioConfigAsync(c);
+                await Delay();
+            }
+
+            // Remote Hardware — available_pins stay untouched via clone
+            if (_loadedRemoteHw != null)
+            {
+                var c = _loadedRemoteHw.Clone();
+                c.Enabled = RhEnabledCheckBox.IsChecked == true;
+                c.AllowUndefinedPinAccess = RhUndefinedPinsCheckBox.IsChecked == true;
+                await _protocolService.SetRemoteHardwareConfigAsync(c);
+                await Delay();
+            }
+
+            // Ambient Lighting
+            if (_loadedAmbient != null)
+            {
+                var c = _loadedAmbient.Clone();
+                c.LedState = AlLedStateCheckBox.IsChecked == true;
+                c.Current = uint.TryParse(AlCurrentTextBox.Text, out var cur) ? Math.Min(cur, 31u) : 10u;
+                c.Red   = uint.TryParse(AlRedTextBox.Text,   out var r) ? Math.Min(r, 255u) : 0u;
+                c.Green = uint.TryParse(AlGreenTextBox.Text, out var g) ? Math.Min(g, 255u) : 0u;
+                c.Blue  = uint.TryParse(AlBlueTextBox.Text,  out var b) ? Math.Min(b, 255u) : 0u;
+                await _protocolService.SetAmbientLightingConfigAsync(c);
+                await Delay();
+            }
+
+            // Detection Sensor
+            if (_loadedDetection != null)
+            {
+                var c = _loadedDetection.Clone();
+                c.Enabled = DsEnabledCheckBox.IsChecked == true;
+                c.Name = Utf8Text.Clamp(DsNameTextBox.Text.Trim(), 19);
+                c.MonitorPin = uint.TryParse(DsPinTextBox.Text, out var mp) ? mp : 0;
+                c.DetectionTriggerType = (global::Meshtastic.Protobufs.ModuleConfig.Types.DetectionSensorConfig.Types.TriggerType)GetComboBoxTag(DsTriggerCombo);
+                c.UsePullup = DsPullupCheckBox.IsChecked == true;
+                c.SendBell  = DsBellCheckBox.IsChecked == true;
+                c.MinimumBroadcastSecs = uint.TryParse(DsMinBroadcastTextBox.Text, out var mbs) ? mbs : 0;
+                c.StateBroadcastSecs   = uint.TryParse(DsStateBroadcastTextBox.Text, out var sbs) ? sbs : 0;
+                await _protocolService.SetDetectionSensorConfigAsync(c);
+                await Delay();
+            }
+
+            // Paxcounter
+            if (_loadedPaxcounter != null)
+            {
+                var c = _loadedPaxcounter.Clone();
+                c.Enabled = PxEnabledCheckBox.IsChecked == true;
+                c.PaxcounterUpdateInterval = uint.TryParse(PxIntervalTextBox.Text, out var pui) ? pui : 0;
+                c.WifiThreshold = int.TryParse(PxWifiTextBox.Text, out var wt) ? wt : 0;
+                c.BleThreshold  = int.TryParse(PxBleTextBox.Text, out var bt) ? bt : 0;
+                await _protocolService.SetPaxcounterConfigAsync(c);
+                await Delay();
+            }
+
+            // TAK (FW 2.8)
+            if (_loadedTak != null)
+            {
+                var c = _loadedTak.Clone();
+                c.Team = (global::Meshtastic.Protobufs.Team)GetComboBoxTag(TakTeamCombo);
+                c.Role = (global::Meshtastic.Protobufs.MemberRole)GetComboBoxTag(TakRoleCombo);
+                await _protocolService.SetTakConfigAsync(c);
                 await Delay();
             }
 

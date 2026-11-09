@@ -6,7 +6,7 @@
 
 * **Alle Nodes im Mesh** mit SNR, Batterie, Entfernung, Hop-Anzahl
   * **Kachelansicht (Fancy View)** – optional in Einstellungen → Darstellung aktivierbar: tauscht die Tabelle gegen eine responsive Kachel-Oberfläche (Spaltenanzahl wächst/schrumpft mit der Fensterbreite)
-    * Pro Kachel: ShortName-Badge in Node-Farbe, 🔑/🔓 PKI-Status, voller Name, „vor X min", ⭐-Favoritenstern, 📡 Infrastruktur- und ☁ MQTT-Symbol
+    * Pro Kachel: ShortName-Badge in Node-Farbe, 🔑/🔓 PKI-Status, voller Name, „vor X min", ⭐-Favoritenstern, 📡 Infrastruktur- und ☁ MQTT-Symbol; ab Firmware 2.8 zusätzlich 📶 („direkt per Funk gehört", vom Gerät gemeldet) und 💬 mit dem Status-Text des Nodes
     * Strom (extern versorgt oder Batterie + Spannung), Entfernung + Höhe, Hops, RSSI/SNR mit Farbverlauf, Umwelt-Telemetrie (🌡/💧/🌬), Hardware-Modell · Geräterolle · Node-ID
     * Eigener Node immer ganz oben, virtualisiertes Scrolling auch bei 1000+ Nodes
   * **SNR/RSSI nur bei direktem Empfang** – Signalwerte werden nur angezeigt, wenn wir den Node direkt (0 Hops, kein MQTT) hören; bei Relay-Nodes zeigt die Spalte stattdessen die Hop-Anzahl
@@ -15,6 +15,7 @@
 * **Node-Info-Fenster** – Rechtsklick auf einen Node (Liste, Kachel, Karte oder Nachricht) → „ℹ️ Node Info“: Hardware-Modell, Rolle, PKI-Status, Akku, Signal, Zuerst/Zuletzt gesehen und Position. Die Firmware-Version des eigenen Geräts steht unter Einstellungen → Geräteinfo; die eines entfernten Nodes zeigt das Fernverwaltungs-Fenster:
 
 <img alt="Meshhessen Client – Node-Info-Fenster mit Rolle, Akku, Signal, Zuerst/Zuletzt gesehen" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node-info-window.png" />
+* **Node-Status (💬)** – Nodes mit Firmware ≥ 2.7.20 können einen Freitext-Status funken („Im Urlaub bis 20.11.", „Solar, Akku schwach"). Empfangene Statuses erscheinen in der Node-Liste (💬-Symbol mit Tooltip), in der Kachelansicht als eigene Zeile und als Banner im Node-Info-Fenster; der letzte Status je Node überlebt Client-Neustarts. **Eigenen Status setzen:** Status-Button in der Kopfzeile (neben dem Funk-Echo-Radar) → Text eingeben (max. 79 Byte, Umlaute zählen doppelt) → OK. Das Gerät übernimmt ohne Neustart und funkt den Status bei Änderung sowie ca. alle 12 Stunden; leeres Feld löscht ihn
 * **PKI-Schlüssel-Indikator** – 🔑-Spalte zeigt, ob der Public Key des Nodes bekannt ist
 * **Node-Farben** – Nodes individuell einfärben (Karte + Listen)
 * **Node-Notizen** – Freitext-Notizen pro Node
@@ -48,7 +49,7 @@ Auch **Favoriten auf dem entfernten Gerät** lassen sich remote setzen/entfernen
 Features im Überblick:
 
 * Alle Konfigurations-Reiter: Besitzer, Gerät, Position, LoRa, Bluetooth, Netzwerk, Anzeige, Kanäle, **Sicherheit**, Steuerung
-* **Sicherheits-Reiter:** Public Key (read-only, Base64), Admin-Schlüssel 1–3 (Base64), Flags (Admin Channel, Managed Mode, Serial, Debug Log)
+* **Sicherheits-Reiter:** Public Key (read-only, Base64), Admin-Schlüssel 1–3 (Base64), Flags (Admin Channel, Managed Mode, Serial, Debug Log), Paket-Signatur-Richtlinie (Firmware 2.8: Kompatibel / Ausgewogen / Strikt)
 * **Favoriten remote verwalten:** Knoten auf dem Remote-Gerät als Favorit setzen oder entfernen
 * Session-Schlüssel-Handshake, konfigurierbarer Timeout, per-Channel Retry + Neu-laden
 * **Lazy Loading:** Beim Öffnen wählen, ob alles sofort oder seitenweise geladen wird; „↻ Tab neu laden"-Button für gezielten Reload einzelner Reiter
@@ -64,6 +65,13 @@ Vollständige Gerätekonfiguration direkt aus dem Client, alle Module auf einer 
 * **MQTT:** Server, Credentials, TLS, JSON-Modus, Root-Topic, Proxy-Modus, Map-Reporting mit Genauigkeitsstufe (Bits 10–19), MQTT-Proxy-Client-Funktion
 * **Telemetrie:** Geräte-, Umgebungs-, Luftqualitäts- und Energiemetrik-Intervalle
 * **Bluetooth:** Aktivieren, Pairing-Modus, fixer PIN; **BT-PIN ändern** direkt aus dem Client
-* **Security:** Public Key anzeigen (read-only), Private Key anzeigen/ändern, Admin-Schlüssel, Managed Mode
-* **Kanäle:** Alle 8 Kanäle – Rolle, Name, Uplink, Downlink, Positions-Genauigkeit (Bits 10–19, ~23 km bis ~45 m)
-* **Weitere Module:** Nachbar-Info, Store & Forward, Externe Benachrichtigung, Canned Messages, Range Test, Serial
+* **Security:** Public Key anzeigen (read-only), Private Key anzeigen/ändern, Admin-Schlüssel, Managed Mode, Paket-Signatur-Richtlinie (Firmware 2.8: Kompatibel/Ausgewogen/Strikt — Standard Kompatibel; „Strikt" ignoriert Pakete älterer Nodes!)
+* **Kanäle:** Alle 8 Kanäle – Rolle, Name, Uplink, Downlink, Positions-Genauigkeit (Bits 10–19, ~23 km bis ~45 m). Kanäle mit aktivierter AEAD-Verschlüsselung (Firmware 2.8, experimentell) zeigt die Kanalliste mit 🛡-Symbol
+* **Weitere Module (volle Android-Parität):** Nachbar-Info, Store & Forward, Externe Benachrichtigung, Canned Messages, Range Test, Serial (alle Modi inkl. WS85, VE.Direct, MODBUS), Audio (Codec2-Sprachfunk), Remote Hardware, Ambient Lighting, Detection Sensor, Paxcounter, TAK/ATAK (FW 2.8) und **Mesh Beacon** (FW 2.8: Beacons empfangen/senden, Nachricht, Kanal-/Preset-Angebot — Achtung: Broadcast auf einem fremden Preset schaltet das Funkmodul um, währenddessen kein Empfang auf dem primären Preset; für Router ungeeignet). Mesh Beacon gibt es auch als eigenen Reiter in der Fernverwaltung
+
+!!! note "Namenslängen sind Byte-Grenzen"
+    Das Funkprotokoll begrenzt Namen in **Bytes**, nicht Zeichen — Umlaute und Sonderzeichen zählen doppelt. Kanalnamen: max. 11 Byte. Node-Langname: max. 24 Byte ab Firmware 2.8 (ältere Firmware: 39), Kurzname: 4 Byte. Der Client prüft das beim Speichern und warnt, bevor das Gerät einen zu langen Namen still verwerfen würde.
+
+## Geräte-Display spiegeln (Firmware 2.8)
+
+Meldet das verbundene Gerät in seinen Metadaten ein Display, erscheint im **Tools-Tab** der Abschnitt „📺 Geräte-Display spiegeln": Ein Klick öffnet ein Fenster mit dem Live-Bild des Node-Displays — praktisch für Geräte, die verbaut oder schwer erreichbar montiert sind. Unterstützt werden Mono-OLEDs (inklusive Farb-Zonen, falls das Gerät eine Palette mitliefert) und Farb-Displays (TFT); das Bild wird pixelgenau skaliert. Die Spiegelung funktioniert nur über die lokale Verbindung (USB/BLE/WLAN, nicht übers Mesh) und endet mit dem Schließen des Fensters.

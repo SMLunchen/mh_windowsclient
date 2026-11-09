@@ -48,6 +48,25 @@ public static class EnvironmentMetricInfo
         new EnvMetric("radiation",        "radiation",           "StrEnvRadiation",       "µR/h",1,    0,  100,    20),
         new EnvMetric("distance",         "distance",            "StrEnvDistance",        "mm",  0,    0, 5000,  1000),
         new EnvMetric("weight",           "weight",              "StrEnvWeight",          "kg",  2,    0,  200,    25),
+        // AS3935 lightning sensor (proto 2.8)
+        new EnvMetric("lightning_1h",     "lightning_1h",        "StrEnvLightning1h",     "",    0,    0,   30,     5),
+        new EnvMetric("lightning_km",     "lightning_km",        "StrEnvLightningKm",     "km",  1,    0,   40,     5),
+        // Soil/water probes (proto 2.8, Telemetry variant soil_water_metrics)
+        new EnvMetric("soil_ph",          "soil_ph",             "StrEnvSoilPh",          "pH",  1,    0,   14,     2),
+        new EnvMetric("water_ph",         "water_ph",            "StrEnvWaterPh",         "pH",  1,    0,   14,     2),
+        new EnvMetric("conductivity",     "conductivity",        "StrEnvConductivity",    "mS/cm",2,   0,   10,     2),
+        new EnvMetric("salinity",         "salinity",            "StrEnvSalinity",        "mg/l",0,    0,10000,  2000),
+        new EnvMetric("nitrogen",         "nitrogen",            "StrEnvNitrogen",        "mg/kg",0,   0,  500,   100),
+        new EnvMetric("phosphorus",       "phosphorus",          "StrEnvPhosphorus",      "mg/kg",0,   0,  500,   100),
+        new EnvMetric("potassium",        "potassium",           "StrEnvPotassium",       "mg/kg",0,   0,  500,   100),
+        new EnvMetric("dissolved_oxygen", "dissolved_oxygen",    "StrEnvDissolvedO2",     "mg/l",1,    0,   15,     3),
+        new EnvMetric("orp",              "orp",                 "StrEnvOrp",             "mV",  0, -500,  500,   200),
+        new EnvMetric("cod",              "cod",                 "StrEnvCod",             "mg/l",0,    0,  200,    40),
+        new EnvMetric("turbidity",        "turbidity",           "StrEnvTurbidity",       "NTU", 1,    0,  100,    20),
+        new EnvMetric("nitrate",          "nitrate",             "StrEnvNitrate",         "ppm", 1,    0,  100,    20),
+        new EnvMetric("ammonium",         "ammonium",            "StrEnvAmmonium",        "ppm", 1,    0,   50,    10),
+        new EnvMetric("bod",              "bod",                 "StrEnvBod",             "mg/l",0,    0,  100,    20),
+        new EnvMetric("solar_irradiance", "solar_irradiance",    "StrEnvSolarIrradiance", "W/m²",0,    0, 1200,   200),
         // Radio-quality overlays (virtual: data from packet_rx / local_stats, not env telemetry)
         new EnvMetric("snr",              "rx_snr",              "StrEnvSnr",             "dB",  1,  -20,   12,     4, Virtual: true),
         new EnvMetric("rssi",             "rx_rssi",             "StrEnvRssi",            "dBm", 0, -130,  -60,    10, Virtual: true),
@@ -118,12 +137,19 @@ public static class EnvironmentMetricInfo
     public static bool IsKnownColumn(string column) =>
         EnvOnly.Any(m => string.Equals(m.Column, column, StringComparison.OrdinalIgnoreCase));
 
+    /// <summary>Display radiation as µSv/h instead of the stored µR/h (RadSens convention:
+    /// 1 µSv/h = 100 µR/h). Pure display preference — the DB keeps µR/h.</summary>
+    public static bool DisplayRadiationInSievert { get; set; }
+    public const double MicroRoentgenPerMicroSievert = 100.0;
+
     /// <summary>Format a raw value for display, e.g. 21.4 → "21.4 °C". Uses invariant-ish
     /// decimals; unit appended with a thin space (none when unitless).</summary>
     public static string Format(string key, double value)
     {
         var m = ByKey(key);
         if (m == null) return value.ToString("0.#");
+        if (DisplayRadiationInSievert && string.Equals(key, "radiation", StringComparison.OrdinalIgnoreCase))
+            return $"{(value / MicroRoentgenPerMicroSievert).ToString("F2", System.Globalization.CultureInfo.CurrentCulture)} µSv/h";
         var num = value.ToString("F" + m.Decimals, System.Globalization.CultureInfo.CurrentCulture);
         return string.IsNullOrEmpty(m.Unit) ? num : $"{num} {m.Unit}";
     }
@@ -154,6 +180,37 @@ public static class EnvironmentMetricInfo
         Add("radiation",        em.Radiation);
         Add("distance",         em.Distance);
         Add("weight",           em.Weight);
+
+        // AS3935 lightning (proto 2.8, optional fields → real presence). A reported
+        // 0-strike sample is kept: alarm/rate charts need the value to come back down.
+        if (em.HasLightningStrikeCount1H) d["lightning_1h"] = em.LightningStrikeCount1H;
+        if (em.HasLightningDistanceKm && em.LightningDistanceKm != 0) d["lightning_km"] = em.LightningDistanceKm;
+        return d;
+    }
+
+    /// <summary>Extracts every present metric from a <see cref="SoilWaterMetrics"/> payload
+    /// (proto 2.8, own Telemetry variant). All fields are proto3-optional, so presence is
+    /// exact — no zero-convention needed.</summary>
+    public static Dictionary<string, double> ExtractSoilWater(SoilWaterMetrics sw)
+    {
+        var d = new Dictionary<string, double>();
+        void Add(string key, bool has, double v) { if (has) d[key] = v; }
+
+        Add("soil_ph",          sw.HasSoilPh,                  sw.SoilPh);
+        Add("water_ph",         sw.HasPh,                      sw.Ph);
+        Add("conductivity",     sw.HasElectricalConductivity,  sw.ElectricalConductivity);
+        Add("salinity",         sw.HasSalinity,                sw.Salinity);
+        Add("nitrogen",         sw.HasNitrogen,                sw.Nitrogen);
+        Add("phosphorus",       sw.HasPhosphorus,              sw.Phosphorus);
+        Add("potassium",        sw.HasPotassium,               sw.Potassium);
+        Add("dissolved_oxygen", sw.HasDissolvedOxygen,         sw.DissolvedOxygen);
+        Add("orp",              sw.HasOrp,                     sw.Orp);
+        Add("cod",              sw.HasChemicalOxygenDemand,    sw.ChemicalOxygenDemand);
+        Add("turbidity",        sw.HasTurbidity,               sw.Turbidity);
+        Add("nitrate",          sw.HasNitrate,                 sw.Nitrate);
+        Add("ammonium",         sw.HasAmmonium,                sw.Ammonium);
+        Add("bod",              sw.HasBiochemicalOxygenDemand, sw.BiochemicalOxygenDemand);
+        Add("solar_irradiance", sw.HasSolarIrradiance,         sw.SolarIrradiance);
         return d;
     }
 }

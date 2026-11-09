@@ -11,6 +11,42 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
 
+## [1.7.2] - 2026-11-09
+
+### 🛠️ Node-Konfiguration komplettiert (Android-Parität)
+- **GPS-Festposition wird wieder vorbefüllt:** Die Koordinatenfelder der lokalen Node-Konfiguration blieben leer — sie werden jetzt wie in der Android-App (und wie im Remote Admin) aus dem NodeDB-Eintrag des eigenen Geräts geladen.
+- **Sechs fehlende Module ergänzt** (Abgleich mit der Android-App): **Audio (Codec2-Sprachfunk)**, **Remote Hardware** (GPIO übers Mesh, inkl. Sicherheitshinweis), **Ambient Lighting** (RGB-LEDs), **Detection Sensor** (Türkontakt/Bewegungsmelder mit Trigger-Typ, Pull-up, Glocke), **Paxcounter** (WLAN/BLE-Personenzählung) und **TAK/ATAK** (Team + Rolle, Firmware 2.8) — alle mit Clone-and-Update, sodass unbekannte Felder nie gelöscht werden.
+- **🏮 Mesh Beacon (Firmware 2.8) komplett neu:** Empfangen/Senden/Legacy-Split, Beacon-Nachricht (max. 60 Byte, byte-genau geprüft), Intervall (min. 1 h), Kanal-Angebot aus der Kanaltabelle (mit PSK-Warnhinweis), Preset-/Frequenz-Slot-Angebot — **auch im Remote Admin als eigener Reiter** (z. B. für Router), dort mit „unverändert lassen"-Option fürs Kanal-Angebot. Mit deutlicher Warnung: Broadcast auf einem fremden Modem-Preset schaltet das Funkmodul um — währenddessen kein Empfang auf dem primären Preset (für Router ungeeignet!).
+- **Serielle Modi vervollständigt:** WS85 (Wetterstation), VE.Direct (Victron), MS_CONFIG, LOG, LOGTEXT und MODBUS ergänzt.
+- **Modem-Presets vervollständigt** (lokal + Remote Admin): Short Turbo, Long Turbo, Lite/Narrow/Tiny Fast+Slow, Medium Turbo; Long Slow/Very Long Slow als veraltet markiert.
+- Mesh Beacon und TAK werden nur bei Firmware ≥ 2.8 abgefragt (kein Lade-Timeout auf älteren Geräten; Hinweis im Panel).
+
+### 📦 Protobuf-Update auf v2.8.2
+- **Offizielle Meshtastic-Protobufs von v2.7.26+ auf v2.8.2 gezogen** (Submodule `ffd5ad4`). Drop-in: keine Code-Brüche, alle Tests grün. Neue Hardware-Modelle (Heltec Mesh Pocket V2, T-Connect Pro, MeshPager X2, Nodara u. a.) werden damit korrekt benannt.
+
+### 💬 Node-Status (StatusMessage-Modul, FW 2.7.20+)
+- **Eigener Status per Klick:** Neuer Status-Button in der Kopfzeile neben dem Funk-Echo-Radar — Freitext (max. 79 Byte, Byte-Zähler im Dialog), wird vom Gerät ohne Neustart übernommen und ins Mesh gefunkt (bei Änderung + ca. alle 12 h). Leer = Status löschen.
+- **Status anderer Nodes sichtbar:** Port-36-Broadcasts werden jetzt dekodiert — Anzeige in der Node-Liste (💬 mit Tooltip, in der Kachel-Ansicht als eigene Zeile) und als Banner im Node-Info-Fenster. Letzter Status je Node wird lokal gespeichert und nach dem Neustart wiederhergestellt (Statuses funken nur alle 12 h).
+
+### 📡 Funk & Kanäle
+- **AEAD-Kanäle (FW 2.8, experimentell) voll unterstützt:** Kanäle mit `use_aead` (AES-CCM, 12-Byte-Auth-Tag statt CTR) bekommen ein 🛡-Badge in der Kanalliste, und der Client kann sie jetzt selbst **ent- und verschlüsseln** (MQTT-Fallback-Decrypt, „Nur HF"-Traceroute) — Schema exakt nach Firmware-Quelle (Nonce aus Paket-ID+Absender, AAD aus Absender+Ziel), mit Manipulations-Erkennung und Tests.
+- **„Direkt per Funk gehört" (FW 2.8):** Das Gerät meldet jetzt pro Node, ob es ihn über das eigene Funkgerät auf dem aktuellen LoRa-Slot gehört hat — als 📶 in Node-Liste und Kachel (nur bei Geräten mit 2.8er-Firmware; vorher ist das Bit nicht unterscheidbar und bleibt aus).
+- **Funk-Echo-Airtime-Tabelle vervollständigt:** Alle aktuellen Modem-Presets (LongTurbo, MediumTurbo, Lite/Narrow/Tiny Fast+Slow) aus der Firmware übernommen — vorher blieb die Airtime-Quittung auf diesen Presets stumm.
+- **Namens-Limits byte-genau durchgesetzt:** Firmware 2.8 kappt lange Node-Namen auf 24 UTF-8-Byte (vorher 39). Node-Konfiguration und Fernverwaltung prüfen jetzt vor dem Speichern byte-genau gegen die Firmware-Version des Zielgeräts (Umlaute zählen doppelt); Kurzname max. 4 Byte.
+
+### 🔐 Firmware-2.8-Features (erscheinen nur mit unterstütztem Gerät)
+- **Authentifizierte Empfangsbestätigungen:** Firmware 2.8 kann ACKs kryptografisch signieren (`ack_proof`). Der Client zeigt das jetzt am Zustellstatus: ✓✓🛡 = Bestätigung verifiziert, ✓✓‼ in Rot = Signatur UNGÜLTIG (möglicherweise gefälscht), jeweils mit Tooltip. Grundsatz: **nur flaggen, nie blocken** — die Zustellung selbst wird dadurch nie verändert; ältere Firmware zeigt wie bisher ✓✓.
+- **Paket-Signatur-Richtlinie einstellbar:** Neues Feld im Security-Panel (Node-Konfiguration **und** Fernverwaltung): Kompatibel (Standard) / Ausgewogen / Strikt — mit Warnhinweis, dass Strikt ältere Nodes ausblendet. Durchsetzung ist Sache der Firmware.
+- **📺 Geräte-Display spiegeln:** Meldet das verbundene Gerät ein Display in seinen Metadaten (Firmware 2.8), erscheint im Tools-Tab ein neuer Abschnitt — ein Klick zeigt den Geräte-Bildschirm live im Client (nur lokale Verbindung). Unterstützt Mono-OLEDs (inkl. Farb-Palette für Zonen-Einfärbung) und TFT/Farb-Displays (RGB565-Teilbild-Updates), pixelgenau skaliert. Schließen beendet die Spiegelung.
+
+### 🌡 Telemetrie, Dashboard & Karte
+- **Strahlung wahlweise in µSv/h:** Neue Einstellung „Strahlung in µSv/h anzeigen" (Umrechnung 1 µSv/h = 100 µR/h) — gilt für Karten-Infoboxen und Dashboard (Werte, Achsen, Zonen-Grenzen); gespeichert wird weiterhin in µR/h.
+- **Blitzsensor (AS3935):** `Blitze/1 h` und `Gewitter-Distanz (km)` werden erfasst — als Dashboard-Metriken (mit Warn-/Alarm-Zonen, z. B. „Alarm wenn Gewitter näher als 10 km" über die Tief-Grenze) und im Karten-Overlay/Info-Boxen.
+- **Boden-/Wasser-Sonden (neue Telemetrie-Variante):** pH (Boden/Wasser), Leitfähigkeit, Salzgehalt, NPK, gelöster Sauerstoff, ORP, CSB/BSB, Trübung, Nitrat, Ammonium, Sonneneinstrahlung — gespeichert, im Karten-Overlay wählbar; Boden-pH und Bodenfeuchte zusätzlich als Dashboard-Metriken. Im Funk-Echo laufen solche Anfragen bewusst als „Umweltdaten".
+- **Strahlung (µR/h) als Dashboard-Metrik** nachgerüstet (wurde bereits erfasst und auf der Karte gezeigt, fehlte aber im Dashboard).
+
+---
+
 ## [1.7.1] - 2026-11-09
 
 ### 📻 Kanäle

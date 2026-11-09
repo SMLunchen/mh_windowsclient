@@ -3,7 +3,8 @@
 [← Handbuch-Übersicht](../index.md) · [🇬🇧 English version](https://meshhessenclient.de/handbuch/en/messaging/)
 
 * **Nachrichten** senden und empfangen (Broadcast & Direct Messages)
-* **Multi-Channel** – alle Kanäle deines Geräts automatisch geladen
+  * **Mehrzeilige Nachrichten:** Umschalt+Enter fügt einen Zeilenumbruch ein (wie in der Android-App), Enter allein sendet — das Eingabefeld wächst mit
+* **Multi-Channel** – alle Kanäle deines Geräts automatisch geladen; Kanäle mit AEAD-Verschlüsselung (Firmware 2.8, experimentell) sind in der Kanalliste mit 🛡 markiert. Kanalnamen dürfen maximal 11 Byte lang sein (Umlaute zählen doppelt) — der „Kanal hinzufügen"-Dialog prüft das
 * **Direktnachrichten (DMs)** mit separatem Chat-Fenster im Tabbed-Layout
 * **PKI-Entschlüsselung** – client-seitige Entschlüsselung von PKI-verschlüsselten DMs (X25519 + AES-256-CCM, firmware-konform); Private Key wird automatisch vom verbundenen Gerät geladen
 * **Node-Public-Key-Datenbank** – lokale CSV-Datei (`node_keys.csv`), die der Client automatisch mit den Public Keys empfangener Nodes pflegt (manuelle Änderungen werden beim nächsten Start eingelesen)
@@ -34,7 +35,7 @@
 1. **Kanal-Nachricht:** Nachrichten-Tab → links in der Seitenleiste „Kanäle“ den Kanal wählen → unten Text eintippen → Enter. Die eigene Nachricht erscheint rechtsbündig; Antworten laufen im selben Verlauf ein
 2. **DM starten:** Rechtsklick auf den Ziel-Node (in der Node-Liste, auf der Karte oder direkt auf eine seiner Nachrichten) → **„💬 DM senden“** — die Konversation öffnet als eigener Tab im DM-Fenster (je nach Einstellung auch direkt im Hauptfenster im Chat-Stil)
 3. **Verschlüsselung prüfen:** Die 🔑-Spalte in der Node-Liste zeigt, ob der öffentliche Schlüssel des Ziels bekannt ist. 🔑 = PKI-DMs können ver- und entschlüsselt werden (X25519 + AES-256-CCM); bleibt die Zelle leer (Tabelle) bzw. zeigt 🔓 (Kachelansicht), ist der Key unbekannt — dann bleibt nur die Kanal-Verschlüsselung
-4. **Erfolgskontrolle:** Die gesendete Nachricht bekommt Zustell-Haken: ✓ = gesendet, ✓✓ (grün) = vom Empfänger bestätigt (ACK); die Antwort des Gegenübers erscheint im Tab. Empfangene PKI-DMs entschlüsselt der Client selbst
+4. **Erfolgskontrolle:** Die gesendete Nachricht bekommt Zustell-Haken: ✓ = gesendet, ✓✓ (grün) = vom Empfänger bestätigt (ACK); die Antwort des Gegenübers erscheint im Tab. Empfangene PKI-DMs entschlüsselt der Client selbst. Ab Firmware 2.8 können Bestätigungen kryptografisch signiert sein: ✓✓🛡 = Bestätigung verifiziert, ✓✓‼ (rot) = Signatur ungültig — die Nachricht gilt weiter als zugestellt, aber die Bestätigung ist möglicherweise gefälscht (Tooltip zeigt Details)
 5. **Extras:** Rechtsklick auf eine Nachricht → Emoji-Reaktion oder „Antworten“ (Zitat-Block); Texte sind markier- und kopierbar
 
 **Typische Fehler:**

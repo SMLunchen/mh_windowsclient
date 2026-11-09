@@ -162,6 +162,9 @@
                                 <TextBlock Text="☁" FontSize="12" Margin="3,0,0,0"
                                            Visibility="{Binding IsViaMqtt, Converter={StaticResource BoolToVis}}"
                                            ToolTip="Via MQTT empfangen"/>
+                                <TextBlock Text="📶" FontSize="12" Margin="3,0,0,0"
+                                           Visibility="{Binding ShowRfHeard, Converter={StaticResource BoolToVis}}"
+                                           ToolTip="{DynamicResource StrRfHeardTooltip}"/>
                             </StackPanel>
                         </Grid>
 
@@ -275,6 +278,15 @@
                                        Visibility="{Binding BarometricPressure, Converter={StaticResource IsNotEmptyConverter}}"/>
                             <TextBlock Text="{Binding BarometricPressure, StringFormat={}{0:F0} hPa}" FontSize="11"
                                        Visibility="{Binding BarometricPressure, Converter={StaticResource IsNotEmptyConverter}}"/>
+                        </StackPanel>
+
+                        <!-- ── Status (StatusMessage-Modul, Port 36) ────── -->
+                        <StackPanel Orientation="Horizontal" Margin="0,3,0,0"
+                                    Visibility="{Binding HasStatus, Converter={StaticResource BoolToVis}}">
+                            <TextBlock Text="💬 " FontSize="10"/>
+                            <TextBlock Text="{Binding Status}" FontSize="11" FontStyle="Italic" Opacity="0.85"
+                                       TextTrimming="CharacterEllipsis" MaxWidth="190"
+                                       ToolTip="{Binding Status}"/>
                         </StackPanel>
 
                         <Border BorderBrush="#20808080" BorderThickness="0,1,0,0" Margin="0,5,0,4"/>
@@ -556,6 +568,7 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
                 <!-- "Netz:" label -->
@@ -693,6 +706,22 @@
                                        Foreground="#0D1117" HorizontalAlignment="Center"
                                        VerticalAlignment="Center"/>
                         </Border>
+                        </Grid>
+                    </StackPanel>
+                </Button>
+
+                <!-- Own node status (StatusMessage module, FW 2.7.20+): quick-set dialog -->
+                <Button x:Name="NodeStatusButton" Grid.Column="9"
+                        Style="{StaticResource FunkEchoHeaderButton}"
+                        Click="NodeStatusButton_Click"
+                        Margin="10,0,0,0"
+                        ToolTip="{DynamicResource StrNodeStatusTooltip}">
+                    <StackPanel Orientation="Vertical">
+                        <TextBlock Text="{DynamicResource StrNodeStatusHdr}" FontSize="9" Opacity="0.55"
+                                   HorizontalAlignment="Center" Margin="0,0,0,1"/>
+                        <Grid HorizontalAlignment="Center" Width="30" Height="18">
+                            <TextBlock x:Name="NodeStatusIcon" Text="💬" FontSize="12" Opacity="0.85"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Grid>
                     </StackPanel>
                 </Button>
@@ -1509,6 +1538,7 @@
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="Auto"/>
                                                     <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
                                                 </Grid.ColumnDefinitions>
                                                 <Border Grid.Column="0" Width="28" Height="28" CornerRadius="14"
                                                         Background="{Binding AvatarColor, Converter={StaticResource HexToColorConverter}}"
@@ -1525,6 +1555,14 @@
                                                            FontWeight="SemiBold"
                                                            TextTrimming="CharacterEllipsis"
                                                            ToolTip="{Binding Name}"/>
+                                                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                                    <TextBlock Text="💬" FontSize="11" Margin="4,0,0,0"
+                                                               Visibility="{Binding HasStatus, Converter={StaticResource BoolToVis}}"
+                                                               ToolTip="{Binding Status}"/>
+                                                    <TextBlock Text="📶" FontSize="11" Margin="4,0,0,0"
+                                                               Visibility="{Binding ShowRfHeard, Converter={StaticResource BoolToVis}}"
+                                                               ToolTip="{DynamicResource StrRfHeardTooltip}"/>
+                                                </StackPanel>
                                             </Grid>
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
@@ -1740,7 +1778,12 @@
                                 <GridViewColumn Header="Name" Width="150">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate>
-                                            <emoji:TextBlock Text="{Binding Name}"/>
+                                            <StackPanel Orientation="Horizontal">
+                                                <emoji:TextBlock Text="{Binding Name}"/>
+                                                <TextBlock Text="🛡" FontSize="11" Margin="5,0,0,0"
+                                                           Visibility="{Binding UseAead, Converter={StaticResource BoolToVis}}"
+                                                           ToolTip="{DynamicResource StrChannelAeadTooltip}"/>
+                                            </StackPanel>
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
@@ -2132,6 +2175,10 @@
                                     <CheckBox x:Name="FunkEchoToastsCheckBox"
                                              Content="{DynamicResource StrFunkEchoToasts}"
                                              Margin="0,2,0,4"/>
+                                    <CheckBox x:Name="RadiationSievertCheckBox"
+                                             Content="{DynamicResource StrRadiationSievert}"
+                                             ToolTip="{DynamicResource StrRadiationSievertTip}"
+                                             Margin="0,10,0,4"/>
                                     <CheckBox x:Name="DmInlineCheckBox"
                                              Content="{DynamicResource StrDmInline}"
                                              Checked="DmInline_Changed" Unchecked="DmInline_Changed"
@@ -2740,6 +2787,20 @@
             <TabItem x:Name="TabItemTools" Header="{DynamicResource StrTabTools}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="24">
+
+                        <!-- Display mirroring (FW 2.8) — visible only when the connected
+                             device reports a display panel in its metadata -->
+                        <StackPanel x:Name="DisplayMirrorSection" Visibility="Collapsed">
+                            <TextBlock Text="{DynamicResource StrToolsMirrorSection}"
+                                       FontSize="15" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                            <TextBlock Text="{DynamicResource StrToolsMirrorDesc}"
+                                       TextWrapping="Wrap" Foreground="#555" Margin="0,0,0,10"/>
+                            <Button x:Name="DisplayMirrorBtn"
+                                    Content="{DynamicResource StrToolsMirrorBtn}"
+                                    HorizontalAlignment="Left" Padding="16,8"
+                                    Click="DisplayMirrorBtn_Click"/>
+                            <Separator Margin="0,20"/>
+                        </StackPanel>
 
                         <!-- T-Deck Map Assistant -->
                         <TextBlock Text="{DynamicResource StrToolsTDeckSection}"

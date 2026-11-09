@@ -99,6 +99,16 @@ public class RequestEchoTests : IDisposable
     }
 
     [Fact]
+    public void SoilWater_telemetry_counts_as_environment()
+    {
+        // Proto-2.8 soil/water probes run as environment data by decision — no own type
+        var t = new Telemetry { SoilWaterMetrics = new SoilWaterMetrics() };
+        var pkt = Packet(0x111, Me, 67, true, payload: t.ToByteString());
+        Assert.Equal(RequestEchoType.Telemetry, RequestEchoClassifier.Classify(Me, pkt));
+        Assert.Equal("Environment", RequestEchoClassifier.ExtractTelemetryVariant(pkt));
+    }
+
+    [Fact]
     public void Telemetry_variant_null_for_empty_or_foreign_payload()
     {
         Assert.Null(RequestEchoClassifier.ExtractTelemetryVariant(Packet(0x111, Me, 67, true)));

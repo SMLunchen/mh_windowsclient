@@ -190,10 +190,46 @@
 <div class="section active" id="de">
 <main>
 
-  <!-- ── v1.7.1 ── -->
+  <!-- ── v1.7.2 ── -->
   <div class="version-entry current">
     <div class="version-header">
-      <span class="version-tag tag-latest">v1.7.1</span>
+      <span class="version-tag tag-latest">v1.7.2</span>
+      <span class="version-date">2026-11-09</span>
+      Meshtastic 2.8: Status, Signaturen &amp; neue Sensoren
+    </div>
+    <p class="version-desc">Großes Protokoll-Update: Protobufs auf v2.8.2, Node-Status zum Mitteilen und Mitlesen, kryptografisch geprüfte Empfangsbestätigungen, AEAD-Kanäle, Display-Spiegelung (vorbereitet), Blitz- und Bodensensorik fürs Dashboard und Strahlung wahlweise in µSv/h.</p>
+
+    <div class="cl-section added">
+      <h3>✨ Neu</h3>
+      <div class="cl-group">
+        <ul class="cl-list">
+          <li><strong>💬 Node-Status:</strong> Setze deinen eigenen Freitext-Status per Klick auf den neuen Status-Button in der Kopfzeile („Im Urlaub bis 20.11.") — das Gerät funkt ihn ohne Neustart ins Mesh (Firmware 2.7.20+). Statuses anderer Nodes erscheinen in der Node-Liste, auf den Kacheln und im Node-Info-Fenster und überleben Client-Neustarts.</li>
+          <li><strong>🛡 Signierte Empfangsbestätigungen</strong> (Firmware 2.8): Zustell-Haken zeigen jetzt ✓✓🛡 bei kryptografisch verifizierter Bestätigung und ✓✓‼ in Rot bei ungültiger Signatur — es wird nur markiert, nie blockiert. Dazu die neue Paket-Signatur-Richtlinie (Kompatibel/Ausgewogen/Strikt) im Security-Panel von Node-Konfiguration und Fernverwaltung.</li>
+          <li><strong>⚡ Blitzsensor &amp; Boden-/Wassersonden:</strong> Blitze pro Stunde und Gewitter-Distanz (AS3935) sowie die komplette Boden-/Wasserchemie (pH, Leitfähigkeit, NPK, O₂, Trübung …) werden erfasst — als Dashboard-Metriken mit Warn-/Alarm-Zonen („Alarm, wenn Gewitter näher als 10 km") und im Karten-Overlay. Strahlung gibt es jetzt auch als Dashboard-Metrik und auf Wunsch in <strong>µSv/h</strong> statt µR/h (Einstellung).</li>
+          <li><strong>🛡 AEAD-Kanäle</strong> (Firmware 2.8, experimentell): Kanäle mit authentifizierter Verschlüsselung (AES-CCM) werden mit Schild-Symbol angezeigt, und der Client kann sie selbst ent- und verschlüsseln — inklusive Manipulations-Erkennung.</li>
+          <li><strong>📺 Geräte-Display spiegeln</strong> (vorbereitet): Sobald eine Firmware das neue Spiegel-Protokoll liefert, zeigt der Tools-Tab bei Geräten mit Display einen Button, der den Node-Bildschirm live in den Client holt (Mono-OLED inkl. Farbzonen und TFT, nur lokale Verbindung).</li>
+          <li><strong>📶 „Direkt gehört"-Anzeige</strong> (Firmware 2.8): Das Gerät meldet jetzt selbst, welche Nodes es über das eigene Funkmodul gehört hat — sichtbar in Node-Liste und Kacheln.</li>
+          <li><strong>Protobufs auf v2.8.2:</strong> Neue Hardware-Modelle (Heltec Mesh Pocket V2, T-Connect Pro u. a.) werden korrekt benannt; Funk-Echo kennt die neue Boden-/Wasser-Telemetrie und die Airtime-Schätzung alle aktuellen Modem-Presets.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="cl-section fixed">
+      <h3>🐛 Behoben / ✨ Verbessert</h3>
+      <div class="cl-group">
+        <ul class="cl-list">
+          <li><strong>🛠 Node-Konfiguration komplettiert (Android-Parität):</strong> GPS-Festposition wird wieder aus dem Gerät vorbefüllt (auch der Grund für leere Felder); sechs fehlende Module ergänzt — Audio (Codec2), Remote Hardware, Ambient Lighting, Detection Sensor, Paxcounter, TAK/ATAK — plus das neue <strong>Mesh-Beacon-Modul</strong> (FW 2.8) mit Kanal-/Preset-Angebot, auch als eigener Reiter in der Fernverwaltung (inkl. Warnung: Broadcast auf fremdem Preset = kein Empfang auf dem primären — für Router ungeeignet). Serielle Modi (WS85, VE.Direct, MODBUS …) und Modem-Presets (Short/Long Turbo, Lite, Narrow, Tiny …) vervollständigt.</li>
+          <li><strong>Namenslängen byte-genau geprüft:</strong> Firmware 2.8 begrenzt lange Node-Namen auf 24 Byte — Node-Konfiguration und Fernverwaltung prüfen jetzt vor dem Speichern gegen die Firmware des Zielgeräts (Umlaute zählen doppelt), statt dass das Gerät zu lange Namen still verwirft.</li>
+          <li><strong>Handbuch erweitert:</strong> Alle neuen Funktionen sind in den Kapiteln Nachrichten, Node-Verwaltung und Telemetrie dokumentiert.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── v1.7.1 ── -->
+  <div class="version-entry">
+    <div class="version-header">
+      <span class="version-tag">v1.7.1</span>
       <span class="version-date">2026-11-09</span>
       Kanal-Fixes &amp; mehrzeilige Nachrichten
     </div>
@@ -1364,10 +1400,46 @@
 <div class="section" id="en">
 <main>
 
-  <!-- ── v1.7.1 (EN) ── -->
+  <!-- ── v1.7.2 (EN) ── -->
   <div class="version-entry current">
     <div class="version-header">
-      <span class="version-tag tag-latest">v1.7.1</span>
+      <span class="version-tag tag-latest">v1.7.2</span>
+      <span class="version-date">2026-11-09</span>
+      Meshtastic 2.8: status, signatures &amp; new sensors
+    </div>
+    <p class="version-desc">Big protocol update: protobufs bumped to v2.8.2, node status for sharing and reading, cryptographically verified delivery receipts, AEAD channels, display mirroring (prepared), lightning and soil sensors for the dashboard, and radiation optionally in µSv/h.</p>
+
+    <div class="cl-section added">
+      <h3>✨ New</h3>
+      <div class="cl-group">
+        <ul class="cl-list">
+          <li><strong>💬 Node status:</strong> set your own free-text status via the new status button in the header bar ("On vacation until Nov 20") — the device broadcasts it without rebooting (firmware 2.7.20+). Other nodes' statuses appear in the node list, on the tiles and in the node info window, and survive client restarts.</li>
+          <li><strong>🛡 Signed delivery receipts</strong> (firmware 2.8): delivery checks now show ✓✓🛡 for a cryptographically verified receipt and ✓✓‼ in red for an invalid signature — flagged, never blocked. Plus the new packet signature policy (Compatible/Balanced/Strict) in the security panel of node configuration and remote admin.</li>
+          <li><strong>⚡ Lightning sensor &amp; soil/water probes:</strong> strikes per hour and storm distance (AS3935) plus the full soil/water chemistry (pH, conductivity, NPK, O₂, turbidity …) are recorded — as dashboard metrics with warn/alarm zones ("alarm when a storm is closer than 10 km") and in the map overlay. Radiation is now a dashboard metric too, optionally shown in <strong>µSv/h</strong> instead of µR/h (setting).</li>
+          <li><strong>🛡 AEAD channels</strong> (firmware 2.8, experimental): channels with authenticated encryption (AES-CCM) carry a shield icon, and the client can encrypt and decrypt them itself — including tamper detection.</li>
+          <li><strong>📺 Mirror device display</strong> (prepared): as soon as a firmware ships the new mirroring protocol, the Tools tab shows a button for devices with a display that brings the node's screen live into the client (mono OLED incl. color zones and TFT, local connection only).</li>
+          <li><strong>📶 "Heard directly" indicator</strong> (firmware 2.8): the device now reports which nodes it heard over its own radio — visible in the node list and tiles.</li>
+          <li><strong>Protobufs bumped to v2.8.2:</strong> new hardware models (Heltec Mesh Pocket V2, T-Connect Pro and more) are named correctly; Funk-Echo understands the new soil/water telemetry and the airtime estimate covers every current modem preset.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="cl-section fixed">
+      <h3>🐛 Fixed / ✨ Improved</h3>
+      <div class="cl-group">
+        <ul class="cl-list">
+          <li><strong>🛠 Node configuration completed (Android parity):</strong> fixed GPS position is prefilled from the device again (also the cause of empty fields); six missing modules added — audio (Codec2), remote hardware, ambient lighting, detection sensor, paxcounter, TAK/ATAK — plus the new <strong>Mesh Beacon module</strong> (FW 2.8) with channel/preset offers, also a dedicated tab in remote admin (incl. warning: broadcasting on a foreign preset = no reception on the primary one — unsuitable for routers). Serial modes (WS85, VE.Direct, MODBUS …) and modem presets (Short/Long Turbo, Lite, Narrow, Tiny …) completed.</li>
+          <li><strong>Name lengths validated byte-exactly:</strong> firmware 2.8 caps long node names at 24 bytes — node configuration and remote admin now validate against the target's firmware before saving (umlauts count twice), instead of the device silently rejecting oversized names.</li>
+          <li><strong>Handbook extended:</strong> all new features are documented in the Messaging, Node Management and Telemetry chapters.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── v1.7.1 (EN) ── -->
+  <div class="version-entry">
+    <div class="version-header">
+      <span class="version-tag">v1.7.1</span>
       <span class="version-date">2026-11-09</span>
       Channel fixes &amp; multiline messages
     </div>

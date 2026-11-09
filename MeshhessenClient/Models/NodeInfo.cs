@@ -27,6 +27,11 @@ public class NodeInfo
     public float? GroundTrack { get; set; }  // degrees 0–360 (0=North, clockwise)
     public string ColorHex { get; set; } = string.Empty;  // Empty = no color, otherwise #RRGGBB
     public string Note { get; set; } = string.Empty;      // User note
+
+    /// <summary>Free-text status the node broadcast via the StatusMessage module
+    /// (port 36, FW 2.7.20+). Empty = none set / cleared.</summary>
+    public string Status { get; set; } = string.Empty;
+    public bool HasStatus => !string.IsNullOrWhiteSpace(Status);
     public bool IsPinned { get; set; }                    // Pinned to top of node list
     public bool IsFavorite { get; set; }                  // Marked as favorite (synced with device)
     public string HardwareModel { get; set; } = string.Empty;
@@ -45,6 +50,12 @@ public class NodeInfo
     // Routing metadata from most recent received packet
     public bool IsViaMqtt   { get; set; }   // last packet arrived via MQTT
     public int? HopsToReach { get; set; }   // hop count of last received packet (null = unknown)
+
+    /// <summary>Device NodeDB flag (firmware 2.8+): the node was heard over OUR OWN radio
+    /// and its recorded LoRa slot matches the one the radio is currently on. Null = the
+    /// connected firmware doesn't report it (pre-2.8) — then nothing is shown.</summary>
+    public bool? HeardOnCurrentLora { get; set; }
+    public bool ShowRfHeard => HeardOnCurrentLora == true;
 
     // Device role and additional fields from proto
     public string Role { get; set; } = string.Empty;   // Config.DeviceConfig.Role name

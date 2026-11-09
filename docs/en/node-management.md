@@ -6,7 +6,7 @@
 
 * **All nodes in the mesh** with SNR, battery, distance, hop count
   * **Tile view (Fancy View)** – optionally enabled in Settings → Appearance: replaces the table with a responsive tile surface (column count grows/shrinks with the window width)
-    * Per tile: ShortName badge in node color, 🔑/🔓 PKI status, full name, "X min ago", ⭐ favorite star, 📡 infrastructure and ☁ MQTT icons
+    * Per tile: ShortName badge in node color, 🔑/🔓 PKI status, full name, "X min ago", ⭐ favorite star, 📡 infrastructure and ☁ MQTT icons; with firmware 2.8 also 📶 ("heard directly over the radio", reported by the device) and 💬 with the node's status text
     * Power (externally powered or battery + voltage), distance + altitude, hops, RSSI/SNR with color gradient, environment telemetry (🌡/💧/🌬), hardware model · device role · node ID
     * Own node always on top, virtualized scrolling even with 1000+ nodes
   * **SNR/RSSI only for direct reception** – signal values are shown only when we hear the node directly (0 hops, no MQTT); for relayed nodes the column shows the hop count instead
@@ -15,6 +15,7 @@
 * **Node info window** – right-click a node (list, tile, map or message) → "ℹ️ Node Info": hardware model, role, PKI status, battery, signal, first/last seen and position. Your own device's firmware version lives under Settings → Device info; a remote node's is shown in the remote admin window:
 
 <img alt="Meshhessen Client – node info window with role, battery, signal, first/last seen" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node-info-window.png" />
+* **Node status (💬)** – nodes with firmware ≥ 2.7.20 can broadcast a free-text status ("On vacation until Nov 20", "Solar, battery low"). Received statuses appear in the node list (💬 icon with tooltip), as a line on the tile and as a banner in the node info window; the last status per node survives client restarts. **Set your own status:** status button in the header bar (next to the Funk-Echo radar) → enter text (max. 79 bytes, umlauts count twice) → OK. The device applies it without rebooting and broadcasts it on change plus roughly every 12 hours; an empty field clears it
 * **PKI key indicator** – 🔑 column shows whether a node's public key is known
 * **Node colors** – color-code nodes individually (map + lists)
 * **Node notes** – free-text annotations per node
@@ -48,7 +49,7 @@ Full remote admin UI for favorite nodes — also works across relay and MQTT pat
 Feature overview:
 
 * All configuration tabs: Owner, Device, Position, LoRa, Bluetooth, Network, Display, Channels, **Security**, Control
-* **Security tab:** public key (read-only, Base64), admin keys 1–3 (Base64), flags (admin channel, managed mode, serial, debug log)
+* **Security tab:** public key (read-only, Base64), admin keys 1–3 (Base64), flags (admin channel, managed mode, serial, debug log), packet signature policy (firmware 2.8: Compatible / Balanced / Strict)
 * **Manage favorites remotely:** set or remove favorites on the remote device
 * Session-key handshake, configurable timeout, per-channel retry + reload
 * **Lazy loading:** choose on open whether everything loads immediately or page by page; "↻ Reload Tab" button per tab
@@ -64,6 +65,13 @@ Full device configuration directly from the client, all modules in one window:
 * **MQTT:** server, credentials, TLS, JSON mode, root topic, proxy mode, map reporting with precision level (bits 10–19), MQTT proxy client
 * **Telemetry:** device, environment, air quality and power metric intervals
 * **Bluetooth:** enable, pairing mode, fixed PIN; **change BT PIN** directly from the client
-* **Security:** show public key (read-only), show/change private key, admin keys, managed mode
-* **Channels:** all 8 channels – role, name, uplink, downlink, position precision (bits 10–19, ~23 km to ~45 m)
-* **Additional modules:** neighbor info, store & forward, external notification, canned messages, range test, serial
+* **Security:** show public key (read-only), show/change private key, admin keys, managed mode, packet signature policy (firmware 2.8: Compatible/Balanced/Strict — default Compatible; "Strict" ignores packets from older nodes!)
+* **Channels:** all 8 channels – role, name, uplink, downlink, position precision (bits 10–19, ~23 km to ~45 m). Channels with AEAD encryption enabled (firmware 2.8, experimental) carry a 🛡 icon in the channel list
+* **Additional modules (full Android parity):** neighbor info, store & forward, external notification, canned messages, range test, serial (all modes incl. WS85, VE.Direct, MODBUS), audio (Codec2 voice), remote hardware, ambient lighting, detection sensor, paxcounter, TAK/ATAK (FW 2.8) and **Mesh Beacon** (FW 2.8: receive/broadcast beacons, message, channel/preset offer — careful: broadcasting on a foreign preset switches the radio over, with no reception on the primary preset meanwhile; unsuitable for routers). Mesh Beacon is also a dedicated tab in remote admin
+
+!!! note "Name lengths are byte limits"
+    The radio protocol limits names in **bytes**, not characters — umlauts and special characters count twice. Channel names: max. 11 bytes. Node long name: max. 24 bytes from firmware 2.8 (older firmware: 39), short name: 4 bytes. The client validates this on save and warns before the device would silently reject an oversized name.
+
+## Mirror the device display (firmware 2.8)
+
+If the connected device reports a display in its metadata, the **Tools tab** shows a "📺 Mirror Device Display" section: one click opens a window with a live image of the node's screen — handy for devices that are built in or mounted out of reach. Mono OLEDs (including color zones when the device supplies a palette) and color TFT displays (partial updates) are supported; the image is scaled pixel-perfectly. Mirroring only works over the local connection (USB/BLE/Wi-Fi, not across the mesh) and stops when the window is closed.

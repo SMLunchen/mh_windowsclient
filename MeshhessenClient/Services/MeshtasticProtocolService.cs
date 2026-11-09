@@ -82,7 +82,10 @@ public class MeshtasticProtocolService
     public event EventHandler<MessageItem>? MessageReceived;
     /// <summary>Raised on a ROUTING_APP ACK/NAK for one of our sent packets. <c>Delivered</c> is true
     /// on ACK (Error.None), false on NAK — lets the UI show a delivered/failed tick + offer resend.</summary>
-    public event EventHandler<(uint PacketId, bool Delivered)>? MessageDeliveryUpdated;
+    /// <summary>Delivery update for an own sent message. AckProofStatus mirrors
+    /// MeshPacket.ack_proof_status (FW 2.8 authenticated acks): 0 absent, 1 valid,
+    /// 2 invalid (forged), 3 no key — pre-2.8 firmware always reports 0.</summary>
+    public event EventHandler<(uint PacketId, bool Delivered, int AckProofStatus)>? MessageDeliveryUpdated;
     public event EventHandler<ModelNodeInfo>? NodeInfoReceived;
     /// <summary>Raised when the internal known-node cache is cleared (see <see cref="ClearKnownNodes"/>).</summary>
     public event EventHandler? NodeDbCleared;
@@ -98,6 +101,19 @@ public class MeshtasticProtocolService
     public event EventHandler<BluetoothConfig>? BluetoothConfigReceived;
     public event EventHandler<NeighborInfoConfig>? NeighborInfoConfigReceived;
     public event EventHandler<StoreForwardConfig>? StoreForwardConfigReceived;
+    public event EventHandler<StatusMessageConfig>? StatusMessageConfigReceived;
+    public event EventHandler<MeshBeaconConfig>? MeshBeaconConfigReceived;
+    public event EventHandler<AudioConfig>? AudioConfigReceived;
+    public event EventHandler<RemoteHardwareConfig>? RemoteHardwareConfigReceived;
+    public event EventHandler<AmbientLightingConfig>? AmbientLightingConfigReceived;
+    public event EventHandler<DetectionSensorConfig>? DetectionSensorConfigReceived;
+    public event EventHandler<PaxcounterConfig>? PaxcounterConfigReceived;
+    public event EventHandler<TAKConfig>? TakConfigReceived;
+    /// <summary>A node broadcast its free-text status (port 36); empty = cleared.</summary>
+    public event EventHandler<(uint NodeId, string Status)>? NodeStatusReceived;
+    /// <summary>Display-mirroring chunks (FW 2.8, local connection only).</summary>
+    public event EventHandler<Meshtastic.Protobufs.DisplayFrame>? DisplayFrameReceived;
+    public event EventHandler<Meshtastic.Protobufs.DisplayPalette>? DisplayPaletteReceived;
     public event EventHandler<ExternalNotificationConfig>? ExternalNotificationConfigReceived;
     public event EventHandler<CannedMessageConfig>? CannedMessageConfigReceived;
     public event EventHandler<RangeTestConfig>? RangeTestConfigReceived;
@@ -259,6 +275,7 @@ public class MeshtasticProtocolService
             _pendingPositions.Clear();
             _myNodeId = 0;
             _myDeviceInfo = null;
+            _myDisplayInfo = null;
             _currentLoRaConfig = null;
             _configComplete = false;
             _packetCount = 0;
@@ -522,6 +539,23 @@ public class MeshtasticProtocolService
                 }
                 if (filled > 0)
                     Logger.WriteLine($"Backfilled {filled} node positions from local DB (device NodeDB had none)");
+
+                // Same idea for broadcast statuses: port-36 messages only arrive live
+                // (rebroadcast every 12 h), the local DB remembers the last one.
+                var statuses = _db.GetNodeStatuses();
+                int statusFilled = 0;
+                lock (_dataLock)
+                {
+                    foreach (var node in _knownNodes.Values)
+                    {
+                        if (node.HasStatus) continue;
+                        if (!statuses.TryGetValue(node.NodeId, out var st)) continue;
+                        node.Status = st;
+                        statusFilled++;
+                    }
+                }
+                if (statusFilled > 0)
+                    Logger.WriteLine($"Backfilled {statusFilled} node statuses from local DB");
             }
         }
         catch (Exception ex) { Logger.WriteLine($"Position backfill failed: {ex.Message}"); }
@@ -567,7 +601,8 @@ public class MeshtasticProtocolService
                     ? Convert.ToBase64String(channel.Settings.Psk.ToByteArray()) : "",
                 Uplink            = channel.Settings?.UplinkEnabled ?? false,
                 Downlink          = channel.Settings?.DownlinkEnabled ?? false,
-                PositionPrecision = channel.Settings?.ModuleSettings?.PositionPrecision ?? 0
+                PositionPrecision = channel.Settings?.ModuleSettings?.PositionPrecision ?? 0,
+                UseAead           = channel.Settings?.UseAead ?? false
             };
             ChannelInfoReceived?.Invoke(this, channelInfo);
             await Task.Delay(50);
@@ -1228,6 +1263,16 @@ public class MeshtasticProtocolService
             case FromRadio.PayloadVariantOneofCase.MqttClientProxyMessage:
                 MqttProxyMessageReceived?.Invoke(this, fromRadio.MqttClientProxyMessage);
                 break;
+
+            // Display mirroring (FW 2.8): framebuffer chunks + colorization palette.
+            // Reassembly lives in the consumer (DisplayMirrorAssembler) — raw pass-through.
+            case FromRadio.PayloadVariantOneofCase.DisplayFrame:
+                DisplayFrameReceived?.Invoke(this, fromRadio.DisplayFrame);
+                break;
+
+            case FromRadio.PayloadVariantOneofCase.DisplayPalette:
+                DisplayPaletteReceived?.Invoke(this, fromRadio.DisplayPalette);
+                break;
         }
     }
 
@@ -1375,7 +1420,7 @@ public class MeshtasticProtocolService
             // MQTT-relayed packets are handed to us still channel-encrypted (the device
             // decrypts only its own radio traffic). If we hold a channel key whose hash
             // matches, decrypt it ourselves (AES-CTR) and route it as a normal packet.
-            var chPlain = TryChannelDecrypt(packet.Encrypted.ToByteArray(), packet.Channel, packet.From, packet.Id);
+            var chPlain = TryChannelDecrypt(packet.Encrypted.ToByteArray(), packet.Channel, packet.From, packet.Id, packet.To);
             if (chPlain != null)
             {
                 try
@@ -1521,7 +1566,8 @@ public class MeshtasticProtocolService
         // Channel-PSK fallback (e.g. an MQTT-relayed keyless DM on a channel we hold).
         // item.ChannelIndex holds the channel hash captured at receive time — but a
         // DM restored from the DB stores 0, so brute-force across channels here.
-        var chPlain = TryChannelDecrypt(item.PkiCipher!, item.ChannelIndex, item.FromId, item.Id, bruteForce: true);
+        // Restored DMs were addressed to us — toNode = our id (needed for the AEAD AAD).
+        var chPlain = TryChannelDecrypt(item.PkiCipher!, item.ChannelIndex, item.FromId, item.Id, _myNodeId, bruteForce: true);
         if (chPlain != null && DispatchLateDecrypted(item, chPlain, "channel key"))
             return;
 
@@ -1748,17 +1794,25 @@ public class MeshtasticProtocolService
     // (authoritative for live packets). If <paramref name="bruteForce"/> and no hash
     // matches — e.g. a restored DM whose channel wasn't persisted (stored as 0) — it
     // tries every channel and accepts the first plaintext that parses as valid Data.
-    private byte[]? TryChannelDecrypt(byte[] cipher, uint channelHash, uint fromNode, uint packetId, bool bruteForce = false)
+    private byte[]? TryChannelDecrypt(byte[] cipher, uint channelHash, uint fromNode, uint packetId, uint toNode, bool bruteForce = false)
     {
         if (cipher.Length == 0) return null;
         List<Channel> chans;
         lock (_dataLock) { chans = new List<Channel>(_tempChannels); }
 
+        // AEAD channels (use_aead, FW 2.8): AES-CCM with authenticated 12-byte tag instead
+        // of plain CTR. The same channel-hash match applies; a tag failure means wrong
+        // key OR a forged/damaged packet — both are a clean null here.
+        byte[]? CryptFor(Channel ch, byte[] key) =>
+            ch.Settings?.UseAead == true
+                ? ChannelAead.Decrypt(key, fromNode, toNode, packetId, cipher)
+                : AesCtrCrypt(key, fromNode, packetId, cipher);
+
         foreach (var ch in chans)
         {
             var key = ExpandChannelKey(ch);
             if (key == null || ChannelHash(ch, key) != channelHash) continue;
-            var pt = AesCtrCrypt(key, fromNode, packetId, cipher);
+            var pt = CryptFor(ch, key);
             if (pt != null) return pt;
         }
         if (!bruteForce) return null;
@@ -1767,7 +1821,7 @@ public class MeshtasticProtocolService
         {
             var key = ExpandChannelKey(ch);
             if (key == null) continue;
-            var pt = AesCtrCrypt(key, fromNode, packetId, cipher);
+            var pt = CryptFor(ch, key);
             if (pt == null) continue;
             try
             {
@@ -1940,8 +1994,9 @@ public class MeshtasticProtocolService
                         }
 
                         // Notify the chat UI about delivery of one of our own sent messages.
+                        // ack_proof_status rides on the enclosing packet (FW 2.8+, else 0).
                         if (data.RequestId != 0)
-                            MessageDeliveryUpdated?.Invoke(this, (data.RequestId, ok));
+                            MessageDeliveryUpdated?.Invoke(this, (data.RequestId, ok, (int)packet.AckProofStatus));
                     }
                 }
                 catch (Exception ex)
@@ -1977,6 +2032,34 @@ public class MeshtasticProtocolService
             case 8: // WAYPOINT_APP
                 HandleWaypointPacket(packet, data);
                 break;
+
+            case 36: // NODE_STATUS_APP — free-text status a node broadcasts (FW 2.7.20+)
+                HandleNodeStatusPacket(packet, data);
+                break;
+        }
+    }
+
+    /// <summary>Port 36: a node's free-text status (StatusMessage proto). Updates the
+    /// known-node entry and notifies the UI; an empty status clears the previous one.</summary>
+    private void HandleNodeStatusPacket(MeshPacket packet, Data data)
+    {
+        try
+        {
+            var status = Meshtastic.Protobufs.StatusMessage.Parser.ParseFrom(data.Payload).Status ?? "";
+            bool shouldFireEvent;
+            lock (_dataLock)
+            {
+                if (_knownNodes.TryGetValue(packet.From, out var node))
+                    node.Status = status;
+                shouldFireEvent = !_isInitializing;
+            }
+            Logger.WriteLine($"[NodeStatus] !{packet.From:x8}: '{status}'");
+            if (shouldFireEvent)
+                NodeStatusReceived?.Invoke(this, (packet.From, status));
+        }
+        catch (Exception ex)
+        {
+            Logger.WriteLine($"[NodeStatus] Failed to parse status payload: {ex.Message}");
         }
     }
 
@@ -2275,7 +2358,11 @@ public class MeshtasticProtocolService
             Bitfield     = 1u << 1,
         };
 
-        var cipher = AesCtrCrypt(key, _myNodeId, id, data.ToByteArray());
+        // AEAD channels (FW 2.8) use AES-CCM with appended tag instead of plain CTR —
+        // a CTR pre-encryption would be rejected by every node on the channel.
+        var cipher = primary.Settings?.UseAead == true
+            ? ChannelAead.Encrypt(key, _myNodeId, destinationId, id, data.ToByteArray())
+            : AesCtrCrypt(key, _myNodeId, id, data.ToByteArray());
         if (cipher == null) return false;
 
         var meshPacket = new MeshPacket
@@ -2508,6 +2595,10 @@ public class MeshtasticProtocolService
             nodeInfo.IsFavorite   = protoNodeInfo.IsFavorite;
             nodeInfo.IsViaMqtt    = protoNodeInfo.ViaMqtt;
             nodeInfo.HopsToReach  = (int)protoNodeInfo.HopsAway;
+            // Only firmware 2.8+ fills this bit; on older firmware false would be
+            // indistinguishable from "not supported", so leave it null there.
+            if (FirmwareCaps.AtLeast(GetFirmwareVersion(), 2, 8))
+                nodeInfo.HeardOnCurrentLora = protoNodeInfo.HeardOnCurrentLora;
             if (protoNodeInfo.User != null)
                 nodeInfo.Role = protoNodeInfo.User.Role.ToString();
 
@@ -2688,6 +2779,8 @@ public class MeshtasticProtocolService
             target.IsFavorite  = incoming.IsFavorite;
             target.IsViaMqtt   = incoming.IsViaMqtt;
             target.HopsToReach = incoming.HopsToReach;
+            if (incoming.HeardOnCurrentLora.HasValue)
+                target.HeardOnCurrentLora = incoming.HeardOnCurrentLora;
         }
     }
 
@@ -2868,6 +2961,15 @@ public class MeshtasticProtocolService
                     _db?.InsertEnvironmentTelemetry(packet.From, DateTime.UtcNow, envMetrics);
             }
 
+            // Soil/water probes (proto 2.8): own Telemetry variant, stored alongside the
+            // environment metrics (by decision they count as environment data).
+            if (telemetry?.SoilWaterMetrics is { } sw)
+            {
+                var swMetrics = EnvironmentMetricInfo.ExtractSoilWater(sw);
+                if (swMetrics.Count > 0)
+                    _db?.InsertEnvironmentTelemetry(packet.From, DateTime.UtcNow, swMetrics);
+            }
+
             // LocalStats (newer firmware): noise floor, RX/TX counters, relay stats
             if (telemetry?.LocalStats is { } ls)
             {
@@ -2994,7 +3096,8 @@ public class MeshtasticProtocolService
                             ? Convert.ToBase64String(channel.Settings.Psk.ToByteArray()) : "",
                         Uplink            = channel.Settings?.UplinkEnabled ?? false,
                         Downlink          = channel.Settings?.DownlinkEnabled ?? false,
-                        PositionPrecision = channel.Settings?.ModuleSettings?.PositionPrecision ?? 0
+                        PositionPrecision = channel.Settings?.ModuleSettings?.PositionPrecision ?? 0,
+                        UseAead           = channel.Settings?.UseAead ?? false
                     };
                     ChannelInfoReceived?.Invoke(this, channelInfo);
                 }
@@ -3371,6 +3474,90 @@ public class MeshtasticProtocolService
         await SendAdminMessageAsync(adminMsg);
     }
 
+    public async Task RequestStatusMessageConfigAsync()
+    {
+        var adminMsg = new AdminMessage { GetModuleConfigRequest = (global::Meshtastic.Protobufs.AdminMessage.Types.ModuleConfigType)13 }; // STATUSMESSAGE = 13
+        await SendAdminMessageAsync(adminMsg);
+    }
+
+    public async Task RequestMeshBeaconConfigAsync()
+    {
+        var adminMsg = new AdminMessage { GetModuleConfigRequest = (global::Meshtastic.Protobufs.AdminMessage.Types.ModuleConfigType)16 }; // MESHBEACON = 16 (FW 2.8)
+        await SendAdminMessageAsync(adminMsg);
+    }
+
+    public async Task RequestAudioConfigAsync() =>
+        await SendAdminMessageAsync(new AdminMessage { GetModuleConfigRequest = (global::Meshtastic.Protobufs.AdminMessage.Types.ModuleConfigType)7 });  // AUDIO
+
+    public async Task RequestRemoteHardwareConfigAsync() =>
+        await SendAdminMessageAsync(new AdminMessage { GetModuleConfigRequest = (global::Meshtastic.Protobufs.AdminMessage.Types.ModuleConfigType)8 });  // REMOTEHARDWARE
+
+    public async Task RequestAmbientLightingConfigAsync() =>
+        await SendAdminMessageAsync(new AdminMessage { GetModuleConfigRequest = (global::Meshtastic.Protobufs.AdminMessage.Types.ModuleConfigType)10 }); // AMBIENTLIGHTING
+
+    public async Task RequestDetectionSensorConfigAsync() =>
+        await SendAdminMessageAsync(new AdminMessage { GetModuleConfigRequest = (global::Meshtastic.Protobufs.AdminMessage.Types.ModuleConfigType)11 }); // DETECTIONSENSOR
+
+    public async Task RequestPaxcounterConfigAsync() =>
+        await SendAdminMessageAsync(new AdminMessage { GetModuleConfigRequest = (global::Meshtastic.Protobufs.AdminMessage.Types.ModuleConfigType)12 }); // PAXCOUNTER
+
+    public async Task RequestTakConfigAsync() =>
+        await SendAdminMessageAsync(new AdminMessage { GetModuleConfigRequest = (global::Meshtastic.Protobufs.AdminMessage.Types.ModuleConfigType)15 }); // TAK (FW 2.8)
+
+    public async Task SetAudioConfigAsync(AudioConfig config)
+    {
+        await EnsureSessionKeyAsync();
+        await SendAdminMessageAsync(new AdminMessage { SetModuleConfig = new ModuleConfig { Audio = config } });
+    }
+
+    public async Task SetRemoteHardwareConfigAsync(RemoteHardwareConfig config)
+    {
+        await EnsureSessionKeyAsync();
+        await SendAdminMessageAsync(new AdminMessage { SetModuleConfig = new ModuleConfig { RemoteHardware = config } });
+    }
+
+    public async Task SetAmbientLightingConfigAsync(AmbientLightingConfig config)
+    {
+        await EnsureSessionKeyAsync();
+        await SendAdminMessageAsync(new AdminMessage { SetModuleConfig = new ModuleConfig { AmbientLighting = config } });
+    }
+
+    public async Task SetDetectionSensorConfigAsync(DetectionSensorConfig config)
+    {
+        await EnsureSessionKeyAsync();
+        await SendAdminMessageAsync(new AdminMessage { SetModuleConfig = new ModuleConfig { DetectionSensor = config } });
+    }
+
+    public async Task SetPaxcounterConfigAsync(PaxcounterConfig config)
+    {
+        await EnsureSessionKeyAsync();
+        await SendAdminMessageAsync(new AdminMessage { SetModuleConfig = new ModuleConfig { Paxcounter = config } });
+    }
+
+    public async Task SetTakConfigAsync(TAKConfig config)
+    {
+        await EnsureSessionKeyAsync();
+        await SendAdminMessageAsync(new AdminMessage { SetModuleConfig = new ModuleConfig { Tak = config } });
+    }
+
+    /// <summary>Set the Mesh-Beacon module config (FW 2.8). Like statusmessage, the
+    /// firmware applies it WITHOUT a reboot (explicit never-reboot list).</summary>
+    public async Task SetMeshBeaconConfigAsync(MeshBeaconConfig config)
+    {
+        await EnsureSessionKeyAsync();
+        var adminMsg = new AdminMessage { SetModuleConfig = new ModuleConfig { MeshBeacon = config } };
+        await SendAdminMessageAsync(adminMsg);
+    }
+
+    /// <summary>Set the own free-text status. The firmware applies this WITHOUT a reboot
+    /// (statusmessage is on its explicit never-reboot list) and broadcasts the new status.</summary>
+    public async Task SetStatusMessageConfigAsync(StatusMessageConfig config)
+    {
+        await EnsureSessionKeyAsync();
+        var adminMsg = new AdminMessage { SetModuleConfig = new ModuleConfig { Statusmessage = config } };
+        await SendAdminMessageAsync(adminMsg);
+    }
+
     public async Task RequestCannedMessageConfigAsync()
     {
         var adminMsg = new AdminMessage { GetModuleConfigRequest = (global::Meshtastic.Protobufs.AdminMessage.Types.ModuleConfigType)6 }; // CANNED_MSG = 6
@@ -3500,6 +3687,40 @@ public class MeshtasticProtocolService
             if (existing != null) _tempChannels.Remove(existing);
             _tempChannels.Add(channel.Clone());
         }
+    }
+
+    /// <summary>Firmware version string of the connected device (e.g. "2.7.15.abcdef"),
+    /// or null before the device metadata arrived. Used for capability gating.</summary>
+    public string? GetFirmwareVersion()
+    {
+        lock (_dataLock) { return _myDeviceInfo?.FirmwareVersion; }
+    }
+
+    private Meshtastic.Protobufs.DisplayInfo? _myDisplayInfo;
+
+    /// <summary>Display panel of the connected device (FW 2.8 metadata), or null when the
+    /// device has none / reports none. Gates the display-mirror button.</summary>
+    public Meshtastic.Protobufs.DisplayInfo? GetDisplayInfo()
+    {
+        lock (_dataLock) { return _myDisplayInfo; }
+    }
+
+    /// <summary>Start/stop continuous display mirroring (FW 2.8, local connection only).
+    /// Unlike most admin bool verbs, false is meaningful here — the oneof is always sent.</summary>
+    public async Task SetDisplayMirrorAsync(bool enabled)
+    {
+        await EnsureSessionKeyAsync();
+        var adminMsg = new AdminMessage { SetDisplayMirror = enabled };
+        await SendAdminMessageAsync(adminMsg);
+        Logger.WriteLine($"[DisplayMirror] set_display_mirror({enabled}) sent");
+    }
+
+    /// <summary>Request a single framebuffer frame (no AdminMessage response — the frame
+    /// arrives as FromRadio.display_frame chunks).</summary>
+    public async Task RequestDisplayFrameAsync()
+    {
+        var adminMsg = new AdminMessage { GetDisplayFrameRequest = true };
+        await SendAdminMessageAsync(adminMsg);
     }
 
     /// <summary>Raw channel proto as last reported by the device (deep clone), or null if
@@ -3874,7 +4095,8 @@ public class MeshtasticProtocolService
                                 ? Convert.ToBase64String(channel.Settings.Psk.ToByteArray()) : "",
                             Uplink            = channel.Settings?.UplinkEnabled ?? false,
                             Downlink          = channel.Settings?.DownlinkEnabled ?? false,
-                            PositionPrecision = channel.Settings?.ModuleSettings?.PositionPrecision ?? 0
+                            PositionPrecision = channel.Settings?.ModuleSettings?.PositionPrecision ?? 0,
+                            UseAead           = channel.Settings?.UseAead ?? false
                         };
                         ChannelInfoReceived?.Invoke(this, channelInfo);
                     }
@@ -3950,9 +4172,11 @@ public class MeshtasticProtocolService
 
                 case AdminMessage.PayloadVariantOneofCase.GetDeviceMetadataResponse:
                     var meta = adminMsg.GetDeviceMetadataResponse;
-                    Logger.WriteLine($"DeviceMetadata: FW={meta.FirmwareVersion}, HW={meta.HwModel}");
+                    Logger.WriteLine($"DeviceMetadata: FW={meta.FirmwareVersion}, HW={meta.HwModel}" +
+                        (meta.Display != null ? $", Display={meta.Display.Width}x{meta.Display.Height} {meta.Display.Format}" : ""));
                     lock (_dataLock)
                     {
+                        _myDisplayInfo = meta.Display; // null = no display / pre-2.8 firmware
                         if (_myDeviceInfo != null)
                         {
                             _myDeviceInfo.FirmwareVersion = meta.FirmwareVersion;
@@ -3988,6 +4212,38 @@ public class MeshtasticProtocolService
 
                         case ModuleConfig.PayloadVariantOneofCase.StoreForward:
                             StoreForwardConfigReceived?.Invoke(this, moduleConfig.StoreForward);
+                            break;
+
+                        case ModuleConfig.PayloadVariantOneofCase.Statusmessage:
+                            StatusMessageConfigReceived?.Invoke(this, moduleConfig.Statusmessage);
+                            break;
+
+                        case ModuleConfig.PayloadVariantOneofCase.MeshBeacon:
+                            MeshBeaconConfigReceived?.Invoke(this, moduleConfig.MeshBeacon);
+                            break;
+
+                        case ModuleConfig.PayloadVariantOneofCase.Audio:
+                            AudioConfigReceived?.Invoke(this, moduleConfig.Audio);
+                            break;
+
+                        case ModuleConfig.PayloadVariantOneofCase.RemoteHardware:
+                            RemoteHardwareConfigReceived?.Invoke(this, moduleConfig.RemoteHardware);
+                            break;
+
+                        case ModuleConfig.PayloadVariantOneofCase.AmbientLighting:
+                            AmbientLightingConfigReceived?.Invoke(this, moduleConfig.AmbientLighting);
+                            break;
+
+                        case ModuleConfig.PayloadVariantOneofCase.DetectionSensor:
+                            DetectionSensorConfigReceived?.Invoke(this, moduleConfig.DetectionSensor);
+                            break;
+
+                        case ModuleConfig.PayloadVariantOneofCase.Paxcounter:
+                            PaxcounterConfigReceived?.Invoke(this, moduleConfig.Paxcounter);
+                            break;
+
+                        case ModuleConfig.PayloadVariantOneofCase.Tak:
+                            TakConfigReceived?.Invoke(this, moduleConfig.Tak);
                             break;
 
                         case ModuleConfig.PayloadVariantOneofCase.RangeTest:

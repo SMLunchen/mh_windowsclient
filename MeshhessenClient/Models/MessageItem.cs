@@ -141,20 +141,44 @@ public class MessageItem : INotifyPropertyChanged
         }
     }
 
+    /// <summary>Outcome of the firmware's Routing.ack_proof check on the ack of this
+    /// message (FW 2.8 authenticated acks): 0 absent, 1 valid, 2 INVALID (forged/damaged),
+    /// 3 no key. Flag-only by decision — the delivery state itself is never blocked.</summary>
+    private int _ackProofStatus;
+    public int AckProofStatus
+    {
+        get => _ackProofStatus;
+        set
+        {
+            if (_ackProofStatus == value) return;
+            _ackProofStatus = value;
+            foreach (var p in new[] { nameof(StatusGlyph), nameof(StatusColorHex), nameof(StatusTooltip) })
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(p));
+        }
+    }
+
+    private bool AckVerified => _ackProofStatus == 1;
+    private bool AckForged   => _ackProofStatus == 2;
+
     /// <summary>Small status glyph for the current send state (empty for incoming messages).
-    /// Plain unicode so it renders in the normal UI font: waiting / check / double-check / warning.</summary>
+    /// Plain unicode so it renders in the normal UI font: waiting / check / double-check / warning.
+    /// A cryptographically verified ack adds a shield, a FORGED one a flag.</summary>
     public string StatusGlyph => _status switch
     {
         SendState.Sending   => "…",       // horizontal ellipsis (waiting)
         SendState.Sent      => "✓",       // check mark (handed to radio)
+        SendState.Delivered when AckVerified => "✓✓\U0001F6E1", // double check + shield
+        SendState.Delivered when AckForged   => "✓✓‼",     // double check + ‼
         SendState.Delivered => "✓✓", // double check (acknowledged)
         SendState.Failed    => "⚠",       // warning sign (failed)
         _ => string.Empty,
     };
 
-    /// <summary>Accent colour for the status glyph: green when delivered, red on failure, muted otherwise.</summary>
+    /// <summary>Accent colour for the status glyph: green when delivered, red on failure
+    /// or a forged ack proof, muted otherwise.</summary>
     public string StatusColorHex => _status switch
     {
+        SendState.Delivered when AckForged => "#E53935",
         SendState.Delivered => "#25D366",
         SendState.Failed    => "#E53935",
         _ => "#9E9E9E",
@@ -165,6 +189,9 @@ public class MessageItem : INotifyPropertyChanged
     {
         SendState.Sending   => Loc("StrMsgSending"),
         SendState.Sent      => Loc("StrMsgSent"),
+        SendState.Delivered when AckVerified         => $"{Loc("StrMsgDelivered")} – {Loc("StrMsgAckVerified")}",
+        SendState.Delivered when AckForged           => $"{Loc("StrMsgDelivered")} – {Loc("StrMsgAckForged")}",
+        SendState.Delivered when _ackProofStatus == 3 => $"{Loc("StrMsgDelivered")} – {Loc("StrMsgAckNoKey")}",
         SendState.Delivered => Loc("StrMsgDelivered"),
         SendState.Failed    => Loc("StrMsgFailed"),
         _ => string.Empty,

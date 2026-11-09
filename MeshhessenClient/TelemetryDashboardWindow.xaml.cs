@@ -99,7 +99,21 @@ public partial class TelemetryDashboardWindow : Window
     private void ClearDataCache() { lock (_dataCache) _dataCache.Clear(); }
 
     private List<TimeSeriesPoint> GetSeries(uint nodeId, string metric, int days) =>
-        Cached($"ts|{nodeId}|{metric}|{days}", () => _db.GetTimeSeries(new[] { nodeId }, metric, days));
+        Cached($"ts|{nodeId}|{metric}|{days}|{RadiationDivisor(metric)}", () =>
+        {
+            var pts = _db.GetTimeSeries(new[] { nodeId }, metric, days);
+            // Radiation is stored as µR/h; the µSv/h display preference scales it here
+            // (1 µSv/h = 100 µR/h) so every widget, zone bound and unit stays consistent.
+            double div = RadiationDivisor(metric);
+            if (div != 1.0)
+                pts = pts.Select(p => { p.Value /= div; return p; }).ToList();
+            return pts;
+        });
+
+    private static double RadiationDivisor(string metric) =>
+        string.Equals(metric, "radiation", StringComparison.OrdinalIgnoreCase)
+        && Services.EnvironmentMetricInfo.DisplayRadiationInSievert
+            ? Services.EnvironmentMetricInfo.MicroRoentgenPerMicroSievert : 1.0;
 
     // Grid-based widgets cannot render an unbounded day range — these fallbacks for
     // Days == 0 ("Gesamt") match the DB service's own defaults. Mesh health uses a
@@ -2534,6 +2548,13 @@ public partial class TelemetryDashboardWindow : Window
             "rx_bad" or "rx_dupe" or "tx_relay" or "tx_relay_canceled" or "tx_dropped"
                            => (0.0,    100.0,  ""),
             "funk_echo"    => (0.0,     20.0,  Loc("StrUnitRequestsPerHour")),
+            "radiation"    => Services.EnvironmentMetricInfo.DisplayRadiationInSievert
+                              ? (0.0,   1.0,  "µSv/h")
+                              : (0.0, 100.0,  "µR/h"),
+            "lightning_1h" => (0.0,     30.0,  ""),
+            "lightning_km" => (0.0,     40.0,  "km"),
+            "soil_moisture"=> (0.0,    100.0,  "%"),
+            "soil_ph"      => (0.0,     14.0,  "pH"),
             _              => (0.0,    100.0,  ""),
         };
 

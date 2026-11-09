@@ -243,6 +243,8 @@ public partial class MainWindow : Window
         _protocolService.TracerouteReceived += OnTracerouteReceived;
         _protocolService.ReactionReceived += OnReactionReceived;
         _protocolService.RequestEchoReceived += OnRequestEchoReceived;
+        _protocolService.NodeStatusReceived  += OnNodeStatusReceived;
+        _protocolService.StatusMessageConfigReceived += OnStatusMessageConfigReceived;
         _protocolService.DeviceTelemetryReceived += OnDeviceTelemetryReceived;
         _protocolService.TimeDriftDetected += OnTimeDriftDetected;
         _protocolService.WaypointReceived  += OnWaypointReceived;
@@ -384,6 +386,8 @@ public partial class MainWindow : Window
             FunkEchoToastsCheckBox.IsChecked = settings.FunkEchoToasts;
             if (FunkEchoQuietMenuItem != null) FunkEchoQuietMenuItem.IsChecked = settings.FunkEchoQuiet;
             ApplyFunkEchoVisibility();
+            RadiationSievertCheckBox.IsChecked = settings.RadiationInSievert;
+            Services.EnvironmentMetricInfo.DisplayRadiationInSievert = settings.RadiationInSievert;
             DmInlineCheckBox.IsChecked = settings.DmStyle == "inline";
             if (DmAutoPopupCheckBox != null)
                 DmAutoPopupCheckBox.IsChecked = settings.DmAutoPopup;
@@ -1162,6 +1166,8 @@ public partial class MainWindow : Window
                 _protocolService.TracerouteReceived += OnTracerouteReceived;
                 _protocolService.ReactionReceived += OnReactionReceived;
                 _protocolService.RequestEchoReceived += OnRequestEchoReceived;
+        _protocolService.NodeStatusReceived  += OnNodeStatusReceived;
+        _protocolService.StatusMessageConfigReceived += OnStatusMessageConfigReceived;
                 _protocolService.DeviceTelemetryReceived += OnDeviceTelemetryReceived;
                 _protocolService.MqttConfigReceived += OnMqttConfigReceived;
                 if (_db != null) _protocolService.SetDatabase(_db);
@@ -1481,12 +1487,17 @@ public partial class MainWindow : Window
             item.Status = SendState.Failed;
     }
 
-    private void OnMessageDeliveryUpdated(object? sender, (uint PacketId, bool Delivered) e)
+    private void OnMessageDeliveryUpdated(object? sender, (uint PacketId, bool Delivered, int AckProofStatus) e)
     {
         Dispatcher.BeginInvoke(() =>
         {
             if (_messageById.TryGetValue(e.PacketId, out var msg) && msg.IsOwnMessage)
+            {
+                // Flag-only by decision: a forged ack proof marks the bubble (‼ + red),
+                // it never changes the delivery outcome itself.
+                msg.AckProofStatus = e.AckProofStatus;
                 msg.Status = e.Delivered ? SendState.Delivered : SendState.Failed;
+            }
         });
     }
 
@@ -1972,6 +1983,7 @@ public partial class MainWindow : Window
                 FunkEchoEnabled = FunkEchoCheckBox.IsChecked == true,
                 FunkEchoTone = (FunkEchoToneComboBox.SelectedItem as System.Windows.Controls.ComboBoxItem)?.Tag as string ?? "casual",
                 FunkEchoToasts = FunkEchoToastsCheckBox.IsChecked == true,
+                RadiationInSievert = RadiationSievertCheckBox.IsChecked == true,
                 DmStyle = DmInlineCheckBox.IsChecked == true ? "inline" : "window",
                 DmAutoPopup = DmAutoPopupCheckBox?.IsChecked != false,
                 Language = (LanguageComboBox.SelectedItem as System.Windows.Controls.ComboBoxItem)?.Tag as string ?? "de",
@@ -2007,6 +2019,7 @@ public partial class MainWindow : Window
             SettingsService.Save(settings);
             ApplyVirtualNodeSettings();
             ApplyFunkEchoVisibility();
+            Services.EnvironmentMetricInfo.DisplayRadiationInSievert = settings.RadiationInSievert;
 
             // Enable/disable message DB manager
             if (settings.EnableMessageDb && _messageDbManager == null)
@@ -2075,6 +2088,7 @@ public partial class MainWindow : Window
 
                     _channelsInitialized = false;
                     _initialScrollDone = false;
+                    DisplayMirrorSection.Visibility = Visibility.Collapsed;
                     _messages.Clear();
                     _allMessages.Clear();
                     _messageById.Clear();
@@ -2158,6 +2172,8 @@ public partial class MainWindow : Window
                 _protocolService.TracerouteReceived += OnTracerouteReceived;
                 _protocolService.ReactionReceived += OnReactionReceived;
                 _protocolService.RequestEchoReceived += OnRequestEchoReceived;
+        _protocolService.NodeStatusReceived  += OnNodeStatusReceived;
+        _protocolService.StatusMessageConfigReceived += OnStatusMessageConfigReceived;
                 _protocolService.DeviceTelemetryReceived += OnDeviceTelemetryReceived;
                 _protocolService.MqttConfigReceived += OnMqttConfigReceived;
                 if (_db != null) _protocolService.SetDatabase(_db);
@@ -2548,6 +2564,28 @@ public partial class MainWindow : Window
         });
     }
 
+    /// <summary>Port-36 status broadcast: the service already updated its node object —
+    /// persist the status locally (it only arrives live, every ~12 h) and refresh the list.</summary>
+    private void OnNodeStatusReceived(object? sender, (uint NodeId, string Status) e)
+    {
+        Task.Run(() =>
+        {
+            try { _db?.UpsertNodeStatus(e.NodeId, e.Status); }
+            catch (Exception ex) { Services.Logger.WriteLine($"[NodeStatus] DB upsert failed: {ex.Message}"); }
+        });
+        Dispatcher.BeginInvoke(() =>
+        {
+            try
+            {
+                var node = _allNodes.FirstOrDefault(n => n.NodeId == e.NodeId);
+                if (node == null) return;
+                node.Status = e.Status;   // list may hold a different instance than the service
+                ApplyNodeSortAndFilter();
+            }
+            catch (Exception ex) { Services.Logger.WriteLine($"Error updating node status in UI: {ex.Message}"); }
+        });
+    }
+
     /// <summary>Internal node DB was cleared (user-triggered) — drop the UI node list and map pins.</summary>
     private void OnNodeDbCleared(object? sender, EventArgs e)
     {
@@ -2696,12 +2734,27 @@ public partial class MainWindow : Window
                 }
 
                 // OwnNodeIdText is already set above; no need to overwrite the main status bar
+
+                // Display-mirror tool (FW 2.8): only for devices that report a panel.
+                // DeviceInfoReceived re-fires when the metadata response arrives.
+                DisplayMirrorSection.Visibility = _protocolService.GetDisplayInfo() != null
+                    ? Visibility.Visible : Visibility.Collapsed;
             }
             catch (Exception ex)
             {
                 Services.Logger.WriteLine($"ERROR updating DeviceInfo in UI: {ex.Message}");
             }
         });
+    }
+
+    private void DisplayMirrorBtn_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_connectionService.IsConnected)
+        {
+            UpdateStatusBar(Loc("StrNodeStatusNotConnected"));
+            return;
+        }
+        new DisplayMirrorWindow(_protocolService) { Owner = this }.Show();
     }
 
     private void OnLoRaConfigReceived(object? sender, LoRaConfig loraConfig)
