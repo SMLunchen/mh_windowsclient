@@ -922,7 +922,8 @@
 <li><strong>Persistente Telemetrie-Datenbank</strong> – empfangene Paket- und Gerätedaten werden lokal in einer SQLite-Datenbank gespeichert</li>
 <li><strong>Telemetrie-Dashboard</strong> – frei konfigurierbares Widget-Dashboard mit benannten Dashboards (📊-Button in der Toolbar):</li>
 <li><strong>14 Widget-Typen:</strong> Linie, Fläche, Balken, Scatter, Gauge, Stat-Wert, Heatmap, Histogramm, Candlestick, State-Timeline, Ranking, Multi-Stat, Mesh-Health, Uhrzeit</li>
-<li>Multi-Node-Support, alle Metriken: SNR, RSSI, Batterie, Spannung, Kanal-/TX-Auslastung, Temperatur, Luftfeuchtigkeit, Luftdruck, Pakete/h, Noise Floor, RX/TX-Statistiken</li>
+<li>Multi-Node-Support, alle Metriken: SNR, RSSI, Batterie, Spannung, Kanal-/TX-Auslastung, Temperatur, Luftfeuchtigkeit, Luftdruck, <strong>Strahlung</strong> (µR/h, auf Wunsch in µSv/h — Einstellung „Strahlung in µSv/h anzeigen", 1 µSv/h = 100 µR/h), <strong>⚡ Blitze/1 h und Gewitter-Distanz</strong> (AS3935-Blitzsensor; für Gewitter-Alarme die <em>untere</em> Alarm-Grenze nutzen: „Alarm, wenn Distanz &lt; 10 km"), <strong>Bodenfeuchte und Boden-pH</strong> (Boden-/Wassersonden), Pakete/h, Noise Floor, RX/TX-Statistiken, Funk-Echo</li>
+<li>Boden-/Wasserchemie (pH, Leitfähigkeit, NPK, gelöster Sauerstoff, Trübung u. a.) wird vollständig erfasst und ist auch als Karten-Overlay wählbar</li>
 <li>Widgets per Drag-and-Drop anordnen, frei skalierbar (Resize-Griff), editierbar, duplizierbar, Auto-Refresh</li>
 <li><strong>Zoom/Pan auf der Zeitachse</strong> (bleibt über den Auto-Refresh erhalten; Doppelklick setzt zurück), Tag/Nacht-Schattierung</li>
 <li><strong>Warn- &amp; Alarm-Zonen (Grafana-Stil):</strong> pro Widget je eine Warn- und Alarm-Grenze nach oben und unten; Gauge/Stat/Charts färben sich grün/orange/rot nach Zone, <strong>Windows-Toasts</strong> melden jeden Zonen-Wechsel (inkl. ✅ Entwarnung)</li>

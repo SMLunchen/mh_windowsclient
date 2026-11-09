@@ -612,6 +612,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#gerate-display-spiegeln-firmware-28" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Geräte-Display spiegeln (Firmware 2.8)
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -858,6 +869,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#gerate-display-spiegeln-firmware-28" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Geräte-Display spiegeln (Firmware 2.8)
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -889,7 +911,7 @@
 <ul>
 <li><strong>Alle Nodes im Mesh</strong> mit SNR, Batterie, Entfernung, Hop-Anzahl</li>
 <li><strong>Kachelansicht (Fancy View)</strong> – optional in Einstellungen → Darstellung aktivierbar: tauscht die Tabelle gegen eine responsive Kachel-Oberfläche (Spaltenanzahl wächst/schrumpft mit der Fensterbreite)<ul>
-<li>Pro Kachel: ShortName-Badge in Node-Farbe, 🔑/🔓 PKI-Status, voller Name, „vor X min", ⭐-Favoritenstern, 📡 Infrastruktur- und ☁ MQTT-Symbol</li>
+<li>Pro Kachel: ShortName-Badge in Node-Farbe, 🔑/🔓 PKI-Status, voller Name, „vor X min", ⭐-Favoritenstern, 📡 Infrastruktur- und ☁ MQTT-Symbol; ab Firmware 2.8 zusätzlich 📶 („direkt per Funk gehört", vom Gerät gemeldet) und 💬 mit dem Status-Text des Nodes</li>
 <li>Strom (extern versorgt oder Batterie + Spannung), Entfernung + Höhe, Hops, RSSI/SNR mit Farbverlauf, Umwelt-Telemetrie (🌡/💧/🌬), Hardware-Modell · Geräterolle · Node-ID</li>
 <li>Eigener Node immer ganz oben, virtualisiertes Scrolling auch bei 1000+ Nodes</li>
 </ul>
@@ -900,6 +922,7 @@
 <li><strong>Node-Info-Fenster</strong> – Rechtsklick auf einen Node (Liste, Kachel, Karte oder Nachricht) → „ℹ️ Node Info“: Hardware-Modell, Rolle, PKI-Status, Akku, Signal, Zuerst/Zuletzt gesehen und Position. Die Firmware-Version des eigenen Geräts steht unter Einstellungen → Geräteinfo; die eines entfernten Nodes zeigt das Fernverwaltungs-Fenster:</li>
 </ul>
 <p><img alt="Meshhessen Client – Node-Info-Fenster mit Rolle, Akku, Signal, Zuerst/Zuletzt gesehen" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/node-info-window.png" />
+* <strong>Node-Status (💬)</strong> – Nodes mit Firmware ≥ 2.7.20 können einen Freitext-Status funken („Im Urlaub bis 20.11.", „Solar, Akku schwach"). Empfangene Statuses erscheinen in der Node-Liste (💬-Symbol mit Tooltip), in der Kachelansicht als eigene Zeile und als Banner im Node-Info-Fenster; der letzte Status je Node überlebt Client-Neustarts. <strong>Eigenen Status setzen:</strong> Status-Button in der Kopfzeile (neben dem Funk-Echo-Radar) → Text eingeben (max. 79 Byte, Umlaute zählen doppelt) → OK. Das Gerät übernimmt ohne Neustart und funkt den Status bei Änderung sowie ca. alle 12 Stunden; leeres Feld löscht ihn
 * <strong>PKI-Schlüssel-Indikator</strong> – 🔑-Spalte zeigt, ob der Public Key des Nodes bekannt ist
 * <strong>Node-Farben</strong> – Nodes individuell einfärben (Karte + Listen)
 * <strong>Node-Notizen</strong> – Freitext-Notizen pro Node
@@ -926,7 +949,7 @@
 <p>Features im Überblick:</p>
 <ul>
 <li>Alle Konfigurations-Reiter: Besitzer, Gerät, Position, LoRa, Bluetooth, Netzwerk, Anzeige, Kanäle, <strong>Sicherheit</strong>, Steuerung</li>
-<li><strong>Sicherheits-Reiter:</strong> Public Key (read-only, Base64), Admin-Schlüssel 1–3 (Base64), Flags (Admin Channel, Managed Mode, Serial, Debug Log)</li>
+<li><strong>Sicherheits-Reiter:</strong> Public Key (read-only, Base64), Admin-Schlüssel 1–3 (Base64), Flags (Admin Channel, Managed Mode, Serial, Debug Log), Paket-Signatur-Richtlinie (Firmware 2.8: Kompatibel / Ausgewogen / Strikt)</li>
 <li><strong>Favoriten remote verwalten:</strong> Knoten auf dem Remote-Gerät als Favorit setzen oder entfernen</li>
 <li>Session-Schlüssel-Handshake, konfigurierbarer Timeout, per-Channel Retry + Neu-laden</li>
 <li><strong>Lazy Loading:</strong> Beim Öffnen wählen, ob alles sofort oder seitenweise geladen wird; „↻ Tab neu laden"-Button für gezielten Reload einzelner Reiter</li>
@@ -941,10 +964,16 @@
 <li><strong>MQTT:</strong> Server, Credentials, TLS, JSON-Modus, Root-Topic, Proxy-Modus, Map-Reporting mit Genauigkeitsstufe (Bits 10–19), MQTT-Proxy-Client-Funktion</li>
 <li><strong>Telemetrie:</strong> Geräte-, Umgebungs-, Luftqualitäts- und Energiemetrik-Intervalle</li>
 <li><strong>Bluetooth:</strong> Aktivieren, Pairing-Modus, fixer PIN; <strong>BT-PIN ändern</strong> direkt aus dem Client</li>
-<li><strong>Security:</strong> Public Key anzeigen (read-only), Private Key anzeigen/ändern, Admin-Schlüssel, Managed Mode</li>
-<li><strong>Kanäle:</strong> Alle 8 Kanäle – Rolle, Name, Uplink, Downlink, Positions-Genauigkeit (Bits 10–19, ~23 km bis ~45 m)</li>
-<li><strong>Weitere Module:</strong> Nachbar-Info, Store &amp; Forward, Externe Benachrichtigung, Canned Messages, Range Test, Serial</li>
+<li><strong>Security:</strong> Public Key anzeigen (read-only), Private Key anzeigen/ändern, Admin-Schlüssel, Managed Mode, Paket-Signatur-Richtlinie (Firmware 2.8: Kompatibel/Ausgewogen/Strikt — Standard Kompatibel; „Strikt" ignoriert Pakete älterer Nodes!)</li>
+<li><strong>Kanäle:</strong> Alle 8 Kanäle – Rolle, Name, Uplink, Downlink, Positions-Genauigkeit (Bits 10–19, ~23 km bis ~45 m). Kanäle mit aktivierter AEAD-Verschlüsselung (Firmware 2.8, experimentell) zeigt die Kanalliste mit 🛡-Symbol</li>
+<li><strong>Weitere Module (volle Android-Parität):</strong> Nachbar-Info, Store &amp; Forward, Externe Benachrichtigung, Canned Messages, Range Test, Serial (alle Modi inkl. WS85, VE.Direct, MODBUS), Audio (Codec2-Sprachfunk), Remote Hardware, Ambient Lighting, Detection Sensor, Paxcounter, TAK/ATAK (FW 2.8) und <strong>Mesh Beacon</strong> (FW 2.8: Beacons empfangen/senden, Nachricht, Kanal-/Preset-Angebot — Achtung: Broadcast auf einem fremden Preset schaltet das Funkmodul um, währenddessen kein Empfang auf dem primären Preset; für Router ungeeignet). Mesh Beacon gibt es auch als eigenen Reiter in der Fernverwaltung</li>
 </ul>
+<div class="admonition note">
+<p class="admonition-title">Namenslängen sind Byte-Grenzen</p>
+<p>Das Funkprotokoll begrenzt Namen in <strong>Bytes</strong>, nicht Zeichen — Umlaute und Sonderzeichen zählen doppelt. Kanalnamen: max. 11 Byte. Node-Langname: max. 24 Byte ab Firmware 2.8 (ältere Firmware: 39), Kurzname: 4 Byte. Der Client prüft das beim Speichern und warnt, bevor das Gerät einen zu langen Namen still verwerfen würde.</p>
+</div>
+<h2 id="gerate-display-spiegeln-firmware-28">Geräte-Display spiegeln (Firmware 2.8)<a class="headerlink" href="#gerate-display-spiegeln-firmware-28" title="Permanent link">&para;</a></h2>
+<p>Meldet das verbundene Gerät in seinen Metadaten ein Display, erscheint im <strong>Tools-Tab</strong> der Abschnitt „📺 Geräte-Display spiegeln": Ein Klick öffnet ein Fenster mit dem Live-Bild des Node-Displays — praktisch für Geräte, die verbaut oder schwer erreichbar montiert sind. Unterstützt werden Mono-OLEDs (inklusive Farb-Zonen, falls das Gerät eine Palette mitliefert) und Farb-Displays (TFT); das Bild wird pixelgenau skaliert. Die Spiegelung funktioniert nur über die lokale Verbindung (USB/BLE/WLAN, nicht übers Mesh) und endet mit dem Schließen des Fensters.</p>
 
 
 

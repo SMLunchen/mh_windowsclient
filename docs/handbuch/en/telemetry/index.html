@@ -895,7 +895,8 @@
 <li><strong>Persistent telemetry database</strong> – received packet and device data is stored locally in a SQLite database</li>
 <li><strong>Telemetry Dashboard</strong> – freely configurable widget dashboard with named dashboards (📊 button in the toolbar):</li>
 <li><strong>14 widget types:</strong> line, area, bar, scatter, gauge, stat value, heatmap, histogram, candlestick, state timeline, ranking, multi-stat, mesh health, clock</li>
-<li>Multi-node support, all metrics: SNR, RSSI, battery, voltage, channel/TX utilization, temperature, humidity, pressure, packets/h, noise floor, RX/TX stats</li>
+<li>Multi-node support, all metrics: SNR, RSSI, battery, voltage, channel/TX utilization, temperature, humidity, pressure, <strong>radiation</strong> (µR/h, optionally in µSv/h — setting "Show radiation in µSv/h", 1 µSv/h = 100 µR/h), <strong>⚡ lightning strikes/1 h and storm distance</strong> (AS3935 lightning sensor; for storm alerts use the <em>lower</em> alarm bound: "alarm when distance &lt; 10 km"), <strong>soil moisture and soil pH</strong> (soil/water probes), packets/h, noise floor, RX/TX stats, Funk-Echo</li>
+<li>Soil/water chemistry (pH, conductivity, NPK, dissolved oxygen, turbidity and more) is fully recorded and also selectable as a map overlay</li>
 <li>Drag-and-drop arrangement, freely resizable, editable, duplicatable, auto-refresh</li>
 <li><strong>Zoom/pan on the time axis</strong> (survives auto-refresh; double-click resets), day/night shading</li>
 <li><strong>Warn &amp; alarm zones (Grafana-style):</strong> per widget one warning and one alarm bound in each direction; gauge/stat/charts color green/orange/red by zone, <strong>Windows toasts</strong> report every zone transition (incl. ✅ all-clear)</li>
