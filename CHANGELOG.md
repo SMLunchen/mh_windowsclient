@@ -13,6 +13,14 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [1.7.2] - 2026-11-09
 
+### 🛠️ Node-Konfiguration komplettiert (Android-Parität)
+- **GPS-Festposition wird wieder vorbefüllt:** Die Koordinatenfelder der lokalen Node-Konfiguration blieben leer — sie werden jetzt wie in der Android-App (und wie im Remote Admin) aus dem NodeDB-Eintrag des eigenen Geräts geladen.
+- **Sechs fehlende Module ergänzt** (Abgleich mit der Android-App): **Audio (Codec2-Sprachfunk)**, **Remote Hardware** (GPIO übers Mesh, inkl. Sicherheitshinweis), **Ambient Lighting** (RGB-LEDs), **Detection Sensor** (Türkontakt/Bewegungsmelder mit Trigger-Typ, Pull-up, Glocke), **Paxcounter** (WLAN/BLE-Personenzählung) und **TAK/ATAK** (Team + Rolle, Firmware 2.8) — alle mit Clone-and-Update, sodass unbekannte Felder nie gelöscht werden.
+- **🏮 Mesh Beacon (Firmware 2.8) komplett neu:** Empfangen/Senden/Legacy-Split, Beacon-Nachricht (max. 60 Byte, byte-genau geprüft), Intervall (min. 1 h), Kanal-Angebot aus der Kanaltabelle (mit PSK-Warnhinweis), Preset-/Frequenz-Slot-Angebot — **auch im Remote Admin als eigener Reiter** (z. B. für Router), dort mit „unverändert lassen"-Option fürs Kanal-Angebot. Mit deutlicher Warnung: Broadcast auf einem fremden Modem-Preset schaltet das Funkmodul um — währenddessen kein Empfang auf dem primären Preset (für Router ungeeignet!).
+- **Serielle Modi vervollständigt:** WS85 (Wetterstation), VE.Direct (Victron), MS_CONFIG, LOG, LOGTEXT und MODBUS ergänzt.
+- **Modem-Presets vervollständigt** (lokal + Remote Admin): Short Turbo, Long Turbo, Lite/Narrow/Tiny Fast+Slow, Medium Turbo; Long Slow/Very Long Slow als veraltet markiert.
+- Mesh Beacon und TAK werden nur bei Firmware ≥ 2.8 abgefragt (kein Lade-Timeout auf älteren Geräten; Hinweis im Panel).
+
 ### 📦 Protobuf-Update auf v2.8.2
 - **Offizielle Meshtastic-Protobufs von v2.7.26+ auf v2.8.2 gezogen** (Submodule `ffd5ad4`). Drop-in: keine Code-Brüche, alle Tests grün. Neue Hardware-Modelle (Heltec Mesh Pocket V2, T-Connect Pro, MeshPager X2, Nodara u. a.) werden damit korrekt benannt.
 

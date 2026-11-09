@@ -67,7 +67,7 @@ Vollständige Gerätekonfiguration direkt aus dem Client, alle Module auf einer 
 * **Bluetooth:** Aktivieren, Pairing-Modus, fixer PIN; **BT-PIN ändern** direkt aus dem Client
 * **Security:** Public Key anzeigen (read-only), Private Key anzeigen/ändern, Admin-Schlüssel, Managed Mode, Paket-Signatur-Richtlinie (Firmware 2.8: Kompatibel/Ausgewogen/Strikt — Standard Kompatibel; „Strikt" ignoriert Pakete älterer Nodes!)
 * **Kanäle:** Alle 8 Kanäle – Rolle, Name, Uplink, Downlink, Positions-Genauigkeit (Bits 10–19, ~23 km bis ~45 m). Kanäle mit aktivierter AEAD-Verschlüsselung (Firmware 2.8, experimentell) zeigt die Kanalliste mit 🛡-Symbol
-* **Weitere Module:** Nachbar-Info, Store & Forward, Externe Benachrichtigung, Canned Messages, Range Test, Serial
+* **Weitere Module (volle Android-Parität):** Nachbar-Info, Store & Forward, Externe Benachrichtigung, Canned Messages, Range Test, Serial (alle Modi inkl. WS85, VE.Direct, MODBUS), Audio (Codec2-Sprachfunk), Remote Hardware, Ambient Lighting, Detection Sensor, Paxcounter, TAK/ATAK (FW 2.8) und **Mesh Beacon** (FW 2.8: Beacons empfangen/senden, Nachricht, Kanal-/Preset-Angebot — Achtung: Broadcast auf einem fremden Preset schaltet das Funkmodul um, währenddessen kein Empfang auf dem primären Preset; für Router ungeeignet). Mesh Beacon gibt es auch als eigenen Reiter in der Fernverwaltung
 
 !!! note "Namenslängen sind Byte-Grenzen"
     Das Funkprotokoll begrenzt Namen in **Bytes**, nicht Zeichen — Umlaute und Sonderzeichen zählen doppelt. Kanalnamen: max. 11 Byte. Node-Langname: max. 24 Byte ab Firmware 2.8 (ältere Firmware: 39), Kurzname: 4 Byte. Der Client prüft das beim Speichern und warnt, bevor das Gerät einen zu langen Namen still verwerfen würde.

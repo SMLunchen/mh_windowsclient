@@ -67,7 +67,7 @@ Full device configuration directly from the client, all modules in one window:
 * **Bluetooth:** enable, pairing mode, fixed PIN; **change BT PIN** directly from the client
 * **Security:** show public key (read-only), show/change private key, admin keys, managed mode, packet signature policy (firmware 2.8: Compatible/Balanced/Strict — default Compatible; "Strict" ignores packets from older nodes!)
 * **Channels:** all 8 channels – role, name, uplink, downlink, position precision (bits 10–19, ~23 km to ~45 m). Channels with AEAD encryption enabled (firmware 2.8, experimental) carry a 🛡 icon in the channel list
-* **Additional modules:** neighbor info, store & forward, external notification, canned messages, range test, serial
+* **Additional modules (full Android parity):** neighbor info, store & forward, external notification, canned messages, range test, serial (all modes incl. WS85, VE.Direct, MODBUS), audio (Codec2 voice), remote hardware, ambient lighting, detection sensor, paxcounter, TAK/ATAK (FW 2.8) and **Mesh Beacon** (FW 2.8: receive/broadcast beacons, message, channel/preset offer — careful: broadcasting on a foreign preset switches the radio over, with no reception on the primary preset meanwhile; unsuitable for routers). Mesh Beacon is also a dedicated tab in remote admin
 
 !!! note "Name lengths are byte limits"
     The radio protocol limits names in **bytes**, not characters — umlauts and special characters count twice. Channel names: max. 11 bytes. Node long name: max. 24 bytes from firmware 2.8 (older firmware: 39), short name: 4 bytes. The client validates this on save and warns before the device would silently reject an oversized name.

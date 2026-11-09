@@ -259,13 +259,22 @@
                         <ComboBox x:Name="LoraPresetCombo" Margin="0,4,0,12" Width="280"
                                   HorizontalAlignment="Left">
                             <ComboBoxItem Tag="0" Content="Long Fast"/>
-                            <ComboBoxItem Tag="1" Content="Long Slow"/>
-                            <ComboBoxItem Tag="2" Content="Very Long Slow"/>
+                            <ComboBoxItem Tag="1" Content="Long Slow (veraltet)"/>
+                            <ComboBoxItem Tag="2" Content="Very Long Slow (veraltet)"/>
                             <ComboBoxItem Tag="3" Content="Medium Slow"/>
                             <ComboBoxItem Tag="4" Content="Medium Fast"/>
                             <ComboBoxItem Tag="5" Content="Short Slow"/>
                             <ComboBoxItem Tag="6" Content="Short Fast"/>
                             <ComboBoxItem Tag="7" Content="Long Moderate"/>
+                            <ComboBoxItem Tag="8" Content="Short Turbo"/>
+                            <ComboBoxItem Tag="9" Content="Long Turbo"/>
+                            <ComboBoxItem Tag="10" Content="Lite Fast"/>
+                            <ComboBoxItem Tag="11" Content="Lite Slow"/>
+                            <ComboBoxItem Tag="12" Content="Narrow Fast"/>
+                            <ComboBoxItem Tag="13" Content="Narrow Slow"/>
+                            <ComboBoxItem Tag="14" Content="Tiny Fast"/>
+                            <ComboBoxItem Tag="15" Content="Tiny Slow"/>
+                            <ComboBoxItem Tag="16" Content="Medium Turbo"/>
                         </ComboBox>
                         <TextBlock Text="{DynamicResource StrRaLoraHopLimit}" FontSize="12"
                                    Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"/>
@@ -436,6 +445,62 @@
             </TabItem>
 
             <!-- Control -->
+            <!-- Mesh Beacon (FW 2.8) -->
+            <TabItem Header="{DynamicResource StrRaTabMeshBeacon}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="12,12,12,8">
+                        <TextBlock x:Name="RaMbUnsupportedText" Text="{DynamicResource StrNcMbUnsupported}"
+                                   Foreground="#FF9800" TextWrapping="Wrap" Margin="0,0,0,10"
+                                   Visibility="Collapsed"/>
+                        <CheckBox x:Name="RaMbListen" Content="{DynamicResource StrNcMbListen}" Margin="0,0,0,8"/>
+                        <CheckBox x:Name="RaMbBroadcast" Content="{DynamicResource StrNcMbBroadcast}" Margin="0,0,0,4"/>
+                        <TextBlock Text="{DynamicResource StrNcMbRadioSwitchWarn}"
+                                   Foreground="#FF9800" TextWrapping="Wrap" FontSize="11" Margin="0,0,0,8"/>
+                        <CheckBox x:Name="RaMbLegacySplit" Content="{DynamicResource StrNcMbLegacySplit}" Margin="0,0,0,12"/>
+
+                        <TextBlock Text="{DynamicResource StrNcMbMessage}" FontSize="12"
+                                   Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"/>
+                        <TextBox x:Name="RaMbMessage" MaxLength="60" Width="320" HorizontalAlignment="Left" Margin="0,4,0,12"/>
+
+                        <TextBlock Text="{DynamicResource StrNcMbInterval}" FontSize="12"
+                                   Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"/>
+                        <TextBox x:Name="RaMbInterval" Width="100" HorizontalAlignment="Left" Margin="0,4,0,12"/>
+
+                        <TextBlock Text="{DynamicResource StrNcMbOfferChannel}" FontSize="12"
+                                   Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"/>
+                        <ComboBox x:Name="RaMbOfferChannelCombo" Width="260" HorizontalAlignment="Left" Margin="0,4,0,2"/>
+                        <TextBlock Text="{DynamicResource StrNcDescMbOfferChannel}" FontSize="11"
+                                   Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                                   TextWrapping="Wrap" Margin="0,0,0,12"/>
+
+                        <TextBlock Text="{DynamicResource StrNcMbOfferPreset}" FontSize="12"
+                                   Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"/>
+                        <ComboBox x:Name="RaMbOfferPresetCombo" Width="220" HorizontalAlignment="Left" Margin="0,4,0,12">
+                            <ComboBoxItem Content="{DynamicResource StrNcMbPresetLikeDevice}" Tag="-1"/>
+                            <ComboBoxItem Content="LONG_FAST" Tag="0"/>
+                            <ComboBoxItem Content="MEDIUM_SLOW" Tag="3"/>
+                            <ComboBoxItem Content="MEDIUM_FAST" Tag="4"/>
+                            <ComboBoxItem Content="SHORT_SLOW" Tag="5"/>
+                            <ComboBoxItem Content="SHORT_FAST" Tag="6"/>
+                            <ComboBoxItem Content="LONG_MODERATE" Tag="7"/>
+                            <ComboBoxItem Content="SHORT_TURBO" Tag="8"/>
+                            <ComboBoxItem Content="LONG_TURBO" Tag="9"/>
+                            <ComboBoxItem Content="LITE_FAST" Tag="10"/>
+                            <ComboBoxItem Content="LITE_SLOW" Tag="11"/>
+                            <ComboBoxItem Content="NARROW_FAST" Tag="12"/>
+                            <ComboBoxItem Content="NARROW_SLOW" Tag="13"/>
+                            <ComboBoxItem Content="TINY_FAST" Tag="14"/>
+                            <ComboBoxItem Content="TINY_SLOW" Tag="15"/>
+                            <ComboBoxItem Content="MEDIUM_TURBO" Tag="16"/>
+                        </ComboBox>
+
+                        <TextBlock Text="{DynamicResource StrNcMbOfferSlot}" FontSize="12"
+                                   Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"/>
+                        <TextBox x:Name="RaMbOfferSlot" Width="80" HorizontalAlignment="Left" Margin="0,4,0,12"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
             <TabItem Header="{DynamicResource StrRaTabControl}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="12,12,12,8">

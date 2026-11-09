@@ -102,6 +102,13 @@ public class MeshtasticProtocolService
     public event EventHandler<NeighborInfoConfig>? NeighborInfoConfigReceived;
     public event EventHandler<StoreForwardConfig>? StoreForwardConfigReceived;
     public event EventHandler<StatusMessageConfig>? StatusMessageConfigReceived;
+    public event EventHandler<MeshBeaconConfig>? MeshBeaconConfigReceived;
+    public event EventHandler<AudioConfig>? AudioConfigReceived;
+    public event EventHandler<RemoteHardwareConfig>? RemoteHardwareConfigReceived;
+    public event EventHandler<AmbientLightingConfig>? AmbientLightingConfigReceived;
+    public event EventHandler<DetectionSensorConfig>? DetectionSensorConfigReceived;
+    public event EventHandler<PaxcounterConfig>? PaxcounterConfigReceived;
+    public event EventHandler<TAKConfig>? TakConfigReceived;
     /// <summary>A node broadcast its free-text status (port 36); empty = cleared.</summary>
     public event EventHandler<(uint NodeId, string Status)>? NodeStatusReceived;
     /// <summary>Display-mirroring chunks (FW 2.8, local connection only).</summary>
@@ -3473,6 +3480,75 @@ public class MeshtasticProtocolService
         await SendAdminMessageAsync(adminMsg);
     }
 
+    public async Task RequestMeshBeaconConfigAsync()
+    {
+        var adminMsg = new AdminMessage { GetModuleConfigRequest = (global::Meshtastic.Protobufs.AdminMessage.Types.ModuleConfigType)16 }; // MESHBEACON = 16 (FW 2.8)
+        await SendAdminMessageAsync(adminMsg);
+    }
+
+    public async Task RequestAudioConfigAsync() =>
+        await SendAdminMessageAsync(new AdminMessage { GetModuleConfigRequest = (global::Meshtastic.Protobufs.AdminMessage.Types.ModuleConfigType)7 });  // AUDIO
+
+    public async Task RequestRemoteHardwareConfigAsync() =>
+        await SendAdminMessageAsync(new AdminMessage { GetModuleConfigRequest = (global::Meshtastic.Protobufs.AdminMessage.Types.ModuleConfigType)8 });  // REMOTEHARDWARE
+
+    public async Task RequestAmbientLightingConfigAsync() =>
+        await SendAdminMessageAsync(new AdminMessage { GetModuleConfigRequest = (global::Meshtastic.Protobufs.AdminMessage.Types.ModuleConfigType)10 }); // AMBIENTLIGHTING
+
+    public async Task RequestDetectionSensorConfigAsync() =>
+        await SendAdminMessageAsync(new AdminMessage { GetModuleConfigRequest = (global::Meshtastic.Protobufs.AdminMessage.Types.ModuleConfigType)11 }); // DETECTIONSENSOR
+
+    public async Task RequestPaxcounterConfigAsync() =>
+        await SendAdminMessageAsync(new AdminMessage { GetModuleConfigRequest = (global::Meshtastic.Protobufs.AdminMessage.Types.ModuleConfigType)12 }); // PAXCOUNTER
+
+    public async Task RequestTakConfigAsync() =>
+        await SendAdminMessageAsync(new AdminMessage { GetModuleConfigRequest = (global::Meshtastic.Protobufs.AdminMessage.Types.ModuleConfigType)15 }); // TAK (FW 2.8)
+
+    public async Task SetAudioConfigAsync(AudioConfig config)
+    {
+        await EnsureSessionKeyAsync();
+        await SendAdminMessageAsync(new AdminMessage { SetModuleConfig = new ModuleConfig { Audio = config } });
+    }
+
+    public async Task SetRemoteHardwareConfigAsync(RemoteHardwareConfig config)
+    {
+        await EnsureSessionKeyAsync();
+        await SendAdminMessageAsync(new AdminMessage { SetModuleConfig = new ModuleConfig { RemoteHardware = config } });
+    }
+
+    public async Task SetAmbientLightingConfigAsync(AmbientLightingConfig config)
+    {
+        await EnsureSessionKeyAsync();
+        await SendAdminMessageAsync(new AdminMessage { SetModuleConfig = new ModuleConfig { AmbientLighting = config } });
+    }
+
+    public async Task SetDetectionSensorConfigAsync(DetectionSensorConfig config)
+    {
+        await EnsureSessionKeyAsync();
+        await SendAdminMessageAsync(new AdminMessage { SetModuleConfig = new ModuleConfig { DetectionSensor = config } });
+    }
+
+    public async Task SetPaxcounterConfigAsync(PaxcounterConfig config)
+    {
+        await EnsureSessionKeyAsync();
+        await SendAdminMessageAsync(new AdminMessage { SetModuleConfig = new ModuleConfig { Paxcounter = config } });
+    }
+
+    public async Task SetTakConfigAsync(TAKConfig config)
+    {
+        await EnsureSessionKeyAsync();
+        await SendAdminMessageAsync(new AdminMessage { SetModuleConfig = new ModuleConfig { Tak = config } });
+    }
+
+    /// <summary>Set the Mesh-Beacon module config (FW 2.8). Like statusmessage, the
+    /// firmware applies it WITHOUT a reboot (explicit never-reboot list).</summary>
+    public async Task SetMeshBeaconConfigAsync(MeshBeaconConfig config)
+    {
+        await EnsureSessionKeyAsync();
+        var adminMsg = new AdminMessage { SetModuleConfig = new ModuleConfig { MeshBeacon = config } };
+        await SendAdminMessageAsync(adminMsg);
+    }
+
     /// <summary>Set the own free-text status. The firmware applies this WITHOUT a reboot
     /// (statusmessage is on its explicit never-reboot list) and broadcasts the new status.</summary>
     public async Task SetStatusMessageConfigAsync(StatusMessageConfig config)
@@ -4140,6 +4216,34 @@ public class MeshtasticProtocolService
 
                         case ModuleConfig.PayloadVariantOneofCase.Statusmessage:
                             StatusMessageConfigReceived?.Invoke(this, moduleConfig.Statusmessage);
+                            break;
+
+                        case ModuleConfig.PayloadVariantOneofCase.MeshBeacon:
+                            MeshBeaconConfigReceived?.Invoke(this, moduleConfig.MeshBeacon);
+                            break;
+
+                        case ModuleConfig.PayloadVariantOneofCase.Audio:
+                            AudioConfigReceived?.Invoke(this, moduleConfig.Audio);
+                            break;
+
+                        case ModuleConfig.PayloadVariantOneofCase.RemoteHardware:
+                            RemoteHardwareConfigReceived?.Invoke(this, moduleConfig.RemoteHardware);
+                            break;
+
+                        case ModuleConfig.PayloadVariantOneofCase.AmbientLighting:
+                            AmbientLightingConfigReceived?.Invoke(this, moduleConfig.AmbientLighting);
+                            break;
+
+                        case ModuleConfig.PayloadVariantOneofCase.DetectionSensor:
+                            DetectionSensorConfigReceived?.Invoke(this, moduleConfig.DetectionSensor);
+                            break;
+
+                        case ModuleConfig.PayloadVariantOneofCase.Paxcounter:
+                            PaxcounterConfigReceived?.Invoke(this, moduleConfig.Paxcounter);
+                            break;
+
+                        case ModuleConfig.PayloadVariantOneofCase.Tak:
+                            TakConfigReceived?.Invoke(this, moduleConfig.Tak);
                             break;
 
                         case ModuleConfig.PayloadVariantOneofCase.RangeTest:

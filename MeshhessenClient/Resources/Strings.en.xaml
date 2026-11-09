@@ -668,6 +668,86 @@
     <sys:String x:Key="StrToolsMirrorBtn">📺 Mirror display</sys:String>
     <sys:String x:Key="StrMirrorWindowTitle">Device Display</sys:String>
     <sys:String x:Key="StrMirrorWaiting">Waiting for the first frame from the device …</sys:String>
+
+    <!-- Mesh Beacon module (FW 2.8) -->
+    <sys:String x:Key="StrNcNavMeshBeacon">Mesh Beacon</sys:String>
+    <sys:String x:Key="StrNcMbUnsupported">⚠ Mesh Beacon requires firmware 2.8 — the connected device reports an older version, settings cannot be loaded.</sys:String>
+    <sys:String x:Key="StrNcMbListen">Receive beacons (listen)</sys:String>
+    <sys:String x:Key="StrNcDescMbListen">Receives mesh-beacon packets from other nodes: the text lands in the inbox, offered channels/presets are stored for the app.</sys:String>
+    <sys:String x:Key="StrNcMbBroadcast">Broadcast beacons</sys:String>
+    <sys:String x:Key="StrNcDescMbBroadcast">Periodically broadcasts own mesh-beacon packets with the message and the optional channel/preset offers below.</sys:String>
+    <sys:String x:Key="StrNcMbLegacySplit">Legacy split (send text separately)</sys:String>
+    <sys:String x:Key="StrNcDescMbLegacySplit">Additionally sends the text as a regular text message so older firmware without the beacon module can still read it.</sys:String>
+    <sys:String x:Key="StrNcMbMessage">Beacon message</sys:String>
+    <sys:String x:Key="StrNcDescMbMessage">Text carried in every beacon (max. 60 bytes — umlauts count twice). The beacon's largest airtime cost.</sys:String>
+    <sys:String x:Key="StrNcMbMessageTooLong">The beacon message is too long: at most 60 bytes (umlauts and special characters count twice).</sys:String>
+    <sys:String x:Key="StrNcMbInterval">Broadcast interval (seconds)</sys:String>
+    <sys:String x:Key="StrNcDescMbInterval">How often the beacon is broadcast. Minimum 3600 (1 hour).</sys:String>
+    <sys:String x:Key="StrNcMbOfferChannel">Offer channel</sys:String>
+    <sys:String x:Key="StrNcMbOfferChannelNone">— no channel offer —</sys:String>
+    <sys:String x:Key="StrNcDescMbOfferChannel">Optional: this channel's name + PSK are included in the beacon so receivers can adopt it with one click. Careful: the PSK is exposed to everyone listening on the beacon channel!</sys:String>
+    <sys:String x:Key="StrNcMbPresetLikeDevice">— like device —</sys:String>
+    <sys:String x:Key="StrNcMbOfferPreset">Offer preset</sys:String>
+    <sys:String x:Key="StrNcDescMbOfferPreset">Optional: modem preset advertised in the beacon. "like device" sends no own offer.</sys:String>
+    <sys:String x:Key="StrNcMbRadioSwitchWarn">⚠ Careful: if the beacon transmits on a different modem preset than the node's own, the radio must switch over for it — during that time the node receives NOTHING on its primary preset. Very bad for routers/infrastructure nodes!</sys:String>
+    <sys:String x:Key="StrNcMbOfferSlot">Offer frequency slot</sys:String>
+    <sys:String x:Key="StrNcDescMbOfferSlot">Optional, 1-based (like the LoRa "frequency slot"). Leave empty to let receivers derive the slot from region/channel name — set it only when your mesh deliberately pins a slot.</sys:String>
+
+    <!-- Audio module -->
+    <sys:String x:Key="StrNcNavAudio">Audio (Codec2)</sys:String>
+    <sys:String x:Key="StrNcAuEnabled">Enable Codec2 voice</sys:String>
+    <sys:String x:Key="StrNcDescAuEnabled">Walkie-talkie audio over LoRa (ESP32 with I2S microphone/amplifier only). Significantly increases airtime.</sys:String>
+    <sys:String x:Key="StrNcAuBitrate">Codec2 bitrate</sys:String>
+    <sys:String x:Key="StrNcAuPtt">PTT GPIO</sys:String>
+    <sys:String x:Key="StrNcAuI2s">I2S pins (WS / SD / DIN / SCK)</sys:String>
+    <sys:String x:Key="StrNcDescAuI2s">GPIO pins of the I2S audio interface. 0 = board default.</sys:String>
+
+    <!-- Remote Hardware module -->
+    <sys:String x:Key="StrNcNavRemoteHw">Remote Hardware</sys:String>
+    <sys:String x:Key="StrNcRhEnabled">Enable remote hardware module</sys:String>
+    <sys:String x:Key="StrNcDescRhEnabled">Lets other nodes read/toggle this device's GPIO pins over the mesh (REMOTE_HARDWARE_APP). Approved pins are preserved on save.</sys:String>
+    <sys:String x:Key="StrNcRhUndefinedPins">Allow access to unapproved pins</sys:String>
+    <sys:String x:Key="StrNcDescRhUndefinedPins">⚠ Security risk: without a pin allowlist anyone on the channel may toggle arbitrary GPIOs.</sys:String>
+
+    <!-- Ambient Lighting module -->
+    <sys:String x:Key="StrNcNavAmbient">Ambient Lighting</sys:String>
+    <sys:String x:Key="StrNcAlLedState">LED permanently on</sys:String>
+    <sys:String x:Key="StrNcDescAlLedState">Controls NeoPixel/RGB LEDs on the device (where fitted).</sys:String>
+    <sys:String x:Key="StrNcAlCurrent">Current (0–31)</sys:String>
+    <sys:String x:Key="StrNcAlRgb">Color (R / G / B, 0–255 each)</sys:String>
+    <sys:String x:Key="StrNcDescAlRgb">Red, green and blue components of the LED color.</sys:String>
+
+    <!-- Detection Sensor module -->
+    <sys:String x:Key="StrNcNavDetection">Detection Sensor</sys:String>
+    <sys:String x:Key="StrNcDsEnabled">Enable detection sensor module</sys:String>
+    <sys:String x:Key="StrNcDescDsEnabled">Reports state changes of a GPIO pin as a mesh message (e.g. door contact, motion sensor).</sys:String>
+    <sys:String x:Key="StrNcDsName">Sensor name</sys:String>
+    <sys:String x:Key="StrNcDescDsName">Appears in the message, e.g. "Garage door" (max. 19 characters).</sys:String>
+    <sys:String x:Key="StrNcDsPin">Monitor GPIO</sys:String>
+    <sys:String x:Key="StrNcDsTrigger">Trigger</sys:String>
+    <sys:String x:Key="StrNcDsPullup">Use internal pull-up</sys:String>
+    <sys:String x:Key="StrNcDsBell">Send with alert bell (🔔)</sys:String>
+    <sys:String x:Key="StrNcDsMinBroadcast">Minimum gap between reports (s)</sys:String>
+    <sys:String x:Key="StrNcDsStateBroadcast">Broadcast state every (s)</sys:String>
+    <sys:String x:Key="StrNcDescDsBroadcast">0 = report only on change.</sys:String>
+
+    <!-- Paxcounter module -->
+    <sys:String x:Key="StrNcNavPaxcounter">Paxcounter</sys:String>
+    <sys:String x:Key="StrNcPxEnabled">Enable paxcounter</sys:String>
+    <sys:String x:Key="StrNcDescPxEnabled">Counts nearby Wi-Fi/Bluetooth devices (people proximity) and sends the count as telemetry. ESP32 only; disables its Wi-Fi connection.</sys:String>
+    <sys:String x:Key="StrNcPxInterval">Update interval (seconds)</sys:String>
+    <sys:String x:Key="StrNcPxWifiThreshold">Wi-Fi RSSI threshold (dBm)</sys:String>
+    <sys:String x:Key="StrNcPxBleThreshold">BLE RSSI threshold (dBm)</sys:String>
+    <sys:String x:Key="StrNcDescPxThreshold">Only devices stronger than the threshold are counted (e.g. -80). 0 = default.</sys:String>
+
+    <!-- TAK module (FW 2.8) -->
+    <sys:String x:Key="StrRaTabMeshBeacon">Mesh Beacon</sys:String>
+    <sys:String x:Key="StrRaMbOfferUnchanged">— keep unchanged (current: {0}) —</sys:String>
+    <sys:String x:Key="StrNcNavTak">TAK / ATAK</sys:String>
+    <sys:String x:Key="StrNcTakUnsupported">⚠ The TAK module requires firmware 2.8 — the connected device reports an older version.</sys:String>
+    <sys:String x:Key="StrNcTakTeam">Team (color)</sys:String>
+    <sys:String x:Key="StrNcTakRole">Role</sys:String>
+    <sys:String x:Key="StrNcDescTak">Team and role for ATAK integration (TAK device role assumed). Used in ATAK PLI broadcasts.</sys:String>
     <sys:String x:Key="StrShortNameTooLong">The short name can be at most 4 bytes (umlauts and special characters count twice).</sys:String>
 
     <!-- TileDownloader window -->

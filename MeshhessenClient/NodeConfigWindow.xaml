@@ -183,6 +183,48 @@
                             <TextBlock Text="{DynamicResource StrNcNavSerial}" VerticalAlignment="Center"/>
                         </DockPanel>
                     </ListBoxItem>
+                    <ListBoxItem Tag="MeshBeacon">
+                        <DockPanel>
+                            <Rectangle DockPanel.Dock="Left" Width="3" Fill="{StaticResource ColorModule}" Margin="0,3,8,3" RadiusX="1" RadiusY="1"/>
+                            <TextBlock Text="{DynamicResource StrNcNavMeshBeacon}" VerticalAlignment="Center"/>
+                        </DockPanel>
+                    </ListBoxItem>
+                    <ListBoxItem Tag="Audio">
+                        <DockPanel>
+                            <Rectangle DockPanel.Dock="Left" Width="3" Fill="{StaticResource ColorModule}" Margin="0,3,8,3" RadiusX="1" RadiusY="1"/>
+                            <TextBlock Text="{DynamicResource StrNcNavAudio}" VerticalAlignment="Center"/>
+                        </DockPanel>
+                    </ListBoxItem>
+                    <ListBoxItem Tag="RemoteHardware">
+                        <DockPanel>
+                            <Rectangle DockPanel.Dock="Left" Width="3" Fill="{StaticResource ColorModule}" Margin="0,3,8,3" RadiusX="1" RadiusY="1"/>
+                            <TextBlock Text="{DynamicResource StrNcNavRemoteHw}" VerticalAlignment="Center"/>
+                        </DockPanel>
+                    </ListBoxItem>
+                    <ListBoxItem Tag="AmbientLighting">
+                        <DockPanel>
+                            <Rectangle DockPanel.Dock="Left" Width="3" Fill="{StaticResource ColorModule}" Margin="0,3,8,3" RadiusX="1" RadiusY="1"/>
+                            <TextBlock Text="{DynamicResource StrNcNavAmbient}" VerticalAlignment="Center"/>
+                        </DockPanel>
+                    </ListBoxItem>
+                    <ListBoxItem Tag="DetectionSensor">
+                        <DockPanel>
+                            <Rectangle DockPanel.Dock="Left" Width="3" Fill="{StaticResource ColorModule}" Margin="0,3,8,3" RadiusX="1" RadiusY="1"/>
+                            <TextBlock Text="{DynamicResource StrNcNavDetection}" VerticalAlignment="Center"/>
+                        </DockPanel>
+                    </ListBoxItem>
+                    <ListBoxItem Tag="Paxcounter">
+                        <DockPanel>
+                            <Rectangle DockPanel.Dock="Left" Width="3" Fill="{StaticResource ColorModule}" Margin="0,3,8,3" RadiusX="1" RadiusY="1"/>
+                            <TextBlock Text="{DynamicResource StrNcNavPaxcounter}" VerticalAlignment="Center"/>
+                        </DockPanel>
+                    </ListBoxItem>
+                    <ListBoxItem Tag="Tak">
+                        <DockPanel>
+                            <Rectangle DockPanel.Dock="Left" Width="3" Fill="{StaticResource ColorModule}" Margin="0,3,8,3" RadiusX="1" RadiusY="1"/>
+                            <TextBlock Text="{DynamicResource StrNcNavTak}" VerticalAlignment="Center"/>
+                        </DockPanel>
+                    </ListBoxItem>
 
                     <!-- SECURITY + CHANNELS section -->
                     <ListBoxItem Style="{StaticResource NavHeaderStyle}" Margin="0,8,0,2">
@@ -323,15 +365,24 @@
                                       Checked="LoraUsePresetCheckBox_Changed" Unchecked="LoraUsePresetCheckBox_Changed"/>
                             <TextBlock Text="{DynamicResource StrNcDescUsePreset}" Style="{StaticResource DescStyle}"/>
                             <TextBlock Text="{DynamicResource StrNcModemPreset}" Margin="0,8,0,2"/>
-                            <ComboBox x:Name="LoraPresetComboBox" Width="200" HorizontalAlignment="Left" IsEnabled="False">
+                            <ComboBox x:Name="LoraPresetComboBox" Width="220" HorizontalAlignment="Left" IsEnabled="False">
                                 <ComboBoxItem Content="LONG_FAST" Tag="0"/>
-                                <ComboBoxItem Content="LONG_SLOW" Tag="1"/>
-                                <ComboBoxItem Content="VERY_LONG_SLOW" Tag="2"/>
+                                <ComboBoxItem Content="LONG_SLOW (veraltet)" Tag="1"/>
+                                <ComboBoxItem Content="VERY_LONG_SLOW (veraltet)" Tag="2"/>
                                 <ComboBoxItem Content="MEDIUM_SLOW" Tag="3"/>
                                 <ComboBoxItem Content="MEDIUM_FAST" Tag="4"/>
                                 <ComboBoxItem Content="SHORT_SLOW" Tag="5"/>
                                 <ComboBoxItem Content="SHORT_FAST" Tag="6"/>
                                 <ComboBoxItem Content="LONG_MODERATE" Tag="7"/>
+                                <ComboBoxItem Content="SHORT_TURBO" Tag="8"/>
+                                <ComboBoxItem Content="LONG_TURBO" Tag="9"/>
+                                <ComboBoxItem Content="LITE_FAST" Tag="10"/>
+                                <ComboBoxItem Content="LITE_SLOW" Tag="11"/>
+                                <ComboBoxItem Content="NARROW_FAST" Tag="12"/>
+                                <ComboBoxItem Content="NARROW_SLOW" Tag="13"/>
+                                <ComboBoxItem Content="TINY_FAST" Tag="14"/>
+                                <ComboBoxItem Content="TINY_SLOW" Tag="15"/>
+                                <ComboBoxItem Content="MEDIUM_TURBO" Tag="16"/>
                             </ComboBox>
                             <TextBlock Text="{DynamicResource StrNcDescModemPreset}" Style="{StaticResource DescStyle}"/>
                             <TextBlock Text="{DynamicResource StrNcHopLimit}" Margin="0,12,0,2"/>
@@ -832,6 +883,12 @@
                                 <ComboBoxItem Content="TEXTMSG — nur Text-Pakete" Tag="3"/>
                                 <ComboBoxItem Content="NMEA — GPS NMEA-Sätze" Tag="4"/>
                                 <ComboBoxItem Content="CALTOPO — CalTopo/SARTopo" Tag="5"/>
+                                <ComboBoxItem Content="WS85 — Ecowitt WS85 Wetterstation" Tag="6"/>
+                                <ComboBoxItem Content="VE_DIRECT — Victron VE.Direct" Tag="7"/>
+                                <ComboBoxItem Content="MS_CONFIG — Meshtastic-Konfig-Konsole" Tag="8"/>
+                                <ComboBoxItem Content="LOG — Paket-Log (alle Pakete)" Tag="9"/>
+                                <ComboBoxItem Content="LOGTEXT — Text-Log (Kanal &amp; DM)" Tag="10"/>
+                                <ComboBoxItem Content="MODBUS — Modbus-RTU-Brücke" Tag="11"/>
                             </ComboBox>
                             <TextBlock Text="{DynamicResource StrNcDescSerMode}" Style="{StaticResource DescStyle}"/>
                         </StackPanel>
@@ -898,6 +955,238 @@
                                 <ComboBoxItem Tag="2" Content="{DynamicResource StrSecSigPolicyStrict}"/>
                             </ComboBox>
                             <TextBlock Text="{DynamicResource StrNcDescSecSignaturePolicy}" Style="{StaticResource DescStyle}"/>
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- ═══════════════ MESH BEACON (FW 2.8) ═══════════════ -->
+                <ScrollViewer x:Name="PanelMeshBeacon" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="0,0,16,12">
+                        <Border Background="{StaticResource BgModule}" Padding="16,10" Margin="0,0,0,12">
+                            <TextBlock Text="{DynamicResource StrNcNavMeshBeacon}" FontWeight="SemiBold" FontSize="13" Foreground="{StaticResource ColorModule}"/>
+                        </Border>
+                        <StackPanel Margin="16,0,0,0">
+                            <TextBlock x:Name="MbUnsupportedText" Text="{DynamicResource StrNcMbUnsupported}"
+                                       Foreground="#FF9800" TextWrapping="Wrap" Margin="0,0,0,10"
+                                       Visibility="Collapsed"/>
+                            <CheckBox x:Name="MbListenCheckBox" Content="{DynamicResource StrNcMbListen}"/>
+                            <TextBlock Text="{DynamicResource StrNcDescMbListen}" Style="{StaticResource DescStyle}"/>
+                            <CheckBox x:Name="MbBroadcastCheckBox" Content="{DynamicResource StrNcMbBroadcast}" Margin="0,10,0,0"/>
+                            <TextBlock Text="{DynamicResource StrNcDescMbBroadcast}" Style="{StaticResource DescStyle}"/>
+                            <TextBlock Text="{DynamicResource StrNcMbRadioSwitchWarn}"
+                                       Foreground="#FF9800" TextWrapping="Wrap" Margin="0,6,0,0" MaxWidth="520" HorizontalAlignment="Left"/>
+                            <CheckBox x:Name="MbLegacySplitCheckBox" Content="{DynamicResource StrNcMbLegacySplit}" Margin="0,10,0,0"/>
+                            <TextBlock Text="{DynamicResource StrNcDescMbLegacySplit}" Style="{StaticResource DescStyle}"/>
+
+                            <TextBlock Text="{DynamicResource StrNcMbMessage}" Margin="0,12,0,2"/>
+                            <TextBox x:Name="MbMessageTextBox" Width="360" MaxLength="60" HorizontalAlignment="Left" TextWrapping="Wrap"/>
+                            <TextBlock Text="{DynamicResource StrNcDescMbMessage}" Style="{StaticResource DescStyle}"/>
+
+                            <TextBlock Text="{DynamicResource StrNcMbInterval}" Margin="0,12,0,2"/>
+                            <TextBox x:Name="MbIntervalTextBox" Width="100" HorizontalAlignment="Left"/>
+                            <TextBlock Text="{DynamicResource StrNcDescMbInterval}" Style="{StaticResource DescStyle}"/>
+
+                            <TextBlock Text="{DynamicResource StrNcMbOfferChannel}" Margin="0,12,0,2"/>
+                            <ComboBox x:Name="MbOfferChannelCombo" Width="260" HorizontalAlignment="Left"/>
+                            <TextBlock Text="{DynamicResource StrNcDescMbOfferChannel}" Style="{StaticResource DescStyle}"/>
+
+                            <TextBlock Text="{DynamicResource StrNcMbOfferPreset}" Margin="0,12,0,2"/>
+                            <ComboBox x:Name="MbOfferPresetCombo" Width="220" HorizontalAlignment="Left">
+                                <ComboBoxItem Content="{DynamicResource StrNcMbPresetLikeDevice}" Tag="-1"/>
+                                <ComboBoxItem Content="LONG_FAST" Tag="0"/>
+                                <ComboBoxItem Content="MEDIUM_SLOW" Tag="3"/>
+                                <ComboBoxItem Content="MEDIUM_FAST" Tag="4"/>
+                                <ComboBoxItem Content="SHORT_SLOW" Tag="5"/>
+                                <ComboBoxItem Content="SHORT_FAST" Tag="6"/>
+                                <ComboBoxItem Content="LONG_MODERATE" Tag="7"/>
+                                <ComboBoxItem Content="SHORT_TURBO" Tag="8"/>
+                                <ComboBoxItem Content="LONG_TURBO" Tag="9"/>
+                                <ComboBoxItem Content="LITE_FAST" Tag="10"/>
+                                <ComboBoxItem Content="LITE_SLOW" Tag="11"/>
+                                <ComboBoxItem Content="NARROW_FAST" Tag="12"/>
+                                <ComboBoxItem Content="NARROW_SLOW" Tag="13"/>
+                                <ComboBoxItem Content="TINY_FAST" Tag="14"/>
+                                <ComboBoxItem Content="TINY_SLOW" Tag="15"/>
+                                <ComboBoxItem Content="MEDIUM_TURBO" Tag="16"/>
+                            </ComboBox>
+                            <TextBlock Text="{DynamicResource StrNcDescMbOfferPreset}" Style="{StaticResource DescStyle}"/>
+
+                            <TextBlock Text="{DynamicResource StrNcMbOfferSlot}" Margin="0,12,0,2"/>
+                            <TextBox x:Name="MbOfferSlotTextBox" Width="80" HorizontalAlignment="Left"/>
+                            <TextBlock Text="{DynamicResource StrNcDescMbOfferSlot}" Style="{StaticResource DescStyle}"/>
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- ═══════════════ AUDIO ═══════════════ -->
+                <ScrollViewer x:Name="PanelAudio" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="0,0,16,12">
+                        <Border Background="{StaticResource BgModule}" Padding="16,10" Margin="0,0,0,12">
+                            <TextBlock Text="{DynamicResource StrNcNavAudio}" FontWeight="SemiBold" FontSize="13" Foreground="{StaticResource ColorModule}"/>
+                        </Border>
+                        <StackPanel Margin="16,0,0,0">
+                            <CheckBox x:Name="AuEnabledCheckBox" Content="{DynamicResource StrNcAuEnabled}"/>
+                            <TextBlock Text="{DynamicResource StrNcDescAuEnabled}" Style="{StaticResource DescStyle}"/>
+                            <TextBlock Text="{DynamicResource StrNcAuBitrate}" Margin="0,12,0,2"/>
+                            <ComboBox x:Name="AuBitrateCombo" Width="200" HorizontalAlignment="Left">
+                                <ComboBoxItem Content="CODEC2_DEFAULT" Tag="0"/>
+                                <ComboBoxItem Content="CODEC2_3200" Tag="1"/>
+                                <ComboBoxItem Content="CODEC2_2400" Tag="2"/>
+                                <ComboBoxItem Content="CODEC2_1600" Tag="3"/>
+                                <ComboBoxItem Content="CODEC2_1400" Tag="4"/>
+                                <ComboBoxItem Content="CODEC2_1300" Tag="5"/>
+                                <ComboBoxItem Content="CODEC2_1200" Tag="6"/>
+                                <ComboBoxItem Content="CODEC2_700" Tag="7"/>
+                                <ComboBoxItem Content="CODEC2_700B" Tag="8"/>
+                                <ComboBoxItem Content="CODEC2_700C" Tag="9"/>
+                                <ComboBoxItem Content="CODEC2_450" Tag="10"/>
+                            </ComboBox>
+                            <TextBlock Text="{DynamicResource StrNcAuPtt}" Margin="0,12,0,2"/>
+                            <TextBox x:Name="AuPttTextBox" Width="80" HorizontalAlignment="Left"/>
+                            <TextBlock Text="{DynamicResource StrNcAuI2s}" Margin="0,12,0,2"/>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBox x:Name="AuI2sWsTextBox"  Width="60" Margin="0,0,6,0" ToolTip="WS"/>
+                                <TextBox x:Name="AuI2sSdTextBox"  Width="60" Margin="0,0,6,0" ToolTip="SD"/>
+                                <TextBox x:Name="AuI2sDinTextBox" Width="60" Margin="0,0,6,0" ToolTip="DIN"/>
+                                <TextBox x:Name="AuI2sSckTextBox" Width="60" ToolTip="SCK"/>
+                            </StackPanel>
+                            <TextBlock Text="{DynamicResource StrNcDescAuI2s}" Style="{StaticResource DescStyle}"/>
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- ═══════════════ REMOTE HARDWARE ═══════════════ -->
+                <ScrollViewer x:Name="PanelRemoteHardware" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="0,0,16,12">
+                        <Border Background="{StaticResource BgModule}" Padding="16,10" Margin="0,0,0,12">
+                            <TextBlock Text="{DynamicResource StrNcNavRemoteHw}" FontWeight="SemiBold" FontSize="13" Foreground="{StaticResource ColorModule}"/>
+                        </Border>
+                        <StackPanel Margin="16,0,0,0">
+                            <CheckBox x:Name="RhEnabledCheckBox" Content="{DynamicResource StrNcRhEnabled}"/>
+                            <TextBlock Text="{DynamicResource StrNcDescRhEnabled}" Style="{StaticResource DescStyle}"/>
+                            <CheckBox x:Name="RhUndefinedPinsCheckBox" Content="{DynamicResource StrNcRhUndefinedPins}" Margin="0,10,0,0"/>
+                            <TextBlock Text="{DynamicResource StrNcDescRhUndefinedPins}" Style="{StaticResource DescStyle}"/>
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- ═══════════════ AMBIENT LIGHTING ═══════════════ -->
+                <ScrollViewer x:Name="PanelAmbientLighting" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="0,0,16,12">
+                        <Border Background="{StaticResource BgModule}" Padding="16,10" Margin="0,0,0,12">
+                            <TextBlock Text="{DynamicResource StrNcNavAmbient}" FontWeight="SemiBold" FontSize="13" Foreground="{StaticResource ColorModule}"/>
+                        </Border>
+                        <StackPanel Margin="16,0,0,0">
+                            <CheckBox x:Name="AlLedStateCheckBox" Content="{DynamicResource StrNcAlLedState}"/>
+                            <TextBlock Text="{DynamicResource StrNcDescAlLedState}" Style="{StaticResource DescStyle}"/>
+                            <TextBlock Text="{DynamicResource StrNcAlCurrent}" Margin="0,12,0,2"/>
+                            <TextBox x:Name="AlCurrentTextBox" Width="80" HorizontalAlignment="Left"/>
+                            <TextBlock Text="{DynamicResource StrNcAlRgb}" Margin="0,12,0,2"/>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBox x:Name="AlRedTextBox"   Width="60" Margin="0,0,6,0" ToolTip="R (0–255)"/>
+                                <TextBox x:Name="AlGreenTextBox" Width="60" Margin="0,0,6,0" ToolTip="G (0–255)"/>
+                                <TextBox x:Name="AlBlueTextBox"  Width="60" ToolTip="B (0–255)"/>
+                            </StackPanel>
+                            <TextBlock Text="{DynamicResource StrNcDescAlRgb}" Style="{StaticResource DescStyle}"/>
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- ═══════════════ DETECTION SENSOR ═══════════════ -->
+                <ScrollViewer x:Name="PanelDetectionSensor" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="0,0,16,12">
+                        <Border Background="{StaticResource BgModule}" Padding="16,10" Margin="0,0,0,12">
+                            <TextBlock Text="{DynamicResource StrNcNavDetection}" FontWeight="SemiBold" FontSize="13" Foreground="{StaticResource ColorModule}"/>
+                        </Border>
+                        <StackPanel Margin="16,0,0,0">
+                            <CheckBox x:Name="DsEnabledCheckBox" Content="{DynamicResource StrNcDsEnabled}"/>
+                            <TextBlock Text="{DynamicResource StrNcDescDsEnabled}" Style="{StaticResource DescStyle}"/>
+                            <TextBlock Text="{DynamicResource StrNcDsName}" Margin="0,12,0,2"/>
+                            <TextBox x:Name="DsNameTextBox" Width="200" MaxLength="19" HorizontalAlignment="Left"/>
+                            <TextBlock Text="{DynamicResource StrNcDescDsName}" Style="{StaticResource DescStyle}"/>
+                            <TextBlock Text="{DynamicResource StrNcDsPin}" Margin="0,12,0,2"/>
+                            <TextBox x:Name="DsPinTextBox" Width="80" HorizontalAlignment="Left"/>
+                            <TextBlock Text="{DynamicResource StrNcDsTrigger}" Margin="0,12,0,2"/>
+                            <ComboBox x:Name="DsTriggerCombo" Width="260" HorizontalAlignment="Left">
+                                <ComboBoxItem Content="LOGIC_LOW" Tag="0"/>
+                                <ComboBoxItem Content="LOGIC_HIGH" Tag="1"/>
+                                <ComboBoxItem Content="FALLING_EDGE" Tag="2"/>
+                                <ComboBoxItem Content="RISING_EDGE" Tag="3"/>
+                                <ComboBoxItem Content="EITHER_EDGE_ACTIVE_LOW" Tag="4"/>
+                                <ComboBoxItem Content="EITHER_EDGE_ACTIVE_HIGH" Tag="5"/>
+                            </ComboBox>
+                            <CheckBox x:Name="DsPullupCheckBox" Content="{DynamicResource StrNcDsPullup}" Margin="0,10,0,0"/>
+                            <CheckBox x:Name="DsBellCheckBox" Content="{DynamicResource StrNcDsBell}" Margin="0,10,0,0"/>
+                            <TextBlock Text="{DynamicResource StrNcDsMinBroadcast}" Margin="0,12,0,2"/>
+                            <TextBox x:Name="DsMinBroadcastTextBox" Width="100" HorizontalAlignment="Left"/>
+                            <TextBlock Text="{DynamicResource StrNcDsStateBroadcast}" Margin="0,12,0,2"/>
+                            <TextBox x:Name="DsStateBroadcastTextBox" Width="100" HorizontalAlignment="Left"/>
+                            <TextBlock Text="{DynamicResource StrNcDescDsBroadcast}" Style="{StaticResource DescStyle}"/>
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- ═══════════════ PAXCOUNTER ═══════════════ -->
+                <ScrollViewer x:Name="PanelPaxcounter" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="0,0,16,12">
+                        <Border Background="{StaticResource BgModule}" Padding="16,10" Margin="0,0,0,12">
+                            <TextBlock Text="{DynamicResource StrNcNavPaxcounter}" FontWeight="SemiBold" FontSize="13" Foreground="{StaticResource ColorModule}"/>
+                        </Border>
+                        <StackPanel Margin="16,0,0,0">
+                            <CheckBox x:Name="PxEnabledCheckBox" Content="{DynamicResource StrNcPxEnabled}"/>
+                            <TextBlock Text="{DynamicResource StrNcDescPxEnabled}" Style="{StaticResource DescStyle}"/>
+                            <TextBlock Text="{DynamicResource StrNcPxInterval}" Margin="0,12,0,2"/>
+                            <TextBox x:Name="PxIntervalTextBox" Width="100" HorizontalAlignment="Left"/>
+                            <TextBlock Text="{DynamicResource StrNcPxWifiThreshold}" Margin="0,12,0,2"/>
+                            <TextBox x:Name="PxWifiTextBox" Width="80" HorizontalAlignment="Left"/>
+                            <TextBlock Text="{DynamicResource StrNcPxBleThreshold}" Margin="0,12,0,2"/>
+                            <TextBox x:Name="PxBleTextBox" Width="80" HorizontalAlignment="Left"/>
+                            <TextBlock Text="{DynamicResource StrNcDescPxThreshold}" Style="{StaticResource DescStyle}"/>
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- ═══════════════ TAK (FW 2.8) ═══════════════ -->
+                <ScrollViewer x:Name="PanelTak" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="0,0,16,12">
+                        <Border Background="{StaticResource BgModule}" Padding="16,10" Margin="0,0,0,12">
+                            <TextBlock Text="{DynamicResource StrNcNavTak}" FontWeight="SemiBold" FontSize="13" Foreground="{StaticResource ColorModule}"/>
+                        </Border>
+                        <StackPanel Margin="16,0,0,0">
+                            <TextBlock x:Name="TakUnsupportedText" Text="{DynamicResource StrNcTakUnsupported}"
+                                       Foreground="#FF9800" TextWrapping="Wrap" Margin="0,0,0,10"
+                                       Visibility="Collapsed"/>
+                            <TextBlock Text="{DynamicResource StrNcTakTeam}" Margin="0,0,0,2"/>
+                            <ComboBox x:Name="TakTeamCombo" Width="200" HorizontalAlignment="Left">
+                                <ComboBoxItem Content="Default (Cyan)" Tag="0"/>
+                                <ComboBoxItem Content="White" Tag="1"/>
+                                <ComboBoxItem Content="Yellow" Tag="2"/>
+                                <ComboBoxItem Content="Orange" Tag="3"/>
+                                <ComboBoxItem Content="Magenta" Tag="4"/>
+                                <ComboBoxItem Content="Red" Tag="5"/>
+                                <ComboBoxItem Content="Maroon" Tag="6"/>
+                                <ComboBoxItem Content="Purple" Tag="7"/>
+                                <ComboBoxItem Content="Dark Blue" Tag="8"/>
+                                <ComboBoxItem Content="Blue" Tag="9"/>
+                                <ComboBoxItem Content="Cyan" Tag="10"/>
+                                <ComboBoxItem Content="Teal" Tag="11"/>
+                                <ComboBoxItem Content="Green" Tag="12"/>
+                                <ComboBoxItem Content="Dark Green" Tag="13"/>
+                                <ComboBoxItem Content="Brown" Tag="14"/>
+                            </ComboBox>
+                            <TextBlock Text="{DynamicResource StrNcTakRole}" Margin="0,12,0,2"/>
+                            <ComboBox x:Name="TakRoleCombo" Width="200" HorizontalAlignment="Left">
+                                <ComboBoxItem Content="Default (Team Member)" Tag="0"/>
+                                <ComboBoxItem Content="Team Member" Tag="1"/>
+                                <ComboBoxItem Content="Team Lead" Tag="2"/>
+                                <ComboBoxItem Content="HQ" Tag="3"/>
+                                <ComboBoxItem Content="Sniper" Tag="4"/>
+                                <ComboBoxItem Content="Medic" Tag="5"/>
+                                <ComboBoxItem Content="Forward Observer" Tag="6"/>
+                                <ComboBoxItem Content="RTO" Tag="7"/>
+                                <ComboBoxItem Content="K9" Tag="8"/>
+                            </ComboBox>
+                            <TextBlock Text="{DynamicResource StrNcDescTak}" Style="{StaticResource DescStyle}"/>
                         </StackPanel>
                     </StackPanel>
                 </ScrollViewer>
