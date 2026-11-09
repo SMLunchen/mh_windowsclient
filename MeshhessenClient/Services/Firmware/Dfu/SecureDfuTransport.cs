@@ -24,8 +24,14 @@ public sealed class SecureDfuTransport : IDfuTransport
 
     public ulong Address { get; }
     public bool IsLowSpeedTransfer => (_link?.MaxWriteNoResponse ?? 20) <= 20;
+    private readonly Windows.Devices.Bluetooth.BluetoothAddressType _addressType;
 
-    public SecureDfuTransport(ulong bootloaderAddress) => Address = bootloaderAddress;
+    public SecureDfuTransport(ulong bootloaderAddress,
+        Windows.Devices.Bluetooth.BluetoothAddressType addressType = Windows.Devices.Bluetooth.BluetoothAddressType.Unspecified)
+    {
+        Address = bootloaderAddress;
+        _addressType = addressType;
+    }
 
     public async Task ConnectAsync(CancellationToken ct)
     {
@@ -55,7 +61,7 @@ public sealed class SecureDfuTransport : IDfuTransport
 
     private async Task<BleGattLink> OpenLinkAsync(CancellationToken ct)
     {
-        try { return await BleGattLink.OpenAsync(Address, ct); }
+        try { return await BleGattLink.OpenAsync(Address, ct, _addressType); }
         catch (BleException ex) { throw new DfuConnectionException(ex.Message, ex); }
     }
 

@@ -816,7 +816,7 @@
     <sys:String x:Key="StrFwErrEmptyFile">Die Firmware-Datei ist leer.</sys:String>
     <sys:String x:Key="StrFwErrOtaRejected">Das Gerät lehnt den OTA-Modus ab: „{0}". Die Mesh-Verbindung bleibt bestehen.</sys:String>
     <sys:String x:Key="StrFwErrWifiNotFound">Kein OTA-Loader im Netzwerk gefunden (kein UDP-Beacon) und keine bekannte IP-Adresse.</sys:String>
-    <sys:String x:Key="StrFwErrBleOtaConnect">Das Gerät hat den OTA-Modus bestätigt, der Bluetooth-OTA-Dienst war aber nach {0} Versuchen nicht erreichbar ({1}). Gerät in Reichweite halten und erneut versuchen – es startet nach kurzer Zeit wieder normal.</sys:String>
+    <sys:String x:Key="StrFwErrBleOtaConnect">Das Gerät hat den OTA-Modus bestätigt, der Bluetooth-OTA-Dienst war aber nach {0} Versuchen nicht erreichbar ({1}). Das Gerät bleibt im OTA-Modus, bis es neu gestartet wird (Reset-Taste oder Strom kurz trennen) – dann erneut versuchen. Wurde dabei die Windows-Kopplung entfernt, fragt Windows beim nächsten Verbinden ggf. erneut nach dem PIN.</sys:String>
     <sys:String x:Key="StrFwErrWifiOtaConnect">Der OTA-Loader war nach {0} Versuchen nicht erreichbar ({1}). PC und Gerät müssen im selben Netz sein; Firewall für Port 3232 prüfen.</sys:String>
     <sys:String x:Key="StrFwErrHashRejected">Der Loader lehnt den Hash ab – das Image entspricht nicht dem bei der Anforderung übergebenen. Gerät neu starten und erneut versuchen.</sys:String>
     <sys:String x:Key="StrFwErrHashMismatch">Hash-Prüfung nach der Übertragung fehlgeschlagen – das Image wurde NICHT aktiviert, die alte Firmware bleibt erhalten. Erneut versuchen.</sys:String>

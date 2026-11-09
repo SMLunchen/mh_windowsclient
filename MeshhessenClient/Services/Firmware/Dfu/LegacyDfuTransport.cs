@@ -25,6 +25,7 @@ public sealed class LegacyDfuTransport : IDfuTransport
     private const int MinSupportedDfuVersion = 5;
 
     private readonly int _prnInterval;
+    private readonly Windows.Devices.Bluetooth.BluetoothAddressType _addressType;
     private BleGattLink? _link;
     private GattCharacteristic? _control;
     private GattCharacteristic? _packet;
@@ -38,16 +39,18 @@ public sealed class LegacyDfuTransport : IDfuTransport
 
     /// <param name="prnInterval">Packets between receipt notifications; 10 is Nordic's safe ceiling for SDK11
     /// bootloaders, 5 is used on a retry after a mid-stream drop.</param>
-    public LegacyDfuTransport(ulong bootloaderAddress, int prnInterval = 10)
+    public LegacyDfuTransport(ulong bootloaderAddress, int prnInterval = 10,
+        Windows.Devices.Bluetooth.BluetoothAddressType addressType = Windows.Devices.Bluetooth.BluetoothAddressType.Unspecified)
     {
         Address = bootloaderAddress;
         _prnInterval = Math.Clamp(prnInterval, 1, 10);
+        _addressType = addressType;
     }
 
     public async Task ConnectAsync(CancellationToken ct)
     {
         BleGattLink link;
-        try { link = await BleGattLink.OpenAsync(Address, ct); }
+        try { link = await BleGattLink.OpenAsync(Address, ct, _addressType); }
         catch (BleException ex) { throw new DfuConnectionException(ex.Message, ex); }
         try
         {

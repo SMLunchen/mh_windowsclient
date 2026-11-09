@@ -27,8 +27,22 @@ public static class BleAddress
         string.Join(":", BitConverter.GetBytes(address).Take(6).Reverse().Select(b => b.ToString("X2")));
 }
 
-/// <summary>One advertisement sighting, merged over all packets seen from that address during a scan.</summary>
-public sealed record BleScanHit(ulong Address, string? Name, IReadOnlySet<Guid> ServiceUuids, short Rssi);
+/// <summary>One advertisement sighting, merged over all packets seen from that address during a scan.
+/// <see cref="AddressType"/> (public/random) must be handed to the device lookup — Windows cannot
+/// resolve a random address it is asked to treat as public.</summary>
+public sealed record BleScanHit(ulong Address, string? Name, IReadOnlySet<Guid> ServiceUuids, short Rssi,
+    BluetoothAddressType AddressType = BluetoothAddressType.Unspecified);
+
+/// <summary>Formats an exception for the log including the WinRT HRESULT — Windows BLE errors often
+/// arrive as a bare COMException whose Message is empty.</summary>
+public static class BleDiag
+{
+    public static string Describe(Exception ex)
+    {
+        var inner = ex.InnerException != null ? $" ← {ex.InnerException.GetType().Name}: {ex.InnerException.Message}" : "";
+        return $"{ex.GetType().Name} (0x{ex.HResult:X8}) {ex.Message}{inner}".Trim();
+    }
+}
 
 /// <summary>Advertisement scanning for devices that just rebooted into OTA/DFU mode.</summary>
 public static class BleScanner
@@ -37,6 +51,7 @@ public static class BleScanner
     {
         public string? Name;
         public short Rssi;
+        public BluetoothAddressType AddressType;
         public readonly HashSet<Guid> Uuids = new();
     }
 
@@ -55,8 +70,9 @@ public static class BleScanner
             {
                 if (!string.IsNullOrEmpty(a.Advertisement.LocalName)) s.Name = a.Advertisement.LocalName;
                 s.Rssi = a.RawSignalStrengthInDBm;
+                s.AddressType = a.BluetoothAddressType;
                 foreach (var u in a.Advertisement.ServiceUuids) s.Uuids.Add(u);
-                hit = new BleScanHit(a.BluetoothAddress, s.Name, new HashSet<Guid>(s.Uuids), s.Rssi);
+                hit = new BleScanHit(a.BluetoothAddress, s.Name, new HashSet<Guid>(s.Uuids), s.Rssi, s.AddressType);
             }
             if (predicate(hit)) tcs.TrySetResult(hit);
         }
@@ -102,7 +118,7 @@ public static class BleScanner
             var hit = await ScanAsync(predicate, scanTimeout, ct);
             if (hit != null)
             {
-                Logger.WriteLine($"[{tag}] Found {BleAddress.Format(hit.Address)} '{hit.Name}' rssi={hit.Rssi} uuids={hit.ServiceUuids.Count}");
+                Logger.WriteLine($"[{tag}] Found {BleAddress.Format(hit.Address)} ({hit.AddressType}) '{hit.Name}' rssi={hit.Rssi} uuids=[{string.Join(",", hit.ServiceUuids)}]");
                 return hit;
             }
             if (attempt < retries) await Task.Delay(retryDelay, ct);
@@ -197,6 +213,35 @@ public sealed class BleGattLink : IAsyncDisposable
 
     public ulong Address { get; }
     public string Name => _device?.Name ?? "";
+    public bool IsPaired => _device?.DeviceInformation.Pairing.IsPaired == true;
+
+    /// <summary>Removes the Windows bond with a device. Needed for the ESP32 OTA loader: it advertises on
+    /// the mesh firmware's own address but has no security at all, while Windows insists on re-encrypting
+    /// a bonded link and the connection fails. Unpairing also drops Windows' stale GATT cache for that
+    /// address. The mesh connection re-pairs automatically on the next connect.</summary>
+    public static async Task<bool> TryUnpairAsync(ulong address, BluetoothAddressType addressType)
+    {
+        try
+        {
+            var dev = addressType == BluetoothAddressType.Unspecified
+                ? await BluetoothLEDevice.FromBluetoothAddressAsync(address)
+                : await BluetoothLEDevice.FromBluetoothAddressAsync(address, addressType);
+            if (dev == null) return false;
+            using (dev)
+            {
+                if (!dev.DeviceInformation.Pairing.IsPaired) return false;
+                var r = await dev.DeviceInformation.Pairing.UnpairAsync();
+                Logger.WriteLine($"[BLE link] Unpair {BleAddress.Format(address)} → {r.Status}");
+                return r.Status is Windows.Devices.Enumeration.DeviceUnpairingResultStatus.Unpaired
+                    or Windows.Devices.Enumeration.DeviceUnpairingResultStatus.AlreadyUnpaired;
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.WriteLine($"[BLE link] Unpair {BleAddress.Format(address)} failed: {BleDiag.Describe(ex)}");
+            return false;
+        }
+    }
 
     /// <summary>Completes once Windows reports the link dropped (never faults).</summary>
     public Task DisconnectedTask => _disconnected.Task;
@@ -218,25 +263,52 @@ public sealed class BleGattLink : IAsyncDisposable
 
     private BleGattLink(ulong address) => Address = address;
 
-    /// <summary>Resolves the device object. The physical connection is made lazily by the first GATT operation.</summary>
-    public static async Task<BleGattLink> OpenAsync(ulong address, CancellationToken ct)
+    /// <summary>Resolves the device object. The physical connection is made lazily by the first GATT operation.
+    /// <paramref name="addressType"/> comes from the advertisement; without it Windows assumes a public address.</summary>
+    public static async Task<BleGattLink> OpenAsync(ulong address, CancellationToken ct,
+        BluetoothAddressType addressType = BluetoothAddressType.Unspecified)
     {
         var link = new BleGattLink(address);
-        var dev = await BluetoothLEDevice.FromBluetoothAddressAsync(address).AsTask(ct);
+        BluetoothLEDevice? dev;
+        try
+        {
+            dev = addressType == BluetoothAddressType.Unspecified
+                ? await BluetoothLEDevice.FromBluetoothAddressAsync(address).AsTask(ct)
+                : await BluetoothLEDevice.FromBluetoothAddressAsync(address, addressType).AsTask(ct);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+        catch (Exception ex)
+        {
+            throw new BleException($"FromBluetoothAddress({BleAddress.Format(address)}, {addressType}) failed: {BleDiag.Describe(ex)}", null, ex);
+        }
         if (dev == null)
             throw new BleException($"BLE device {BleAddress.Format(address)} not found (not advertising / unknown to Windows)");
         link._device = dev;
+        Logger.WriteLine($"[BLE link] Device {BleAddress.Format(address)} '{dev.Name}' type={dev.BluetoothAddressType} paired={dev.DeviceInformation.Pairing.IsPaired} canPair={dev.DeviceInformation.Pairing.CanPair} status={dev.ConnectionStatus} access={dev.DeviceAccessInformation.CurrentStatus}");
         dev.ConnectionStatusChanged += link.OnConnectionStatusChanged;
+        // The GattSession (MaintainConnection + MTU) is created only after the first successful service
+        // discovery — exactly like the mesh connection does. Creating it first makes Windows start its own
+        // connection attempt, and a discovery issued while that is in flight is refused with
+        // ERROR_BAD_COMMAND (0x80070016, STATUS_INVALID_DEVICE_STATE).
+        return link;
+    }
+
+    private async Task EnsureSessionAsync(CancellationToken ct)
+    {
+        if (_session != null || _device == null) return;
         try
         {
-            link._session = await GattSession.FromDeviceIdAsync(dev.BluetoothDeviceId).AsTask(ct);
-            if (link._session != null) link._session.MaintainConnection = true;
+            _session = await GattSession.FromDeviceIdAsync(_device.BluetoothDeviceId).AsTask(ct);
+            if (_session != null)
+            {
+                _session.MaintainConnection = true;
+                Logger.WriteLine($"[BLE link] GattSession up, MaxPduSize={_session.MaxPduSize}");
+            }
         }
         catch (Exception ex)
         {
-            Logger.WriteLine($"[BLE link] GattSession unavailable: {ex.Message}");
+            Logger.WriteLine($"[BLE link] GattSession unavailable: {BleDiag.Describe(ex)}");
         }
-        return link;
     }
 
     private void OnConnectionStatusChanged(BluetoothLEDevice sender, object args)
@@ -262,28 +334,69 @@ public sealed class BleGattLink : IAsyncDisposable
         {
             throw new BleException($"Service discovery for {uuid} timed out after {timeout.TotalSeconds:0}s");
         }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+        catch (Exception ex)
+        {
+            // Second route: a full (uncached) enumeration. Some Windows builds refuse the per-UUID query
+            // for a device they have never enumerated while the full enumeration succeeds.
+            Logger.WriteLine($"[BLE link] GetGattServicesForUuid threw {BleDiag.Describe(ex)} (status={dev.ConnectionStatus}); retrying with full enumeration");
+            await Task.Delay(1000, ct);
+            try
+            {
+                var all = await dev.GetGattServicesAsync(BluetoothCacheMode.Uncached).AsTask(ct).WaitAsync(timeout, ct);
+                Logger.WriteLine($"[BLE link] GetGattServices → {all.Status}: [{string.Join(", ", all.Services.Select(s => s.Uuid))}]");
+                if (all.Status != GattCommunicationStatus.Success)
+                    throw new BleException($"Service enumeration failed: {all.Status} (after {BleDiag.Describe(ex)})", all.Status, ex);
+                var match = all.Services.FirstOrDefault(s => s.Uuid == uuid);
+                foreach (var other in all.Services.Where(s => !ReferenceEquals(s, match))) try { other.Dispose(); } catch { }
+                if (match == null) return null;
+                _services.Add(match);
+                await EnsureSessionAsync(ct);
+                return match;
+            }
+            catch (BleException) { throw; }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+            catch (Exception ex2)
+            {
+                throw new BleException($"Service discovery for {uuid} threw: {BleDiag.Describe(ex)}; full enumeration: {BleDiag.Describe(ex2)}", null, ex2);
+            }
+        }
         if (result.Status == GattCommunicationStatus.Unreachable)
-            throw new BleException($"Device {BleAddress.Format(Address)} unreachable", result.Status);
+            throw new BleException($"Device {BleAddress.Format(Address)} unreachable (status={dev.ConnectionStatus})", result.Status);
         if (result.Status != GattCommunicationStatus.Success)
         {
-            Logger.WriteLine($"[BLE link] GetGattServicesForUuid({uuid}) → {result.Status}");
+            Logger.WriteLine($"[BLE link] GetGattServicesForUuid({uuid}) → {result.Status}" +
+                (result.ProtocolError.HasValue ? $" att=0x{result.ProtocolError.Value:X2}" : ""));
+            if (result.Status == GattCommunicationStatus.AccessDenied || result.ProtocolError is 0x05 or 0x08 or 0x0F)
+                throw new BleException($"Access denied by {BleAddress.Format(Address)} (pairing/encryption required?)", result.Status);
             return null;
         }
         if (result.Services.Count == 0) return null;
         var svc = result.Services[0];
         foreach (var extra in result.Services.Skip(1)) try { extra.Dispose(); } catch { }
         _services.Add(svc);
+        await EnsureSessionAsync(ct);
         return svc;
     }
 
     public async Task<IReadOnlyList<Guid>> ListServiceUuidsAsync(TimeSpan timeout, CancellationToken ct)
     {
         var dev = _device ?? throw new BleException("link disposed");
-        var result = await dev.GetGattServicesAsync(BluetoothCacheMode.Uncached).AsTask(ct).WaitAsync(timeout, ct);
+        GattDeviceServicesResult result;
+        try
+        {
+            result = await dev.GetGattServicesAsync(BluetoothCacheMode.Uncached).AsTask(ct).WaitAsync(timeout, ct);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+        catch (Exception ex)
+        {
+            throw new BleException($"Service enumeration threw: {BleDiag.Describe(ex)}", null, ex);
+        }
         if (result.Status != GattCommunicationStatus.Success)
             throw new BleException($"Service enumeration failed: {result.Status}", result.Status);
         var list = result.Services.Select(s => s.Uuid).ToList();
         foreach (var s in result.Services) try { s.Dispose(); } catch { }
+        await EnsureSessionAsync(ct);
         return list;
     }
 

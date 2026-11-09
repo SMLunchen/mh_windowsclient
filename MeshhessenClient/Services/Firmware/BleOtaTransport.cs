@@ -39,9 +39,12 @@ public sealed class BleOtaTransport : IUnifiedOtaTransport
             throw new OtaException(OtaErrorKind.ConnectionFailed,
                 "OTA device not found. Ensure the device rebooted into OTA mode and is advertising.");
 
-        var link = await BleGattLink.OpenAsync(hit.Address, ct);
+        BleGattLink? link = null;
+        bool wasPaired = false;
         try
         {
+            link = await BleGattLink.OpenAsync(hit.Address, ct, hit.AddressType);
+            wasPaired = link.IsPaired;
             var svc = await link.TryGetServiceAsync(ServiceUuid, DiscoveryTimeout, ct)
                       ?? throw new OtaException(OtaErrorKind.ConnectionFailed,
                           "Connected, but the device exposes no OTA service (still in mesh mode or stale GATT cache?)");
@@ -53,10 +56,21 @@ public sealed class BleOtaTransport : IUnifiedOtaTransport
             _link = link;
             Logger.WriteLine($"[OTA/BLE] Service ready, write payload {link.MaxWriteNoResponse} bytes");
         }
-        catch
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
-            await link.DisposeAsync();
+            if (link != null) await link.DisposeAsync();
             throw;
+        }
+        catch (Exception ex)
+        {
+            if (link != null) await link.DisposeAsync();
+            // The loader runs on the mesh firmware's own address with no security; a Windows bond for
+            // that address makes Windows re-encrypt (fails against the loader) and serve a stale GATT
+            // table. Drop the bond so the next attempt connects plainly — the mesh connect re-pairs later.
+            if (wasPaired && await BleGattLink.TryUnpairAsync(hit.Address, hit.AddressType))
+                Logger.WriteLine("[OTA/BLE] Removed the Windows pairing for the OTA address; retrying without bond");
+            var detail = ex is OtaException ? ex.Message : $"OTA service setup failed: {BleDiag.Describe(ex)}";
+            throw new OtaException(OtaErrorKind.ConnectionFailed, detail, ex);
         }
     }
 

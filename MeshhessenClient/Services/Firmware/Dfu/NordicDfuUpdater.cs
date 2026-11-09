@@ -75,8 +75,8 @@ public sealed class NordicDfuUpdater
             if (attempt > 1) _progress.Report(new FirmwareProgress("StrFwPhaseRetryingUpload", null, null, new object[] { attempt, attempts }));
 
             IDfuTransport transport = protocol == Protocol.Legacy
-                ? new LegacyDfuTransport(hit.Address, midStreamSeen ? 5 : 10)
-                : new SecureDfuTransport(hit.Address);
+                ? new LegacyDfuTransport(hit.Address, midStreamSeen ? 5 : 10, hit.AddressType)
+                : new SecureDfuTransport(hit.Address, hit.AddressType);
             bool completed = false;
             Exception? failure = null;
             try
@@ -133,7 +133,7 @@ public sealed class NordicDfuUpdater
 
             if (failure is DfuStaleSessionException)
             {
-                await ResetStaleBootloaderAsync(protocol, hit.Address, ct);
+                await ResetStaleBootloaderAsync(protocol, hit, ct);
                 continue;
             }
             if (attempt < attempts) await Task.Delay(SessionRetryDelay, ct);
@@ -214,7 +214,7 @@ public sealed class NordicDfuUpdater
         Logger.WriteLine("[DFU] No DFU UUID in advertisement — enumerating GATT services");
         try
         {
-            await using var link = await BleGattLink.OpenAsync(hit.Address, ct);
+            await using var link = await BleGattLink.OpenAsync(hit.Address, ct, hit.AddressType);
             var uuids = await link.ListServiceUuidsAsync(TimeSpan.FromSeconds(15), ct);
             Logger.WriteLine($"[DFU] Services: {string.Join(", ", uuids)}");
             if (uuids.Contains(LegacyDfuUuids.Service)) return Protocol.Legacy;
@@ -244,16 +244,18 @@ public sealed class NordicDfuUpdater
             catch (Exception ex)
             {
                 last = ex;
-                Logger.WriteLine($"[DFU] Connect attempt {i}/{ConnectAttempts} failed: {ex.Message}");
+                Logger.WriteLine($"[DFU] Connect attempt {i}/{ConnectAttempts} failed: {BleDiag.Describe(ex)}");
                 if (i < ConnectAttempts) await Task.Delay(SessionRetryDelay, ct);
             }
         }
         throw new DfuConnectionException($"Failed to connect to the bootloader after {ConnectAttempts} attempts: {last?.Message}", last);
     }
 
-    private static async Task ResetStaleBootloaderAsync(Protocol protocol, ulong address, CancellationToken ct)
+    private static async Task ResetStaleBootloaderAsync(Protocol protocol, BleScanHit hit, CancellationToken ct)
     {
-        IDfuTransport t = protocol == Protocol.Legacy ? new LegacyDfuTransport(address) : new SecureDfuTransport(address);
+        IDfuTransport t = protocol == Protocol.Legacy
+            ? new LegacyDfuTransport(hit.Address, 10, hit.AddressType)
+            : new SecureDfuTransport(hit.Address, hit.AddressType);
         try
         {
             await t.ConnectAsync(ct);

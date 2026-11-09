@@ -816,7 +816,7 @@
     <sys:String x:Key="StrFwErrEmptyFile">The firmware file is empty.</sys:String>
     <sys:String x:Key="StrFwErrOtaRejected">The device refuses OTA mode: "{0}". The mesh connection stays up.</sys:String>
     <sys:String x:Key="StrFwErrWifiNotFound">No OTA loader found on the network (no UDP beacon) and no known IP address.</sys:String>
-    <sys:String x:Key="StrFwErrBleOtaConnect">The device confirmed OTA mode, but the Bluetooth OTA service was unreachable after {0} attempts ({1}). Keep the device nearby and try again – it returns to normal operation shortly.</sys:String>
+    <sys:String x:Key="StrFwErrBleOtaConnect">The device confirmed OTA mode, but the Bluetooth OTA service was unreachable after {0} attempts ({1}). The device stays in OTA mode until it is restarted (reset button or a short power cycle) – then try again. If the Windows pairing was removed in the process, Windows may ask for the PIN again on the next connect.</sys:String>
     <sys:String x:Key="StrFwErrWifiOtaConnect">The OTA loader was unreachable after {0} attempts ({1}). PC and device must be on the same network; check the firewall for port 3232.</sys:String>
     <sys:String x:Key="StrFwErrHashRejected">The loader rejects the hash – the image differs from the one announced in the request. Reboot the device and try again.</sys:String>
     <sys:String x:Key="StrFwErrHashMismatch">Hash verification after the transfer failed – the image was NOT activated, the old firmware stays in place. Try again.</sys:String>

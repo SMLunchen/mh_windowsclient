@@ -41,6 +41,7 @@ If an update is interrupted, an OTA/UF2 device simply keeps running the old firm
 
 ## Typical errors
 
+* **"Bluetooth OTA service unreachable"** (ESP32): the OTA loader advertises on the same Bluetooth address as the mesh firmware but knows no encryption. Windows still tries to reuse the existing pairing – if that fails, the client removes the pairing automatically and retries; on the next connect to the mesh firmware Windows may then ask for the PIN again. The device stays in OTA mode until it is restarted (reset button).
 * **"Bootloader not found"** (nRF52): the device did not enter DFU mode – usually a stale Windows pairing blocks the trigger. Remove the device in Windows Bluetooth settings, pair again, retry.
 * **"OTA loader unreachable"** (Wi-Fi): PC and node on the same network? Firewall for UDP/TCP 3232? On first use Windows may ask to allow network access for the client.
 * **"The device refuses OTA mode"**: the firmware reports the reason (e.g. missing OTA partition or a loader without BLE support). The mesh connection stays up.

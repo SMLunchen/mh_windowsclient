@@ -153,7 +153,7 @@ public sealed class Esp32OtaUpdater
             catch (Exception ex)
             {
                 last = ex;
-                Logger.WriteLine($"[OTA] Connect attempt {i}/{connectAttempts} failed: {ex.Message}");
+                Logger.WriteLine($"[OTA] Connect attempt {i}/{connectAttempts} failed: {BleDiag.Describe(ex)}");
                 await t.DisposeAsync();
                 if (i < connectAttempts) await Task.Delay(RetryDelay, ct);
             }
