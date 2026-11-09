@@ -672,10 +672,13 @@ public partial class MainWindow : Window
         _messageChannelFilter = ch;
         ch.Unread = 0; // opening the conversation marks it read
 
-        // Rebuild the visible chat to only this channel's messages.
+        // Rebuild the visible chat to only this channel's messages. DMs ride on a
+        // channel index too (usually 0), so they must be excluded explicitly or an
+        // incoming DM stored while the inline view was open leaks into the channel.
         _messages.Clear();
         foreach (var msg in _allMessages)
         {
+            if (IsDmMessage(msg)) continue;
             if (uint.TryParse(msg.Channel, out uint ci) && ci == ch.Index)
                 _messages.Add(msg);
         }
@@ -706,6 +709,12 @@ public partial class MainWindow : Window
         }
         ScrollMessagesToBottom();
     }
+
+    /// <summary>Direct message = unicast involving us (same rule as the live receive path).
+    /// Incoming must be addressed to us; outgoing to a peer. Overheard unicast between
+    /// third parties stays a channel message by design.</summary>
+    private bool IsDmMessage(MessageItem msg) =>
+        msg.ToId != 0 && msg.ToId != 0xFFFFFFFF && (msg.IsOwnMessage || msg.ToId == _myNodeId);
 
     /// <summary>True if <paramref name="msg"/> is a direct message between us and <paramref name="partner"/>.</summary>
     private bool IsDmWithPartner(MessageItem msg, uint partner)
@@ -2300,10 +2309,8 @@ public partial class MainWindow : Window
                     ShowAlertNotification(message.From, message.FromId);
                 }
 
-                // Direct message = unicast. Incoming must be addressed to us; outgoing to a peer.
                 // (To≠broadcast alone is wrong: overheard packets to other nodes were treated as DMs.)
-                bool isDirectMessage = message.ToId != 0 && message.ToId != 0xFFFFFFFF
-                    && (message.IsOwnMessage || message.ToId == _myNodeId);
+                bool isDirectMessage = IsDmMessage(message);
 
                 // Windows toast for new incoming messages (toggleable in settings), only while the
                 // app is not in the foreground — so it doesn't pop while the user is already reading.
