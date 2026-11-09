@@ -21,7 +21,8 @@
 
             <TextBlock Grid.Row="0" Grid.Column="0" Text="Name:"
                        FontWeight="Bold" VerticalAlignment="Center" Margin="0,6"/>
-            <TextBox Grid.Row="0" Grid.Column="1" x:Name="ChannelNameTextBox" Margin="0,6"/>
+            <TextBox Grid.Row="0" Grid.Column="1" x:Name="ChannelNameTextBox" Margin="0,6"
+                     MaxLength="11" ToolTip="{DynamicResource StrChannelNameLimitTip}"/>
 
             <TextBlock Grid.Row="1" Grid.Column="0" Text="PSK (Base64):"
                        FontWeight="Bold" VerticalAlignment="Center" Margin="0,6"/>

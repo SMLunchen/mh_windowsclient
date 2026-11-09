@@ -616,6 +616,8 @@
     <!-- AddChannel window -->
     <sys:String x:Key="StrAddChannelTitle">Kanal hinzufügen</sys:String>
     <sys:String x:Key="StrGeneratePsk">Generieren</sys:String>
+    <sys:String x:Key="StrChannelNameLimitTip">Maximal 11 Zeichen (Umlaute und Sonderzeichen zählen doppelt)</sys:String>
+    <sys:String x:Key="StrChannelNameTooLong">Der Kanalname ist zu lang: Das Gerät erlaubt maximal 11 Byte (Umlaute und Sonderzeichen zählen doppelt).</sys:String>
 
     <!-- TileDownloader window -->
     <sys:String x:Key="StrTdWindowTitle">Karten-Tiles herunterladen</sys:String>

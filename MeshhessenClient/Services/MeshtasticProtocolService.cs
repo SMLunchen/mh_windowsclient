@@ -3077,12 +3077,17 @@ public class MeshtasticProtocolService
         try
         {
             await EnsureSessionKeyAsync();
+            // Clamp to the firmware's 11-byte limit — a longer name makes the device
+            // reject the whole write (nanopb decode failure), it does not truncate itself.
+            var clampedName = ChannelEdit.ClampName(name);
+            if (clampedName != name)
+                Logger.WriteLine($"Channel name '{name}' exceeds {ChannelEdit.MaxNameBytes} UTF-8 bytes, truncated to '{clampedName}'");
             var channel = new Channel
             {
                 Index = channelIndex,
                 Settings = new ChannelSettings
                 {
-                    Name = name,
+                    Name = clampedName,
                     Psk = ByteString.CopyFrom(psk),
                     UplinkEnabled = uplinkEnabled,
                     DownlinkEnabled = downlinkEnabled
@@ -3092,7 +3097,7 @@ public class MeshtasticProtocolService
             var setChannel = new AdminMessage { SetChannel = channel };
             await SendAdminMessageAsync(setChannel);
 
-            Logger.WriteLine($"Channel {channelIndex} ('{name}') set successfully");
+            Logger.WriteLine($"Channel {channelIndex} ('{clampedName}') set successfully");
         }
         catch (Exception ex)
         {

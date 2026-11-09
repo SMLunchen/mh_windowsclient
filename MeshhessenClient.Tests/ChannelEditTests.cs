@@ -66,6 +66,31 @@ public class ChannelEditTests
         Assert.Equal(16u, ch.Settings.ModuleSettings.PositionPrecision);
     }
 
+    // Firmware limit: ChannelSettings.name is nanopb max_size:12 = 11 UTF-8 bytes + NUL.
+    // A longer name makes the device reject the whole set_channel write.
+    [Theory]
+    [InlineData("mesh hessen", "mesh hessen")]   // exactly 11 bytes — untouched
+    [InlineData("shortslow", "shortslow")]       // under the limit — untouched
+    [InlineData("mesh hessen2", "mesh hessen")]  // 12 ASCII chars — cut to 11
+    [InlineData("Hüttenfunk", "Hüttenfunk")]     // 10 chars but 11 bytes (ü = 2) — fits
+    [InlineData("Hüttenfunk2", "Hüttenfunk")]    // 12 bytes — the trailing char goes, ü stays whole
+    [InlineData("ääääää", "äääää")]              // 12 bytes of umlauts — cut at a char boundary
+    [InlineData("", "")]
+    public void ClampName_cuts_to_11_utf8_bytes(string input, string expected)
+    {
+        var clamped = ChannelEdit.ClampName(input);
+        Assert.Equal(expected, clamped);
+        Assert.True(System.Text.Encoding.UTF8.GetByteCount(clamped) <= ChannelEdit.MaxNameBytes);
+    }
+
+    [Fact]
+    public void ClampName_never_splits_a_grapheme()
+    {
+        // 10 ASCII bytes + a 4-byte emoji = 14 bytes; the emoji must go entirely, not byte-wise
+        var clamped = ChannelEdit.ClampName("Funkkanal_🛰");
+        Assert.Equal("Funkkanal_", clamped);
+    }
+
     [Fact]
     public async Task Channel_save_keeps_name_on_the_wire()
     {

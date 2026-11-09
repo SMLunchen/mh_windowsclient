@@ -190,10 +190,40 @@
 <div class="section active" id="de">
 <main>
 
-  <!-- ── v1.7.0 ── -->
+  <!-- ── v1.7.1 ── -->
   <div class="version-entry current">
     <div class="version-header">
-      <span class="version-tag tag-latest">v1.7.0</span>
+      <span class="version-tag tag-latest">v1.7.1</span>
+      <span class="version-date">2026-11-09</span>
+      Kanal-Fixes &amp; mehrzeilige Nachrichten
+    </div>
+    <p class="version-desc">Bugfix-Release: ein kritischer Fehler, der beim Speichern der Node-Konfiguration Kanalnamen auf dem Gerät löschte, dazu Shift+Enter für Zeilenumbrüche und saubere Trennung von DMs und Kanälen.</p>
+
+    <div class="cl-section added">
+      <h3>✨ Neu</h3>
+      <div class="cl-group">
+        <ul class="cl-list">
+          <li><strong>⏎ Mehrzeilige Nachrichten</strong> (Issue #72): <strong>Umschalt+Enter</strong> fügt im Nachrichtenfeld einen Zeilenumbruch ein — wie in der Android-App. Enter allein sendet weiterhin; das Eingabefeld wächst mit und scrollt bei langen Texten. Gilt für Hauptfenster und DM-Fenster.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="cl-section fixed">
+      <h3>🐛 Behoben</h3>
+      <div class="cl-group">
+        <ul class="cl-list">
+          <li><strong>Kanalnamen wurden beim Speichern gelöscht</strong> (Issue #69, kritisch): Wer in der Node-Konfiguration Positions-Genauigkeit oder MQTT-Up-/Downlink speicherte, verlor die Kanalnamen auf dem Gerät („Channel 1, 2, …" nach dem Neustart). Der Client schreibt jetzt den vom Gerät geladenen Original-Kanal zurück und ändert nur die wirklich bearbeiteten Felder — Name, PSK und Kanal-ID bleiben garantiert erhalten (mit Regressionstests bis auf die Funk-Schnittstelle).</li>
+          <li><strong>Kanalnamen-Limit wird durchgesetzt:</strong> Die Firmware erlaubt maximal 11 Byte — längere Namen ließen das Gerät den Kanal-Schreibvorgang stillschweigend verwerfen. Der „Kanal hinzufügen"-Dialog begrenzt und prüft jetzt die Eingabe (Achtung: Umlaute zählen doppelt), und alle Schreibpfade kappen sicher an der Zeichengrenze.</li>
+          <li><strong>DMs tauchten im aktiven Kanal auf:</strong> Das Gegenstück zum Fix aus 1.7.0 — beim Kanalwechsel rutschten eingehende Direktnachrichten in die Kanal-Ansicht (DMs reisen technisch auf Kanal 0). Direktnachrichten bleiben jetzt zuverlässig im DM-Bereich.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── v1.7.0 ── -->
+  <div class="version-entry">
+    <div class="version-header">
+      <span class="version-tag">v1.7.0</span>
       <span class="version-date">2026-10-23</span>
       Funk-Echo, Grafana-Dashboard &amp; 3D-Gelände
     </div>
@@ -1334,10 +1364,40 @@
 <div class="section" id="en">
 <main>
 
-  <!-- ── v1.7.0 (EN) ── -->
+  <!-- ── v1.7.1 (EN) ── -->
   <div class="version-entry current">
     <div class="version-header">
-      <span class="version-tag tag-latest">v1.7.0</span>
+      <span class="version-tag tag-latest">v1.7.1</span>
+      <span class="version-date">2026-11-09</span>
+      Channel fixes &amp; multiline messages
+    </div>
+    <p class="version-desc">Bugfix release: a critical bug that erased channel names on the device when saving the node configuration, plus Shift+Enter for line breaks and a clean separation of DMs and channels.</p>
+
+    <div class="cl-section added">
+      <h3>✨ New</h3>
+      <div class="cl-group">
+        <ul class="cl-list">
+          <li><strong>⏎ Multiline messages</strong> (issue #72): <strong>Shift+Enter</strong> inserts a line break in the message box — like the Android app. Enter alone still sends; the input grows with the text and scrolls when it gets long. Applies to the main window and the DM window.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="cl-section fixed">
+      <h3>🐛 Fixed</h3>
+      <div class="cl-group">
+        <ul class="cl-list">
+          <li><strong>Channel names were erased on save</strong> (issue #69, critical): saving position precision or MQTT up/downlink in the node configuration wiped the channel names on the device ("Channel 1, 2, …" after reboot). The client now writes back the original channel loaded from the device and only changes the fields actually edited — name, PSK and channel ID are guaranteed to survive (with regression tests down to the wire).</li>
+          <li><strong>Channel name limit enforced:</strong> the firmware allows at most 11 bytes — longer names made the device silently reject the channel write. The "Add channel" dialog now limits and validates the input (note: umlauts count twice), and every write path clamps safely at a character boundary.</li>
+          <li><strong>DMs showed up in the active channel:</strong> the counterpart of the 1.7.0 fix — switching channels pulled incoming direct messages into the channel view (DMs technically travel on channel 0). Direct messages now reliably stay in the DM area.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── v1.7.0 (EN) ── -->
+  <div class="version-entry">
+    <div class="version-header">
+      <span class="version-tag">v1.7.0</span>
       <span class="version-date">2026-10-23</span>
       Radio echo, Grafana dashboard &amp; 3D terrain
     </div>

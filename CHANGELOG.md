@@ -9,6 +9,13 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+---
+
+## [1.7.1] - 2026-11-09
+
+### 📻 Kanäle
+- **Kanalnamen-Limit wird jetzt durchgesetzt:** Die Firmware erlaubt für Kanalnamen maximal **11 UTF-8-Byte** (Umlaute/Sonderzeichen zählen doppelt) — längere Namen ließen das Gerät den kompletten Kanal-Schreibvorgang verwerfen, der Client ließ die Eingabe aber zu. Jetzt: Eingabefeld im „Kanal hinzufügen"-Dialog auf 11 Zeichen begrenzt + Byte-genaue Prüfung mit Hinweis (Umlaute!), und der Schreibpfad kappt Namen aus allen Quellen (Dialog, Import, Presets) sicher an der Zeichengrenze — ein Umlaut oder Emoji wird nie halbiert. Mit Unit-Tests.
+
 ### 📨 Nachrichten
 - **DMs tauchten im aktiven Kanal auf:** Das Gegenstück zum vorigen Fix (Kanal-Nachrichten im DM-Bereich): Beim Kanalwechsel baute die Seitenleiste die sichtbare Liste nur nach Kanal-Index neu auf — eingehende Inline-DMs reiten transporttechnisch aber ebenfalls auf einem Kanal-Index (meist 0) und rutschten so in den Primärkanal. Der Neuaufbau schließt Direktnachrichten jetzt explizit aus (gleiche Unicast-Regel wie der Live-Empfangspfad, als gemeinsamer Helper).
 - **Mehrzeilige Nachrichten mit Umschalt+Enter (#72):** Im Nachrichteneingabefeld (Hauptfenster und DM-Fenster) fügt **Umschalt+Enter** jetzt einen Zeilenumbruch ein — wie in der Android-App. **Enter** allein sendet weiterhin. Das Eingabefeld wächst dabei bis zu einer Maximalhöhe mit und zeigt dann einen Scrollbalken.
