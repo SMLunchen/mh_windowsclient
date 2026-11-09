@@ -27,6 +27,13 @@ public partial class NodeInfoWindow : Window
         else
             RoleBadgeText.Text = node.RoleDisplay;
 
+        // Broadcast status (StatusMessage module) — banner only when one is set
+        if (node.HasStatus)
+        {
+            NodeStatusBannerText.Text = node.Status;
+            NodeStatusBanner.Visibility = Visibility.Visible;
+        }
+
         // ── Device card ───────────────────────────────────────────────────
         HardwareModelText.Text = string.IsNullOrEmpty(node.HardwareModel) ? "–" : node.HardwareModel;
         RoleText.Text          = string.IsNullOrEmpty(node.RoleDisplay)   ? "–" : node.RoleDisplay;

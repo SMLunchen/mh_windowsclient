@@ -216,6 +216,23 @@
     <sys:String x:Key="StrEnvSoilMoisture">Bodenfeuchte</sys:String>
     <sys:String x:Key="StrEnvSoilTemp">Bodentemperatur</sys:String>
     <sys:String x:Key="StrEnvRadiation">Strahlung</sys:String>
+    <sys:String x:Key="StrEnvLightning1h">Blitze (1 h)</sys:String>
+    <sys:String x:Key="StrEnvLightningKm">Gewitter-Distanz</sys:String>
+    <sys:String x:Key="StrEnvSoilPh">Boden-pH</sys:String>
+    <sys:String x:Key="StrEnvWaterPh">Wasser-pH</sys:String>
+    <sys:String x:Key="StrEnvConductivity">Leitfähigkeit</sys:String>
+    <sys:String x:Key="StrEnvSalinity">Salzgehalt</sys:String>
+    <sys:String x:Key="StrEnvNitrogen">Stickstoff (N)</sys:String>
+    <sys:String x:Key="StrEnvPhosphorus">Phosphor (P)</sys:String>
+    <sys:String x:Key="StrEnvPotassium">Kalium (K)</sys:String>
+    <sys:String x:Key="StrEnvDissolvedO2">Gelöster Sauerstoff</sys:String>
+    <sys:String x:Key="StrEnvOrp">Redoxpotential (ORP)</sys:String>
+    <sys:String x:Key="StrEnvCod">Chem. Sauerstoffbedarf</sys:String>
+    <sys:String x:Key="StrEnvTurbidity">Trübung</sys:String>
+    <sys:String x:Key="StrEnvNitrate">Nitrat</sys:String>
+    <sys:String x:Key="StrEnvAmmonium">Ammonium</sys:String>
+    <sys:String x:Key="StrEnvBod">Biochem. Sauerstoffbedarf</sys:String>
+    <sys:String x:Key="StrEnvSolarIrradiance">Sonneneinstrahlung</sys:String>
     <sys:String x:Key="StrEnvDistance">Distanz</sys:String>
     <sys:String x:Key="StrEnvWeight">Gewicht</sys:String>
     <sys:String x:Key="StrDownloadVectorTiles">Vektor-Paket herunterladen…</sys:String>
@@ -618,6 +635,40 @@
     <sys:String x:Key="StrGeneratePsk">Generieren</sys:String>
     <sys:String x:Key="StrChannelNameLimitTip">Maximal 11 Zeichen (Umlaute und Sonderzeichen zählen doppelt)</sys:String>
     <sys:String x:Key="StrChannelNameTooLong">Der Kanalname ist zu lang: Das Gerät erlaubt maximal 11 Byte (Umlaute und Sonderzeichen zählen doppelt).</sys:String>
+    <sys:String x:Key="StrLongNameTooLong">Der Name ist zu lang: Das Gerät erlaubt maximal {0} Byte (Umlaute und Sonderzeichen zählen doppelt).</sys:String>
+
+    <!-- Node status (StatusMessage module) -->
+    <sys:String x:Key="StrNodeStatusHdr">Status</sys:String>
+    <sys:String x:Key="StrNodeStatusTooltip">Eigenen Status setzen – wird regelmäßig ins Mesh gefunkt</sys:String>
+    <sys:String x:Key="StrNodeStatusDialogTitle">Mein Status</sys:String>
+    <sys:String x:Key="StrNodeStatusDialogHint">Freitext-Status deines Nodes (z. B. „Im Urlaub bis 20.11." oder „Solar, Akku schwach"). Wird bei Änderung und danach ca. alle 12 Stunden gefunkt. Leer lassen löscht den Status. Benötigt Firmware 2.7.20 oder neuer.</sys:String>
+    <sys:String x:Key="StrNodeStatusTooLong">Der Status ist zu lang: maximal 79 Byte (Umlaute und Sonderzeichen zählen doppelt).</sys:String>
+    <sys:String x:Key="StrNodeStatusSaved">Status gesetzt: „{0}"</sys:String>
+    <sys:String x:Key="StrNodeStatusCleared">Status gelöscht</sys:String>
+    <sys:String x:Key="StrNodeStatusNotConnected">Nicht verbunden – Status kann erst mit Geräteverbindung gesetzt werden</sys:String>
+    <sys:String x:Key="StrNodeStatusLabel">Status</sys:String>
+    <sys:String x:Key="StrRfHeardTooltip">Direkt per Funk gehört (auf dem aktuellen LoRa-Slot, laut Gerät)</sys:String>
+    <sys:String x:Key="StrChannelAeadTooltip">AEAD-Kanal (AES-CCM, authentifiziert, Firmware 2.8, experimentell) – alle Nodes auf dem Kanal müssen AEAD aktiviert haben</sys:String>
+    <sys:String x:Key="StrRadiationSievert">Strahlung in µSv/h anzeigen (statt µR/h)</sys:String>
+    <sys:String x:Key="StrRadiationSievertTip">Umrechnung 1 µSv/h = 100 µR/h. Gilt für Karten-Infoboxen und Dashboard; gespeichert wird weiter in µR/h.</sys:String>
+
+    <!-- Security: packet signature policy (FW 2.8) -->
+    <sys:String x:Key="StrSecSignaturePolicy">Paket-Signaturen (Firmware 2.8)</sys:String>
+    <sys:String x:Key="StrSecSigPolicyCompatible">Kompatibel – unsignierte Pakete akzeptieren (Standard)</sys:String>
+    <sys:String x:Key="StrSecSigPolicyBalanced">Ausgewogen – signierte bevorzugen, unsignierte weiter annehmen</sys:String>
+    <sys:String x:Key="StrSecSigPolicyStrict">Strikt – nur verifizierte Signaturen/PKI (ältere Nodes werden ignoriert!)</sys:String>
+    <sys:String x:Key="StrNcDescSecSignaturePolicy">Wie das Gerät mit kryptografisch signierten Paketen umgeht (benötigt Firmware 2.8). Eine prüfbar falsche Signatur wird immer verworfen. Empfehlung: Kompatibel, solange ältere Nodes im Netz sind.</sys:String>
+    <sys:String x:Key="StrMsgAckVerified">Empfangsbestätigung kryptografisch verifiziert 🛡</sys:String>
+    <sys:String x:Key="StrMsgAckForged">Empfangsbestätigung mit UNGÜLTIGER Signatur – möglicherweise gefälscht!</sys:String>
+    <sys:String x:Key="StrMsgAckNoKey">Empfangsbestätigung nicht prüfbar (kein Schlüssel)</sys:String>
+
+    <!-- Display mirroring (FW 2.8) -->
+    <sys:String x:Key="StrToolsMirrorSection">📺 Geräte-Display spiegeln</sys:String>
+    <sys:String x:Key="StrToolsMirrorDesc">Zeigt das Display des verbundenen Nodes live im Client (Firmware 2.8, nur lokale Verbindung). Das Gerät sendet nach jeder Bildschirmänderung ein neues Bild; Schließen des Fensters beendet die Spiegelung.</sys:String>
+    <sys:String x:Key="StrToolsMirrorBtn">📺 Display spiegeln</sys:String>
+    <sys:String x:Key="StrMirrorWindowTitle">Geräte-Display</sys:String>
+    <sys:String x:Key="StrMirrorWaiting">Warte auf erstes Bild vom Gerät …</sys:String>
+    <sys:String x:Key="StrShortNameTooLong">Der Kurzname darf höchstens 4 Byte lang sein (Umlaute und Sonderzeichen zählen doppelt).</sys:String>
 
     <!-- TileDownloader window -->
     <sys:String x:Key="StrTdWindowTitle">Karten-Tiles herunterladen</sys:String>

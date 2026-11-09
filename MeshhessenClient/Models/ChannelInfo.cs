@@ -12,6 +12,10 @@ public class ChannelInfo : INotifyPropertyChanged
     public bool Uplink { get; set; }
     public uint PositionPrecision { get; set; }
 
+    /// <summary>ChannelSettings.use_aead (FW 2.8, experimental): AES-CCM with auth tag
+    /// instead of plain CTR. Shown as a shield badge in the channel list.</summary>
+    public bool UseAead { get; set; }
+
     // Unread counter for the conversation sidebar (WhatsApp-style badge).
     private int _unread;
     public int Unread

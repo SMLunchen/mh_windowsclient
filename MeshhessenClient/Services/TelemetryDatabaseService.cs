@@ -168,6 +168,13 @@ CREATE TABLE IF NOT EXISTS request_echo (
 );
 CREATE INDEX IF NOT EXISTS idx_reqecho_ts   ON request_echo(last_ts);
 CREATE INDEX IF NOT EXISTS idx_reqecho_node ON request_echo(node_id, req_type, last_ts);
+
+-- Last broadcast free-text status per node (StatusMessage module, port 36)
+CREATE TABLE IF NOT EXISTS node_status (
+    node_id   INTEGER PRIMARY KEY,
+    status    TEXT    NOT NULL,
+    timestamp INTEGER NOT NULL
+);
 ";
         cmd.ExecuteNonQuery();
 
@@ -261,6 +268,50 @@ VALUES ($n, $lat, $lon, $alt, $spd, $trk, $ts)";
             cmd.Parameters.AddWithValue("$ts",  unixTimestamp);
             cmd.ExecuteNonQuery();
         }
+    }
+
+    /// <summary>Store a node's broadcast free-text status; empty status deletes the row.</summary>
+    public void UpsertNodeStatus(uint nodeId, string status)
+    {
+        lock (_lock)
+        {
+            using var con = Open();
+            using var cmd = con.CreateCommand();
+            if (string.IsNullOrWhiteSpace(status))
+            {
+                cmd.CommandText = "DELETE FROM node_status WHERE node_id = $n";
+                cmd.Parameters.AddWithValue("$n", (long)nodeId);
+            }
+            else
+            {
+                cmd.CommandText = @"
+INSERT INTO node_status (node_id, status, timestamp) VALUES ($n, $s, $ts)
+ON CONFLICT(node_id) DO UPDATE SET status = $s, timestamp = $ts";
+                cmd.Parameters.AddWithValue("$n",  (long)nodeId);
+                cmd.Parameters.AddWithValue("$s",  status);
+                cmd.Parameters.AddWithValue("$ts", DateTimeOffset.UtcNow.ToUnixTimeSeconds());
+            }
+            cmd.ExecuteNonQuery();
+        }
+    }
+
+    /// <summary>Last known status per node, for backfilling after a restart. Statuses are
+    /// rebroadcast every 12 h, so anything much older than that is likely stale.</summary>
+    public Dictionary<uint, string> GetNodeStatuses(int maxAgeDays = 7)
+    {
+        var result = new Dictionary<uint, string>();
+        long since = DateTimeOffset.UtcNow.ToUnixTimeSeconds() - (long)maxAgeDays * 86400;
+        lock (_lock)
+        {
+            using var con = Open();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "SELECT node_id, status FROM node_status WHERE timestamp >= $since";
+            cmd.Parameters.AddWithValue("$since", since);
+            using var rdr = cmd.ExecuteReader();
+            while (rdr.Read())
+                result[(uint)rdr.GetInt64(0)] = rdr.GetString(1);
+        }
+        return result;
     }
 
     public void DeleteOldNodePositions(int retentionHours)

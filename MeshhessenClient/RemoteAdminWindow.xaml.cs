@@ -20,6 +20,7 @@ public partial class RemoteAdminWindow : Window
     private bool _isFavorite;
     private bool _uiReady;
     private bool _lazyMode;
+    private string? _remoteFirmwareVersion;
     private readonly HashSet<string> _loadedSections = new();
 
     // Loaded config state
@@ -154,6 +155,7 @@ public partial class RemoteAdminWindow : Window
         if (metaResp.PayloadVariantCase == AdminMessage.PayloadVariantOneofCase.GetDeviceMetadataResponse)
         {
             var meta = metaResp.GetDeviceMetadataResponse;
+            _remoteFirmwareVersion = meta.FirmwareVersion;
             Dispatcher.Invoke(() =>
             {
                 FirmwareLabel.Text = meta.FirmwareVersion ?? "-";
@@ -572,6 +574,7 @@ public partial class RemoteAdminWindow : Window
         SecIsManaged.IsChecked           = s.IsManaged;
         SecSerialEnabled.IsChecked       = s.SerialEnabled;
         SecDebugLogEnabled.IsChecked     = s.DebugLogApiEnabled;
+        SelectComboByTag(SecSignaturePolicyCombo, (int)s.PacketSignaturePolicy);
     }
 
     private void PopulateFavoriteNodeCombo()
@@ -686,6 +689,26 @@ public partial class RemoteAdminWindow : Window
 
     private async void SaveButton_Click(object sender, RoutedEventArgs e)
     {
+        // Name limits are UTF-8 BYTES on the wire; the TARGET node's firmware decides:
+        // 2.8 clamps long names to 24 bytes, older firmware allowed 39.
+        if (_loadedOwner != null)
+        {
+            int longMax = FirmwareCaps.AtLeast(_remoteFirmwareVersion, 2, 8)
+                ? Utf8Text.LongNameMaxBytes : Utf8Text.LongNameMaxBytesLegacy;
+            if (Utf8Text.ByteCount(OwnerLongName.Text.Trim()) > longMax)
+            {
+                MessageBox.Show(string.Format(Loc("StrLongNameTooLong"), longMax),
+                    Loc("StrError"), MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            if (Utf8Text.ByteCount(OwnerShortName.Text.Trim()) > Utf8Text.ShortNameMaxBytes)
+            {
+                MessageBox.Show(Loc("StrShortNameTooLong"),
+                    Loc("StrError"), MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+        }
+
         SaveButton.IsEnabled = false;
         SetStatus("StrRemoteAdminSaving", "#FF9800");
 
@@ -833,6 +856,9 @@ public partial class RemoteAdminWindow : Window
                 s.IsManaged           = SecIsManaged.IsChecked           == true;
                 s.SerialEnabled       = SecSerialEnabled.IsChecked       == true;
                 s.DebugLogApiEnabled  = SecDebugLogEnabled.IsChecked     == true;
+                // Signing policy (FW 2.8): default Compatible; enforcement is firmware-side
+                s.PacketSignaturePolicy =
+                    (global::Meshtastic.Protobufs.Config.Types.SecurityConfig.Types.PacketSignaturePolicy)(GetComboTag(SecSignaturePolicyCombo) ?? 0);
 
                 // Rebuild admin keys from the three text boxes
                 s.AdminKey.Clear();

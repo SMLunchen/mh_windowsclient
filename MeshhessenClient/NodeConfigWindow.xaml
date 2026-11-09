@@ -890,6 +890,14 @@
                             <TextBlock Text="{DynamicResource StrNcDescSecIsManaged}" Style="{StaticResource DescStyle}"/>
                             <CheckBox x:Name="SecAdminChannelCheckBox" Content="{DynamicResource StrNcSecAdminChannel}" Margin="0,8,0,0"/>
                             <TextBlock Text="{DynamicResource StrNcDescSecAdminChannel}" Style="{StaticResource DescStyle}"/>
+
+                            <TextBlock Text="{DynamicResource StrSecSignaturePolicy}" FontWeight="SemiBold" Margin="0,14,0,2"/>
+                            <ComboBox x:Name="SecSignaturePolicyCombo" MinWidth="320" HorizontalAlignment="Left">
+                                <ComboBoxItem Tag="0" Content="{DynamicResource StrSecSigPolicyCompatible}"/>
+                                <ComboBoxItem Tag="1" Content="{DynamicResource StrSecSigPolicyBalanced}"/>
+                                <ComboBoxItem Tag="2" Content="{DynamicResource StrSecSigPolicyStrict}"/>
+                            </ComboBox>
+                            <TextBlock Text="{DynamicResource StrNcDescSecSignaturePolicy}" Style="{StaticResource DescStyle}"/>
                         </StackPanel>
                     </StackPanel>
                 </ScrollViewer>

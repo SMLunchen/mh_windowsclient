@@ -643,6 +643,7 @@ public partial class NodeConfigWindow : Window
             SecDebugLogCheckBox.IsChecked      = config.DebugLogApiEnabled;
             SecIsManagedCheckBox.IsChecked     = config.IsManaged;
             SecAdminChannelCheckBox.IsChecked  = config.AdminChannelEnabled;
+            SelectComboBoxByTag(SecSignaturePolicyCombo, (int)config.PacketSignaturePolicy);
             MarkReceived("security");
         });
     }
@@ -944,6 +945,27 @@ public partial class NodeConfigWindow : Window
 
     private async void Save_Click(object sender, RoutedEventArgs e)
     {
+        // Name limits are UTF-8 BYTES on the wire, not characters (umlauts count twice).
+        // Firmware 2.8 clamps long names to 24 bytes; older firmware allowed 39.
+        int longMax = FirmwareCaps.AtLeast(_protocolService.GetFirmwareVersion(), 2, 8)
+            ? Utf8Text.LongNameMaxBytes : Utf8Text.LongNameMaxBytesLegacy;
+        if (Utf8Text.ByteCount(LongNameTextBox.Text.Trim()) > longMax)
+        {
+            MessageBox.Show(
+                string.Format((string)Application.Current.FindResource("StrLongNameTooLong"), longMax),
+                (string)Application.Current.FindResource("StrError"),
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+        if (Utf8Text.ByteCount(ShortNameTextBox.Text.Trim()) > Utf8Text.ShortNameMaxBytes)
+        {
+            MessageBox.Show(
+                (string)Application.Current.FindResource("StrShortNameTooLong"),
+                (string)Application.Current.FindResource("StrError"),
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
         var confirm = MessageBox.Show(
             (string)Application.Current.TryFindResource("StrNcSaveRebootWarning")
                 ?? "Konfiguration speichern und Gerät neu starten?",
@@ -1219,6 +1241,9 @@ public partial class NodeConfigWindow : Window
                 newSec.DebugLogApiEnabled  = SecDebugLogCheckBox.IsChecked == true;
                 newSec.IsManaged           = SecIsManagedCheckBox.IsChecked == true;
                 newSec.AdminChannelEnabled = SecAdminChannelCheckBox.IsChecked == true;
+                // Signing policy (FW 2.8): default Compatible; enforcement is firmware-side
+                newSec.PacketSignaturePolicy =
+                    (global::Meshtastic.Protobufs.Config.Types.SecurityConfig.Types.PacketSignaturePolicy)GetComboBoxTag(SecSignaturePolicyCombo);
 
                 // Private key: only overwrite if user typed a new hex key (different from loaded)
                 var privHex = SecPrivKeyBox.Text.Trim().Replace(" ", "");

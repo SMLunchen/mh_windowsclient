@@ -85,6 +85,16 @@
             </StackPanel>
         </Grid>
 
+        <!-- ── Broadcast status (StatusMessage module, port 36) ─────────── -->
+        <Border x:Name="NodeStatusBanner" Style="{StaticResource NiCard}"
+                Visibility="Collapsed" Margin="0,8,0,0">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="💬" FontSize="13" Margin="0,0,8,0" VerticalAlignment="Top"/>
+                <TextBlock x:Name="NodeStatusBannerText" FontStyle="Italic" FontSize="13"
+                           TextWrapping="Wrap" VerticalAlignment="Center"/>
+            </StackPanel>
+        </Border>
+
         <!-- ── Device card ─────────────────────────────────────────────── -->
         <TextBlock Text="{DynamicResource StrNiSectionDevice}" Style="{StaticResource NiSection}"/>
         <Border Style="{StaticResource NiCard}">

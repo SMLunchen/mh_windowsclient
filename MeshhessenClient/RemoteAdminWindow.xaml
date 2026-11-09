@@ -421,6 +421,16 @@
                         <TextBlock Text="{DynamicResource StrNcDescSecDebugLog}" FontSize="10"
                                    Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
                                    TextWrapping="Wrap" Margin="0,0,0,8"/>
+
+                        <TextBlock Text="{DynamicResource StrSecSignaturePolicy}" FontWeight="SemiBold" Margin="0,8,0,2"/>
+                        <ComboBox x:Name="SecSignaturePolicyCombo" MinWidth="300" HorizontalAlignment="Left">
+                            <ComboBoxItem Tag="0" Content="{DynamicResource StrSecSigPolicyCompatible}"/>
+                            <ComboBoxItem Tag="1" Content="{DynamicResource StrSecSigPolicyBalanced}"/>
+                            <ComboBoxItem Tag="2" Content="{DynamicResource StrSecSigPolicyStrict}"/>
+                        </ComboBox>
+                        <TextBlock Text="{DynamicResource StrNcDescSecSignaturePolicy}" FontSize="10"
+                                   Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                                   TextWrapping="Wrap" Margin="0,2,0,8"/>
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>

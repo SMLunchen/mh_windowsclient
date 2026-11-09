@@ -30,3 +30,4 @@ global using StoreForwardConfig         = Meshtastic.Protobufs.ModuleConfig.Type
 global using RangeTestConfig            = Meshtastic.Protobufs.ModuleConfig.Types.RangeTestConfig;
 global using CannedMessageConfig        = Meshtastic.Protobufs.ModuleConfig.Types.CannedMessageConfig;
 global using NeighborInfoConfig         = Meshtastic.Protobufs.ModuleConfig.Types.NeighborInfoConfig;
+global using StatusMessageConfig        = Meshtastic.Protobufs.ModuleConfig.Types.StatusMessageConfig;
