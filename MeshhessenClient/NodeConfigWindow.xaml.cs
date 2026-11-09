@@ -1275,14 +1275,21 @@ public partial class NodeConfigWindow : Window
                 bool newDownlink  = chControls[i].Dn.IsChecked == true;
                 uint newPrecision = (uint)GetComboBoxTag(chControls[i].Prec);
 
-                if (newUplink == info.Uplink && newDownlink == info.Downlink && newPrecision == info.PositionPrecision) continue;
+                // set_channel REPLACES the whole channel on the device. A proto rebuilt
+                // from UI state wiped the channel names (#69) — clone the device's own
+                // channel and only touch the fields this dialog actually edits.
+                var raw = _protocolService.GetRawChannel(i);
+                if (raw == null)
+                {
+                    Logger.WriteLine($"NodeConfigWindow: no raw proto for channel {i}, skipping write to avoid data loss");
+                    continue;
+                }
 
-                var ch = new Channel { Index = i, Role = loadedRole };
-                var settings = new ChannelSettings { UplinkEnabled = newUplink, DownlinkEnabled = newDownlink };
-                if (!string.IsNullOrEmpty(info.Psk))
-                    settings.Psk = ByteString.CopyFrom(Convert.FromBase64String(info.Psk));
-                settings.ModuleSettings = new ModuleSettings { PositionPrecision = newPrecision };
-                ch.Settings = settings;
+                if (newUplink == (raw.Settings?.UplinkEnabled ?? false)
+                    && newDownlink == (raw.Settings?.DownlinkEnabled ?? false)
+                    && newPrecision == (raw.Settings?.ModuleSettings?.PositionPrecision ?? 0)) continue;
+
+                var ch = ChannelEdit.WithUplinkDownlinkPrecision(raw, newUplink, newDownlink, newPrecision);
                 await _protocolService.UpdateChannelUplinkDownlinkAsync(ch);
                 await Delay();
             }

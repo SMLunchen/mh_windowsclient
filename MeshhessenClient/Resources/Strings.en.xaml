@@ -616,6 +616,8 @@
     <!-- AddChannel window -->
     <sys:String x:Key="StrAddChannelTitle">Add Channel</sys:String>
     <sys:String x:Key="StrGeneratePsk">Generate</sys:String>
+    <sys:String x:Key="StrChannelNameLimitTip">Maximum 11 characters (umlauts and special characters count twice)</sys:String>
+    <sys:String x:Key="StrChannelNameTooLong">The channel name is too long: the device allows at most 11 bytes (umlauts and special characters count twice).</sys:String>
 
     <!-- TileDownloader window -->
     <sys:String x:Key="StrTdWindowTitle">Download Map Tiles</sys:String>

@@ -3077,12 +3077,17 @@ public class MeshtasticProtocolService
         try
         {
             await EnsureSessionKeyAsync();
+            // Clamp to the firmware's 11-byte limit — a longer name makes the device
+            // reject the whole write (nanopb decode failure), it does not truncate itself.
+            var clampedName = ChannelEdit.ClampName(name);
+            if (clampedName != name)
+                Logger.WriteLine($"Channel name '{name}' exceeds {ChannelEdit.MaxNameBytes} UTF-8 bytes, truncated to '{clampedName}'");
             var channel = new Channel
             {
                 Index = channelIndex,
                 Settings = new ChannelSettings
                 {
-                    Name = name,
+                    Name = clampedName,
                     Psk = ByteString.CopyFrom(psk),
                     UplinkEnabled = uplinkEnabled,
                     DownlinkEnabled = downlinkEnabled
@@ -3092,7 +3097,7 @@ public class MeshtasticProtocolService
             var setChannel = new AdminMessage { SetChannel = channel };
             await SendAdminMessageAsync(setChannel);
 
-            Logger.WriteLine($"Channel {channelIndex} ('{name}') set successfully");
+            Logger.WriteLine($"Channel {channelIndex} ('{clampedName}') set successfully");
         }
         catch (Exception ex)
         {
@@ -3487,6 +3492,25 @@ public class MeshtasticProtocolService
         await EnsureSessionKeyAsync();
         var adminMsg = new AdminMessage { SetChannel = channel };
         await SendAdminMessageAsync(adminMsg);
+
+        // Keep the raw-channel cache coherent with what was just written
+        lock (_dataLock)
+        {
+            var existing = _tempChannels.FirstOrDefault(c => c.Index == channel.Index);
+            if (existing != null) _tempChannels.Remove(existing);
+            _tempChannels.Add(channel.Clone());
+        }
+    }
+
+    /// <summary>Raw channel proto as last reported by the device (deep clone), or null if
+    /// unknown. set_channel replaces the whole channel on the device, so partial edits must
+    /// start from this proto to preserve the fields they do not touch (name, PSK, id — #69).</summary>
+    public Channel? GetRawChannel(int index)
+    {
+        lock (_dataLock)
+        {
+            return _tempChannels.FirstOrDefault(c => c.Index == index)?.Clone();
+        }
     }
 
     public async Task SetSerialConfigAsync(SerialConfig config)

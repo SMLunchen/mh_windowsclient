@@ -498,12 +498,18 @@ public partial class DirectMessagesWindow : Window
             VerticalContentAlignment = VerticalAlignment.Center,
             Padding = new Thickness(10),
             MaxLength = 200,
+            AcceptsReturn = true,
+            TextWrapping = TextWrapping.Wrap,
+            MaxHeight = 120,
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
             Text = ""
         };
-        textBox.KeyDown += (s, e) =>
+        textBox.PreviewKeyDown += (s, e) =>
         {
-            if (e.Key == Key.Enter)
+            // Enter sends; Shift+Enter falls through to AcceptsReturn and inserts a line break (#72)
+            if (e.Key == Key.Enter && (Keyboard.Modifiers & ModifierKeys.Shift) == 0)
             {
+                e.Handled = true;
                 var reply = dmReplyTarget;
                 dmReplyTarget = null;
                 replyIndicatorBorder.Visibility = Visibility.Collapsed;

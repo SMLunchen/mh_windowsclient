@@ -37,6 +37,15 @@ public partial class AddChannelWindow : Window
             return;
         }
 
+        // Firmware limit is 11 UTF-8 BYTES, not characters — MaxLength=11 on the box
+        // stops the plain case, umlauts/emoji (multi-byte) must be caught here.
+        if (System.Text.Encoding.UTF8.GetByteCount(ChannelName) > Services.ChannelEdit.MaxNameBytes)
+        {
+            MessageBox.Show((string)FindResource("StrChannelNameTooLong"),
+                (string)FindResource("StrError"), MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
         if (string.IsNullOrWhiteSpace(PskBase64))
         {
             MessageBox.Show("Bitte einen PSK eingeben oder generieren.", "Fehler",

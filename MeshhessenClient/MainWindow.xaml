@@ -1272,7 +1272,11 @@
                                 VerticalContentAlignment="Center"
                                 Padding="10"
                                 MaxLength="200"
-                                KeyDown="MessageTextBox_KeyDown"/>
+                                AcceptsReturn="True"
+                                TextWrapping="Wrap"
+                                MaxHeight="120"
+                                VerticalScrollBarVisibility="Auto"
+                                PreviewKeyDown="MessageTextBox_PreviewKeyDown"/>
 
                         <Button x:Name="AlertBellButton"
                                Grid.Column="1"
