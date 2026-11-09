@@ -79,6 +79,7 @@ Kanal-Chat und Direktnachrichten mit Reaktionen, Antworten und optionaler Nachri
 | [📊 Telemetrie & Funkanalyse](docs/de/telemetrie.md) | [📊 Telemetry & radio analysis](docs/en/telemetry.md) |
 | [📡 Traceroute](docs/de/traceroute.md) | [📡 Traceroute](docs/en/traceroute.md) |
 | [🔧 Node-Verwaltung & Fernkonfiguration](docs/de/node-verwaltung.md) | [🔧 Node management & remote admin](docs/en/node-management.md) |
+| [⬆️ Firmware-Update](docs/de/firmware-update.md) | [⬆️ Firmware update](docs/en/firmware-update.md) |
 | [🖧 Virtual Node](docs/de/virtual-node.md) · [🔧 T-Deck](docs/de/t-deck.md) · [🔒 Kiosk](docs/de/kiosk.md) | [🖧 Virtual Node](docs/en/virtual-node.md) · [🔧 T-Deck](docs/en/t-deck.md) · [🔒 Kiosk](docs/en/kiosk.md) |
 | [🏗️ Technik & Protokoll](docs/de/technik.md) | [🏗️ Technology & protocol](docs/en/technical.md) |
 
@@ -140,11 +141,12 @@ The free, native **Windows client for Meshtastic devices**: send messages, analy
 * **📊 Spot problems before links die** – configurable **telemetry dashboard** (11 widget types, threshold toasts, fullscreen for wall monitors), day/night statistics, LED health indicators → [Telemetry](docs/en/telemetry.md)
 * **💬 Communicate comfortably from your PC** – channel chat & DMs with reactions, replies and optional history, client-side **PKI decryption** (X25519 + AES-256-CCM), 🚨 alert bell/SOS → [Messaging](docs/en/messaging.md)
 * **🔧 Configure everything** – full device configuration, **remote admin** across relay/MQTT paths, favorites sync → [Node management](docs/en/node-management.md)
+* **⬆️ Update firmware** – guided wizard like the Android app: ESP32 Wi-Fi/Bluetooth OTA, nRF52 Bluetooth DFU or UF2 drive, releases (stable/alpha) or local files, offline catalog cache → [Firmware update](docs/en/firmware-update.md)
 * **🧰 Power tools** – Virtual-Node TCP proxy for phone apps, T-Deck SD-card map assistant, kiosk mode for shared stations → [Virtual Node](docs/en/virtual-node.md) · [T-Deck](docs/en/t-deck.md) · [Kiosk](docs/en/kiosk.md)
 
 ## 📚 Documentation
 
-[🚀 Getting started](docs/en/getting-started.md) · [🗺️ Map](docs/en/map.md) · [📨 Messaging](docs/en/messaging.md) · [📊 Telemetry](docs/en/telemetry.md) · [📡 Traceroute](docs/en/traceroute.md) · [🔧 Node management](docs/en/node-management.md) · [🖧 Virtual Node](docs/en/virtual-node.md) · [🔧 T-Deck](docs/en/t-deck.md) · [🔒 Kiosk](docs/en/kiosk.md) · [🏗️ Technology](docs/en/technical.md) · [Changelog](CHANGELOG.md)
+[🚀 Getting started](docs/en/getting-started.md) · [🗺️ Map](docs/en/map.md) · [📨 Messaging](docs/en/messaging.md) · [📊 Telemetry](docs/en/telemetry.md) · [📡 Traceroute](docs/en/traceroute.md) · [🔧 Node management](docs/en/node-management.md) · [⬆️ Firmware update](docs/en/firmware-update.md) · [🖧 Virtual Node](docs/en/virtual-node.md) · [🔧 T-Deck](docs/en/t-deck.md) · [🔒 Kiosk](docs/en/kiosk.md) · [🏗️ Technology](docs/en/technical.md) · [Changelog](CHANGELOG.md)
 
 📖 **Prefer a searchable manual?** The same chapters live at [meshhessenclient.de/handbuch](https://meshhessenclient.de/handbuch/).
 

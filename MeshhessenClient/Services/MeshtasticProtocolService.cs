@@ -11,7 +11,7 @@ using TracerouteResult = MeshhessenClient.Models.TracerouteResult;
 
 namespace MeshhessenClient.Services;
 
-public class MeshtasticProtocolService
+public class MeshtasticProtocolService : Firmware.IFirmwareDeviceLink
 {
     private readonly IConnectionService _connectionService;
     private readonly List<byte> _receiveBuffer = new();
@@ -114,6 +114,8 @@ public class MeshtasticProtocolService
     /// <summary>Display-mirroring chunks (FW 2.8, local connection only).</summary>
     public event EventHandler<Meshtastic.Protobufs.DisplayFrame>? DisplayFrameReceived;
     public event EventHandler<Meshtastic.Protobufs.DisplayPalette>? DisplayPaletteReceived;
+    /// <summary>Text of a FromRadio.client_notification (e.g. the firmware's answer to an OTA request).</summary>
+    public event EventHandler<string>? ClientNotificationReceived;
     public event EventHandler<ExternalNotificationConfig>? ExternalNotificationConfigReceived;
     public event EventHandler<CannedMessageConfig>? CannedMessageConfigReceived;
     public event EventHandler<RangeTestConfig>? RangeTestConfigReceived;
@@ -1227,10 +1229,15 @@ public class MeshtasticProtocolService
                 // DeviceInfo speichern, aber Event erst nach Init feuern
                 lock (_dataLock)
                 {
+                    _myPioEnv = fromRadio.MyInfo.PioEnv ?? "";
+                    // Keep firmware/hardware already learned from a handshake metadata frame or an
+                    // earlier connection phase; my_info only contributes the node id.
+                    var prev = _myDeviceInfo;
                     _myDeviceInfo = new DeviceInfo
                     {
                         NodeId = _myNodeId,
-                        // Hardware and firmware info will be filled from other sources
+                        FirmwareVersion = prev?.FirmwareVersion ?? "",
+                        HardwareModel = prev?.HardwareModel ?? "",
                         // User-Daten werden später aus NodeInfo ergänzt
                     };
                 }
@@ -1238,6 +1245,14 @@ public class MeshtasticProtocolService
 
             case FromRadio.PayloadVariantOneofCase.NodeInfo:
                 HandleNodeInfo(fromRadio.NodeInfo);
+                break;
+
+            // The handshake carries the device metadata right after my_info (FW ≥ 2.2) — same payload the
+            // explicit get_device_metadata admin request returns later. Taking it here means firmware
+            // version / hardware model are known as soon as the connection is up, even if that admin
+            // round-trip is lost.
+            case FromRadio.PayloadVariantOneofCase.Metadata:
+                ApplyDeviceMetadata(fromRadio.Metadata, fireEvent: !_isInitializing);
                 break;
 
             case FromRadio.PayloadVariantOneofCase.Channel:
@@ -1272,6 +1287,13 @@ public class MeshtasticProtocolService
 
             case FromRadio.PayloadVariantOneofCase.DisplayPalette:
                 DisplayPaletteReceived?.Invoke(this, fromRadio.DisplayPalette);
+                break;
+
+            case FromRadio.PayloadVariantOneofCase.ClientNotification:
+                var cn = fromRadio.ClientNotification;
+                Logger.WriteLine($"[ClientNotification] {cn.Level}: {cn.Message}");
+                if (!string.IsNullOrEmpty(cn.Message))
+                    ClientNotificationReceived?.Invoke(this, cn.Message);
                 break;
         }
     }
@@ -2608,6 +2630,8 @@ public class MeshtasticProtocolService
                 lock (_dataLock)
                 {
                     _myDeviceInfo.HardwareModel = nodeInfo.HardwareModel;
+                    if (protoNodeInfo.User?.HwModel is HardwareModel ownHw && ownHw != HardwareModel.Unset)
+                        _myHwModel = ownHw;
                 }
             }
 
@@ -2686,7 +2710,10 @@ public class MeshtasticProtocolService
                 lock (_dataLock)
                 {
                     if (user.HwModel != HardwareModel.Unset)
+                    {
                         _myDeviceInfo.HardwareModel = user.HwModel.ToString();
+                        _myHwModel = user.HwModel;
+                    }
                     _myDeviceInfo.ShortName = user.ShortName ?? "";
                     _myDeviceInfo.LongName = user.LongName ?? "";
                     Logger.WriteLine($"Updated own DeviceInfo: HW={_myDeviceInfo.HardwareModel}, Name={_myDeviceInfo.LongName}");
@@ -3697,12 +3724,145 @@ public class MeshtasticProtocolService
     }
 
     private Meshtastic.Protobufs.DisplayInfo? _myDisplayInfo;
+    private DeviceMetadata? _myMetadata;
+    private HardwareModel _myHwModel = HardwareModel.Unset;
+    private string _myPioEnv = "";
 
     /// <summary>Display panel of the connected device (FW 2.8 metadata), or null when the
     /// device has none / reports none. Gates the display-mirror button.</summary>
     public Meshtastic.Protobufs.DisplayInfo? GetDisplayInfo()
     {
         lock (_dataLock) { return _myDisplayInfo; }
+    }
+
+    /// <summary>Stores the device metadata (from the handshake or the admin response) and updates the
+    /// derived DeviceInfo. The DeviceMetadata of the handshake has no node id, so DeviceInfo is created
+    /// here if my_info has not been seen yet (it is completed by my_info later).</summary>
+    private void ApplyDeviceMetadata(DeviceMetadata meta, bool fireEvent)
+    {
+        Logger.WriteLine($"DeviceMetadata: FW={meta.FirmwareVersion}, HW={meta.HwModel}, wifi={meta.HasWifi}, bt={meta.HasBluetooth}" +
+            (meta.Display != null ? $", Display={meta.Display.Width}x{meta.Display.Height} {meta.Display.Format}" : ""));
+        DeviceInfo? info;
+        lock (_dataLock)
+        {
+            _myDisplayInfo = meta.Display; // null = no display / pre-2.8 firmware
+            _myMetadata = meta;
+            if (meta.HwModel != HardwareModel.Unset)
+                _myHwModel = meta.HwModel;
+            _myDeviceInfo ??= new DeviceInfo { NodeId = _myNodeId };
+            if (!string.IsNullOrEmpty(meta.FirmwareVersion))
+                _myDeviceInfo.FirmwareVersion = meta.FirmwareVersion;
+            if (meta.HwModel != HardwareModel.Unset)
+                _myDeviceInfo.HardwareModel = meta.HwModel.ToString();
+            info = _myDeviceInfo;
+        }
+        if (fireEvent)
+            DeviceInfoReceived?.Invoke(this, info);
+    }
+
+    // ── Firmware update support ──────────────────────────────────────────────
+
+    /// <summary>Full device metadata (hw model, firmware, radio capabilities), or null before it arrived.</summary>
+    public DeviceMetadata? GetDeviceMetadata()
+    {
+        lock (_dataLock) { return _myMetadata; }
+    }
+
+    /// <summary>Hardware model of the connected device (from metadata, else from our own NodeInfo).</summary>
+    public HardwareModel GetMyHardwareModel()
+    {
+        lock (_dataLock) { return _myHwModel; }
+    }
+
+    /// <summary>PlatformIO environment the firmware was built for (MyNodeInfo.pio_env, FW ≥ 2.5), or "".</summary>
+    public string GetMyPioEnv()
+    {
+        lock (_dataLock) { return _myPioEnv; }
+    }
+
+    /// <summary>ESP32 only: ask the firmware to reboot into the OTA loader. mode 1 = BLE, 2 = WiFi.
+    /// The loader later refuses any image whose SHA-256 differs from <paramref name="sha256"/>.
+    /// The firmware answers with a ClientNotification ("Rebooting to … OTA" or a reason it cannot).</summary>
+    public async Task SendOtaRequestAsync(int mode, byte[] sha256)
+    {
+        if (sha256.Length != 32) throw new ArgumentException("SHA-256 must be 32 bytes", nameof(sha256));
+        await EnsureSessionKeyAsync();
+        var adminMsg = new AdminMessage
+        {
+            OtaRequest = new AdminMessage.Types.OTAEvent
+            {
+                RebootOtaMode = (OTAMode)mode,
+                OtaHash = ByteString.CopyFrom(sha256)
+            }
+        };
+        await SendAdminMessageAsync(adminMsg);
+        Logger.WriteLine($"[OTA] ota_request sent (mode={(OTAMode)mode}, hash={Convert.ToHexString(sha256).ToLowerInvariant()})");
+    }
+
+    /// <summary>nRF52/RP2040: reboot into the USB (UF2 mass-storage / serial) bootloader. Not for BLE DFU —
+    /// that is triggered through the device's DFU GATT service.</summary>
+    public async Task EnterDfuModeAsync()
+    {
+        await EnsureSessionKeyAsync();
+        await SendAdminMessageAsync(new AdminMessage { EnterDfuModeRequest = true });
+        Logger.WriteLine("[DFU] enter_dfu_mode_request sent");
+    }
+
+    /// <summary>Config section as received during the initial handshake (or null). Decoded from the
+    /// Virtual-Node snapshot frames, so it reflects the device state at connect time plus any re-sent configs.</summary>
+    public Config? GetSnapshotConfig(Config.PayloadVariantOneofCase section)
+    {
+        byte[]? frame;
+        lock (_snapLock) { _snapConfigs.TryGetValue((int)section, out frame); }
+        return frame == null ? null : DecodeSnapshotFrame(frame)?.Config;
+    }
+
+    /// <summary>JSON dump of everything the device told us at connect time (configs, module configs,
+    /// channels incl. PSKs, owner) — a restore point before a firmware update. Treat the file as sensitive.</summary>
+    public string BuildConfigBackupJson()
+    {
+        var formatter = new JsonFormatter(JsonFormatter.Settings.Default.WithFormatDefaultValues(true));
+        var configs = new List<string>();
+        var modules = new List<string>();
+        var channels = new List<string>();
+        string? myInfo = null, metadata = null;
+        lock (_snapLock)
+        {
+            foreach (var f in _snapConfigs.Values)
+                if (DecodeSnapshotFrame(f)?.Config is { } c) configs.Add(formatter.Format(c));
+            foreach (var f in _snapModuleConfigs.Values)
+                if (DecodeSnapshotFrame(f)?.ModuleConfig is { } m) modules.Add(formatter.Format(m));
+            foreach (var kv in _snapChannels.OrderBy(k => k.Key))
+                if (DecodeSnapshotFrame(kv.Value)?.Channel is { } ch) channels.Add(formatter.Format(ch));
+            if (_snapMyInfo != null && DecodeSnapshotFrame(_snapMyInfo)?.MyInfo is { } mi) myInfo = formatter.Format(mi);
+            if (_snapMetadata != null && DecodeSnapshotFrame(_snapMetadata)?.Metadata is { } md) metadata = formatter.Format(md);
+        }
+        var sb = new StringBuilder();
+        sb.Append("{\n");
+        sb.Append($"  \"exportedAt\": \"{DateTime.UtcNow:O}\",\n");
+        sb.Append($"  \"nodeId\": \"!{_myNodeId:x8}\",\n");
+        sb.Append($"  \"firmwareVersion\": \"{GetFirmwareVersion() ?? ""}\",\n");
+        sb.Append($"  \"myInfo\": {myInfo ?? "null"},\n");
+        sb.Append($"  \"metadata\": {metadata ?? "null"},\n");
+        sb.Append("  \"config\": [\n    ").Append(string.Join(",\n    ", configs)).Append("\n  ],\n");
+        sb.Append("  \"moduleConfig\": [\n    ").Append(string.Join(",\n    ", modules)).Append("\n  ],\n");
+        sb.Append("  \"channels\": [\n    ").Append(string.Join(",\n    ", channels)).Append("\n  ]\n");
+        sb.Append("}\n");
+        return sb.ToString();
+    }
+
+    private static FromRadio? DecodeSnapshotFrame(byte[] frame)
+    {
+        try
+        {
+            if (frame.Length < 4) return null;
+            return FromRadio.Parser.ParseFrom(frame, 4, frame.Length - 4);
+        }
+        catch (Exception ex)
+        {
+            Logger.WriteLine($"[FW] Snapshot frame decode failed: {ex.Message}");
+            return null;
+        }
     }
 
     /// <summary>Start/stop continuous display mirroring (FW 2.8, local connection only).
@@ -4171,21 +4331,7 @@ public class MeshtasticProtocolService
                     break;
 
                 case AdminMessage.PayloadVariantOneofCase.GetDeviceMetadataResponse:
-                    var meta = adminMsg.GetDeviceMetadataResponse;
-                    Logger.WriteLine($"DeviceMetadata: FW={meta.FirmwareVersion}, HW={meta.HwModel}" +
-                        (meta.Display != null ? $", Display={meta.Display.Width}x{meta.Display.Height} {meta.Display.Format}" : ""));
-                    lock (_dataLock)
-                    {
-                        _myDisplayInfo = meta.Display; // null = no display / pre-2.8 firmware
-                        if (_myDeviceInfo != null)
-                        {
-                            _myDeviceInfo.FirmwareVersion = meta.FirmwareVersion;
-                            if (meta.HwModel != HardwareModel.Unset)
-                                _myDeviceInfo.HardwareModel = meta.HwModel.ToString();
-                        }
-                    }
-                    if (_myDeviceInfo != null)
-                        DeviceInfoReceived?.Invoke(this, _myDeviceInfo);
+                    ApplyDeviceMetadata(adminMsg.GetDeviceMetadataResponse, fireEvent: true);
                     break;
 
                 case AdminMessage.PayloadVariantOneofCase.GetModuleConfigResponse:

@@ -34,6 +34,9 @@ public partial class LinkProfileWindow : Window
         double distKm = TriangulationService.HaversineKm(latA, lonA, latB, lonB);
         TitleText.Text = $"{nameA}  →  {nameB}   ·   {distKm:0.0} km";
         Loaded += async (_, _) => await BuildAsync();
+        // Win32 quirk (same as TelemetryWindow): activate the owner before the active owned
+        // window is destroyed, or the main window can minimize to the taskbar.
+        Closing += (_, _) => { try { Owner?.Activate(); } catch { } };
     }
 
     private async Task BuildAsync()

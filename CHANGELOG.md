@@ -9,6 +9,17 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+### ⬆️ Firmware-Update-Assistent (Tools-Tab)
+- **Neuer geführter Assistent** zum Aktualisieren der Node-Firmware direkt aus dem Client – wie in der Android-App: Gerät & Katalog → Übertragungsweg → Firmware → Prüfung → Übertragung → Fertig
+- **Vier Übertragungswege:** ESP32 **WLAN-OTA** (Unified-OTA-Loader über TCP 3232, IP per UDP-Beacon), ESP32 **Bluetooth-OTA** (ACK-getaktet, Hash-geprüft), nRF52 **Bluetooth-DFU** (Nordic Legacy- *und* Secure-DFU über den Adafruit-Bootloader, automatische Erkennung, Resume/Retry, Stale-Session-Reset) sowie **UF2-Laufwerk** für nRF52/RP2040 (Gerät startet als USB-Laufwerk, Datei wird automatisch kopiert). ESP32 seriell wird bewusst nicht unterstützt (Hinweis auf den Web-Flasher)
+- **Firmware-Quellen:** offizielle Releases von api.meshtastic.org (**Stable und Alpha**) mit Release-Notes, Versionsvergleich (Update/gleich/Downgrade-Warnung) und Prüfung, ob das Release einen Build für das Gerät enthält – oder **lokale Dateien** (.bin / -ota.zip / .uf2). Downloads werden im Ordner `firmware/` zwischengespeichert (Prefetch) und per Manifest-MD5/Größe verifiziert
+- **Gerätekatalog offline:** Katalog und Release-Liste werden lokal gecacht; ohne Netz arbeitet der Assistent aus dem Cache und zeigt an, wenn keine Validierung möglich ist
+- **Absicherung vor dem Start:** Dateiprüfung (ESP-Image-Header und Chip-ID vs. Architektur, App-Deskriptor statt Factory-Image, UF2-Family-ID, DFU-Manifest), Dateiname vs. Build-Kennung, Akkustand, Support-Status („activelySupported", Bootloader-Upgrade-Hinweis), Firmware ≥ 2.7.17 für ESP32-OTA; optionales **Konfigurations-Backup als JSON** vor dem Update
+- **Bluetooth-Adapter:** Anzeige des aktiven Adapters; Windows erlaubt keine Adapterwahl – bei mehreren Adaptern erscheint ein Hinweis, den anderen im Geräte-Manager zu deaktivieren (z. B. für einen Stick mit Richtantenne)
+- **Wiederherstellung:** Ein Gerät, das bereits im Bootloader steckt, kann ohne Mesh-Verbindung per UF2 oder Bluetooth-DFU geflasht werden
+- Nach dem Update: Ein-Klick-Reconnect mit Anzeige der neuen Firmware-Version
+- Protokoll: `ota_request`, `enter_dfu_mode_request` und `ClientNotification` werden jetzt unterstützt
+
 ---
 
 ## [1.7.2] - 2026-11-09

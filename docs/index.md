@@ -16,6 +16,7 @@ Willkommen im Handbuch des **Meshhessen Clients** — dem kostenlosen Windows-Cl
 | | [📊 Telemetrie & Funkanalyse](de/telemetrie.md) | [📈 Messwerte verstehen](de/messwerte.md) |
 | | [📡 Traceroute](de/traceroute.md) | |
 | | [🔧 Node-Verwaltung & Fernkonfiguration](de/node-verwaltung.md) | |
+| | [⬆️ Firmware-Update](de/firmware-update.md) | |
 | | [🖧 Virtual Node](de/virtual-node.md) · [🔧 T-Deck](de/t-deck.md) · [🔒 Kiosk](de/kiosk.md) | |
 
 **🎯 How-tos — Schritt für Schritt:**
@@ -32,6 +33,7 @@ Willkommen im Handbuch des **Meshhessen Clients** — dem kostenlosen Windows-Cl
 | | [📊 Telemetry & radio analysis](https://meshhessenclient.de/handbuch/en/telemetry/) | [📈 Understanding the values](https://meshhessenclient.de/handbuch/en/metrics/) |
 | | [📡 Traceroute](https://meshhessenclient.de/handbuch/en/traceroute/) | |
 | | [🔧 Node management & remote admin](https://meshhessenclient.de/handbuch/en/node-management/) | |
+| | [⬆️ Firmware update](https://meshhessenclient.de/handbuch/en/firmware-update/) | |
 | | [🖧 Virtual Node](https://meshhessenclient.de/handbuch/en/virtual-node/) · [🔧 T-Deck](https://meshhessenclient.de/handbuch/en/t-deck/) · [🔒 Kiosk](https://meshhessenclient.de/handbuch/en/kiosk/) | |
 
 ---

@@ -2788,6 +2788,18 @@
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="24">
 
+                        <!-- Firmware update wizard (ESP32 Wi-Fi/BLE OTA, nRF52 BLE-DFU, UF2) -->
+                        <TextBlock Text="{DynamicResource StrFwToolsSection}"
+                                   FontSize="15" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                        <TextBlock Text="{DynamicResource StrFwToolsDesc}"
+                                   TextWrapping="Wrap" Foreground="#555" Margin="0,0,0,10"/>
+                        <Button x:Name="FirmwareUpdateBtn"
+                                Content="{DynamicResource StrFwToolsBtn}"
+                                HorizontalAlignment="Left" Padding="16,8"
+                                Click="FirmwareUpdateBtn_Click"/>
+
+                        <Separator Margin="0,20"/>
+
                         <!-- Display mirroring (FW 2.8) — visible only when the connected
                              device reports a display panel in its metadata -->
                         <StackPanel x:Name="DisplayMirrorSection" Visibility="Collapsed">

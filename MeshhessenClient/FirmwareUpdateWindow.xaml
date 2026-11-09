@@ -1,0 +1,305 @@
+<Window x:Class="MeshhessenClient.FirmwareUpdateWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="{DynamicResource StrFwTitle}"
+        Width="780" Height="640"
+        MinWidth="640" MinHeight="520"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="CanResizeWithGrip">
+
+    <Window.Resources>
+        <Style x:Key="FwSectionTitle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Margin" Value="0,0,0,6"/>
+        </Style>
+        <Style x:Key="FwHint" TargetType="TextBlock">
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="Foreground" Value="#666"/>
+            <Setter Property="Margin" Value="0,0,0,10"/>
+        </Style>
+        <Style x:Key="FwWarnBox" TargetType="Border">
+            <Setter Property="Background" Value="#FFF4D6"/>
+            <Setter Property="BorderBrush" Value="#E0A800"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="Padding" Value="10,8"/>
+            <Setter Property="Margin" Value="0,0,0,10"/>
+        </Style>
+        <Style x:Key="FwInfoBox" TargetType="Border">
+            <Setter Property="Background" Value="#E8F1FB"/>
+            <Setter Property="BorderBrush" Value="#1E6AB8"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="Padding" Value="10,8"/>
+            <Setter Property="Margin" Value="0,0,0,10"/>
+        </Style>
+        <Style x:Key="FwLabel" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#666"/>
+            <Setter Property="Margin" Value="0,0,12,4"/>
+        </Style>
+        <Style x:Key="FwValue" TargetType="TextBlock">
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Margin" Value="0,0,0,4"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- ── HEADER ── -->
+        <Border Grid.Row="0" Background="#1E3A5F" Padding="16,10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock x:Name="StepTitleText" Foreground="White" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                <TextBlock x:Name="StepIndicatorText" Grid.Column="1" Foreground="#A0C4E8" FontSize="12" VerticalAlignment="Center"/>
+            </Grid>
+        </Border>
+
+        <!-- ── PAGES ── -->
+        <Grid Grid.Row="1">
+
+            <!-- PAGE 1: Device & catalog -->
+            <ScrollViewer x:Name="Page1" VerticalScrollBarVisibility="Auto" Padding="20">
+                <StackPanel>
+                    <Border x:Name="NotConnectedBox" Style="{StaticResource FwWarnBox}" Visibility="Collapsed">
+                        <TextBlock Text="{DynamicResource StrFwNotConnected}" TextWrapping="Wrap"/>
+                    </Border>
+
+                    <TextBlock Text="{DynamicResource StrFwDeviceSection}" Style="{StaticResource FwSectionTitle}"/>
+                    <Border BorderBrush="#DDD" BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,0,12">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/>
+                            </Grid.RowDefinitions>
+                            <TextBlock Grid.Row="0" Text="{DynamicResource StrFwLblDevice}" Style="{StaticResource FwLabel}"/>
+                            <TextBlock Grid.Row="0" Grid.Column="1" x:Name="DevNameText" Style="{StaticResource FwValue}"/>
+                            <TextBlock Grid.Row="1" Text="{DynamicResource StrFwLblArch}" Style="{StaticResource FwLabel}"/>
+                            <TextBlock Grid.Row="1" Grid.Column="1" x:Name="DevArchText" Style="{StaticResource FwValue}"/>
+                            <TextBlock Grid.Row="2" Text="{DynamicResource StrFwLblFirmware}" Style="{StaticResource FwLabel}"/>
+                            <TextBlock Grid.Row="2" Grid.Column="1" x:Name="DevFirmwareText" Style="{StaticResource FwValue}"/>
+                            <TextBlock Grid.Row="3" Text="{DynamicResource StrFwLblPioEnv}" Style="{StaticResource FwLabel}"/>
+                            <TextBlock Grid.Row="3" Grid.Column="1" x:Name="DevPioEnvText" Style="{StaticResource FwValue}"/>
+                            <TextBlock Grid.Row="4" Text="{DynamicResource StrFwLblConnection}" Style="{StaticResource FwLabel}"/>
+                            <TextBlock Grid.Row="4" Grid.Column="1" x:Name="DevConnectionText" Style="{StaticResource FwValue}"/>
+                            <TextBlock Grid.Row="5" Text="{DynamicResource StrFwLblCatalog}" Style="{StaticResource FwLabel}"/>
+                            <StackPanel Grid.Row="5" Grid.Column="1" Orientation="Horizontal">
+                                <TextBlock x:Name="CatalogStatusText" Style="{StaticResource FwValue}" VerticalAlignment="Center"/>
+                                <Button x:Name="RefreshCatalogBtn" Content="{DynamicResource StrFwRefreshCatalog}" Margin="12,0,0,0" Padding="8,2" FontSize="11" Click="RefreshCatalog_Click"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <Border x:Name="CatalogNoneBox" Style="{StaticResource FwWarnBox}" Visibility="Collapsed">
+                        <TextBlock Text="{DynamicResource StrFwCatalogNoneWarn}" TextWrapping="Wrap"/>
+                    </Border>
+                    <Border x:Name="HwUnknownBox" Style="{StaticResource FwWarnBox}" Visibility="Collapsed">
+                        <TextBlock x:Name="HwUnknownText" TextWrapping="Wrap"/>
+                    </Border>
+                    <Border x:Name="NotSupportedBox" Style="{StaticResource FwWarnBox}" Visibility="Collapsed">
+                        <TextBlock Text="{DynamicResource StrFwNotSupported}" TextWrapping="Wrap"/>
+                    </Border>
+                    <Border x:Name="BootloaderWarnBox" Style="{StaticResource FwWarnBox}" Visibility="Collapsed">
+                        <StackPanel>
+                            <TextBlock Text="{DynamicResource StrFwBootloaderWarn}" TextWrapping="Wrap"/>
+                            <Button x:Name="BootloaderLinkBtn" Content="{DynamicResource StrFwBootloaderLink}" HorizontalAlignment="Left" Margin="0,6,0,0" Padding="8,3" Click="BootloaderLink_Click"/>
+                        </StackPanel>
+                    </Border>
+
+                    <TextBlock Text="{DynamicResource StrFwBtSection}" Style="{StaticResource FwSectionTitle}"/>
+                    <TextBlock x:Name="BtAdapterText" Style="{StaticResource FwHint}"/>
+                    <Border x:Name="BtMultiBox" Style="{StaticResource FwWarnBox}" Visibility="Collapsed">
+                        <TextBlock x:Name="BtMultiText" TextWrapping="Wrap"/>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- PAGE 2: Method -->
+            <ScrollViewer x:Name="Page2" VerticalScrollBarVisibility="Auto" Padding="20" Visibility="Collapsed">
+                <StackPanel>
+                    <TextBlock Text="{DynamicResource StrFwMethodHint}" Style="{StaticResource FwHint}"/>
+
+                    <Border x:Name="RecoveryBox" Style="{StaticResource FwInfoBox}" Visibility="Collapsed">
+                        <TextBlock Text="{DynamicResource StrFwRecoveryHint}" TextWrapping="Wrap"/>
+                    </Border>
+
+                    <RadioButton x:Name="MethodWifiRadio" GroupName="Method" Content="{DynamicResource StrFwMethodWifi}" FontWeight="SemiBold" Checked="Method_Checked"/>
+                    <TextBlock Text="{DynamicResource StrFwMethodWifiDesc}" Style="{StaticResource FwHint}" Margin="24,2,0,2"/>
+                    <TextBlock x:Name="MethodWifiReason" Foreground="#B00020" Margin="24,0,0,12" FontSize="12"/>
+
+                    <RadioButton x:Name="MethodBleOtaRadio" GroupName="Method" Content="{DynamicResource StrFwMethodBleOta}" FontWeight="SemiBold" Checked="Method_Checked"/>
+                    <TextBlock Text="{DynamicResource StrFwMethodBleOtaDesc}" Style="{StaticResource FwHint}" Margin="24,2,0,2"/>
+                    <TextBlock x:Name="MethodBleOtaReason" Foreground="#B00020" Margin="24,0,0,12" FontSize="12"/>
+
+                    <RadioButton x:Name="MethodBleDfuRadio" GroupName="Method" Content="{DynamicResource StrFwMethodBleDfu}" FontWeight="SemiBold" Checked="Method_Checked"/>
+                    <TextBlock Text="{DynamicResource StrFwMethodBleDfuDesc}" Style="{StaticResource FwHint}" Margin="24,2,0,2"/>
+                    <TextBlock x:Name="MethodBleDfuReason" Foreground="#B00020" Margin="24,0,0,12" FontSize="12"/>
+
+                    <RadioButton x:Name="MethodUf2Radio" GroupName="Method" Content="{DynamicResource StrFwMethodUf2}" FontWeight="SemiBold" Checked="Method_Checked"/>
+                    <TextBlock Text="{DynamicResource StrFwMethodUf2Desc}" Style="{StaticResource FwHint}" Margin="24,2,0,2"/>
+                    <TextBlock x:Name="MethodUf2Reason" Foreground="#B00020" Margin="24,0,0,12" FontSize="12"/>
+
+                    <Border x:Name="Esp32SerialBox" Style="{StaticResource FwInfoBox}" Visibility="Collapsed">
+                        <StackPanel>
+                            <TextBlock Text="{DynamicResource StrFwEsp32SerialHint}" TextWrapping="Wrap"/>
+                            <Button Content="{DynamicResource StrFwOpenFlasher}" HorizontalAlignment="Left" Margin="0,6,0,0" Padding="8,3" Click="OpenFlasher_Click"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- PAGE 3: Firmware -->
+            <Grid x:Name="Page3" Visibility="Collapsed" Margin="20">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
+                    <RadioButton x:Name="ChannelStableRadio" GroupName="Channel" Content="{DynamicResource StrFwChannelStable}" IsChecked="True" Margin="0,0,16,0" Checked="Channel_Checked"/>
+                    <RadioButton x:Name="ChannelAlphaRadio" GroupName="Channel" Content="{DynamicResource StrFwChannelAlpha}" Margin="0,0,16,0" Checked="Channel_Checked"/>
+                    <RadioButton x:Name="ChannelLocalRadio" GroupName="Channel" Content="{DynamicResource StrFwChannelLocal}" Checked="Channel_Checked"/>
+                </StackPanel>
+
+                <!-- Release picker -->
+                <StackPanel x:Name="ReleasePanel" Grid.Row="1">
+                    <Grid Margin="0,0,0,6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="{DynamicResource StrFwLblRelease}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                        <ComboBox x:Name="ReleaseCombo" Grid.Column="1" SelectionChanged="ReleaseCombo_SelectionChanged"/>
+                        <Button x:Name="ReleasePageBtn" Grid.Column="2" Content="{DynamicResource StrFwOpenReleasePage}" Margin="8,0,0,0" Padding="8,4" Click="ReleasePage_Click"/>
+                    </Grid>
+                    <Border x:Name="AlphaWarnBox" Style="{StaticResource FwWarnBox}" Visibility="Collapsed">
+                        <TextBlock Text="{DynamicResource StrFwAlphaWarn}" TextWrapping="Wrap"/>
+                    </Border>
+                    <TextBlock x:Name="NoReleasesText" Text="{DynamicResource StrFwNoReleases}" Foreground="#B00020" TextWrapping="Wrap" Visibility="Collapsed" Margin="0,0,0,6"/>
+                </StackPanel>
+
+                <!-- Local file picker -->
+                <StackPanel x:Name="LocalPanel" Grid.Row="1" Visibility="Collapsed">
+                    <Grid Margin="0,0,0,6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="{DynamicResource StrFwLblFile}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                        <TextBox x:Name="LocalFileBox" Grid.Column="1" IsReadOnly="True"/>
+                        <Button Grid.Column="2" Content="{DynamicResource StrFwBrowse}" Margin="8,0,0,0" Padding="8,4" Click="BrowseLocal_Click"/>
+                        <Button Grid.Column="3" Content="{DynamicResource StrFwOpenCacheDir}" Margin="8,0,0,0" Padding="8,4" Click="OpenCacheDir_Click"/>
+                    </Grid>
+                    <ItemsControl x:Name="LocalCheckList" Margin="0,4,0,6"/>
+                </StackPanel>
+
+                <TextBlock x:Name="VersionLineText" Grid.Row="2" FontWeight="SemiBold" Margin="0,4,0,2" TextWrapping="Wrap"/>
+                <TextBlock x:Name="TargetLineText" Grid.Row="3" Margin="0,0,0,8" TextWrapping="Wrap"/>
+
+                <Grid Grid.Row="4" x:Name="NotesPanel">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Text="{DynamicResource StrFwLblNotes}" Foreground="#666" Margin="0,0,0,4"/>
+                    <TextBox x:Name="ReleaseNotesBox" Grid.Row="1" IsReadOnly="True" TextWrapping="Wrap"
+                             VerticalScrollBarVisibility="Auto" FontFamily="Consolas" FontSize="11" Padding="8"/>
+                </Grid>
+            </Grid>
+
+            <!-- PAGE 4: Pre-flight -->
+            <Grid x:Name="Page4" Visibility="Collapsed" Margin="20">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <TextBlock Text="{DynamicResource StrFwPreflightHint}" Style="{StaticResource FwHint}"/>
+                <Border Grid.Row="1" BorderBrush="#DDD" BorderThickness="1" CornerRadius="4" Padding="10">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <ItemsControl x:Name="PreflightList"/>
+                    </ScrollViewer>
+                </Border>
+                <ProgressBar x:Name="PreflightProgress" Grid.Row="2" Height="6" Margin="0,8,0,0" Visibility="Collapsed"/>
+                <StackPanel Grid.Row="3" Margin="0,10,0,0">
+                    <CheckBox x:Name="BackupCheck" Content="{DynamicResource StrFwBackupCheck}" IsChecked="True"/>
+                    <Button x:Name="StartBtn" Content="{DynamicResource StrFwStartBtn}" HorizontalAlignment="Left"
+                            Padding="18,8" Margin="0,12,0,0" FontWeight="SemiBold" IsEnabled="False" Click="Start_Click"/>
+                </StackPanel>
+            </Grid>
+
+            <!-- PAGE 5: Transfer -->
+            <Grid x:Name="Page5" Visibility="Collapsed" Margin="20">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <Border Style="{StaticResource FwWarnBox}">
+                    <TextBlock Text="{DynamicResource StrFwProgressTitle}" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                </Border>
+                <TextBlock x:Name="PhaseText" Grid.Row="1" FontSize="14" FontWeight="SemiBold" Margin="0,4,0,4" TextWrapping="Wrap"/>
+                <ProgressBar x:Name="TransferProgress" Grid.Row="2" Height="18" Margin="0,0,0,4"/>
+                <TextBlock x:Name="DetailText" Grid.Row="3" Foreground="#666" Margin="0,0,0,8"/>
+                <Grid Grid.Row="4">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Text="{DynamicResource StrFwLog}" Foreground="#666" Margin="0,0,0,4"/>
+                    <TextBox x:Name="LogBox" Grid.Row="1" IsReadOnly="True" VerticalScrollBarVisibility="Auto"
+                             FontFamily="Consolas" FontSize="11" Padding="6" TextWrapping="Wrap"/>
+                </Grid>
+            </Grid>
+
+            <!-- PAGE 6: Done -->
+            <ScrollViewer x:Name="Page6" VerticalScrollBarVisibility="Auto" Padding="20" Visibility="Collapsed">
+                <StackPanel>
+                    <TextBlock x:Name="ResultText" FontSize="14" TextWrapping="Wrap" Margin="0,0,0,12"/>
+                    <TextBlock x:Name="ResultDetailText" Foreground="#666" TextWrapping="Wrap" Margin="0,0,0,12"/>
+                    <StackPanel Orientation="Horizontal">
+                        <Button x:Name="ReconnectBtn" Content="{DynamicResource StrFwReconnectBtn}" Padding="14,6" Click="Reconnect_Click"/>
+                        <TextBlock x:Name="ReconnectStatusText" VerticalAlignment="Center" Margin="12,0,0,0" Foreground="#666"/>
+                    </StackPanel>
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+
+        <!-- ── FOOTER ── -->
+        <Border Grid.Row="2" BorderBrush="#DDD" BorderThickness="0,1,0,0" Padding="16,10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock x:Name="FooterStatusText" Foreground="#666" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                <Button x:Name="BackBtn" Grid.Column="1" Content="{DynamicResource StrFwBack}" Padding="14,6" Margin="0,0,8,0" Click="Back_Click"/>
+                <Button x:Name="NextBtn" Grid.Column="2" Content="{DynamicResource StrFwNext}" Padding="14,6" Margin="0,0,8,0" Click="Next_Click"/>
+                <Button x:Name="CancelBtn" Grid.Column="3" Content="{DynamicResource StrFwCancel}" Padding="14,6" Click="Cancel_Click"/>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

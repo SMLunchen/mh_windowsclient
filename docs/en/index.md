@@ -13,6 +13,7 @@ Welcome to the manual of the **Meshhessen Client** — the free Windows client f
 | | [📊 Telemetry & radio analysis](telemetry.md) | [📈 Understanding the values](metrics.md) |
 | | [📡 Traceroute](traceroute.md) | |
 | | [🔧 Node management & remote admin](node-management.md) | |
+| | [⬆️ Firmware update](firmware-update.md) | |
 | | [🖧 Virtual Node](virtual-node.md) · [🔧 T-Deck](t-deck.md) · [🔒 Kiosk](kiosk.md) | |
 
 **🎯 How-tos — step by step:**

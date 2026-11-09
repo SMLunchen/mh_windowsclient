@@ -54,6 +54,10 @@ public class DisplayMirrorWindow : Window
         _svc.DisplayFrameReceived   += OnFrameChunk;
         _svc.DisplayPaletteReceived += OnPaletteChunk;
 
+        // Win32 quirk (same as TelemetryWindow): activate the owner before the active owned
+        // window is destroyed, or the main window can minimize to the taskbar.
+        Closing += (_, _) => { try { Owner?.Activate(); } catch { } };
+
         Loaded += async (_, _) =>
         {
             try { await _svc.SetDisplayMirrorAsync(true); _mirrorStarted = true; }
