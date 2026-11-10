@@ -30,6 +30,7 @@ Windows Client → USB/Serial | TCP/WiFi | BLE → Meshtastic Node → LoRa → 
 2. Receive `my_info`, `node_info` (×N), `channel` (×8), `config`, `config_complete_id`
 3. If channels are missing (e.g. T-Deck): retry mechanism up to 3 rounds via `GetChannelRequest`
 4. Ready for MeshPackets
+5. **Keepalive:** a `heartbeat` to the device every 5 minutes — otherwise the firmware closes its client API after 15 minutes without an inbound message (serial and TCP) and silently stops delivering packets. Firmware ≥ 2.8 answers every heartbeat with a `queueStatus`; if two replies in a row are missing (or, on older firmware, no frame at all for 45 minutes) the client re-establishes the connection automatically
 
 ## Serial protocol (robustness)
 

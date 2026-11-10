@@ -9,6 +9,10 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+### 🐛 Behoben
+- **Verbindung schlief nach ~2 Stunden ein (seriell/TCP), keine neuen Pakete mehr:** Die Meshtastic-Firmware schließt ihre Client-Schnittstelle 15 Minuten nach der letzten vom Client *gesendeten* Nachricht (`SERIAL_CONNECTION_TIMEOUT` / `TCP_IDLE_TIMEOUT_MS`) und liefert dann still keine Pakete mehr – der Port bleibt offen, deshalb griff kein Reconnect. Solange der Client Node-Info-Anfragen oder Reaktionen schickte, blieb die Verbindung zufällig am Leben; in den Logs riss der Datenstrom exakt 15 Minuten nach der letzten eigenen Sendung ab. Der Client sendet jetzt wie Python-CLI und Android-App alle 5 Minuten ein `heartbeat`
+- **Verbindungswächter:** Firmware ≥ 2.8 beantwortet jeden Heartbeat mit einem `queueStatus`; bleiben zwei Antworten in Folge aus (bei älterer Firmware: 45 Minuten gar kein Frame), gilt die Verbindung als tot und wird automatisch neu aufgebaut – auch wenn Port oder Socket noch offen sind
+
 ---
 
 ## [1.7.2] - 2026-11-09

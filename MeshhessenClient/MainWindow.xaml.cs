@@ -245,6 +245,7 @@ public partial class MainWindow : Window
         _protocolService.RequestEchoReceived += OnRequestEchoReceived;
         _protocolService.NodeStatusReceived  += OnNodeStatusReceived;
         _protocolService.StatusMessageConfigReceived += OnStatusMessageConfigReceived;
+        _protocolService.LinkStale += OnLinkStale;
         _protocolService.DeviceTelemetryReceived += OnDeviceTelemetryReceived;
         _protocolService.TimeDriftDetected += OnTimeDriftDetected;
         _protocolService.WaypointReceived  += OnWaypointReceived;
@@ -1168,6 +1169,7 @@ public partial class MainWindow : Window
                 _protocolService.RequestEchoReceived += OnRequestEchoReceived;
         _protocolService.NodeStatusReceived  += OnNodeStatusReceived;
         _protocolService.StatusMessageConfigReceived += OnStatusMessageConfigReceived;
+        _protocolService.LinkStale += OnLinkStale;
                 _protocolService.DeviceTelemetryReceived += OnDeviceTelemetryReceived;
                 _protocolService.MqttConfigReceived += OnMqttConfigReceived;
                 if (_db != null) _protocolService.SetDatabase(_db);
@@ -2174,6 +2176,7 @@ public partial class MainWindow : Window
                 _protocolService.RequestEchoReceived += OnRequestEchoReceived;
         _protocolService.NodeStatusReceived  += OnNodeStatusReceived;
         _protocolService.StatusMessageConfigReceived += OnStatusMessageConfigReceived;
+        _protocolService.LinkStale += OnLinkStale;
                 _protocolService.DeviceTelemetryReceived += OnDeviceTelemetryReceived;
                 _protocolService.MqttConfigReceived += OnMqttConfigReceived;
                 if (_db != null) _protocolService.SetDatabase(_db);
