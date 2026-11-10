@@ -669,6 +669,9 @@
     <sys:String x:Key="StrMirrorWindowTitle">Device Display</sys:String>
     <sys:String x:Key="StrMirrorWaiting">Waiting for the first frame from the device …</sys:String>
 
+    <!-- Link watchdog -->
+    <sys:String x:Key="StrLinkStaleReconnect">Device stopped responding – re-establishing the connection …</sys:String>
+
     <!-- Mesh Beacon module (FW 2.8) -->
     <sys:String x:Key="StrNcNavMeshBeacon">Mesh Beacon</sys:String>
     <sys:String x:Key="StrNcMbUnsupported">⚠ Mesh Beacon requires firmware 2.8 — the connected device reports an older version, settings cannot be loaded.</sys:String>
