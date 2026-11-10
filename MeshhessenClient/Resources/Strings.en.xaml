@@ -674,6 +674,7 @@
     <sys:String x:Key="StrFwToolsDesc">Guided assistant for updating the node firmware – like the Android app: ESP32 via Wi-Fi or Bluetooth OTA, nRF52 via Bluetooth DFU or UF2 drive. Firmware from the official releases (stable/alpha) or from a local file; device catalog and checks also work offline from the cache.</sys:String>
     <sys:String x:Key="StrFwToolsBtn">⬆️ Start firmware update …</sys:String>
     <sys:String x:Key="StrFwTitle">Firmware Update</sys:String>
+    <sys:String x:Key="StrFwDisclaimer">⚠ Disclaimer: firmware updates are at your own risk. The assistant checks what can be checked on the PC – radio drop-outs, power loss, an unsuitable bootloader or bugs in the firmware itself cannot be ruled out. If an update fails, the device may have to be restarted on site or recovered via USB/web flasher – so the ladder may be needed after all. The Meshhessen Client developers accept no liability for this.</sys:String>
     <sys:String x:Key="StrFwStep1">Device &amp; catalog</sys:String>
     <sys:String x:Key="StrFwStep2">Transfer method</sys:String>
     <sys:String x:Key="StrFwStep3">Choose firmware</sys:String>
@@ -831,6 +832,35 @@
     <sys:String x:Key="StrFwErrUf2NoDrive">No UF2 drive appeared. Connect the device via USB; if needed double-tap RESET until the drive shows up, then try again.</sys:String>
     <sys:String x:Key="StrFwErrUf2NotConsumed">Drive {0} is still present after the copy – the bootloader did not consume the file (not a bootloader drive, or wrong chip family).</sys:String>
     <sys:String x:Key="StrFwErrUf2Copy">Copying to the UF2 drive failed: {0}</sys:String>
+    <sys:String x:Key="StrFwUnpairedHint">ℹ The Windows Bluetooth pairing with this device was removed because Windows stored the OTA loader's GATT table under the same address during the update. "Reconnect" pairs the device again – Windows may ask for the node's PIN.</sys:String>
+    <sys:String x:Key="StrBleStaleBondHint">Connection attempt failed: {0}
+
+On an already paired device, "Meshtastic service not found" almost always means a stale pairing: Windows still holds the old service table (e.g. after a firmware update). Remove the Bluetooth pairing now and connect again? Windows may ask for the PIN again.</sys:String>
+    <sys:String x:Key="StrBleUnpairing">Removing Bluetooth pairing …</sys:String>
+    <sys:String x:Key="StrBleUnpaired">Pairing removed – reconnecting …</sys:String>
+    <sys:String x:Key="StrBleUnpairFailed">The pairing could not be removed – please remove it in the Windows Bluetooth settings.</sys:String>
+
+    <!-- Configuration backup / restore (Tools) -->
+    <sys:String x:Key="StrCfgToolsSection">💾 Back up &amp; restore configuration</sys:String>
+    <sys:String x:Key="StrCfgToolsDesc">Saves the complete device configuration of the connected node as JSON (owner, all config and module sections, all 8 channels including keys) and writes it back when needed – e.g. after a firmware update, a factory reset or onto a replacement device. Restoring writes all sections in one transaction; the device reboots once afterwards.</sys:String>
+    <sys:String x:Key="StrCfgBackupBtn">💾 Create backup …</sys:String>
+    <sys:String x:Key="StrCfgRestoreBtn">♻ Restore backup …</sys:String>
+    <sys:String x:Key="StrCfgBackupSaved">Configuration backup saved: {0}</sys:String>
+    <sys:String x:Key="StrCfgBackupSensitive">Note: the file contains channel keys, Wi-Fi credentials and the node's private key – treat it as confidential.</sys:String>
+    <sys:String x:Key="StrCfgBackupFailed">Backup failed: {0}</sys:String>
+    <sys:String x:Key="StrCfgRestoreInvalid">The file is not a valid configuration backup: {0}</sys:String>
+    <sys:String x:Key="StrCfgRestoreSummary">File: {0}
+Backup of node {1} → connected node {2}
+Firmware in backup: {3} → on device: {4}
+Created: {5}
+
+{6}</sys:String>
+    <sys:String x:Key="StrCfgRestoreNodeMismatch">⚠ The backup comes from a DIFFERENT node. The security section (private key, admin keys) is therefore NOT transferred – otherwise two nodes would share one identity. Everything else (owner, LoRa, channels, modules …) is applied.</sys:String>
+    <sys:String x:Key="StrCfgRestoreSecurityIncluded">The security section (keys) is restored as well, since the backup comes from this node.</sys:String>
+    <sys:String x:Key="StrCfgRestoreConfirm">Write the configuration to the device now? The device reboots afterwards; the current configuration is overwritten.</sys:String>
+    <sys:String x:Key="StrCfgRestoreProgress">Writing configuration … {0}</sys:String>
+    <sys:String x:Key="StrCfgRestoreDone">✅ Configuration transferred – the device applies it now and reboots if needed.</sys:String>
+    <sys:String x:Key="StrCfgRestoreFailed">Restore failed: {0}</sys:String>
 
     <!-- Mesh Beacon module (FW 2.8) -->
     <sys:String x:Key="StrNcNavMeshBeacon">Mesh Beacon</sys:String>

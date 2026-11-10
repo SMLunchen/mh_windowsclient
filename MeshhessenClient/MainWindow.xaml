@@ -2800,6 +2800,24 @@
 
                         <Separator Margin="0,20"/>
 
+                        <!-- Device configuration backup / restore (JSON) -->
+                        <TextBlock Text="{DynamicResource StrCfgToolsSection}"
+                                   FontSize="15" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                        <TextBlock Text="{DynamicResource StrCfgToolsDesc}"
+                                   TextWrapping="Wrap" Foreground="#555" Margin="0,0,0,10"/>
+                        <StackPanel Orientation="Horizontal">
+                            <Button x:Name="ConfigBackupBtn"
+                                    Content="{DynamicResource StrCfgBackupBtn}"
+                                    Padding="16,8" Margin="0,0,10,0"
+                                    Click="ConfigBackupBtn_Click"/>
+                            <Button x:Name="ConfigRestoreBtn"
+                                    Content="{DynamicResource StrCfgRestoreBtn}"
+                                    Padding="16,8"
+                                    Click="ConfigRestoreBtn_Click"/>
+                        </StackPanel>
+
+                        <Separator Margin="0,20"/>
+
                         <!-- Display mirroring (FW 2.8) — visible only when the connected
                              device reports a display panel in its metadata -->
                         <StackPanel x:Name="DisplayMirrorSection" Visibility="Collapsed">

@@ -4,6 +4,9 @@
 
 The client updates your node's firmware directly – no web flasher, no command line – with a guided assistant in the **Tools tab** ("⬆️ Start firmware update …"). It works like the Meshtastic Android app: firmware from the official releases, a device catalog for validation, four transfer methods. Nothing is sent to the device until the pre-flight page shows no red item.
 
+!!! warning "At your own risk"
+    The assistant checks what can be checked on the PC – not radio drop-outs, power loss, an unsuitable bootloader or bugs in the firmware itself. If an update fails, the device may have to be restarted on site or recovered via USB/web flasher. The Meshhessen Client developers accept no liability for this.
+
 ## Transfer methods
 
 | Method | Devices | Connection to the client | How it works |
@@ -25,7 +28,7 @@ The client updates your node's firmware directly – no web flasher, no command 
 3. **Choose firmware** – **Stable** (recommended), **Alpha** (pre-releases, with a warning) or a **local file**. Release notes, version comparison (update / same version / ⚠ downgrade) and a check whether the release contains a build for your device at all. Local files: `.bin` (ESP32), `-ota.zip` (nRF52 DFU), `.uf2` (USB).
 4. **Pre-flight & start** – the firmware is downloaded (or read) and checked: manifest MD5/size, ESP image header with chip id against the device architecture, app descriptor (no factory image), UF2 family id, DFU manifest, file name against build identifier, battery level, transport hints. Optionally the **device configuration is backed up as JSON** first (`firmware\backups\` – contains channel keys, treat accordingly). Red items block the start.
 5. **Transfer** – progress, phase and log. The client releases the mesh connection on purpose (no auto-reconnect) and connects to the loader or bootloader.
-6. **Done** – result; "Reconnect" restores the connection and shows the new firmware version the device reports.
+6. **Done** – result; "Reconnect" restores the connection and shows the new firmware version the device reports. After a **Bluetooth OTA (ESP32)** the client removes the device's Windows pairing automatically (see below) and pairs again on reconnect – Windows may ask for the node's PIN.
 
 ## Bluetooth adapter & directional antenna
 
@@ -41,7 +44,8 @@ If an update is interrupted, an OTA/UF2 device simply keeps running the old firm
 
 ## Typical errors
 
-* **"Bluetooth OTA service unreachable"** (ESP32): the OTA loader advertises on the same Bluetooth address as the mesh firmware but knows no encryption. Windows still tries to reuse the existing pairing – if that fails, the client removes the pairing automatically and retries; on the next connect to the mesh firmware Windows may then ask for the PIN again. The device stays in OTA mode until it is restarted (reset button).
+* **"Meshtastic service not found" when connecting after an update** (Bluetooth): Windows stores the device's service table (GATT) per Bluetooth address and does not refresh it on its own for paired devices. After a Bluetooth OTA (the loader ran under the same address with a different table), or when a new firmware changes its Bluetooth services, the stored table no longer matches. The client checks this actively before every Bluetooth connect: it asks Windows for the stored table, and if the Meshtastic service is missing from it, removes the pairing automatically and pairs again (Windows may ask for the PIN). If service discovery still fails, a second attempt with a fresh pairing follows; only then a Yes/No dialog offers manual unpairing. Manually: Windows Settings → Bluetooth → remove the device, then connect again in the client.
+* **"Bluetooth OTA service unreachable"** (ESP32): the OTA loader advertises on the same Bluetooth address as the mesh firmware but knows no encryption. The device stays in OTA mode until it is restarted (reset button); then try again.
 * **"Bootloader not found"** (nRF52): the device did not enter DFU mode – usually a stale Windows pairing blocks the trigger. Remove the device in Windows Bluetooth settings, pair again, retry.
 * **"OTA loader unreachable"** (Wi-Fi): PC and node on the same network? Firewall for UDP/TCP 3232? On first use Windows may ask to allow network access for the client.
 * **"The device refuses OTA mode"**: the firmware reports the reason (e.g. missing OTA partition or a loader without BLE support). The mesh connection stays up.

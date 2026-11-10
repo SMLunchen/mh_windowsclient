@@ -70,6 +70,9 @@
             <!-- PAGE 1: Device & catalog -->
             <ScrollViewer x:Name="Page1" VerticalScrollBarVisibility="Auto" Padding="20">
                 <StackPanel>
+                    <Border Style="{StaticResource FwWarnBox}">
+                        <TextBlock Text="{DynamicResource StrFwDisclaimer}" TextWrapping="Wrap"/>
+                    </Border>
                     <Border x:Name="NotConnectedBox" Style="{StaticResource FwWarnBox}" Visibility="Collapsed">
                         <TextBlock Text="{DynamicResource StrFwNotConnected}" TextWrapping="Wrap"/>
                     </Border>

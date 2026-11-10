@@ -9,6 +9,10 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+---
+
+## [1.7.3] - 2026-11-10
+
 ### ⬆️ Firmware-Update-Assistent (Tools-Tab)
 - **Neuer geführter Assistent** zum Aktualisieren der Node-Firmware direkt aus dem Client – wie in der Android-App: Gerät & Katalog → Übertragungsweg → Firmware → Prüfung → Übertragung → Fertig
 - **Vier Übertragungswege:** ESP32 **WLAN-OTA** (Unified-OTA-Loader über TCP 3232, IP per UDP-Beacon), ESP32 **Bluetooth-OTA** (ACK-getaktet, Hash-geprüft), nRF52 **Bluetooth-DFU** (Nordic Legacy- *und* Secure-DFU über den Adafruit-Bootloader, automatische Erkennung, Resume/Retry, Stale-Session-Reset) sowie **UF2-Laufwerk** für nRF52/RP2040 (Gerät startet als USB-Laufwerk, Datei wird automatisch kopiert). ESP32 seriell wird bewusst nicht unterstützt (Hinweis auf den Web-Flasher)
@@ -18,7 +22,14 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 - **Bluetooth-Adapter:** Anzeige des aktiven Adapters; Windows erlaubt keine Adapterwahl – bei mehreren Adaptern erscheint ein Hinweis, den anderen im Geräte-Manager zu deaktivieren (z. B. für einen Stick mit Richtantenne)
 - **Wiederherstellung:** Ein Gerät, das bereits im Bootloader steckt, kann ohne Mesh-Verbindung per UF2 oder Bluetooth-DFU geflasht werden
 - Nach dem Update: Ein-Klick-Reconnect mit Anzeige der neuen Firmware-Version
+- Bluetooth-Verbindung allgemein: Veraltete Windows-Kopplungen werden jetzt **aktiv erkannt** – vor jedem BLE-Connect fragt der Client die von Windows gespeicherte GATT-Tabelle des gekoppelten Geräts ab; fehlt darin der Meshtastic-Dienst (typisch nach einem Firmware-Update oder einem Bluetooth-OTA, bei dem der Loader unter derselben Adresse lief), wird die Kopplung automatisch entfernt und neu aufgebaut. Schlägt die Dienstsuche trotzdem fehl, folgt ein zweiter Versuch mit frischer Kopplung; erst danach erscheint der Ja/Nein-Dialog zum manuellen Entkoppeln
+- Gerätemetadaten (Firmware-Version, Hardware-Modell) werden jetzt direkt aus dem Verbindungs-Handshake übernommen – bisher nur per nachgelagerter Admin-Abfrage, die bei TCP-Verbindungen leer bleiben konnte
+- Fenster-Fix: Firmware-Assistent, Display-Spiegelung und Höhenprofil minimieren beim Schließen nicht mehr das Hauptfenster
 - Protokoll: `ota_request`, `enter_dfu_mode_request` und `ClientNotification` werden jetzt unterstützt
+
+### 💾 Konfiguration sichern & wiederherstellen (Tools-Tab)
+- **Backup erstellen:** komplette Gerätekonfiguration als JSON (Owner, alle Config-/Modul-Abschnitte, alle 8 Kanäle inkl. Schlüssel), Vorschlag `firmware\backups\node-<ID>-<Datum>.json`; derselbe Export läuft optional im Firmware-Assistenten vor dem Update
+- **Backup wiederherstellen:** Datei wählen → Zusammenfassung (Quell-Node, Firmware-Versionen, enthaltene Abschnitte) → Bestätigung → alle Abschnitte werden in einer `begin_edit_settings`/`commit_edit_settings`-Transaktion geschrieben (ein Neustart). Stammt das Backup von einem anderen Node, bleibt der Sicherheits-Abschnitt (Schlüssel) außen vor – kein Identitäts-Klon, aber Ersatzgeräte lassen sich damit komplett einrichten
 
 ---
 

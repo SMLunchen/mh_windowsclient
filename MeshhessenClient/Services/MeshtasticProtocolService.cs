@@ -3825,7 +3825,7 @@ public class MeshtasticProtocolService : Firmware.IFirmwareDeviceLink
         var configs = new List<string>();
         var modules = new List<string>();
         var channels = new List<string>();
-        string? myInfo = null, metadata = null;
+        string? myInfo = null, metadata = null, owner = null;
         lock (_snapLock)
         {
             foreach (var f in _snapConfigs.Values)
@@ -3836,6 +3836,8 @@ public class MeshtasticProtocolService : Firmware.IFirmwareDeviceLink
                 if (DecodeSnapshotFrame(kv.Value)?.Channel is { } ch) channels.Add(formatter.Format(ch));
             if (_snapMyInfo != null && DecodeSnapshotFrame(_snapMyInfo)?.MyInfo is { } mi) myInfo = formatter.Format(mi);
             if (_snapMetadata != null && DecodeSnapshotFrame(_snapMetadata)?.Metadata is { } md) metadata = formatter.Format(md);
+            if (_snapNodes.TryGetValue(_myNodeId, out var ownFrame) && DecodeSnapshotFrame(ownFrame)?.NodeInfo?.User is { } user)
+                owner = formatter.Format(user);
         }
         var sb = new StringBuilder();
         sb.Append("{\n");
@@ -3844,11 +3846,65 @@ public class MeshtasticProtocolService : Firmware.IFirmwareDeviceLink
         sb.Append($"  \"firmwareVersion\": \"{GetFirmwareVersion() ?? ""}\",\n");
         sb.Append($"  \"myInfo\": {myInfo ?? "null"},\n");
         sb.Append($"  \"metadata\": {metadata ?? "null"},\n");
+        sb.Append($"  \"owner\": {owner ?? "null"},\n");
         sb.Append("  \"config\": [\n    ").Append(string.Join(",\n    ", configs)).Append("\n  ],\n");
         sb.Append("  \"moduleConfig\": [\n    ").Append(string.Join(",\n    ", modules)).Append("\n  ],\n");
         sb.Append("  \"channels\": [\n    ").Append(string.Join(",\n    ", channels)).Append("\n  ]\n");
         sb.Append("}\n");
         return sb.ToString();
+    }
+
+    /// <summary>
+    /// Writes a parsed backup back to the connected device inside one begin/commit edit transaction so
+    /// the node reboots at most once. Order: owner → configs → module configs → channels. The security
+    /// section (private key, admin keys) is only written when <paramref name="includeSecurity"/> — restoring
+    /// it onto a different node would clone that node's identity.
+    /// </summary>
+    public async Task RestoreConfigBackupAsync(ConfigBackup backup, bool includeSecurity, IProgress<string>? progress = null)
+    {
+        await EnsureSessionKeyAsync();
+        int total = backup.Configs.Count + backup.ModuleConfigs.Count + backup.Channels.Count + (backup.Owner != null ? 1 : 0);
+        int done = 0;
+        void Step(string what) => progress?.Report($"{++done}/{total} {what}");
+
+        await SendAdminMessageAsync(new AdminMessage { BeginEditSettings = true });
+        await Task.Delay(200);
+
+        if (backup.Owner != null)
+        {
+            Step("owner");
+            await SendAdminMessageAsync(new AdminMessage { SetOwner = backup.Owner.Clone() });
+            await Task.Delay(300);
+        }
+        foreach (var cfg in backup.Configs)
+        {
+            if (cfg.PayloadVariantCase == Config.PayloadVariantOneofCase.Sessionkey) continue; // device-local
+            if (cfg.PayloadVariantCase == Config.PayloadVariantOneofCase.Security && !includeSecurity)
+            {
+                Logger.WriteLine("[Restore] Security config skipped (keys stay on the device)");
+                continue;
+            }
+            Step(cfg.PayloadVariantCase.ToString());
+            await SendAdminMessageAsync(new AdminMessage { SetConfig = cfg.Clone() });
+            await Task.Delay(300);
+        }
+        foreach (var mod in backup.ModuleConfigs)
+        {
+            Step(mod.PayloadVariantCase.ToString());
+            await SendAdminMessageAsync(new AdminMessage { SetModuleConfig = mod.Clone() });
+            await Task.Delay(300);
+        }
+        foreach (var ch in backup.Channels.OrderBy(c => c.Index))
+        {
+            Step($"channel {ch.Index}");
+            var copy = ch.Clone();
+            if (copy.Settings != null) copy.Settings.Name = ChannelEdit.ClampName(copy.Settings.Name);
+            await SendAdminMessageAsync(new AdminMessage { SetChannel = copy });
+            await Task.Delay(300);
+        }
+
+        await SendAdminMessageAsync(new AdminMessage { CommitEditSettings = true });
+        Logger.WriteLine($"[Restore] {done} sections written from backup of !{backup.NodeIdHex} ({backup.FirmwareVersion}); device commits (may reboot)");
     }
 
     private static FromRadio? DecodeSnapshotFrame(byte[] frame)

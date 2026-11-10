@@ -674,6 +674,7 @@
     <sys:String x:Key="StrFwToolsDesc">Geführter Assistent zum Aktualisieren der Node-Firmware – wie in der Android-App: ESP32 per WLAN- oder Bluetooth-OTA, nRF52 per Bluetooth-DFU oder UF2-Laufwerk. Firmware aus den offiziellen Releases (Stable/Alpha) oder aus einer lokalen Datei; Gerätekatalog und Prüfungen funktionieren auch offline aus dem Cache.</sys:String>
     <sys:String x:Key="StrFwToolsBtn">⬆️ Firmware-Update starten …</sys:String>
     <sys:String x:Key="StrFwTitle">Firmware-Update</sys:String>
+    <sys:String x:Key="StrFwDisclaimer">⚠ Haftungsausschluss: Firmware-Updates erfolgen auf eigene Gefahr. Der Assistent prüft, was sich am PC prüfen lässt – Funkabbrüche, Stromausfall, ein ungeeigneter Bootloader oder Fehler in der Firmware selbst lassen sich damit nicht ausschließen. Schlägt ein Update fehl, muss das Gerät unter Umständen vor Ort neu gestartet oder per USB/Web-Flasher wiederhergestellt werden – die Leiter muss dann doch geholt werden. Die Entwickler des Meshhessen Clients übernehmen dafür keine Haftung.</sys:String>
     <sys:String x:Key="StrFwStep1">Gerät &amp; Katalog</sys:String>
     <sys:String x:Key="StrFwStep2">Übertragungsweg</sys:String>
     <sys:String x:Key="StrFwStep3">Firmware wählen</sys:String>
@@ -831,6 +832,35 @@
     <sys:String x:Key="StrFwErrUf2NoDrive">Kein UF2-Laufwerk erschienen. Gerät per USB anschließen; ggf. zweimal kurz RESET drücken, bis das Laufwerk erscheint, und erneut versuchen.</sys:String>
     <sys:String x:Key="StrFwErrUf2NotConsumed">Das Laufwerk {0} ist nach dem Kopieren noch vorhanden – die Datei wurde nicht vom Bootloader übernommen (kein Bootloader-Laufwerk oder falsche Chip-Familie).</sys:String>
     <sys:String x:Key="StrFwErrUf2Copy">Kopieren auf das UF2-Laufwerk fehlgeschlagen: {0}</sys:String>
+    <sys:String x:Key="StrFwUnpairedHint">ℹ Die Windows-Bluetooth-Kopplung zu diesem Gerät wurde entfernt, weil Windows während des Updates die GATT-Tabelle des OTA-Loaders unter derselben Adresse gespeichert hat. Beim „Erneut verbinden" koppelt der Client das Gerät neu – Windows fragt dabei ggf. nach dem PIN des Nodes.</sys:String>
+    <sys:String x:Key="StrBleStaleBondHint">Verbindungsversuch fehlgeschlagen: {0}
+
+Bei einem bereits gekoppelten Gerät bedeutet „Meshtastic-Dienst nicht gefunden" fast immer eine veraltete Kopplung: Windows hat noch die alte Dienstetabelle gespeichert (z. B. nach einem Firmware-Update). Soll die Bluetooth-Kopplung jetzt entfernt und die Verbindung neu aufgebaut werden? Windows fragt dabei ggf. erneut nach dem PIN.</sys:String>
+    <sys:String x:Key="StrBleUnpairing">Bluetooth-Kopplung wird entfernt …</sys:String>
+    <sys:String x:Key="StrBleUnpaired">Kopplung entfernt – verbinde neu …</sys:String>
+    <sys:String x:Key="StrBleUnpairFailed">Kopplung konnte nicht entfernt werden – bitte in den Windows-Bluetooth-Einstellungen entfernen.</sys:String>
+
+    <!-- Configuration backup / restore (Tools) -->
+    <sys:String x:Key="StrCfgToolsSection">💾 Konfiguration sichern &amp; wiederherstellen</sys:String>
+    <sys:String x:Key="StrCfgToolsDesc">Sichert die komplette Gerätekonfiguration des verbundenen Nodes als JSON (Owner, alle Config- und Modul-Abschnitte, alle 8 Kanäle inklusive Schlüssel) und spielt sie bei Bedarf zurück – z. B. nach einem Firmware-Update, einem Werksreset oder auf ein Ersatzgerät. Beim Zurückspielen werden alle Abschnitte in einer Transaktion geschrieben; das Gerät startet danach einmal neu.</sys:String>
+    <sys:String x:Key="StrCfgBackupBtn">💾 Backup erstellen …</sys:String>
+    <sys:String x:Key="StrCfgRestoreBtn">♻ Backup wiederherstellen …</sys:String>
+    <sys:String x:Key="StrCfgBackupSaved">Konfigurations-Backup gespeichert: {0}</sys:String>
+    <sys:String x:Key="StrCfgBackupSensitive">Hinweis: Die Datei enthält Kanal-Schlüssel, WLAN-Zugangsdaten und den privaten Schlüssel des Nodes – entsprechend vertraulich behandeln.</sys:String>
+    <sys:String x:Key="StrCfgBackupFailed">Backup fehlgeschlagen: {0}</sys:String>
+    <sys:String x:Key="StrCfgRestoreInvalid">Die Datei ist kein gültiges Konfigurations-Backup: {0}</sys:String>
+    <sys:String x:Key="StrCfgRestoreSummary">Datei: {0}
+Backup von Node {1} → verbundener Node {2}
+Firmware im Backup: {3} → auf dem Gerät: {4}
+Erstellt: {5}
+
+{6}</sys:String>
+    <sys:String x:Key="StrCfgRestoreNodeMismatch">⚠ Das Backup stammt von einem ANDEREN Node. Der Sicherheits-Abschnitt (privater Schlüssel, Admin-Schlüssel) wird deshalb NICHT übertragen – sonst gäbe es zwei Nodes mit derselben Identität. Alles andere (Owner, LoRa, Kanäle, Module …) wird übernommen.</sys:String>
+    <sys:String x:Key="StrCfgRestoreSecurityIncluded">Der Sicherheits-Abschnitt (Schlüssel) wird mit zurückgespielt, da das Backup von diesem Node stammt.</sys:String>
+    <sys:String x:Key="StrCfgRestoreConfirm">Konfiguration jetzt auf das Gerät schreiben? Das Gerät startet anschließend neu; die aktuelle Konfiguration wird überschrieben.</sys:String>
+    <sys:String x:Key="StrCfgRestoreProgress">Konfiguration wird geschrieben … {0}</sys:String>
+    <sys:String x:Key="StrCfgRestoreDone">✅ Konfiguration übertragen – das Gerät übernimmt sie jetzt und startet ggf. neu.</sys:String>
+    <sys:String x:Key="StrCfgRestoreFailed">Wiederherstellung fehlgeschlagen: {0}</sys:String>
 
     <!-- Mesh Beacon module (FW 2.8) -->
     <sys:String x:Key="StrNcNavMeshBeacon">Mesh Beacon</sys:String>

@@ -22,6 +22,8 @@ public interface IFirmwareUpdateHost
     Task DisconnectForFirmwareUpdateAsync();
     /// <summary>Re-run the normal reconnect logic with the last connection parameters.</summary>
     void ReconnectAfterFirmwareUpdate();
+    /// <summary>While true, a link drop caused by the device rebooting must not start the auto-reconnect.</summary>
+    void SetAutoReconnectSuppressed(bool suppressed);
 }
 
 /// <summary>
@@ -568,6 +570,8 @@ public partial class FirmwareUpdateWindow : Window
         var progress = new Progress<FirmwareProgress>(OnProgress);
         var proto = _host.Protocol;
         string? backupPath = null;
+        // The device reboots by itself after ota_request/enter_dfu — the main window must not auto-reconnect.
+        _host.SetAutoReconnectSuppressed(true);
 
         try
         {
@@ -606,7 +610,20 @@ public partial class FirmwareUpdateWindow : Window
             }
 
             _succeeded = true;
-            ShowDone(Loc(_method == FirmwareUpdateMethod.Uf2Usb ? "StrFwDoneUf2" : "StrFwDoneOk"), backupPath);
+            string? extra = null;
+            if (_method == FirmwareUpdateMethod.Esp32Ble && _bleAddress is { } addr)
+            {
+                // Windows may now hold the OTA loader's GATT table for this address; ask its cache and drop
+                // the bond only if the Meshtastic service is really missing from it. (The BLE connect does
+                // the same check again, so this mainly lets the Done page announce the upcoming PIN prompt.)
+                if (await BleGattLink.TryUnpairIfStaleAsync(addr, Windows.Devices.Bluetooth.BluetoothAddressType.Public,
+                        BluetoothConnectionService.ServiceUuid))
+                {
+                    extra = Loc("StrFwUnpairedHint");
+                    Log(extra);
+                }
+            }
+            ShowDone(Loc(_method == FirmwareUpdateMethod.Uf2Usb ? "StrFwDoneUf2" : "StrFwDoneOk"), backupPath, extra);
         }
         catch (OperationCanceledException)
         {
@@ -631,6 +648,8 @@ public partial class FirmwareUpdateWindow : Window
             _running = false;
             _cts?.Dispose();
             _cts = null;
+            // The mesh link survived (e.g. the firmware refused OTA) — give normal auto-reconnect back.
+            if (_host.IsConnected) _host.SetAutoReconnectSuppressed(false);
         }
     }
 
@@ -700,12 +719,15 @@ public partial class FirmwareUpdateWindow : Window
 
     // ── Step 6: done ───────────────────────────────────────────────────────
 
-    private void ShowDone(string text, string? backupPath)
+    private void ShowDone(string text, string? backupPath, string? extra = null)
     {
         ShowStep(6);
         ResultText.Text = text;
         ResultText.Foreground = _succeeded ? Brushes.Green : Brushes.OrangeRed;
-        ResultDetailText.Text = backupPath != null ? Loc("StrFwBackupSaved", backupPath) : "";
+        var details = new List<string>();
+        if (extra != null) details.Add(extra);
+        if (backupPath != null) details.Add(Loc("StrFwBackupSaved", backupPath));
+        ResultDetailText.Text = string.Join("\n\n", details);
         ReconnectBtn.IsEnabled = _host.ConnectionParams != null;
         ReconnectStatusText.Text = "";
     }

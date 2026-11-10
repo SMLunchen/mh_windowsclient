@@ -4,6 +4,9 @@
 
 Der Client aktualisiert die Firmware deines Nodes direkt – ohne Web-Flasher, ohne Kommandozeile – mit einem geführten Assistenten im **Tools-Tab** („⬆️ Firmware-Update starten …"). Er arbeitet wie die Meshtastic-Android-App: Firmware aus den offiziellen Releases, Gerätekatalog zur Prüfung, vier Übertragungswege. Es wird nichts an das Gerät gesendet, bevor die Prüfseite keinen roten Eintrag mehr zeigt.
 
+!!! warning "Auf eigene Gefahr"
+    Der Assistent prüft, was sich am PC prüfen lässt – Funkabbrüche, Stromausfall, ein ungeeigneter Bootloader oder Fehler in der Firmware selbst nicht. Schlägt ein Update fehl, muss das Gerät unter Umständen vor Ort neu gestartet oder per USB/Web-Flasher wiederhergestellt werden. Die Entwickler des Meshhessen Clients übernehmen dafür keine Haftung.
+
 ## Übertragungswege
 
 | Weg | Geräte | Verbindung zum Client | Wie es funktioniert |
@@ -25,7 +28,7 @@ Der Client aktualisiert die Firmware deines Nodes direkt – ohne Web-Flasher, o
 3. **Firmware wählen** – **Stable** (empfohlen), **Alpha** (Vorabversionen, mit Warnung) oder **lokale Datei**. Release-Notes, Versionsvergleich (Update / gleiche Version / ⚠ Downgrade) und die Prüfung, ob das Release überhaupt einen Build für dein Gerät enthält. Lokale Dateien: `.bin` (ESP32), `-ota.zip` (nRF52-DFU), `.uf2` (USB).
 4. **Prüfung & Start** – die Firmware wird heruntergeladen (oder gelesen) und geprüft: Manifest-MD5/Größe, ESP-Image-Header mit Chip-ID gegen die Gerätearchitektur, App-Deskriptor (kein Factory-Image), UF2-Family-ID, DFU-Manifest, Dateiname gegen Build-Kennung, Akkustand, Transporthinweise. Optional wird vorher die **Gerätekonfiguration als JSON** gesichert (`firmware\backups\` – enthält Kanal-Schlüssel, entsprechend behandeln). Rote Einträge blockieren den Start.
 5. **Übertragung** – Fortschritt, Phase und Protokoll. Der Client trennt die Mesh-Verbindung absichtlich (kein Auto-Reconnect) und verbindet sich mit Loader bzw. Bootloader.
-6. **Fertig** – Ergebnis; „Erneut verbinden" stellt die Verbindung wieder her und zeigt die vom Gerät gemeldete neue Firmware-Version.
+6. **Fertig** – Ergebnis; „Erneut verbinden" stellt die Verbindung wieder her und zeigt die vom Gerät gemeldete neue Firmware-Version. Nach einem **Bluetooth-OTA (ESP32)** entfernt der Client die Windows-Kopplung des Geräts automatisch (siehe unten) und koppelt beim Verbinden neu – Windows fragt dabei ggf. nach dem PIN des Nodes.
 
 ## Bluetooth-Adapter & Richtantenne
 
@@ -41,7 +44,8 @@ Bricht ein Update ab, startet ein OTA-/UF2-Gerät einfach mit der alten Firmware
 
 ## Typische Fehler
 
-* **„Bluetooth-OTA-Dienst nicht erreichbar"** (ESP32): Der OTA-Loader meldet sich unter derselben Bluetooth-Adresse wie die Mesh-Firmware, kennt aber keine Verschlüsselung. Windows versucht trotzdem, die bestehende Kopplung zu nutzen – schlägt das fehl, entfernt der Client die Kopplung automatisch und versucht es erneut; beim nächsten Verbinden mit der Mesh-Firmware fragt Windows dann ggf. erneut nach dem PIN. Das Gerät bleibt bis zu einem Neustart (Reset-Taste) im OTA-Modus.
+* **„Meshtastic-Dienst nicht gefunden" beim Verbinden nach einem Update** (Bluetooth): Windows speichert pro Bluetooth-Adresse die Dienstetabelle (GATT) des Geräts und aktualisiert sie bei gekoppelten Geräten nicht von selbst. Nach einem Bluetooth-OTA (der Loader lief unter derselben Adresse mit einer anderen Tabelle) oder wenn eine neue Firmware ihre Bluetooth-Dienste ändert, passt die gespeicherte Tabelle nicht mehr. Der Client prüft das vor jedem Bluetooth-Verbindungsaufbau aktiv: Er fragt die von Windows gespeicherte Tabelle ab, und fehlt darin der Meshtastic-Dienst, entfernt er die Kopplung automatisch und koppelt neu (Windows fragt ggf. nach dem PIN). Schlägt die Dienstsuche dennoch fehl, folgt ein zweiter Versuch mit frischer Kopplung; erst dann erscheint ein Ja/Nein-Dialog zum manuellen Entkoppeln. Manuell: Windows-Einstellungen → Bluetooth → Gerät entfernen, dann im Client erneut verbinden.
+* **„Bluetooth-OTA-Dienst nicht erreichbar"** (ESP32): Der OTA-Loader meldet sich unter derselben Bluetooth-Adresse wie die Mesh-Firmware, kennt aber keine Verschlüsselung. Das Gerät bleibt bis zu einem Neustart (Reset-Taste) im OTA-Modus; danach erneut versuchen.
 * **„Bootloader nicht gefunden"** (nRF52): Das Gerät ist nicht in den DFU-Modus gestartet – meist blockiert eine veraltete Windows-Kopplung den Auslöser. Gerät in den Windows-Bluetooth-Einstellungen entfernen, neu koppeln, erneut versuchen.
 * **„OTA-Loader nicht erreichbar"** (WLAN): PC und Node im selben Netz? Firewall für UDP/TCP 3232? Bei der ersten Nutzung fragt Windows ggf. nach Netzwerkzugriff für den Client.
 * **„Gerät lehnt den OTA-Modus ab"**: Die Firmware meldet den Grund (z. B. fehlende OTA-Partition oder ein Loader ohne BLE-Unterstützung). Die Mesh-Verbindung bleibt dabei bestehen.

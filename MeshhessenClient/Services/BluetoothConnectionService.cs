@@ -37,7 +37,7 @@ public class BluetoothConnectionService : IConnectionService
     }
 
     // Meshtastic BLE UUIDs (from Python/Web clients)
-    private static readonly Guid ServiceUuid = Guid.Parse("6ba1b218-15a8-461f-9fa8-5dcae273eafd");
+    public static readonly Guid ServiceUuid = Guid.Parse("6ba1b218-15a8-461f-9fa8-5dcae273eafd");
     private static readonly Guid ToRadioUuid = Guid.Parse("f75c76d2-129e-4dad-a1dd-7866124401e7");
     private static readonly Guid FromRadioUuid = Guid.Parse("2c55e69e-4993-11ed-b878-0242ac120002");
     private static readonly Guid FromNumUuid = Guid.Parse("ed9da18c-a800-4f66-a670-aa7547e34453");
@@ -91,34 +91,33 @@ public class BluetoothConnectionService : IConnectionService
 
             LogDebug($"[BLE] Device connected, checking pairing status...");
 
-            // Check if device is paired, if not, request pairing
-            if (_device.DeviceInformation.Pairing.IsPaired)
+            // Stale bond? Windows keeps the GATT table of a bonded device and never re-reads it, so after a
+            // firmware update (or the OTA loader having run under this address) the Meshtastic service is
+            // "not found" until the bond is dropped. Ask Windows' cache first — no radio traffic — and
+            // re-pair when it holds a table without our service.
+            if (_device.DeviceInformation.Pairing.IsPaired &&
+                await Firmware.BleGattLink.IsCachedGattTableStaleAsync(_device, ServiceUuid))
             {
-                LogDebug($"[BLE] Device is already paired");
+                Logger.WriteLine("[BLE] Windows holds a stale GATT table for this bonded device — removing the pairing and pairing again");
+                await UnpairAndReopenAsync(btParams.DeviceAddress);
             }
-            else
-            {
-                LogDebug($"[BLE] Device is not paired, requesting pairing...");
-                var pairingResult = await _device.DeviceInformation.Pairing.PairAsync();
 
-                if (pairingResult.Status == Windows.Devices.Enumeration.DevicePairingResultStatus.Paired)
-                {
-                    LogDebug($"[BLE] Device paired successfully");
-                }
-                else if (pairingResult.Status == Windows.Devices.Enumeration.DevicePairingResultStatus.AlreadyPaired)
-                {
-                    LogDebug($"[BLE] Device was already paired");
-                }
-                else
-                {
-                    throw new Exception($"Pairing failed: {pairingResult.Status}");
-                }
-            }
+            await EnsurePairedAsync();
 
             LogDebug($"[BLE] Discovering services...");
 
             // Get Meshtastic service
             var serviceResult = await _device.GetGattServicesForUuidAsync(ServiceUuid, Windows.Devices.Bluetooth.BluetoothCacheMode.Uncached);
+            if ((serviceResult.Status != GattCommunicationStatus.Success || !serviceResult.Services.Any())
+                && _device.DeviceInformation.Pairing.IsPaired)
+            {
+                // Discovery fallback for the same stale-bond case when the cache gave no verdict:
+                // drop the bond, pair afresh, discover once more.
+                Logger.WriteLine($"[BLE] Meshtastic service not found on a bonded device (status {serviceResult.Status}) — removing the pairing and retrying once");
+                await UnpairAndReopenAsync(btParams.DeviceAddress);
+                await EnsurePairedAsync();
+                serviceResult = await _device.GetGattServicesForUuidAsync(ServiceUuid, Windows.Devices.Bluetooth.BluetoothCacheMode.Uncached);
+            }
             if (serviceResult.Status != GattCommunicationStatus.Success || !serviceResult.Services.Any())
             {
                 throw new Exception($"Meshtastic service not found (status: {serviceResult.Status})");
@@ -291,6 +290,42 @@ public class BluetoothConnectionService : IConnectionService
             Logger.WriteLine("[BLE] Device disconnected");
             Disconnect();
         }
+    }
+
+    /// <summary>Pairs when Windows does not hold a bond yet (Windows shows its PIN prompt if the node wants one).</summary>
+    private async Task EnsurePairedAsync()
+    {
+        if (_device!.DeviceInformation.Pairing.IsPaired)
+        {
+            LogDebug($"[BLE] Device is already paired");
+            return;
+        }
+        LogDebug($"[BLE] Device is not paired, requesting pairing...");
+        var pairingResult = await _device.DeviceInformation.Pairing.PairAsync();
+        switch (pairingResult.Status)
+        {
+            case Windows.Devices.Enumeration.DevicePairingResultStatus.Paired:
+                LogDebug($"[BLE] Device paired successfully");
+                break;
+            case Windows.Devices.Enumeration.DevicePairingResultStatus.AlreadyPaired:
+                LogDebug($"[BLE] Device was already paired");
+                break;
+            default:
+                throw new Exception($"Pairing failed: {pairingResult.Status}");
+        }
+    }
+
+    /// <summary>Drops the Windows bond and re-resolves the device object so pairing state and GATT cache start fresh.</summary>
+    private async Task UnpairAndReopenAsync(ulong address)
+    {
+        var r = await _device!.DeviceInformation.Pairing.UnpairAsync();
+        Logger.WriteLine($"[BLE] Unpair → {r.Status}");
+        _device.ConnectionStatusChanged -= OnDeviceConnectionStatusChanged;
+        try { _device.Dispose(); } catch { }
+        await Task.Delay(1000);
+        _device = await BluetoothLEDevice.FromBluetoothAddressAsync(address)
+                  ?? throw new Exception("Bluetooth device not found after removing the pairing");
+        _device.ConnectionStatusChanged += OnDeviceConnectionStatusChanged;
     }
 
     // Handle FROMNUM notifications (tells us data is available in FROMRADIO)

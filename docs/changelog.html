@@ -190,10 +190,44 @@
 <div class="section active" id="de">
 <main>
 
-  <!-- ── v1.7.2 ── -->
+  <!-- ── v1.7.3 ── -->
   <div class="version-entry current">
     <div class="version-header">
-      <span class="version-tag tag-latest">v1.7.2</span>
+      <span class="version-tag tag-latest">v1.7.3</span>
+      <span class="version-date">2026-11-10</span>
+      Firmware-Update-Assistent, Konfig-Backup &amp; Bluetooth-Robustheit
+    </div>
+    <p class="version-desc">Firmware direkt aus dem Client aktualisieren — ESP32 per WLAN- oder Bluetooth-OTA, nRF52 per Bluetooth-DFU oder UF2-Laufwerk — mit Gerätekatalog, Dateiprüfungen und Offline-Cache. Dazu Konfigurations-Backup und -Wiederherstellung sowie ein Bluetooth-Verbindungsaufbau, der veraltete Windows-Kopplungen selbst erkennt und erneuert.</p>
+
+    <div class="cl-section added">
+      <h3>✨ Neu</h3>
+      <div class="cl-group">
+        <ul class="cl-list">
+          <li><strong>⬆️ Firmware-Update-Assistent</strong> (Tools-Tab): Sechs geführte Schritte — Gerät &amp; Katalog, Übertragungsweg, Firmware, Prüfung, Übertragung, Fertig — wie in der Android-App. <strong>Vier Wege:</strong> ESP32 <strong>WLAN-OTA</strong> (Loader über TCP 3232, IP per UDP-Beacon), ESP32 <strong>Bluetooth-OTA</strong> (ACK-getaktet, Hash-geprüft — ideal mit externem Stick und Richtantenne), nRF52 <strong>Bluetooth-DFU</strong> (Legacy- und Secure-DFU des Adafruit-Bootloaders, automatisch erkannt, mit Resume/Retry) und <strong>UF2-Laufwerk</strong> für nRF52/RP2040 (Datei wird automatisch kopiert). Alle vier an Heltec V3 und RAK-Hardware bestätigt; ESP32 seriell bewusst ausgelassen (Hinweis auf den Web-Flasher).</li>
+          <li><strong>Firmware-Quellen &amp; Absicherung:</strong> Offizielle Releases (<strong>Stable und Alpha</strong>) mit Release-Notes, Versionsvergleich (Update / gleich / ⚠ Downgrade) und Prüfung, ob das Release einen Build für dein Gerät enthält — oder lokale Dateien (.bin / -ota.zip / .uf2). Vor dem Start: Manifest-MD5, ESP-Image-Header mit Chip-ID gegen die Gerätearchitektur, kein Factory-Image, UF2-Chipfamilie, DFU-Manifest, Dateiname gegen Build-Kennung, Akkustand, Support-Status. Gerätekatalog und Downloads werden im Ordner <code>firmware/</code> gecacht — der Assistent arbeitet damit auch offline und sagt klar, wenn er nichts validieren kann. Nichts wird gesendet, bevor die Prüfseite keinen roten Eintrag mehr zeigt; ein Haftungsausschluss steht in Schritt 1 (die Leiter kann trotzdem nötig werden).</li>
+          <li><strong>Bluetooth-Adapter &amp; Wiederherstellung:</strong> Der aktive Adapter wird angezeigt; weil Windows immer nur einen Bluetooth-Adapter nutzt, gibt es bei mehreren den Hinweis, den anderen im Geräte-Manager zu deaktivieren. Ein Gerät, das bereits im Bootloader steckt, lässt sich ohne Mesh-Verbindung per UF2 oder Bluetooth-DFU flashen. Nach dem Update: Ein-Klick-Reconnect mit Anzeige der neuen Firmware-Version.</li>
+          <li><strong>💾 Konfiguration sichern &amp; wiederherstellen</strong> (Tools-Tab): Komplette Gerätekonfiguration als JSON (Owner, alle Config- und Modul-Abschnitte, alle 8 Kanäle inkl. Schlüssel) — optional auch automatisch vor jedem Firmware-Update. Beim Zurückspielen zeigt der Client erst eine Zusammenfassung und schreibt dann alles in einer Transaktion (ein Neustart). Stammt das Backup von einem anderen Node, bleibt der Sicherheits-Abschnitt außen vor — kein Identitäts-Klon, aber Ersatzgeräte lassen sich komplett einrichten.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="cl-section fixed">
+      <h3>🐛 Behoben / ✨ Verbessert</h3>
+      <div class="cl-group">
+        <ul class="cl-list">
+          <li><strong>Bluetooth: veraltete Kopplungen werden aktiv erkannt.</strong> Windows merkt sich pro Gerät die Dienstetabelle und aktualisiert sie bei gekoppelten Geräten nicht — nach einem Firmware-Update (oder dem OTA-Loader unter derselben Adresse) hieß es dann „Meshtastic-Dienst nicht gefunden". Der Client fragt die gespeicherte Tabelle jetzt vor jedem Verbinden ab, entfernt eine veraltete Kopplung automatisch und koppelt neu; schlägt die Dienstsuche dennoch fehl, folgt ein zweiter Versuch und erst dann ein Ja/Nein-Dialog zum Entkoppeln.</li>
+          <li><strong>Firmware-Version und Hardware-Modell sofort bekannt:</strong> Beide werden jetzt direkt aus dem Verbindungs-Handshake übernommen — bisher nur über eine nachgelagerte Abfrage, die bei TCP-Verbindungen leer bleiben konnte (Info-Tab zeigte „–").</li>
+          <li><strong>Hauptfenster minimierte sich beim Schließen</strong> von Display-Spiegelung und Höhenprofil (gleiche Ursache wie seinerzeit bei der Fernverwaltung) — behoben, auch für den neuen Assistenten.</li>
+          <li><strong>Handbuch:</strong> neues Kapitel „Firmware-Update" (DE/EN) mit allen Wegen, Fehlerbildern und Wiederherstellung; Backup/Restore in „Node-Verwaltung" dokumentiert.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── v1.7.2 ── -->
+  <div class="version-entry">
+    <div class="version-header">
+      <span class="version-tag">v1.7.2</span>
       <span class="version-date">2026-11-09</span>
       Meshtastic 2.8: Status, Signaturen &amp; neue Sensoren
     </div>
@@ -1400,10 +1434,44 @@
 <div class="section" id="en">
 <main>
 
-  <!-- ── v1.7.2 (EN) ── -->
+  <!-- ── v1.7.3 (EN) ── -->
   <div class="version-entry current">
     <div class="version-header">
-      <span class="version-tag tag-latest">v1.7.2</span>
+      <span class="version-tag tag-latest">v1.7.3</span>
+      <span class="version-date">2026-11-10</span>
+      Firmware update assistant, config backup &amp; Bluetooth robustness
+    </div>
+    <p class="version-desc">Update firmware straight from the client — ESP32 via Wi-Fi or Bluetooth OTA, nRF52 via Bluetooth DFU or UF2 drive — with device catalog, file checks and offline cache. Plus configuration backup/restore and a Bluetooth connect that detects and renews stale Windows pairings by itself.</p>
+
+    <div class="cl-section added">
+      <h3>✨ New</h3>
+      <div class="cl-group">
+        <ul class="cl-list">
+          <li><strong>⬆️ Firmware update assistant</strong> (Tools tab): six guided steps — device &amp; catalog, transfer method, firmware, pre-flight, transfer, done — like the Android app. <strong>Four methods:</strong> ESP32 <strong>Wi-Fi OTA</strong> (loader on TCP 3232, IP via UDP beacon), ESP32 <strong>Bluetooth OTA</strong> (ACK-paced, hash-verified — ideal with an external dongle and directional antenna), nRF52 <strong>Bluetooth DFU</strong> (Legacy and Secure DFU of the Adafruit bootloader, detected automatically, with resume/retry) and <strong>UF2 drive</strong> for nRF52/RP2040 (file copied automatically). All four confirmed on Heltec V3 and RAK hardware; ESP32 over serial deliberately left out (link to the web flasher).</li>
+          <li><strong>Firmware sources &amp; safeguards:</strong> official releases (<strong>stable and alpha</strong>) with release notes, version comparison (update / same / ⚠ downgrade) and a check whether the release contains a build for your device — or local files (.bin / -ota.zip / .uf2). Before starting: manifest MD5, ESP image header with chip id against the device architecture, no factory image, UF2 chip family, DFU manifest, file name against build identifier, battery level, support status. Device catalog and downloads are cached in the <code>firmware/</code> folder — the assistant works offline with them and says clearly when it cannot validate anything. Nothing is sent until the pre-flight page shows no red item; a disclaimer sits in step 1 (the ladder may still be needed).</li>
+          <li><strong>Bluetooth adapter &amp; recovery:</strong> the active adapter is shown; since Windows only ever uses one Bluetooth adapter, a hint explains how to disable the other one in Device Manager. A device already sitting in its bootloader can be flashed without a mesh connection via UF2 or Bluetooth DFU. After the update: one-click reconnect showing the new firmware version.</li>
+          <li><strong>💾 Back up &amp; restore configuration</strong> (Tools tab): the complete device configuration as JSON (owner, all config and module sections, all 8 channels incl. keys) — optionally also automatically before every firmware update. Restoring shows a summary first and then writes everything in one transaction (one reboot). If the backup comes from a different node, the security section is left out — no identity clone, but replacement devices can be set up completely.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="cl-section fixed">
+      <h3>🐛 Fixed / ✨ Improved</h3>
+      <div class="cl-group">
+        <ul class="cl-list">
+          <li><strong>Bluetooth: stale pairings are detected actively.</strong> Windows remembers each device's service table and never refreshes it for paired devices — after a firmware update (or the OTA loader under the same address) the result was "Meshtastic service not found". The client now queries the stored table before every connect, removes a stale pairing automatically and pairs again; if discovery still fails, a second attempt follows and only then a Yes/No dialog offers unpairing.</li>
+          <li><strong>Firmware version and hardware model known immediately:</strong> both are now taken straight from the connection handshake — previously only via a follow-up query that could stay empty over TCP (Info tab showed "–").</li>
+          <li><strong>Main window minimized when closing</strong> the display mirror and elevation profile windows (same cause as the remote admin issue back then) — fixed, including for the new assistant.</li>
+          <li><strong>Handbook:</strong> new "Firmware update" chapter (DE/EN) covering all methods, failure patterns and recovery; backup/restore documented under "Node management".</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── v1.7.2 (EN) ── -->
+  <div class="version-entry">
+    <div class="version-header">
+      <span class="version-tag">v1.7.2</span>
       <span class="version-date">2026-11-09</span>
       Meshtastic 2.8: status, signatures &amp; new sensors
     </div>

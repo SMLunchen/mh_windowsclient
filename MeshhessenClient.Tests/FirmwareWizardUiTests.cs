@@ -76,6 +76,7 @@ public class FirmwareWizardUiTests
         public ConnectionParameters? ConnectionParams => null;
         public Task DisconnectForFirmwareUpdateAsync() => Task.CompletedTask;
         public void ReconnectAfterFirmwareUpdate() { }
+        public void SetAutoReconnectSuppressed(bool suppressed) { }
     }
 
     [Fact]

@@ -1256,10 +1256,33 @@ public partial class MainWindow : Window
                 if (ex is System.Net.Sockets.SocketException se && se.SocketErrorCode == System.Net.Sockets.SocketError.ConnectionRefused
                     || ex.InnerException is System.Net.Sockets.SocketException se2 && se2.SocketErrorCode == System.Net.Sockets.SocketError.ConnectionRefused)
                     userMsg = Loc("StrErrConnectionRefused");
-                MessageBox.Show(string.Format(Loc("StrConnectFailed"), userMsg), Loc("StrError"), MessageBoxButton.OK, MessageBoxImage.Error);
                 UpdateStatusBar(Loc("StrConnectionFailed"));
                 SetConnectionStatus(ConnectionStatus.Error);
                 ConnectButton.IsEnabled = true;
+
+                // BLE: "Meshtastic service not found" on a device Windows knows almost always means a stale
+                // bond/GATT cache (the device's GATT table changed, e.g. after a firmware update or the OTA
+                // loader ran under the same address). Removing the pairing clears both; connecting again re-pairs.
+                if (connectionParams is BluetoothConnectionParameters btParams &&
+                    ex.Message.Contains("service not found", StringComparison.OrdinalIgnoreCase))
+                {
+                    var choice = MessageBox.Show(string.Format(Loc("StrBleStaleBondHint"), userMsg), Loc("StrError"),
+                        MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                    if (choice == MessageBoxResult.Yes)
+                    {
+                        UpdateStatusBar(Loc("StrBleUnpairing"));
+                        var unpaired = await Services.Firmware.BleGattLink.TryUnpairAsync(btParams.DeviceAddress,
+                            Windows.Devices.Bluetooth.BluetoothAddressType.Unspecified);
+                        UpdateStatusBar(Loc(unpaired ? "StrBleUnpaired" : "StrBleUnpairFailed"));
+                        if (unpaired)
+                        {
+                            await Task.Delay(1500);
+                            Connect_Click(sender, e); // second attempt pairs afresh (Windows may ask for the PIN)
+                        }
+                    }
+                    return;
+                }
+                MessageBox.Show(string.Format(Loc("StrConnectFailed"), userMsg), Loc("StrError"), MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
     }

@@ -470,6 +470,54 @@ public class FirmwareUpdateTests
         Assert.Contains("\"pioEnv\": \"heltec-v3\"", json);
     }
 
+    [Fact]
+    public async Task Config_backup_roundtrips_and_restores_in_one_transaction()
+    {
+        var fake = new FakeConnectionService(ConnectionType.Tcp);
+        var svc = new MeshtasticProtocolService(fake);
+        fake.Receive(Frame(new FromRadio { MyInfo = new MyNodeInfo { MyNodeNum = 0x12345678 } }));
+        fake.Receive(Frame(new FromRadio { NodeInfo = new Meshtastic.Protobufs.NodeInfo { Num = 0x12345678, User = new User { Id = "!12345678", LongName = "Hütte Nord", ShortName = "HÜNO", HwModel = HardwareModel.HeltecV3 } } }));
+        fake.Receive(Frame(new FromRadio { Config = new Config { Lora = new Config.Types.LoRaConfig { Region = Config.Types.LoRaConfig.Types.RegionCode.Eu868, ModemPreset = Config.Types.LoRaConfig.Types.ModemPreset.ShortSlow, HopLimit = 5 } } }));
+        fake.Receive(Frame(new FromRadio { Config = new Config { Security = new Config.Types.SecurityConfig { PrivateKey = ByteString.CopyFrom(new byte[32]) } } }));
+        fake.Receive(Frame(new FromRadio { ModuleConfig = new ModuleConfig { Mqtt = new ModuleConfig.Types.MQTTConfig { Enabled = true, Address = "mqtt.example" } } }));
+        fake.Receive(Frame(new FromRadio { Channel = new Channel { Index = 0, Role = Channel.Types.Role.Primary, Settings = new ChannelSettings { Name = "LongFast", Psk = ByteString.CopyFrom(1) } } }));
+        fake.Receive(Frame(new FromRadio { Channel = new Channel { Index = 1, Role = Channel.Types.Role.Secondary, Settings = new ChannelSettings { Name = "Hessen", Psk = ByteString.CopyFrom(new byte[16]) } } }));
+
+        var json = svc.BuildConfigBackupJson();
+        var backup = ConfigBackupFile.Parse(json);
+        Assert.Equal("12345678", backup.NodeIdHex);
+        Assert.Equal(2, backup.Configs.Count);
+        Assert.Single(backup.ModuleConfigs);
+        Assert.Equal(2, backup.Channels.Count);
+        Assert.Equal("Hütte Nord", backup.Owner!.LongName);
+        Assert.True(backup.HasSecurity);
+        Assert.Equal(5u, backup.Configs.First(c => c.PayloadVariantCase == Config.PayloadVariantOneofCase.Lora).Lora.HopLimit);
+        Assert.Contains("Hessen", ConfigBackupFile.Describe(backup));
+        Assert.Throws<InvalidDataException>(() => ConfigBackupFile.Parse("{\"foo\": 1}"));
+
+        // Restore onto a *different* node: security must be skipped, everything else written inside begin/commit.
+        var target = new FakeConnectionService(ConnectionType.Tcp);
+        var tsvc = new MeshtasticProtocolService(target);
+        SeedSessionKey(tsvc);
+        await tsvc.RestoreConfigBackupAsync(backup, includeSecurity: false);
+        var admins = target.Written.Select(DecodeAdmin).Where(a => a != null).Select(a => a!).ToList();
+        Assert.Equal(AdminMessage.PayloadVariantOneofCase.BeginEditSettings, admins.First().PayloadVariantCase);
+        Assert.Equal(AdminMessage.PayloadVariantOneofCase.CommitEditSettings, admins.Last().PayloadVariantCase);
+        Assert.Contains(admins, a => a.PayloadVariantCase == AdminMessage.PayloadVariantOneofCase.SetOwner && a.SetOwner.LongName == "Hütte Nord");
+        Assert.Contains(admins, a => a.PayloadVariantCase == AdminMessage.PayloadVariantOneofCase.SetConfig && a.SetConfig.PayloadVariantCase == Config.PayloadVariantOneofCase.Lora && a.SetConfig.Lora.HopLimit == 5);
+        Assert.DoesNotContain(admins, a => a.PayloadVariantCase == AdminMessage.PayloadVariantOneofCase.SetConfig && a.SetConfig.PayloadVariantCase == Config.PayloadVariantOneofCase.Security);
+        Assert.Contains(admins, a => a.PayloadVariantCase == AdminMessage.PayloadVariantOneofCase.SetModuleConfig && a.SetModuleConfig.Mqtt.Address == "mqtt.example");
+        Assert.Equal(2, admins.Count(a => a.PayloadVariantCase == AdminMessage.PayloadVariantOneofCase.SetChannel));
+        Assert.Contains(admins, a => a.PayloadVariantCase == AdminMessage.PayloadVariantOneofCase.SetChannel && a.SetChannel.Index == 1 && a.SetChannel.Settings.Name == "Hessen");
+
+        // Same node: security goes along.
+        var target2 = new FakeConnectionService(ConnectionType.Tcp);
+        var tsvc2 = new MeshtasticProtocolService(target2);
+        SeedSessionKey(tsvc2);
+        await tsvc2.RestoreConfigBackupAsync(backup, includeSecurity: true);
+        Assert.Contains(target2.Written.Select(DecodeAdmin), a => a?.PayloadVariantCase == AdminMessage.PayloadVariantOneofCase.SetConfig && a.SetConfig.PayloadVariantCase == Config.PayloadVariantOneofCase.Security);
+    }
+
     private static void SeedSessionKey(MeshtasticProtocolService svc) =>
         typeof(MeshtasticProtocolService)
             .GetField("_sessionPasskey", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!

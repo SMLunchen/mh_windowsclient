@@ -215,6 +215,60 @@ public sealed class BleGattLink : IAsyncDisposable
     public string Name => _device?.Name ?? "";
     public bool IsPaired => _device?.DeviceInformation.Pairing.IsPaired == true;
 
+    /// <summary>
+    /// Active stale-bond check. Windows keeps one GATT table per bonded address and never re-reads it on
+    /// its own (no "Service Changed" handling for most peripherals), so after the device's table changed —
+    /// OTA loader under the same address, or a firmware whose Bluetooth services differ — every lookup of
+    /// the Meshtastic service fails until the bond is dropped. This asks Windows for what it has cached
+    /// (no radio traffic) and returns true when a table is known but lacks <paramref name="expectedService"/>.
+    /// Returns false when nothing is cached (unknown ≠ stale).
+    /// </summary>
+    public static async Task<bool> IsCachedGattTableStaleAsync(BluetoothLEDevice dev, Guid expectedService)
+    {
+        try
+        {
+            var cached = await dev.GetGattServicesAsync(BluetoothCacheMode.Cached);
+            if (cached.Status != GattCommunicationStatus.Success || cached.Services.Count == 0)
+            {
+                Logger.WriteLine($"[BLE link] Cached GATT table for {BleAddress.Format(dev.BluetoothAddress)}: {cached.Status}, {cached.Services.Count} services — no verdict");
+                return false;
+            }
+            var uuids = cached.Services.Select(s => s.Uuid).ToList();
+            foreach (var s in cached.Services) try { s.Dispose(); } catch { }
+            bool stale = !uuids.Contains(expectedService);
+            Logger.WriteLine($"[BLE link] Cached GATT table for {BleAddress.Format(dev.BluetoothAddress)}: [{string.Join(", ", uuids)}] → {(stale ? "STALE (expected service missing)" : "ok")}");
+            return stale;
+        }
+        catch (Exception ex)
+        {
+            Logger.WriteLine($"[BLE link] Cached GATT query failed: {BleDiag.Describe(ex)}");
+            return false;
+        }
+    }
+
+    /// <summary>Unpairs only when <see cref="IsCachedGattTableStaleAsync"/> says the bond is stale. Returns true if a bond was removed.</summary>
+    public static async Task<bool> TryUnpairIfStaleAsync(ulong address, BluetoothAddressType addressType, Guid expectedService)
+    {
+        try
+        {
+            var dev = addressType == BluetoothAddressType.Unspecified
+                ? await BluetoothLEDevice.FromBluetoothAddressAsync(address)
+                : await BluetoothLEDevice.FromBluetoothAddressAsync(address, addressType);
+            if (dev == null) return false;
+            using (dev)
+            {
+                if (!dev.DeviceInformation.Pairing.IsPaired) return false;
+                if (!await IsCachedGattTableStaleAsync(dev, expectedService)) return false;
+            }
+            return await TryUnpairAsync(address, addressType);
+        }
+        catch (Exception ex)
+        {
+            Logger.WriteLine($"[BLE link] Stale-bond check for {BleAddress.Format(address)} failed: {BleDiag.Describe(ex)}");
+            return false;
+        }
+    }
+
     /// <summary>Removes the Windows bond with a device. Needed for the ESP32 OTA loader: it advertises on
     /// the mesh firmware's own address but has no security at all, while Windows insists on re-encrypting
     /// a bonded link and the connection fails. Unpairing also drops Windows' stale GATT cache for that
