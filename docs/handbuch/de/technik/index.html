@@ -943,6 +943,7 @@
 <li><code>my_info</code>, <code>node_info</code> (×N), <code>channel</code> (×8), <code>config</code>, <code>config_complete_id</code> empfangen</li>
 <li>Falls Channels fehlen (z. B. T-Deck): Retry-Mechanismus mit bis zu 3 Runden per <code>GetChannelRequest</code></li>
 <li>Bereit für MeshPackets</li>
+<li><strong>Keepalive:</strong> alle 5 Minuten ein <code>heartbeat</code> an das Gerät — die Firmware schließt ihre Client-Schnittstelle sonst nach 15 Minuten ohne eingehende Nachricht (seriell und TCP) und liefert dann still keine Pakete mehr. Firmware ≥ 2.8 beantwortet jeden Heartbeat mit einem <code>queueStatus</code>; bleiben zwei Antworten in Folge aus (bzw. bei älterer Firmware 45 Minuten gar kein Frame), baut der Client die Verbindung automatisch neu auf</li>
 </ol>
 <h2 id="serielles-protokoll-robustheit">Serielles Protokoll (Robustheit)<a class="headerlink" href="#serielles-protokoll-robustheit" title="Permanent link">&para;</a></h2>
 <ul>
