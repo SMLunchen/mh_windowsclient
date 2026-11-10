@@ -2793,10 +2793,17 @@
                                    FontSize="15" FontWeight="SemiBold" Margin="0,0,0,6"/>
                         <TextBlock Text="{DynamicResource StrFwToolsDesc}"
                                    TextWrapping="Wrap" Foreground="#555" Margin="0,0,0,10"/>
-                        <Button x:Name="FirmwareUpdateBtn"
-                                Content="{DynamicResource StrFwToolsBtn}"
-                                HorizontalAlignment="Left" Padding="16,8"
-                                Click="FirmwareUpdateBtn_Click"/>
+                        <StackPanel Orientation="Horizontal">
+                            <Button x:Name="FirmwareUpdateBtn"
+                                    Content="{DynamicResource StrFwToolsBtn}"
+                                    Padding="16,8" Margin="0,0,10,0"
+                                    Click="FirmwareUpdateBtn_Click"/>
+                            <Button x:Name="FirmwarePrefetchBtn"
+                                    Content="{DynamicResource StrFwPrefetchToolsBtn}"
+                                    ToolTip="{DynamicResource StrFwPrefetchTip}"
+                                    Padding="16,8"
+                                    Click="FirmwarePrefetchBtn_Click"/>
+                        </StackPanel>
 
                         <Separator Margin="0,20"/>
 

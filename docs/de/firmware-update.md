@@ -38,6 +38,24 @@ Windows nutzt für Bluetooth LE immer genau **einen** Adapter; eine Auswahl in d
 
 Alles liegt im Ordner `firmware\` neben der EXE: `deviceHardware.json` und `releases.json` (Katalog-Cache), pro Version ein Unterordner mit den heruntergeladenen Images (Prefetch – ein einmal geladenes Release lässt sich später offline flashen) und `backups\` mit den Konfigurations-Sicherungen. „Firmware-Ordner" im Assistenten öffnet ihn.
 
+## Firmware vorab laden (offline flashen)
+
+Für Einsätze ohne Internet: **„📥 Firmware vorab laden …"** (Tools-Tab, oder der Button neben der Release-Auswahl in Schritt 3) lädt ein Release für **beliebige Gerätetypen** herunter – auch für Nodes, die gerade nicht angeschlossen sind. Release (Stable/Alpha) wählen, Gerätetypen ankreuzen (Filterfeld, das verbundene Gerät ist vorausgewählt), „Herunterladen". Pro Gerät wird alles geholt, was der Assistent brauchen kann: ESP32 → OTA-Image (`.bin`), nRF52 → DFU-Paket (`-ota.zip`) **und** `.uf2`, RP2040 → `.uf2`. Die Dateien landen in `firmware\<Version>\firmware-<target>-<Version>.<ext>`.
+
+Offline zeigt Schritt 3 die zwischengespeicherten Releases; Einträge, deren Datei für das verbundene Gerät bereits vorliegt, sind mit **💾 offline verfügbar** markiert und werden vorausgewählt. Alles andere würde beim Laden fehlschlagen.
+
+## Eigene oder manuell heruntergeladene Firmware
+
+In Schritt 3 **„Lokale Datei"** wählen. Welche Datei der jeweilige Weg erwartet:
+
+| Weg | Datei | Woher |
+|---|---|---|
+| ESP32 WLAN-/Bluetooth-OTA | `firmware-<target>-<version>.bin` – das **Anwendungs-Image** (`app0`), nicht `*.factory.bin` und kein `littlefs-*.bin` | Release-Download, oder PlatformIO `.pio/build/<env>/firmware.bin` |
+| nRF52 Bluetooth-DFU | `firmware-<target>-<version>-ota.zip` (Nordic-DFU-Paket mit `manifest.json`, `.dat`, `.bin`) | Release-Download, oder `adafruit-nrfutil dfu genpkg` bzw. Meshtastic-Build-Skript |
+| UF2-Laufwerk | `firmware-<target>-<version>.uf2` | Release-Download, oder PlatformIO/`uf2conv.py` |
+
+Der Assistent prüft die Datei unabhängig vom Namen: ESP-Image-Header mit Chip-ID gegen die Gerätearchitektur und Anwendungs-Deskriptor (eingebettete Version wird angezeigt), UF2-Chipfamilie, DFU-Manifest. Ein selbst gebautes `firmware.bin` erzeugt deshalb nur den Hinweis „Dateiname weicht ab (eigener Build?)" – maßgeblich sind die Chip- und Image-Prüfung. Wer eine manuell heruntergeladene Release-Datei nach dem Schema `firmware-<target>-<version>.<ext>` in `firmware\<version>\` ablegt, bekommt sie im Assistenten automatisch als 💾 offline verfügbar angeboten.
+
 ## Wiederherstellung
 
 Bricht ein Update ab, startet ein OTA-/UF2-Gerät einfach mit der alten Firmware weiter (das Image wird erst nach erfolgreicher Prüfung aktiviert). Ein nRF52 bleibt nach abgebrochener DFU im Bootloader: Den Assistenten **ohne** Mesh-Verbindung öffnen – er bietet dann Bluetooth-DFU (letzte Bluetooth-Adresse) bzw. das UF2-Laufwerk mit einer lokalen Datei an. Ein UF2-Laufwerk erscheint bei nRF52/RP2040 auch manuell durch zweimaliges kurzes Drücken der RESET-Taste.

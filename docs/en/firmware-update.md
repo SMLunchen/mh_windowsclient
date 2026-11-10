@@ -38,6 +38,24 @@ Windows always uses exactly **one** adapter for Bluetooth LE; selecting one insi
 
 Everything lives in the `firmware\` folder next to the EXE: `deviceHardware.json` and `releases.json` (catalog cache), one sub-folder per version with the downloaded images (prefetch – a release downloaded once can be flashed offline later) and `backups\` with the configuration backups. "Firmware folder" in the assistant opens it.
 
+## Prefetch firmware (flash offline)
+
+For field work without internet: **"📥 Prefetch firmware …"** (Tools tab, or the button next to the release picker in step 3) downloads a release for **any device types** – including nodes that are not connected right now. Pick the release (stable/alpha), tick the device types (filter box, the connected device is pre-selected), "Download". Per device everything the assistant may need is fetched: ESP32 → OTA image (`.bin`), nRF52 → DFU package (`-ota.zip`) **and** `.uf2`, RP2040 → `.uf2`. Files go to `firmware\<version>\firmware-<target>-<version>.<ext>`.
+
+Offline, step 3 lists the cached releases; entries whose file for the connected device is already present are marked **💾 available offline** and pre-selected. Anything else would fail to load.
+
+## Your own or manually downloaded firmware
+
+Choose **"Local file"** in step 3. What each method expects:
+
+| Method | File | Source |
+|---|---|---|
+| ESP32 Wi-Fi/Bluetooth OTA | `firmware-<target>-<version>.bin` – the **application image** (`app0`), not `*.factory.bin` and no `littlefs-*.bin` | release download, or PlatformIO `.pio/build/<env>/firmware.bin` |
+| nRF52 Bluetooth DFU | `firmware-<target>-<version>-ota.zip` (Nordic DFU package with `manifest.json`, `.dat`, `.bin`) | release download, or `adafruit-nrfutil dfu genpkg` / the Meshtastic build script |
+| UF2 drive | `firmware-<target>-<version>.uf2` | release download, or PlatformIO/`uf2conv.py` |
+
+The assistant checks the file regardless of its name: ESP image header with chip id against the device architecture and application descriptor (embedded version is shown), UF2 chip family, DFU manifest. A self-built `firmware.bin` therefore only produces the note "file name differs (your own build?)" – the chip and image checks are what counts. If you drop a manually downloaded release file named `firmware-<target>-<version>.<ext>` into `firmware\<version>\`, the assistant offers it automatically as 💾 available offline.
+
 ## Recovery
 
 If an update is interrupted, an OTA/UF2 device simply keeps running the old firmware (the image is only activated after successful verification). An nRF52 stays in its bootloader after an interrupted DFU: open the assistant **without** a mesh connection – it then offers Bluetooth DFU (last Bluetooth address) or the UF2 drive with a local file. On nRF52/RP2040 a UF2 drive also appears manually by double-tapping the RESET button.

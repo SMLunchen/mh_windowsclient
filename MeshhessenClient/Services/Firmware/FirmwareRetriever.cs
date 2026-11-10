@@ -36,6 +36,30 @@ public sealed class FirmwareRetriever
     /// <summary>Directory where artifacts of this release are cached.</summary>
     public string ReleaseDir(FirmwareRelease release) => Path.Combine(_cacheDir, release.Version);
 
+    /// <summary>Candidate cache filenames for a method, most specific first (mirrors the download order).</summary>
+    public static IEnumerable<string> CandidateFileNames(string target, string version, FirmwareUpdateMethod method) => method switch
+    {
+        FirmwareUpdateMethod.Esp32Wifi or FirmwareUpdateMethod.Esp32Ble =>
+            new[] { FileName(target, version, ".bin"), FileName(target, version, "-update.bin") },
+        FirmwareUpdateMethod.Nrf52BleDfu => new[] { FileName(target, version, "-ota.zip") },
+        FirmwareUpdateMethod.Uf2Usb => new[] { FileName(target, version, ".uf2") },
+        _ => Array.Empty<string>()
+    };
+
+    /// <summary>Path of an already downloaded (prefetched) artifact for this release/device/method, or null.
+    /// Lets the wizard mark releases as usable offline before any download is attempted.</summary>
+    public string? FindCachedArtifact(FirmwareRelease release, DeviceHardware hw, FirmwareUpdateMethod method)
+    {
+        var dir = ReleaseDir(release);
+        if (!Directory.Exists(dir)) return null;
+        foreach (var name in CandidateFileNames(hw.EffectiveTarget, release.Version, method))
+        {
+            var p = Path.Combine(dir, name);
+            if (File.Exists(p) && new FileInfo(p).Length > 0) return p;
+        }
+        return null;
+    }
+
     // ── ESP32 ───────────────────────────────────────────────────────────────
 
     public async Task<FirmwareArtifact?> GetEsp32OtaImageAsync(FirmwareRelease release, DeviceHardware hw,

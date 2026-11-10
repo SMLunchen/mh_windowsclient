@@ -17,6 +17,12 @@ public partial class MainWindow : IFirmwareUpdateHost
         new FirmwareUpdateWindow(this) { Owner = this }.Show();
     }
 
+    /// <summary>Prefetch firmware for any device types while online (the dialog loads the catalog itself).</summary>
+    private void FirmwarePrefetchBtn_Click(object sender, RoutedEventArgs e)
+    {
+        new FirmwarePrefetchWindow(null, null) { Owner = this }.Show();
+    }
+
     // ── Configuration backup / restore (Tools) ───────────────────────────────
 
     private static string BackupDir => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "firmware", "backups");

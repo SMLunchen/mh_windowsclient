@@ -673,6 +673,19 @@
     <sys:String x:Key="StrFwToolsSection">⬆️ Firmware-Update</sys:String>
     <sys:String x:Key="StrFwToolsDesc">Geführter Assistent zum Aktualisieren der Node-Firmware – wie in der Android-App: ESP32 per WLAN- oder Bluetooth-OTA, nRF52 per Bluetooth-DFU oder UF2-Laufwerk. Firmware aus den offiziellen Releases (Stable/Alpha) oder aus einer lokalen Datei; Gerätekatalog und Prüfungen funktionieren auch offline aus dem Cache.</sys:String>
     <sys:String x:Key="StrFwToolsBtn">⬆️ Firmware-Update starten …</sys:String>
+    <sys:String x:Key="StrFwPrefetchToolsBtn">📥 Firmware vorab laden …</sys:String>
+    <sys:String x:Key="StrFwPrefetchBtn">📥 Vorab laden …</sys:String>
+    <sys:String x:Key="StrFwPrefetchTip">Lädt die Firmware eines Releases für beliebige Gerätetypen in den Ordner „firmware", damit Nodes später ohne Internet aktualisiert werden können.</sys:String>
+    <sys:String x:Key="StrFwPrefetchTitle">Firmware vorab laden</sys:String>
+    <sys:String x:Key="StrFwPrefetchHint">Mit Internetverbindung die Firmware für alle Gerätetypen herunterladen, die du später vor Ort ohne Netz aktualisieren willst. Die Dateien landen in „firmware\&lt;Version&gt;\"; der Assistent erkennt sie dort automatisch und markiert solche Releases mit 💾. Pro Gerät wird geladen, was der Assistent brauchen kann: ESP32 → OTA-Image (.bin), nRF52 → DFU-Paket (-ota.zip) und UF2, RP2040 → UF2.</sys:String>
+    <sys:String x:Key="StrFwPrefetchDevices">Gerätetypen (Mehrfachauswahl, Filter oben):</sys:String>
+    <sys:String x:Key="StrFwPrefetchDownload">📥 Herunterladen</sys:String>
+    <sys:String x:Key="StrFwPrefetchWorking">Lade {0} – {1} ({2}) …</sys:String>
+    <sys:String x:Key="StrFwPrefetchNotInRelease">im Release nicht enthalten / nicht erreichbar</sys:String>
+    <sys:String x:Key="StrFwPrefetchDone">Fertig: {0} Datei(en) geladen, {1} nicht verfügbar. Ordner: {2}</sys:String>
+    <sys:String x:Key="StrFwPrefetchNoCatalog">Gerätekatalog nicht verfügbar – zum Vorab-Laden wird eine Internetverbindung benötigt.</sys:String>
+    <sys:String x:Key="StrFwOfflineAvailable">offline verfügbar</sys:String>
+    <sys:String x:Key="StrFwOfflineHint">ℹ Offline – es werden die zwischengespeicherten Releases angeboten. Nur mit 💾 markierte Einträge enthalten bereits die Datei für dieses Gerät; andere schlagen beim Laden fehl.</sys:String>
     <sys:String x:Key="StrFwTitle">Firmware-Update</sys:String>
     <sys:String x:Key="StrFwDisclaimer">⚠ Haftungsausschluss: Firmware-Updates erfolgen auf eigene Gefahr. Der Assistent prüft, was sich am PC prüfen lässt – Funkabbrüche, Stromausfall, ein ungeeigneter Bootloader oder Fehler in der Firmware selbst lassen sich damit nicht ausschließen. Schlägt ein Update fehl, muss das Gerät unter Umständen vor Ort neu gestartet oder per USB/Web-Flasher wiederhergestellt werden – die Leiter muss dann doch geholt werden. Die Entwickler des Meshhessen Clients übernehmen dafür keine Haftung.</sys:String>
     <sys:String x:Key="StrFwStep1">Gerät &amp; Katalog</sys:String>
@@ -769,6 +782,7 @@
     <sys:String x:Key="StrFwCheckNoTarget">Zielplattform unbekannt – Dateiname kann nicht gegen das Gerät geprüft werden.</sys:String>
     <sys:String x:Key="StrFwCheckNameMismatch">Dateiname passt nicht zum Build „{0}" – falsches Gerät oder umbenannte Datei?</sys:String>
     <sys:String x:Key="StrFwCheckNameOk">Dateiname passt zum Build „{0}"</sys:String>
+    <sys:String x:Key="StrFwCheckCustomBuildHint">Eigener Build? Dann ist der abweichende Dateiname normal (PlatformIO schreibt „firmware.bin"/„firmware.uf2") – maßgeblich sind Chip- und Image-Prüfung oben.</sys:String>
     <sys:String x:Key="StrFwCheckNotEspImage">Keine ESP32-Image-Datei (Magic 0xE9 fehlt).</sys:String>
     <sys:String x:Key="StrFwCheckNotAppImage">Kein Anwendungs-Image (App-Deskriptor fehlt) – Bootloader-, Factory- oder Dateisystem-Image?</sys:String>
     <sys:String x:Key="StrFwCheckChipUnverified">Chip im Image: {0} – Gerätearchitektur unbekannt, keine Prüfung möglich.</sys:String>

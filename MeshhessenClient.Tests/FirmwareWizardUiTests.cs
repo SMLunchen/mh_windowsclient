@@ -35,6 +35,7 @@ public class FirmwareWizardUiTests
         {
             Path.Combine(RepoRoot, "MeshhessenClient", "FirmwareUpdateWindow.xaml"),
             Path.Combine(RepoRoot, "MeshhessenClient", "FirmwareUpdateWindow.xaml.cs"),
+            Path.Combine(RepoRoot, "MeshhessenClient", "FirmwarePrefetchWindow.cs"),
             Path.Combine(RepoRoot, "MeshhessenClient", "MainWindow.FirmwareUpdate.cs"),
             Path.Combine(RepoRoot, "MeshhessenClient", "MainWindow.xaml"),
         };
@@ -103,7 +104,13 @@ public class FirmwareWizardUiTests
                              "LogBox", "ReconnectBtn", "BackBtn", "NextBtn", "CancelBtn", "BtMultiBox",
                          })
                     Assert.NotNull(w.FindName(name));
+                Assert.NotNull(w.FindName("PrefetchBtn"));
                 w.Close();
+
+                // Code-only prefetch dialog: constructor builds the whole tree (Loaded is not raised here).
+                var p = new FirmwarePrefetchWindow(null, null);
+                Assert.NotNull(p.Content);
+                p.Close();
             }
             catch (Exception ex)
             {

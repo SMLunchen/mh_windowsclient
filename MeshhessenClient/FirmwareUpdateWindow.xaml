@@ -186,11 +186,14 @@
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <TextBlock Text="{DynamicResource StrFwLblRelease}" VerticalAlignment="Center" Margin="0,0,8,0"/>
                         <ComboBox x:Name="ReleaseCombo" Grid.Column="1" SelectionChanged="ReleaseCombo_SelectionChanged"/>
                         <Button x:Name="ReleasePageBtn" Grid.Column="2" Content="{DynamicResource StrFwOpenReleasePage}" Margin="8,0,0,0" Padding="8,4" Click="ReleasePage_Click"/>
+                        <Button x:Name="PrefetchBtn" Grid.Column="3" Content="{DynamicResource StrFwPrefetchBtn}" ToolTip="{DynamicResource StrFwPrefetchTip}" Margin="8,0,0,0" Padding="8,4" Click="Prefetch_Click"/>
                     </Grid>
+                    <TextBlock x:Name="OfflineHintText" Text="{DynamicResource StrFwOfflineHint}" Foreground="#1E6AB8" TextWrapping="Wrap" Margin="0,0,0,6" Visibility="Collapsed"/>
                     <Border x:Name="AlphaWarnBox" Style="{StaticResource FwWarnBox}" Visibility="Collapsed">
                         <TextBlock Text="{DynamicResource StrFwAlphaWarn}" TextWrapping="Wrap"/>
                     </Border>

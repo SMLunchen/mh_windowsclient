@@ -113,6 +113,60 @@ public class FirmwareUpdateTests
     }
 
     [Fact]
+    public void Cached_artifact_lookup_matches_download_naming()
+    {
+        var rel = new FirmwareRelease("v2.7.26.54e0d8d", "t", "", "", "", FirmwareChannel.Stable);
+        var esp = new DeviceHardware(43, "HELTEC_V3", "heltec-v3", "esp32-s3", true, "Heltec V3", null, null, null);
+        var rak = new DeviceHardware(9, "RAK4631", "rak4631", "nrf52840", true, "RAK", null, null, null);
+        var dir = Directory.CreateTempSubdirectory("fwcache");
+        try
+        {
+            var retriever = new FirmwareRetriever(new HttpClient(), dir.FullName);
+            Assert.Null(retriever.FindCachedArtifact(rel, esp, FirmwareUpdateMethod.Esp32Ble));
+
+            var relDir = Path.Combine(dir.FullName, "2.7.26.54e0d8d");
+            Directory.CreateDirectory(relDir);
+            File.WriteAllBytes(Path.Combine(relDir, "firmware-heltec-v3-2.7.26.54e0d8d.bin"), new byte[] { 1 });
+            File.WriteAllBytes(Path.Combine(relDir, "firmware-rak4631-2.7.26.54e0d8d-ota.zip"), new byte[] { 1 });
+            File.WriteAllBytes(Path.Combine(relDir, "firmware-rak4631-2.7.26.54e0d8d.uf2"), Array.Empty<byte>()); // empty = not usable
+
+            Assert.EndsWith("firmware-heltec-v3-2.7.26.54e0d8d.bin", retriever.FindCachedArtifact(rel, esp, FirmwareUpdateMethod.Esp32Wifi));
+            Assert.EndsWith("-ota.zip", retriever.FindCachedArtifact(rel, rak, FirmwareUpdateMethod.Nrf52BleDfu));
+            Assert.Null(retriever.FindCachedArtifact(rel, rak, FirmwareUpdateMethod.Uf2Usb));
+            Assert.Null(retriever.FindCachedArtifact(rel, esp, FirmwareUpdateMethod.Nrf52BleDfu));
+        }
+        finally { dir.Delete(true); }
+
+        Assert.Equal(new[] { "firmware-t-2.0.0.bin", "firmware-t-2.0.0-update.bin" },
+            FirmwareRetriever.CandidateFileNames("t", "2.0.0", FirmwareUpdateMethod.Esp32Ble));
+    }
+
+    [Fact]
+    public void Self_built_image_gets_custom_build_hint_instead_of_only_a_name_warning()
+    {
+        var hw = new DeviceHardware(43, "HELTEC_V3", "heltec-v3", "esp32-s3", true, "Heltec V3", null, null, null);
+        var dir = Directory.CreateTempSubdirectory("fwtest");
+        try
+        {
+            var path = Path.Combine(dir.FullName, "firmware.bin"); // PlatformIO output name
+            File.WriteAllBytes(path, FakeEspAppImage(0x0009, "2.8.3.abcdef", "firmware"));
+            var r = FirmwareFileInspector.Inspect(path, hw, FirmwareUpdateMethod.Esp32Wifi);
+            Assert.False(r.HasErrors);
+            Assert.Contains(r.Items, i => i.Key == "StrFwCheckNameMismatch" && i.Level == FileCheckLevel.Warning);
+            Assert.Contains(r.Items, i => i.Key == "StrFwCheckCustomBuildHint");
+            Assert.Equal("2.8.3.abcdef", r.EmbeddedVersion);
+
+            // Wrong chip: no soothing hint, the error stands alone.
+            var bad = Path.Combine(dir.FullName, "firmware2.bin");
+            File.WriteAllBytes(bad, FakeEspAppImage(0x0000, "2.8.3", "firmware"));
+            var r2 = FirmwareFileInspector.Inspect(bad, hw, FirmwareUpdateMethod.Esp32Wifi);
+            Assert.True(r2.HasErrors);
+            Assert.DoesNotContain(r2.Items, i => i.Key == "StrFwCheckCustomBuildHint");
+        }
+        finally { dir.Delete(true); }
+    }
+
+    [Fact]
     public void Retriever_parses_release_target_list_and_zip_arch_swap()
     {
         var targets = FirmwareRetriever.ParseReleaseTargets("""{"version":"2.7.26","targets":[{"board":"rak4631","platform":"nrf52840"},{"board":"heltec-v3","platform":"esp32s3"}]}""")!;

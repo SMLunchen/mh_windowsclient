@@ -673,6 +673,19 @@
     <sys:String x:Key="StrFwToolsSection">⬆️ Firmware Update</sys:String>
     <sys:String x:Key="StrFwToolsDesc">Guided assistant for updating the node firmware – like the Android app: ESP32 via Wi-Fi or Bluetooth OTA, nRF52 via Bluetooth DFU or UF2 drive. Firmware from the official releases (stable/alpha) or from a local file; device catalog and checks also work offline from the cache.</sys:String>
     <sys:String x:Key="StrFwToolsBtn">⬆️ Start firmware update …</sys:String>
+    <sys:String x:Key="StrFwPrefetchToolsBtn">📥 Prefetch firmware …</sys:String>
+    <sys:String x:Key="StrFwPrefetchBtn">📥 Prefetch …</sys:String>
+    <sys:String x:Key="StrFwPrefetchTip">Downloads a release's firmware for any device types into the "firmware" folder so nodes can be updated later without internet.</sys:String>
+    <sys:String x:Key="StrFwPrefetchTitle">Prefetch firmware</sys:String>
+    <sys:String x:Key="StrFwPrefetchHint">While online, download the firmware for every device type you want to update later in the field without a network. Files go to "firmware\&lt;version&gt;\"; the assistant finds them there automatically and marks such releases with 💾. Per device everything the assistant may need is fetched: ESP32 → OTA image (.bin), nRF52 → DFU package (-ota.zip) and UF2, RP2040 → UF2.</sys:String>
+    <sys:String x:Key="StrFwPrefetchDevices">Device types (multi-select, filter above):</sys:String>
+    <sys:String x:Key="StrFwPrefetchDownload">📥 Download</sys:String>
+    <sys:String x:Key="StrFwPrefetchWorking">Downloading {0} – {1} ({2}) …</sys:String>
+    <sys:String x:Key="StrFwPrefetchNotInRelease">not in this release / not reachable</sys:String>
+    <sys:String x:Key="StrFwPrefetchDone">Done: {0} file(s) downloaded, {1} unavailable. Folder: {2}</sys:String>
+    <sys:String x:Key="StrFwPrefetchNoCatalog">Device catalog unavailable – prefetching needs an internet connection.</sys:String>
+    <sys:String x:Key="StrFwOfflineAvailable">available offline</sys:String>
+    <sys:String x:Key="StrFwOfflineHint">ℹ Offline – the cached releases are offered. Only entries marked 💾 already contain the file for this device; others will fail to load.</sys:String>
     <sys:String x:Key="StrFwTitle">Firmware Update</sys:String>
     <sys:String x:Key="StrFwDisclaimer">⚠ Disclaimer: firmware updates are at your own risk. The assistant checks what can be checked on the PC – radio drop-outs, power loss, an unsuitable bootloader or bugs in the firmware itself cannot be ruled out. If an update fails, the device may have to be restarted on site or recovered via USB/web flasher – so the ladder may be needed after all. The Meshhessen Client developers accept no liability for this.</sys:String>
     <sys:String x:Key="StrFwStep1">Device &amp; catalog</sys:String>
@@ -769,6 +782,7 @@
     <sys:String x:Key="StrFwCheckNoTarget">Target platform unknown – the file name cannot be checked against the device.</sys:String>
     <sys:String x:Key="StrFwCheckNameMismatch">File name does not match build "{0}" – wrong device or renamed file?</sys:String>
     <sys:String x:Key="StrFwCheckNameOk">File name matches build "{0}"</sys:String>
+    <sys:String x:Key="StrFwCheckCustomBuildHint">Your own build? Then the different file name is normal (PlatformIO writes "firmware.bin"/"firmware.uf2") – the chip and image checks above are what counts.</sys:String>
     <sys:String x:Key="StrFwCheckNotEspImage">Not an ESP32 image file (magic 0xE9 missing).</sys:String>
     <sys:String x:Key="StrFwCheckNotAppImage">Not an application image (app descriptor missing) – bootloader, factory or file-system image?</sys:String>
     <sys:String x:Key="StrFwCheckChipUnverified">Chip in image: {0} – device architecture unknown, cannot verify.</sys:String>

@@ -191,10 +191,14 @@ public static class FirmwareFileInspector
             items.Add(new FileCheckItem(FileCheckLevel.Error, "StrFwCheckFactoryImage"));
 
         var target = hw.EffectiveTarget;
+        bool nameMismatch = false;
         if (string.IsNullOrEmpty(target))
             items.Add(new FileCheckItem(FileCheckLevel.Warning, "StrFwCheckNoTarget"));
         else if (!IsValidFirmwareFileName(name, target, method == FirmwareUpdateMethod.Nrf52BleDfu ? "-ota.zip" : expectedExt))
+        {
+            nameMismatch = true;
             items.Add(new FileCheckItem(FileCheckLevel.Warning, "StrFwCheckNameMismatch", target));
+        }
         else
             items.Add(new FileCheckItem(FileCheckLevel.Info, "StrFwCheckNameOk", target));
 
@@ -272,6 +276,12 @@ public static class FirmwareFileInspector
                 break;
             }
         }
+
+        // A self-built image (PlatformIO writes plain "firmware.bin"/"firmware.uf2") never matches the
+        // release naming scheme; when the container itself checks out, say so instead of leaving the
+        // name warning as the last word.
+        if (nameMismatch && !items.Any(i => i.Level == FileCheckLevel.Error))
+            items.Add(new FileCheckItem(FileCheckLevel.Info, "StrFwCheckCustomBuildHint"));
 
         return new FileCheckResult(items, embeddedVersion);
     }

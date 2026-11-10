@@ -341,17 +341,37 @@ public partial class FirmwareUpdateWindow : Window
             return;
         }
 
-        var list = (ChannelAlphaRadio.IsChecked == true ? _catalog?.Alpha : _catalog?.Stable)?.ToList() ?? new List<FirmwareRelease>();
+        var releases = (ChannelAlphaRadio.IsChecked == true ? _catalog?.Alpha : _catalog?.Stable)?.ToList() ?? new List<FirmwareRelease>();
+        // Mark releases whose artifact for this device/method is already in the cache: those flash offline.
+        var list = releases.Select(r =>
+        {
+            var cached = _hw != null ? _retriever.FindCachedArtifact(r, _hw, _method) : null;
+            return new ReleaseItem(r, cached != null ? $"{r.Title}  ·  💾 {Loc("StrFwOfflineAvailable")}" : r.Title, cached);
+        }).ToList();
         ReleaseCombo.ItemsSource = list;
-        ReleaseCombo.DisplayMemberPath = nameof(FirmwareRelease.Title);
+        ReleaseCombo.DisplayMemberPath = nameof(ReleaseItem.Title);
         NoReleasesText.Visibility = list.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
-        ReleaseCombo.SelectedIndex = list.Count > 0 ? 0 : -1;
+        bool offline = _catalog?.FromCache == true;
+        OfflineHintText.Visibility = offline && list.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        // Offline: pre-select the newest release that is actually usable, otherwise the newest.
+        int preselect = offline ? Math.Max(0, list.FindIndex(i => i.CachedPath != null)) : 0;
+        ReleaseCombo.SelectedIndex = list.Count > 0 ? preselect : -1;
         if (list.Count == 0) { _release = null; UpdateNav(); }
+    }
+
+    /// <summary>Combo row: release plus display title (with offline marker) and the cached file, if any.</summary>
+    private sealed record ReleaseItem(FirmwareRelease Release, string Title, string? CachedPath);
+
+    private void Prefetch_Click(object sender, RoutedEventArgs e)
+    {
+        var win = new FirmwarePrefetchWindow(_catalog, _hwFromCatalog ? _hw : null) { Owner = this };
+        win.Closed += (_, _) => { if (_step == 3) Channel_Checked(ChannelLocalRadio.IsChecked == true ? ChannelLocalRadio : ChannelStableRadio, new RoutedEventArgs()); };
+        win.Show();
     }
 
     private async void ReleaseCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        _release = ReleaseCombo.SelectedItem as FirmwareRelease;
+        _release = (ReleaseCombo.SelectedItem as ReleaseItem)?.Release;
         _artifact = null;
         ReleaseNotesBox.Text = _release?.ReleaseNotes ?? "";
         RenderVersionLine(_release?.Version);
