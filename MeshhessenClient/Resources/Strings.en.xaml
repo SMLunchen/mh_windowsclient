@@ -839,6 +839,7 @@ On an already paired device, "Meshtastic service not found" almost always means 
     <sys:String x:Key="StrBleUnpairing">Removing Bluetooth pairing …</sys:String>
     <sys:String x:Key="StrBleUnpaired">Pairing removed – reconnecting …</sys:String>
     <sys:String x:Key="StrBleUnpairFailed">The pairing could not be removed – please remove it in the Windows Bluetooth settings.</sys:String>
+    <sys:String x:Key="StrLinkStaleReconnect">Device stopped responding – re-establishing the connection …</sys:String>
 
     <!-- Configuration backup / restore (Tools) -->
     <sys:String x:Key="StrCfgToolsSection">💾 Back up &amp; restore configuration</sys:String>

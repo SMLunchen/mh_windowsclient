@@ -839,6 +839,7 @@ Bei einem bereits gekoppelten Gerät bedeutet „Meshtastic-Dienst nicht gefunde
     <sys:String x:Key="StrBleUnpairing">Bluetooth-Kopplung wird entfernt …</sys:String>
     <sys:String x:Key="StrBleUnpaired">Kopplung entfernt – verbinde neu …</sys:String>
     <sys:String x:Key="StrBleUnpairFailed">Kopplung konnte nicht entfernt werden – bitte in den Windows-Bluetooth-Einstellungen entfernen.</sys:String>
+    <sys:String x:Key="StrLinkStaleReconnect">Gerät antwortet nicht mehr – Verbindung wird neu aufgebaut …</sys:String>
 
     <!-- Configuration backup / restore (Tools) -->
     <sys:String x:Key="StrCfgToolsSection">💾 Konfiguration sichern &amp; wiederherstellen</sys:String>

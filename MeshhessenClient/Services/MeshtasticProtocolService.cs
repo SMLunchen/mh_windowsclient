@@ -504,6 +504,7 @@ public class MeshtasticProtocolService : Firmware.IFirmwareDeviceLink
         }
 
         Logger.WriteLine($"Init complete: {nodeCount} nodes, {channelCount} channels");
+        StartHeartbeat();
 
         if (_debugSerial)
         {
@@ -1216,10 +1217,17 @@ public class MeshtasticProtocolService : Firmware.IFirmwareDeviceLink
 
     private void HandleFromRadio(FromRadio fromRadio)
     {
+        _linkWatchdog.OnFrameReceived(DateTime.UtcNow,
+            fromRadio.PayloadVariantCase == FromRadio.PayloadVariantOneofCase.QueueStatus);
+
         switch (fromRadio.PayloadVariantCase)
         {
             case FromRadio.PayloadVariantOneofCase.Packet:
                 HandleMeshPacket(fromRadio.Packet);
+                break;
+
+            case FromRadio.PayloadVariantOneofCase.QueueStatus:
+                // Reply to our heartbeat (FW ≥ 2.8) — bookkeeping only, done above.
                 break;
 
             case FromRadio.PayloadVariantOneofCase.MyInfo:
@@ -3735,6 +3743,66 @@ public class MeshtasticProtocolService : Firmware.IFirmwareDeviceLink
         lock (_dataLock) { return _myDisplayInfo; }
     }
 
+    // ── Link keepalive / liveness ─────────────────────────────────────────────
+    // The firmware drops its client API after 15 min without a ToRadio from us (serial + TCP) and then
+    // delivers nothing more while the port still looks open — observed as "no packets after ~2 h" when
+    // the user stopped interacting. A 5-minute heartbeat keeps the API open; the watchdog turns the
+    // firmware's queueStatus replies into a liveness probe and raises LinkStale when they stop.
+
+    private readonly LinkWatchdog _linkWatchdog = new();
+    private System.Threading.Timer? _heartbeatTimer;
+
+    /// <summary>Raised (once per silence) when the device stopped talking although the transport is still
+    /// connected. The main window reacts by re-establishing the connection.</summary>
+    public event EventHandler<string>? LinkStale;
+
+    public DateTime? LastFrameUtc => _linkWatchdog.LastFrameUtc;
+
+    private void StartHeartbeat()
+    {
+        StopHeartbeat();
+        _linkWatchdog.Reset();
+        _linkWatchdog.OnFrameReceived(DateTime.UtcNow, false); // init traffic just arrived
+        _heartbeatTimer = new System.Threading.Timer(async _ => await HeartbeatTickAsync(), null,
+            LinkWatchdog.HeartbeatInterval, LinkWatchdog.HeartbeatInterval);
+        Logger.WriteLine($"[Heartbeat] started (every {LinkWatchdog.HeartbeatInterval.TotalMinutes:0} min)");
+    }
+
+    private void StopHeartbeat()
+    {
+        var t = System.Threading.Interlocked.Exchange(ref _heartbeatTimer, null);
+        t?.Dispose();
+    }
+
+    private async Task HeartbeatTickAsync()
+    {
+        if (_isDisconnecting || !_connectionService.IsConnected) return;
+        var now = DateTime.UtcNow;
+        if (_linkWatchdog.CheckStale(now))
+        {
+            var why = _linkWatchdog.Describe(now);
+            Logger.WriteLine($"[Heartbeat] Link stale: {why}");
+            LinkStale?.Invoke(this, why);
+            return;
+        }
+        try
+        {
+            await SendHeartbeatAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.WriteLine($"[Heartbeat] send failed: {ex.Message}");
+        }
+    }
+
+    /// <summary>Plain keepalive (nonce 0). Nonce 1 would make the firmware broadcast a NodeInfo on the mesh — never use it here.</summary>
+    public async Task SendHeartbeatAsync()
+    {
+        await SendToRadioAsync(new ToRadio { Heartbeat = new Heartbeat() });
+        _linkWatchdog.OnHeartbeatSent(DateTime.UtcNow);
+        if (_debugDevice) Logger.WriteLine($"[Heartbeat] sent ({_linkWatchdog.Describe(DateTime.UtcNow)})");
+    }
+
     /// <summary>Stores the device metadata (from the handshake or the admin response) and updates the
     /// derived DeviceInfo. The DeviceMetadata of the handshake has no node id, so DeviceInfo is created
     /// here if my_info has not been seen yet (it is completed by my_info later).</summary>
@@ -4215,6 +4283,7 @@ public class MeshtasticProtocolService : Firmware.IFirmwareDeviceLink
     public void Disconnect()
     {
         Logger.WriteLine("MeshtasticProtocolService: Disconnecting...");
+        StopHeartbeat();
 
         lock (_dataLock)
         {
