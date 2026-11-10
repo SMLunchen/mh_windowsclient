@@ -197,7 +197,7 @@
       <span class="version-date">2026-11-10</span>
       Firmware-Update-Assistent, Konfig-Backup &amp; Bluetooth-Robustheit
     </div>
-    <p class="version-desc">Firmware direkt aus dem Client aktualisieren — ESP32 per WLAN- oder Bluetooth-OTA, nRF52 per Bluetooth-DFU oder UF2-Laufwerk — mit Gerätekatalog, Dateiprüfungen und Offline-Cache. Dazu Konfigurations-Backup und -Wiederherstellung sowie ein Bluetooth-Verbindungsaufbau, der veraltete Windows-Kopplungen selbst erkennt und erneuert.</p>
+    <p class="version-desc">Firmware direkt aus dem Client aktualisieren — ESP32 per WLAN- oder Bluetooth-OTA, nRF52 per Bluetooth-DFU oder UF2-Laufwerk — mit Gerätekatalog, Dateiprüfungen und Offline-Cache. Dazu Konfigurations-Backup und -Wiederherstellung, ein Bluetooth-Verbindungsaufbau, der veraltete Windows-Kopplungen selbst erkennt, und der Fix für die nach ~2 Stunden einschlafende serielle/TCP-Verbindung.</p>
 
     <div class="cl-section added">
       <h3>✨ Neu</h3>
@@ -215,6 +215,7 @@
       <h3>🐛 Behoben / ✨ Verbessert</h3>
       <div class="cl-group">
         <ul class="cl-list">
+          <li><strong>Verbindung schlief nach ~2 Stunden ein (seriell/TCP), keine neuen Pakete mehr.</strong> Die Meshtastic-Firmware schließt ihre Client-Schnittstelle 15 Minuten nach der letzten vom Client <em>gesendeten</em> Nachricht und liefert dann still nichts mehr — der Port bleibt offen, deshalb griff kein Reconnect; solange man im Client aktiv war (Node-Info-Anfragen, Reaktionen), blieb die Verbindung zufällig am Leben. Der Client sendet jetzt wie Python-CLI und Android-App alle 5 Minuten ein Heartbeat. Dazu ein <strong>Verbindungswächter</strong>: Firmware 2.8 beantwortet jeden Heartbeat; bleiben zwei Antworten in Folge aus (ältere Firmware: 45 Minuten gar kein Paket), wird die Verbindung automatisch neu aufgebaut.</li>
           <li><strong>Bluetooth: veraltete Kopplungen werden aktiv erkannt.</strong> Windows merkt sich pro Gerät die Dienstetabelle und aktualisiert sie bei gekoppelten Geräten nicht — nach einem Firmware-Update (oder dem OTA-Loader unter derselben Adresse) hieß es dann „Meshtastic-Dienst nicht gefunden". Der Client fragt die gespeicherte Tabelle jetzt vor jedem Verbinden ab, entfernt eine veraltete Kopplung automatisch und koppelt neu; schlägt die Dienstsuche dennoch fehl, folgt ein zweiter Versuch und erst dann ein Ja/Nein-Dialog zum Entkoppeln.</li>
           <li><strong>Firmware-Version und Hardware-Modell sofort bekannt:</strong> Beide werden jetzt direkt aus dem Verbindungs-Handshake übernommen — bisher nur über eine nachgelagerte Abfrage, die bei TCP-Verbindungen leer bleiben konnte (Info-Tab zeigte „–").</li>
           <li><strong>Hauptfenster minimierte sich beim Schließen</strong> von Display-Spiegelung und Höhenprofil (gleiche Ursache wie seinerzeit bei der Fernverwaltung) — behoben, auch für den neuen Assistenten.</li>
@@ -1441,7 +1442,7 @@
       <span class="version-date">2026-11-10</span>
       Firmware update assistant, config backup &amp; Bluetooth robustness
     </div>
-    <p class="version-desc">Update firmware straight from the client — ESP32 via Wi-Fi or Bluetooth OTA, nRF52 via Bluetooth DFU or UF2 drive — with device catalog, file checks and offline cache. Plus configuration backup/restore and a Bluetooth connect that detects and renews stale Windows pairings by itself.</p>
+    <p class="version-desc">Update firmware straight from the client — ESP32 via Wi-Fi or Bluetooth OTA, nRF52 via Bluetooth DFU or UF2 drive — with device catalog, file checks and offline cache. Plus configuration backup/restore, a Bluetooth connect that detects stale Windows pairings by itself, and the fix for serial/TCP connections going silent after ~2 hours.</p>
 
     <div class="cl-section added">
       <h3>✨ New</h3>
@@ -1459,6 +1460,7 @@
       <h3>🐛 Fixed / ✨ Improved</h3>
       <div class="cl-group">
         <ul class="cl-list">
+          <li><strong>Connection went silent after ~2 hours (serial/TCP), no new packets.</strong> The Meshtastic firmware closes its client API 15 minutes after the last message <em>sent by</em> the client and then silently delivers nothing — the port stays open, so no reconnect kicked in; as long as you were active in the client (node-info requests, reactions) the connection happened to stay alive. The client now sends a heartbeat every 5 minutes, like the Python CLI and the Android app. Plus a <strong>link watchdog</strong>: firmware 2.8 answers every heartbeat; if two replies in a row are missing (older firmware: no packet at all for 45 minutes) the connection is re-established automatically.</li>
           <li><strong>Bluetooth: stale pairings are detected actively.</strong> Windows remembers each device's service table and never refreshes it for paired devices — after a firmware update (or the OTA loader under the same address) the result was "Meshtastic service not found". The client now queries the stored table before every connect, removes a stale pairing automatically and pairs again; if discovery still fails, a second attempt follows and only then a Yes/No dialog offers unpairing.</li>
           <li><strong>Firmware version and hardware model known immediately:</strong> both are now taken straight from the connection handshake — previously only via a follow-up query that could stay empty over TCP (Info tab showed "–").</li>
           <li><strong>Main window minimized when closing</strong> the display mirror and elevation profile windows (same cause as the remote admin issue back then) — fixed, including for the new assistant.</li>
