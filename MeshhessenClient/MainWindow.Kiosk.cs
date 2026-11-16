@@ -907,18 +907,54 @@ public partial class MainWindow
         }
     }
 
+    private bool _closeTeardownStarted;
+
     protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
     {
+        // Second pass: the worker below finished and called Shutdown(), which closes this window again.
+        if (_closeTeardownStarted)
+        {
+            base.OnClosing(e);
+            return;
+        }
+        _closeTeardownStarted = true;
+
         try
         {
-            // Disconnect synchronously to ensure clean shutdown
-            if (_connectionService.IsConnected)
+            if (_connectionService?.IsConnected == true)
             {
+                // Never tear the device link down on the UI thread. The BLE teardown joins the reader thread
+                // and disposes WinRT objects; on the STA thread that pumps messages re-entrantly and has
+                // ended the process without a trace (bug report 2026-11-15: the log stops right after
+                // "[BLE] Disconnecting..."). Hide the window at once, disconnect on a worker with a hard
+                // time limit, then shut down — the same pattern the Disconnect button uses.
+                e.Cancel = true;
                 Services.Logger.WriteLine("Application closing...");
-                _protocolService.Disconnect();
-                System.Threading.Thread.Sleep(100);
-                _connectionService.Disconnect();
-                Services.Logger.WriteLine("Disconnected");
+                _intentionalDisconnect = true;   // no auto-reconnect while we are leaving
+                _isReconnecting = false;
+                try { Hide(); } catch { }
+
+                var protocol = _protocolService;
+                var connection = _connectionService;
+                _ = Task.Run(async () =>
+                {
+                    var teardown = Task.Run(() =>
+                    {
+                        try { protocol?.Disconnect(); }
+                        catch (Exception ex) { Services.Logger.WriteLine($"Close: protocol disconnect failed: {ex.Message}"); }
+                        System.Threading.Thread.Sleep(100);
+                        try { connection?.Disconnect(); }
+                        catch (Exception ex) { Services.Logger.WriteLine($"Close: connection disconnect failed: {ex.Message}"); }
+                    });
+                    if (await Task.WhenAny(teardown, Task.Delay(5000)) == teardown)
+                        Services.Logger.WriteLine("Disconnected");
+                    else
+                        Services.Logger.WriteLine("Disconnect on close took longer than 5 s — exiting anyway");
+                    Services.Logger.Close();
+                    try { await Dispatcher.InvokeAsync(() => Application.Current.Shutdown()); }
+                    catch { Environment.Exit(0); }
+                });
+                return;
             }
             Services.Logger.Close();
         }

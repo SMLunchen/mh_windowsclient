@@ -265,9 +265,13 @@ public class BluetoothConnectionService : IConnectionService
                 IsBackground = true,
                 Name = "BleReader"
             };
-            _readerThread.Start();
 
+            // Connected BEFORE the reader starts: the thread's loop condition is IsConnected, so starting it
+            // first raced against the flag — it could exit immediately ("Reader thread stopping ...
+            // IsConnected=False") and, if the flag flipped meanwhile, tear a healthy link down again
+            // ("Reader thread stopped unexpectedly, forcing disconnect"; bug report 2026-11-14).
             IsConnected = true;
+            _readerThread.Start();
             LogDebug($"[BLE] Connected to {btParams.DeviceName}, notifications: {notificationsEnabled}");
         }
         catch (Exception ex)
@@ -285,11 +289,17 @@ public class BluetoothConnectionService : IConnectionService
 
     private void OnDeviceConnectionStatusChanged(BluetoothLEDevice sender, object args)
     {
-        if (sender.ConnectionStatus == BluetoothConnectionStatus.Disconnected)
+        if (sender.ConnectionStatus != BluetoothConnectionStatus.Disconnected) return;
+        if (!IsConnected)
         {
-            Logger.WriteLine("[BLE] Device disconnected");
-            Disconnect();
+            // Still inside ConnectAsync (pairing / discovery toggles the link). Tearing down here disposed the
+            // device under ConnectAsync's feet ("Cannot access a disposed object") and cost a reconnect
+            // attempt; Windows re-establishes the link on the next GATT call, or ConnectAsync fails on its own.
+            LogDebug("[BLE] Device reported disconnected while connecting — ignoring");
+            return;
         }
+        Logger.WriteLine("[BLE] Device disconnected");
+        Disconnect();
     }
 
     /// <summary>Pairs when Windows does not hold a bond yet (Windows shows its PIN prompt if the node wants one).</summary>
@@ -659,18 +669,32 @@ public class BluetoothConnectionService : IConnectionService
         }
     }
 
+    private int _disconnectRunning;
+
     public void Disconnect()
     {
+        // Re-entrancy: the device's ConnectionStatusChanged, the reader thread's "forcing disconnect" and the
+        // user's Disconnect/Close can all arrive within milliseconds of each other. Only one teardown runs;
+        // the others return (the first one's finally sets IsConnected = false for everyone).
+        if (System.Threading.Interlocked.CompareExchange(ref _disconnectRunning, 1, 0) != 0)
+        {
+            LogDebug("[BLE] Disconnect already in progress — skipping");
+            return;
+        }
         try
         {
+            if (_device == null && !IsConnected)
+                return; // nothing to tear down (Dispose after Disconnect, or never connected)
+
             Logger.WriteLine("[BLE] Disconnecting...");
 
             // Stop reader thread first
             _wantExit = true;
 
-            if (_readerThread != null && _readerThread.IsAlive)
+            var reader = _readerThread;
+            if (reader != null && reader.IsAlive && reader != System.Threading.Thread.CurrentThread)
             {
-                if (!_readerThread.Join(3000))
+                if (!reader.Join(3000))
                 {
                     Logger.WriteLine("[BLE] WARNING: Reader thread did not stop");
                 }
@@ -722,6 +746,7 @@ public class BluetoothConnectionService : IConnectionService
         finally
         {
             IsConnected = false;
+            System.Threading.Volatile.Write(ref _disconnectRunning, 0);
         }
     }
 

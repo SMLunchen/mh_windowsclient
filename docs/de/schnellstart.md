@@ -34,6 +34,14 @@ Alles bleibt im EXE-Verzeichnis (portabel, per USB-Stick mitnehmbar): `meshhesse
 * **Auto-Reconnect** – nach Einstellungsänderungen, die einen Geräte-Neustart erfordern
 * **Per-Node-Stationsname** – pro verbundenem Node ein eigener Stationsname (✏-Button neben dem Verbinden-Button)
 
+### Bluetooth bricht ständig ab?
+
+Wenn der Client im Debug-Log immer wieder `[BLE] Device disconnected` meldet und danach 10–50 Sekunden lang nicht neu verbinden kann („Meshtastic service not found … Unreachable"), trennt der **Node** die Verbindung, nicht der Client. Nach dem dritten Abbruch innerhalb von 10 Minuten zeigt der Client dazu einen Hinweis.
+
+Häufigste Ursache: **nRF52-Geräte (RAK4631, T-Echo, ThinkNode M1/M6, T114, T1000-E …) mit Firmware vor 2.8.0** schalten Bluetooth komplett ab, sobald ein serieller Client per USB die Meshtastic-Schnittstelle öffnet – Python-CLI, Web-Client, Handy am USB-Kabel oder eine zweite Client-Instanz. Bluetooth kommt erst zurück, wenn dieser Client trennt, spätestens nach 15 Minuten. Ein Programm, das den Node regelmäßig per USB abfragt, erzeugt so eine Endlosschleife aus Abbrüchen.
+
+Abhilfe: USB-Datenverbindung zum Node trennen bzw. das andere Programm beenden – oder die Firmware auf **2.8.0 oder neuer** aktualisieren ([Firmware-Update](firmware-update.md)), dort ist das behoben. Der Meshhessen Client selbst meldet seit 1.7.4 beim Trennen das Sitzungsende an den Node (`disconnect`), sodass nach einer seriellen Sitzung im Client Bluetooth sofort wieder frei ist.
+
 ## System & Oberfläche
 
 * **Update-Check** – beim Start wird automatisch nach neuen Versionen gesucht; bei verfügbarem Update erscheint ein klickbarer Hinweis in der Statusleiste (offline-fähig: kein Fehler ohne Internet)

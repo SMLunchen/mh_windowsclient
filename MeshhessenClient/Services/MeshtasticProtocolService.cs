@@ -4285,14 +4285,43 @@ public class MeshtasticProtocolService : Firmware.IFirmwareDeviceLink
         Logger.WriteLine("MeshtasticProtocolService: Disconnecting...");
         StopHeartbeat();
 
+        bool alreadyDisconnecting;
         lock (_dataLock)
         {
+            alreadyDisconnecting = _isDisconnecting;
             _isDisconnecting = true;
             _isInitializing = false;
         }
 
+        if (!alreadyDisconnecting)
+            SendDisconnectBestEffort();
+
         // Event-Handler bleibt registriert - _isDisconnecting verhindert Verarbeitung
         Logger.WriteLine("MeshtasticProtocolService: Disconnect complete");
+    }
+
+    /// <summary>Tells the firmware that this API session is over (<c>ToRadio.disconnect</c>, as the Python CLI
+    /// and the Android app do). Without it the node keeps the session open until its 15-minute idle timeout —
+    /// and nRF52 firmware before 2.8.0 keeps Bluetooth switched off for exactly that long after a USB-serial
+    /// session (PowerFSM <c>serialEnter()</c> → <c>setBluetoothEnable(false)</c>, fixed by firmware PR #10349).
+    /// Best effort and bounded: the transport may already be dead.</summary>
+    private void SendDisconnectBestEffort()
+    {
+        if (!_connectionService.IsConnected) return;
+        try
+        {
+            // Task.Run: Disconnect() is synchronous and may run on the UI thread — never block on a
+            // continuation that would need that same thread.
+            var send = Task.Run(() => SendToRadioAsync(new ToRadio { Disconnect = true }));
+            if (send.Wait(TimeSpan.FromMilliseconds(1500)))
+                Logger.WriteLine("Sent ToRadio.disconnect (session closed on the device)");
+            else
+                Logger.WriteLine("ToRadio.disconnect not confirmed within 1.5 s — continuing teardown");
+        }
+        catch (Exception ex)
+        {
+            Logger.WriteLine($"ToRadio.disconnect failed: {(ex as AggregateException)?.InnerException?.Message ?? ex.Message}");
+        }
     }
 
     private void HandleConfig(Config config)

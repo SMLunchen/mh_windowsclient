@@ -191,15 +191,29 @@ public sealed class FirmwareCatalogService
     /// (or when the catalog is unavailable). Returns "esp32", "nrf52840", "rp2040" or null.</summary>
     public static string? GuessArchitecture(string hwModelName)
     {
-        var n = hwModelName.ToUpperInvariant();
+        // Names arrive as THINKNODE_M6 (proto) or ThinknodeM6 (C# enum ToString) — compare without underscores.
+        var n = hwModelName.ToUpperInvariant().Replace("_", "");
         if (n.Length == 0) return null;
-        string[] nrf = { "RAK4631", "RAK2560", "RAK3", "T_ECHO", "TECHO", "T114", "NANO_G2", "WIO_WM1110", "WIO_TRACKER", "TRACKER_T1000", "CANARYONE", "NRF52", "PPR", "XIAO_NRF52", "MESHLINK", "THINKNODE_M1", "T1000", "ME25LS01", "MS24SF1", "SEEED_SOLAR", "HELTEC_MESH_NODE", "T_IMPULSE", "MUZI", "R1_NEO", "FEATHER_DIY", "RAK_WISMESH" };
+        string[] nrf = { "RAK4631", "RAK2560", "RAK3", "T_ECHO", "TECHO", "T114", "NANO_G2", "WIO_WM1110", "WIO_TRACKER", "TRACKER_T1000", "CANARYONE", "NRF52", "PPR", "XIAO_NRF52", "MESHLINK", "THINKNODE_M1", "THINKNODE_M3", "THINKNODE_M4", "THINKNODE_M6", "THINKNODE_M8", "T1000", "ME25LS01", "MS24SF1", "SEEED_SOLAR", "HELTEC_MESH_NODE", "T_IMPULSE", "MUZI", "R1_NEO", "FEATHER_DIY", "RAK_WISMESH" };
         string[] rp = { "RPI_PICO", "PICO", "RP2040", "RP2350", "SENSELORA_RP2040", "RAK11310", "XIAO_RP2040" };
-        string[] esp = { "TLORA", "TBEAM", "HELTEC", "T_DECK", "TDECK", "T_WATCH", "TWATCH", "STATION_G1", "STATION_G2", "DIY_V1", "NANO_G1", "M5STACK", "ESP32", "PICOMPUTER", "T_ETH", "TRACKER_T1000_E_ESP", "UNPHONE", "CHATTER", "WIPHONE", "SENSECAP", "SEEED_XIAO_S3", "RAK11200", "T_LORA_PAGER", "TLORA_PAGER", "RADIOMASTER", "MESH_TAB", "THINKNODE_M2", "T_ETH_ELITE", "CDEBYTE", "BETAFPV", "LILYGO" };
-        if (nrf.Any(n.Contains)) return "nrf52840";
-        if (rp.Any(n.Contains)) return "rp2040";
-        if (esp.Any(n.Contains)) return "esp32";
-        return null;
+        string[] esp = { "TLORA", "TBEAM", "HELTEC", "T_DECK", "TDECK", "T_WATCH", "TWATCH", "STATION_G1", "STATION_G2", "DIY_V1", "NANO_G1", "M5STACK", "ESP32", "PICOMPUTER", "T_ETH", "TRACKER_T1000_E_ESP", "UNPHONE", "CHATTER", "WIPHONE", "SENSECAP", "SEEED_XIAO_S3", "RAK11200", "T_LORA_PAGER", "TLORA_PAGER", "RADIOMASTER", "MESH_TAB", "THINKNODE_M2", "THINKNODE_M5", "THINKNODE_M7", "THINKNODE_M9", "THINKNODE_G3", "T_ETH_ELITE", "CDEBYTE", "BETAFPV", "LILYGO" };
+
+        // The longest matching pattern wins: PICOMPUTER (esp32) over PICO (rp2040), TRACKER_T1000_E_ESP over
+        // TRACKER_T1000, HELTEC_MESH_NODE (nrf52) over HELTEC (esp32).
+        string? best = null;
+        int bestLen = 0;
+        void Scan(string[] patterns, string arch)
+        {
+            foreach (var p in patterns)
+            {
+                var q = p.Replace("_", "");
+                if (q.Length > bestLen && n.Contains(q)) { best = arch; bestLen = q.Length; }
+            }
+        }
+        Scan(nrf, "nrf52840");
+        Scan(rp, "rp2040");
+        Scan(esp, "esp32");
+        return best;
     }
 
     private static string? GetString(JsonElement e, string name) =>

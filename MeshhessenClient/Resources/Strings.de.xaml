@@ -1007,6 +1007,17 @@ Erstellt: {5}
     <sys:String x:Key="StrConnectedReadySimple">Verbunden – Bereit</sys:String>
     <sys:String x:Key="StrConnectedInitSimple">Verbunden – Initialisiere...</sys:String>
     <sys:String x:Key="StrConnectionLostMsg">Verbindung verloren – bitte manuell verbinden</sys:String>
+    <sys:String x:Key="StrBleDropStormTitle">Node trennt die Bluetooth-Verbindung selbst</sys:String>
+    <sys:String x:Key="StrBleDropStormNrf52Old" xml:space="preserve">Der Node hat die Bluetooth-Verbindung in den letzten 10 Minuten {0}-mal selbst getrennt – nicht der Client.
+
+Dein Gerät ({1}) läuft mit Firmware {2}. Diese Firmware schaltet auf nRF52-Geräten Bluetooth komplett ab, sobald ein serieller Client per USB die Meshtastic-Schnittstelle öffnet – z. B. die Python-CLI, der Web-Client, ein Handy am USB-Kabel oder eine zweite Client-Instanz. Bluetooth kommt erst zurück, wenn dieser Client trennt, spätestens nach 15 Minuten.
+
+Abhilfe: USB-Datenverbindung zum Node trennen bzw. das andere Programm beenden – oder die Firmware auf 2.8.0 oder neuer aktualisieren (Tools → Firmware-Update), dort ist das behoben.</sys:String>
+    <sys:String x:Key="StrBleDropStormGeneric" xml:space="preserve">Der Node hat die Bluetooth-Verbindung in den letzten 10 Minuten {0}-mal selbst getrennt – nicht der Client.
+
+Typische Ursachen: ein zweiter Client (USB/seriell, Handy, Web-Client), der sich abwechselnd verbindet; Node-Neustarts (Stromversorgung, Watchdog); oder nRF52-Geräte mit Firmware vor 2.8.0, die Bluetooth abschalten, sobald ein serieller Client verbunden ist.
+
+Details stehen im Debug-Log (Zeilen „[BLE] Device disconnected“).</sys:String>
     <sys:String x:Key="StrPacketCount">Pakete: {0}</sys:String>
     <sys:String x:Key="StrChannelReceived">Kanal {0} empfangen: {1}</sys:String>
     <sys:String x:Key="StrAlertSent">Notruf gesendet!</sys:String>
