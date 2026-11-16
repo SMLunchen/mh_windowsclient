@@ -176,7 +176,7 @@ public partial class MainWindow : IFirmwareUpdateHost
             ConnectButton.IsEnabled = false;
             SetConnectionStatus(ConnectionStatus.Connecting);
             UpdateStatusBar(Loc("StrFwStatusReconnecting"));
-            _ = TryReconnectAsync();
+            _ = TryReconnectAsync(keepNodeList: false);   // new firmware may have reset the NodeDB → full download
         });
     }
 }

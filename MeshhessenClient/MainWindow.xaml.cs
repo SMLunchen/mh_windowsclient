@@ -2221,7 +2221,9 @@ public partial class MainWindow : Window
     private static bool IsPrimaryRole(string? role) =>
         string.Equals(role, "PRIMARY", StringComparison.OrdinalIgnoreCase);
 
-    private async Task TryReconnectAsync()
+    /// <param name="keepNodeList">False after a firmware update: the node may have reset its NodeDB, so the
+    /// carried-over list could be stale — download everything instead.</param>
+    private async Task TryReconnectAsync(bool keepNodeList = true)
     {
         Services.Logger.WriteLine("[RECONNECT] Starting auto-reconnect...");
 
@@ -2229,7 +2231,7 @@ public partial class MainWindow : Window
         // The full node-list download after every reconnect was where a weak Bluetooth path dropped most often.
         Services.ReconnectCarryOver? carry = null;
         var previous = _protocolService;
-        if (previous != null && previous.GetMyNodeId() != 0)
+        if (keepNodeList && previous != null && previous.GetMyNodeId() != 0)
         {
             var nodes = previous.GetKnownNodes().Values.ToList();
             if (nodes.Count > 0) carry = new Services.ReconnectCarryOver(previous.GetMyNodeId(), nodes);
