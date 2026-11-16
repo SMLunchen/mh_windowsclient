@@ -260,9 +260,14 @@ public class MeshtasticProtocolService
         _pskMismatchAction = action;
     }
 
-    public async Task InitializeAsync()
+    /// <param name="carry">Auto-reconnect to the node we were just talking to: its node list is kept and only
+    /// config + channels are requested (<c>want_config_id</c> 69420, firmware ≥ 2.6.8; older firmware treats
+    /// the value as an ordinary nonce and sends everything, which is harmless). Null = full download.</param>
+    public async Task InitializeAsync(ReconnectCarryOver? carry = null)
     {
-        Logger.WriteLine("=== Initializing ===");
+        Logger.WriteLine(carry == null
+            ? "=== Initializing ==="
+            : $"=== Initializing (config-only reconnect: expecting node !{carry.NodeNum:x8}, {carry.Nodes.Count} nodes carried over) ===");
 
         lock (_dataLock)
         {
@@ -272,6 +277,8 @@ public class MeshtasticProtocolService
             // Clear all data from previous device
             _tempChannels.Clear();
             _knownNodes.Clear();
+            if (carry != null)
+                foreach (var n in carry.Nodes) _knownNodes[n.NodeId] = n;
             _pendingPositions.Clear();
             _myNodeId = 0;
             _myDeviceInfo = null;
@@ -350,33 +357,12 @@ public class MeshtasticProtocolService
 
         // Fordere Config an
         Logger.WriteLine("Requesting config...");
-        await RequestConfigAsync();
+        await RequestConfigAsync(carry != null ? WantConfigOnlyNonce : null);
 
         // Warte auf config_complete (max 15 Sekunden)
         Logger.WriteLine("Waiting for config_complete (max 15s)...");
-        bool configReceivedInTime = false;
-        for (int i = 0; i < 150; i++)
-        {
-            if (_isDisconnecting)
-            {
-                Logger.WriteLine("Config wait aborted — disconnecting");
-                return;
-            }
-
-            bool isComplete;
-            lock (_dataLock)
-            {
-                isComplete = _configComplete;
-            }
-
-            if (isComplete)
-            {
-                Logger.WriteLine($"Config_complete received after {i * 100}ms");
-                configReceivedInTime = true;
-                break;
-            }
-            await Task.Delay(100);
-        }
+        bool configReceivedInTime = await WaitForConfigCompleteAsync(150);
+        if (_isDisconnecting) return;
 
         if (!configReceivedInTime)
         {
@@ -429,36 +415,67 @@ public class MeshtasticProtocolService
             }
         }
 
-        // Dynamisch warten: Warte bis 3 Sekunden lang keine neuen Nodes mehr kommen
-        // (T-Deck sendet 250+ Nodes, das kann dauern)
-        Logger.WriteLine("Waiting for data stream to finish...");
-        int lastNodeCount = 0;
-        int stableCount = 0;
-        for (int i = 0; i < 60; i++) // max 30 Sekunden
+        // Config-only reconnect: the node must still be the one whose list we kept. A different node on the
+        // same port/address (device swapped) gets the full download instead.
+        if (carry != null && configReceivedInTime)
         {
-            if (_isDisconnecting) break;
-            await Task.Delay(500);
-
-            int currentNodeCount;
-            lock (_dataLock)
+            uint myId;
+            lock (_dataLock) { myId = _myNodeId; }
+            if (myId != carry.NodeNum)
             {
-                currentNodeCount = _knownNodes.Count;
-            }
-
-            if (currentNodeCount == lastNodeCount)
-            {
-                stableCount++;
-                if (stableCount >= 6) // 3 Sekunden keine neuen Daten
+                Logger.WriteLine($"Node changed on reconnect (expected !{carry.NodeNum:x8}, got !{myId:x8}) — " +
+                                 "discarding the carried-over node list, requesting the full config");
+                lock (_dataLock)
                 {
-                    Logger.WriteLine($"Data stream stable for 3s ({currentNodeCount} nodes)");
-                    break;
+                    _knownNodes.Clear();
+                    _configComplete = false;
+                }
+                NodeDbCleared?.Invoke(this, EventArgs.Empty);
+                carry = null;
+                await RequestConfigAsync();
+                if (!await WaitForConfigCompleteAsync(150))
+                    Logger.WriteLine("WARNING: config_complete NOT received within 15 seconds (full download after node change)!");
+                if (_isDisconnecting) return;
+            }
+        }
+
+        if (carry == null)
+        {
+            // Dynamisch warten: Warte bis 3 Sekunden lang keine neuen Nodes mehr kommen
+            // (T-Deck sendet 250+ Nodes, das kann dauern)
+            Logger.WriteLine("Waiting for data stream to finish...");
+            int lastNodeCount = 0;
+            int stableCount = 0;
+            for (int i = 0; i < 60; i++) // max 30 Sekunden
+            {
+                if (_isDisconnecting) break;
+                await Task.Delay(500);
+
+                int currentNodeCount;
+                lock (_dataLock)
+                {
+                    currentNodeCount = _knownNodes.Count;
+                }
+
+                if (currentNodeCount == lastNodeCount)
+                {
+                    stableCount++;
+                    if (stableCount >= 6) // 3 Sekunden keine neuen Daten
+                    {
+                        Logger.WriteLine($"Data stream stable for 3s ({currentNodeCount} nodes)");
+                        break;
+                    }
+                }
+                else
+                {
+                    stableCount = 0;
+                    lastNodeCount = currentNodeCount;
                 }
             }
-            else
-            {
-                stableCount = 0;
-                lastNodeCount = currentNodeCount;
-            }
+        }
+        else
+        {
+            Logger.WriteLine("Config-only reconnect: node list kept from the previous session, no node stream to wait for");
         }
 
         if (_isDisconnecting) return;
@@ -493,7 +510,10 @@ public class MeshtasticProtocolService
 
         lock (_dataLock)
         {
-            nodesToFire = new List<ModelNodeInfo>(_knownNodes.Values);
+            // Carried-over nodes are already in the UI — only fire what arrived fresh (own node, late arrivals).
+            nodesToFire = carry == null
+                ? new List<ModelNodeInfo>(_knownNodes.Values)
+                : _knownNodes.Values.Where(n => !carry.Nodes.Contains(n, ReferenceEqualityComparer.Instance)).ToList();
             channelsToFire = new List<Channel>(_tempChannels);
             loraConfigToFire = _currentLoRaConfig;
             deviceInfoToFire = _myDeviceInfo;
@@ -501,7 +521,8 @@ public class MeshtasticProtocolService
             channelCount = _tempChannels.Count;
         }
 
-        Logger.WriteLine($"Init complete: {nodeCount} nodes, {channelCount} channels");
+        Logger.WriteLine($"Init complete: {nodeCount} nodes, {channelCount} channels" +
+                         (carry != null ? $" (config-only reconnect, {nodesToFire.Count} node events to fire)" : ""));
         StartHeartbeat();
 
         if (_debugSerial)
@@ -1428,15 +1449,20 @@ public class MeshtasticProtocolService
             // MQTT-relayed packets are handed to us still channel-encrypted (the device
             // decrypts only its own radio traffic). If we hold a channel key whose hash
             // matches, decrypt it ourselves (AES-CTR) and route it as a normal packet.
-            var chPlain = TryChannelDecrypt(packet.Encrypted.ToByteArray(), packet.Channel, packet.From, packet.Id, packet.To);
-            if (chPlain != null)
+            var chPlain = TryChannelDecrypt(packet.Encrypted.ToByteArray(), packet.Channel, packet.From, packet.Id, packet.To,
+                                            out int matchedChannel);
+            if (chPlain != null && matchedChannel >= 0)
             {
                 try
                 {
                     var cdata = Data.Parser.ParseFrom(chPlain);
                     if ((int)cdata.Portnum != 0) // not UNKNOWN_APP
                     {
-                        Logger.WriteLine($"[ChanDec] decrypted channel-PSK packet from !{packet.From:x8} (hash={packet.Channel}, portnum={cdata.Portnum})");
+                        Logger.WriteLine($"[ChanDec] decrypted channel-PSK packet from !{packet.From:x8} (hash={packet.Channel} → channel {matchedChannel}, portnum={cdata.Portnum})");
+                        // From here on the packet looks like one the device decoded itself: channel = INDEX.
+                        // (Bug report: primary-channel messages relayed over MQTT showed up under a secondary
+                        // channel and vice versa — they carried the hash, not the index.)
+                        packet.Channel = (uint)matchedChannel;
                         RouteDecodedData(packet, cdata);
                         return;
                     }
@@ -1575,9 +1601,20 @@ public class MeshtasticProtocolService
         // item.ChannelIndex holds the channel hash captured at receive time — but a
         // DM restored from the DB stores 0, so brute-force across channels here.
         // Restored DMs were addressed to us — toNode = our id (needed for the AEAD AAD).
-        var chPlain = TryChannelDecrypt(item.PkiCipher!, item.ChannelIndex, item.FromId, item.Id, _myNodeId, bruteForce: true);
-        if (chPlain != null && DispatchLateDecrypted(item, chPlain, "channel key"))
-            return;
+        var chPlain = TryChannelDecrypt(item.PkiCipher!, item.ChannelIndex, item.FromId, item.Id, _myNodeId,
+                                        out int matchedChannel, bruteForce: true);
+        if (chPlain != null)
+        {
+            if (matchedChannel >= 0)
+            {
+                // The item carried the hash (or 0 for restored DMs); from now on it is the real channel index,
+                // so replies/info requests go out on a channel the device accepts.
+                item.ChannelIndex = (uint)matchedChannel;
+                item.Channel = matchedChannel.ToString();
+            }
+            if (DispatchLateDecrypted(item, chPlain, "channel key"))
+                return;
+        }
 
         BufferPendingPkiDm(item);
         _ = RequestNodeInfoAsync(item.FromId, force, reason: "retry/decrypt DM", channel: item.ChannelIndex);
@@ -1802,8 +1839,14 @@ public class MeshtasticProtocolService
     // (authoritative for live packets). If <paramref name="bruteForce"/> and no hash
     // matches — e.g. a restored DM whose channel wasn't persisted (stored as 0) — it
     // tries every channel and accepts the first plaintext that parses as valid Data.
-    private byte[]? TryChannelDecrypt(byte[] cipher, uint channelHash, uint fromNode, uint packetId, uint toNode, bool bruteForce = false)
+    /// <param name="matchedIndex">Index (0–7) of the channel whose key produced the plaintext, −1 when
+    /// nothing matched. Callers route the packet under THIS index — the packet's own channel field holds
+    /// the 8-bit hash, and routing by hash put MQTT-relayed messages into the wrong tab (the unnamed
+    /// default primary channel hashes to 8 → "Anderer Kanal (8)", which fell through every filter).</param>
+    private byte[]? TryChannelDecrypt(byte[] cipher, uint channelHash, uint fromNode, uint packetId, uint toNode,
+                                      out int matchedIndex, bool bruteForce = false)
     {
+        matchedIndex = -1;
         if (cipher.Length == 0) return null;
         List<Channel> chans;
         lock (_dataLock) { chans = new List<Channel>(_tempChannels); }
@@ -1816,12 +1859,16 @@ public class MeshtasticProtocolService
                 ? ChannelAead.Decrypt(key, fromNode, toNode, packetId, cipher)
                 : AesCtrCrypt(key, fromNode, packetId, cipher);
 
+        // Hash match first. Two channels can share an 8-bit hash and AES-CTR never "fails", so the
+        // plaintext must also parse as Data before a candidate wins — otherwise the next one is tried.
         foreach (var ch in chans)
         {
             var key = ExpandChannelKey(ch);
             if (key == null || ChannelHash(ch, key) != channelHash) continue;
             var pt = CryptFor(ch, key);
-            if (pt != null) return pt;
+            if (pt == null || !LooksLikeData(pt)) continue;
+            matchedIndex = (int)ch.Index;
+            return pt;
         }
         if (!bruteForce) return null;
 
@@ -1830,19 +1877,24 @@ public class MeshtasticProtocolService
             var key = ExpandChannelKey(ch);
             if (key == null) continue;
             var pt = CryptFor(ch, key);
-            if (pt == null) continue;
-            try
-            {
-                var d = Data.Parser.ParseFrom(pt);
-                if ((int)d.Portnum != 0 && d.Payload.Length > 0)
-                {
-                    Logger.WriteLine($"[ChanDec] brute-force matched channel {ch.Index} ({ch.Settings?.Name})");
-                    return pt;
-                }
-            }
-            catch { /* wrong channel — garbage */ }
+            if (pt == null || !LooksLikeData(pt)) continue;
+            Logger.WriteLine($"[ChanDec] brute-force matched channel {ch.Index} ({ch.Settings?.Name})");
+            matchedIndex = (int)ch.Index;
+            return pt;
         }
         return null;
+    }
+
+    /// <summary>Plausibility check for a decrypted channel payload: parses as Data with a real portnum
+    /// and a payload. Wrong-key CTR output is random bytes and almost never passes.</summary>
+    private static bool LooksLikeData(byte[] plaintext)
+    {
+        try
+        {
+            var d = Data.Parser.ParseFrom(plaintext);
+            return (int)d.Portnum != 0 && d.Payload.Length > 0;
+        }
+        catch { return false; }
     }
 
     // AES-CTR (Meshtastic channel scheme). Symmetric — used for decrypt.
@@ -3353,10 +3405,16 @@ public class MeshtasticProtocolService
         await _connectionService.WriteAsync(dataToSend);
     }
 
-    private async Task RequestConfigAsync()
+    /// <summary>Firmware <c>SPECIAL_NONCE_ONLY_CONFIG</c> (PhoneAPI.h, since 2.6.8): my_info, own NodeInfo,
+    /// metadata, config, module config, channels and config_complete — but no other nodes.</summary>
+    public const uint WantConfigOnlyNonce = 69420;
+
+    private async Task RequestConfigAsync(uint? nonce = null)
     {
-        var configId = (uint)Random.Shared.Next();
-        Logger.WriteLine($"Sending WantConfigId request (ID={configId})...");
+        var configId = nonce ?? (uint)Random.Shared.Next();
+        Logger.WriteLine(nonce == WantConfigOnlyNonce
+            ? $"Sending WantConfigId request (ID={configId}, config only — node list kept)..."
+            : $"Sending WantConfigId request (ID={configId})...");
 
         var toRadio = new ToRadio
         {
@@ -3365,6 +3423,30 @@ public class MeshtasticProtocolService
 
         await SendToRadioAsync(toRadio);
         Logger.WriteLine("WantConfigId sent successfully");
+    }
+
+    /// <summary>Polls for config_complete every 100 ms, up to <paramref name="ticks"/> times. False on timeout
+    /// or when a disconnect started meanwhile (callers check <c>_isDisconnecting</c>).</summary>
+    private async Task<bool> WaitForConfigCompleteAsync(int ticks)
+    {
+        for (int i = 0; i < ticks; i++)
+        {
+            if (_isDisconnecting)
+            {
+                Logger.WriteLine("Config wait aborted — disconnecting");
+                return false;
+            }
+
+            bool isComplete;
+            lock (_dataLock) { isComplete = _configComplete; }
+            if (isComplete)
+            {
+                Logger.WriteLine($"Config_complete received after {i * 100}ms");
+                return true;
+            }
+            await Task.Delay(100);
+        }
+        return false;
     }
 
     private async Task RequestChannelAsync(int channelIndex)
@@ -4433,30 +4515,11 @@ public class MeshtasticProtocolService
 
         try
         {
-            if (channel.Settings != null)
-            {
-                var settingsBytes = channel.Settings.ToByteArray();
-
-                // Suche nach Tag 3 mit wire type 2 (length-delimited string)
-                // Tag 3 = (3 << 3) | 2 = 26 = 0x1A
-                for (int i = 0; i < settingsBytes.Length - 2; i++)
-                {
-                    if (settingsBytes[i] == 0x1A) // Tag 3, wire type 2
-                    {
-                        int nameLength = settingsBytes[i + 1];
-                        if (i + 2 + nameLength <= settingsBytes.Length)
-                        {
-                            byte[] nameBytes = new byte[nameLength];
-                            Array.Copy(settingsBytes, i + 2, nameBytes, 0, nameLength);
-                            channelName = Encoding.UTF8.GetString(nameBytes).Trim();
-                            break;
-                        }
-                    }
-                }
-            }
-
-            // Fallback: Versuche channel.Settings.Name (kann korrupt sein)
-            if (string.IsNullOrEmpty(channelName) && channel.Settings != null && !string.IsNullOrEmpty(channel.Settings.Name))
+            // The parsed Settings.Name is authoritative (official protobufs). The previous raw-byte scan for
+            // tag 0x1A took the first such byte anywhere in the encoded settings — for an UNNAMED channel
+            // (no name field) that was a byte inside the PSK (field 2 precedes the name), producing a garbage
+            // tab name and skipping the preset fallback below.
+            if (channel.Settings != null && !string.IsNullOrEmpty(channel.Settings.Name))
             {
                 var rawName = channel.Settings.Name;
                 bool isValid = true;
