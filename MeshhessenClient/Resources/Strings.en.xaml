@@ -802,6 +802,17 @@
     <sys:String x:Key="StrConnectedReadySimple">Connected – Ready</sys:String>
     <sys:String x:Key="StrConnectedInitSimple">Connected – Initializing...</sys:String>
     <sys:String x:Key="StrConnectionLostMsg">Connection lost – please reconnect manually</sys:String>
+    <sys:String x:Key="StrBleDropStormTitle">The node keeps dropping the Bluetooth link</sys:String>
+    <sys:String x:Key="StrBleDropStormNrf52Old" xml:space="preserve">The node itself has dropped the Bluetooth link {0} times in the last 10 minutes – not the client.
+
+Your device ({1}) runs firmware {2}. On nRF52 boards this firmware switches Bluetooth off completely as soon as a serial client opens the Meshtastic API over USB – e.g. the Python CLI, the web client, a phone on a USB cable or a second client instance. Bluetooth only comes back when that client disconnects, or after 15 minutes at the latest.
+
+Remedy: unplug the USB data link to the node or close the other program – or update the firmware to 2.8.0 or newer, where this is fixed.</sys:String>
+    <sys:String x:Key="StrBleDropStormGeneric" xml:space="preserve">The node itself has dropped the Bluetooth link {0} times in the last 10 minutes – not the client.
+
+Typical causes: a second client (USB/serial, phone, web client) connecting in turns; node reboots (power supply, watchdog); or nRF52 boards on firmware older than 2.8.0, which switch Bluetooth off while a serial client is connected.
+
+Details are in the debug log (lines “[BLE] Device disconnected”).</sys:String>
     <sys:String x:Key="StrPacketCount">Packets: {0}</sys:String>
     <sys:String x:Key="StrChannelReceived">Channel {0} received: {1}</sys:String>
     <sys:String x:Key="StrAlertSent">SOS sent!</sys:String>

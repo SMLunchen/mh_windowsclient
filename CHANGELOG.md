@@ -9,9 +9,23 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+---
+
+## [1.7.2.2] - 2026-11-16
+
 ### 🐛 Behoben
 - **Verbindung schlief nach ~2 Stunden ein (seriell/TCP), keine neuen Pakete mehr:** Die Meshtastic-Firmware schließt ihre Client-Schnittstelle 15 Minuten nach der letzten vom Client *gesendeten* Nachricht (`SERIAL_CONNECTION_TIMEOUT` / `TCP_IDLE_TIMEOUT_MS`) und liefert dann still keine Pakete mehr – der Port bleibt offen, deshalb griff kein Reconnect. Solange der Client Node-Info-Anfragen oder Reaktionen schickte, blieb die Verbindung zufällig am Leben; in den Logs riss der Datenstrom exakt 15 Minuten nach der letzten eigenen Sendung ab. Der Client sendet jetzt wie Python-CLI und Android-App alle 5 Minuten ein `heartbeat`
 - **Verbindungswächter:** Firmware ≥ 2.8 beantwortet jeden Heartbeat mit einem `queueStatus`; bleiben zwei Antworten in Folge aus (bei älterer Firmware: 45 Minuten gar kein Frame), gilt die Verbindung als tot und wird automatisch neu aufgebaut – auch wenn Port oder Socket noch offen sind
+- **Bluetooth: ständige Reconnects (Node trennt selbst):** Analyse eines Nutzer-Logs (ThinkNode M6, Firmware 2.7.26, 140 Abbrüche an einem Abend) – der Node schaltete Bluetooth jedes Mal selbst ab, weil die Firmware vor 2.8.0 auf nRF52-Geräten BLE deaktiviert, sobald ein serieller USB-Client die Meshtastic-Schnittstelle öffnet (Firmware-PR #10349 behebt das ab 2.8.0). Der Client kann das nicht reparieren, benennt es aber jetzt: nach dem dritten vom Gerät ausgelösten Abbruch innerhalb von 10 Minuten erscheint einmalig ein Hinweis mit Ursache und Abhilfe (bei nRF52 + Firmware < 2.8 konkret, sonst allgemein). Dazu ein Abschnitt im Handbuch (Schnellstart → „Bluetooth bricht ständig ab?")
+- **Sitzungsende wird dem Node gemeldet:** Beim Trennen (Button, Schließen, Verbindungswächter) sendet der Client jetzt `ToRadio.disconnect` wie Python-CLI und Android-App. Bisher blieb die API-Sitzung auf dem Node bis zum 15-Minuten-Timeout offen – auf nRF52 mit Firmware < 2.8 war Bluetooth nach einer seriellen Sitzung im Client genauso lange tot
+- **Client-Absturz beim Schließen mit aktiver Bluetooth-Verbindung:** Das Trennen lief synchron auf dem UI-Thread (Reader-Thread-Join + WinRT-Freigabe) und konnte den Prozess ohne Spur beenden (Log endete nach „[BLE] Disconnecting..."). Das Fenster wird jetzt sofort ausgeblendet, die Verbindung im Hintergrund mit 5-Sekunden-Limit abgebaut, danach beendet sich die App
+- **BLE-Reader-Thread startete vor dem Verbunden-Flag** und konnte sich sofort wieder beenden bzw. eine gesunde Verbindung selbst kappen („Reader thread stopped unexpectedly, forcing disconnect"); Reihenfolge korrigiert. Ein Verbindungsabbruch, den Windows noch während des Verbindungsaufbaus meldet, wird nicht mehr als Teardown behandelt („Cannot access a disposed object" im Reconnect)
+- **Initialisierung lief auf toter Verbindung weiter:** Nach einem Verbindungsabbruch mitten im Config-Download meldete die alte Protokollinstanz noch „Init complete", feuerte alle Node-Events und startete den Heartbeat – parallel zum Reconnect. Die Protokollschicht wird jetzt beim Verlust des Transports sofort gestoppt
+- **Mehrfaches gleichzeitiges Trennen** (Geräte-Event, Reader-Thread, Benutzer) läuft jetzt nur noch einmal durch
+
+### 🔧 Diagnose
+- Log-Kopf enthält jetzt Client-Version, .NET-Laufzeit und Windows-Version
+- Unbehandelte Ausnahmen (UI-Thread, Hintergrund-Tasks, AppDomain) werden mit vollständigem Stacktrace ins Log geschrieben; einzelne UI-Ausnahmen beenden die App nicht mehr sofort
 
 ---
 

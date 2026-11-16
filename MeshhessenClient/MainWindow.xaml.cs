@@ -1134,6 +1134,7 @@ public partial class MainWindow : Window
             {
                 _intentionalDisconnect = false;
                 _isReconnecting = false;
+                _bleDropMonitor.Reset();
                 _lastConnectionParams = connectionParams;
                 _lastConnectionType = _currentConnectionType;
 
@@ -2060,8 +2061,20 @@ public partial class MainWindow : Window
         }
     }
 
+    private readonly Services.BleDropMonitor _bleDropMonitor = new();
+
     private void OnConnectionStateChanged(object? sender, bool isConnected)
     {
+        // Stop the protocol layer right here, on the caller's thread, before anything else: the transport is
+        // gone, but InitializeAsync may still be in its config/NodeDB wait and would otherwise finish on the
+        // dead link — "Init complete: 78 nodes", 78 node events and a heartbeat timer, all for a connection
+        // that no longer exists and in parallel with the reconnect (bug report 2026-11-15).
+        if (!isConnected && ReferenceEquals(sender, _connectionService))
+        {
+            try { _protocolService?.Disconnect(); }
+            catch (Exception ex) { Services.Logger.WriteLine($"Protocol disconnect after link loss failed: {ex.Message}"); }
+        }
+
         // Async Update - blockiert nicht den UI Thread
         Dispatcher.BeginInvoke(() =>
         {
@@ -2111,6 +2124,8 @@ public partial class MainWindow : Window
                         StatusIndicator.Fill = Brushes.Orange;
                         StatusText.Text = Loc("StrConnectionLost");
                         ConnectButton.Content = Loc("StrDisconnect");
+                        if (_lastConnectionType == Services.ConnectionType.Bluetooth)
+                            NoteDeviceInitiatedBleDrop();
                         _ = TryReconnectAsync();
                     }
                     else if (!_isReconnecting)
@@ -2127,6 +2142,25 @@ public partial class MainWindow : Window
                 Services.Logger.WriteLine($"Error updating connection state in UI: {ex.Message}");
             }
         });
+    }
+
+    /// <summary>The node dropped the Bluetooth link on its own. A few of those in a row is not something the
+    /// client can repair by reconnecting — tell the user what is going on, once per session. The hardware and
+    /// firmware labels on the Info tab survive the disconnect, so they are the source here.</summary>
+    private void NoteDeviceInitiatedBleDrop()
+    {
+        var now = DateTime.UtcNow;
+        if (!_bleDropMonitor.RecordDrop(now)) return;
+
+        int drops = _bleDropMonitor.DropsInWindow(now);
+        string hw = HardwareModelText.Text, fw = FirmwareVersionText.Text;
+        bool serialKillsBle = Services.BleDropMonitor.IsSerialKillsBleFirmware(hw, fw);
+        Services.Logger.WriteLine($"[BLE] {drops} device-initiated drops within {Services.BleDropMonitor.Window.TotalMinutes:0} min " +
+                                  $"(hw={hw}, fw={fw}, nRF52+FW<2.8={serialKillsBle}) — showing hint");
+        var text = serialKillsBle
+            ? string.Format(Loc("StrBleDropStormNrf52Old"), drops, hw, fw)
+            : string.Format(Loc("StrBleDropStormGeneric"), drops);
+        MessageBox.Show(this, text, Loc("StrBleDropStormTitle"), MessageBoxButton.OK, MessageBoxImage.Information);
     }
 
     private async Task TryReconnectAsync()
