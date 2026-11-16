@@ -84,6 +84,9 @@ public class FirmwareUpdateTests
     [InlineData("T_ECHO", "nrf52840")]
     [InlineData("HELTEC_MESH_NODE_T114", "nrf52840")]
     [InlineData("RPI_PICO", "rp2040")]
+    [InlineData("ThinknodeM6", "nrf52840")]      // C# enum ToString form (no underscores) — bug report 2026-11-14
+    [InlineData("THINKNODE_M2", "esp32")]
+    [InlineData("PICOMPUTER_S3", "esp32")]       // longest match beats the shorter rp2040 "PICO"
     [InlineData("", null)]
     public void GuessArchitecture_covers_common_models(string name, string? expected) =>
         Assert.Equal(expected, FirmwareCatalogService.GuessArchitecture(name));
