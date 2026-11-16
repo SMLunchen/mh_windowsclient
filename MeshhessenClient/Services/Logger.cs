@@ -37,6 +37,7 @@ public static class Logger
             };
 
             WriteLine("=== Meshhessen Client gestartet ===");
+            WriteLine($"Version: {DescribeBuild()}");
             WriteLine($"Log-Datei: {_logFilePath}");
         }
         catch (Exception ex)
@@ -73,6 +74,30 @@ public static class Logger
     public static string? GetLogFilePath()
     {
         return _logFilePath;
+    }
+
+    /// <summary>App version, runtime and OS in one line — bug reports arrive as bare log files,
+    /// and without this line nobody can tell which build produced them.</summary>
+    public static string DescribeBuild()
+    {
+        try
+        {
+            var asm = System.Reflection.Assembly.GetEntryAssembly() ?? typeof(Logger).Assembly;
+            var v = asm.GetName().Version;
+            var ver = v == null ? "?" : "v" + v.ToString(v.Revision > 0 ? 4 : 3);
+            return $"{ver} | {System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription} | " +
+                   $"{System.Runtime.InteropServices.RuntimeInformation.OSDescription} ({(Environment.Is64BitProcess ? "x64" : "x86")})";
+        }
+        catch
+        {
+            return "?";
+        }
+    }
+
+    /// <summary>Full exception dump (type, message, stack, inner chain) for the crash handlers.</summary>
+    public static void WriteException(string context, Exception? ex)
+    {
+        WriteLine($"[FATAL] {context}: {(ex == null ? "<no exception object>" : ex.ToString())}");
     }
 
     public static void Close()

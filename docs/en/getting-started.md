@@ -34,6 +34,14 @@ Everything stays in the EXE directory (portable, USB-stick friendly): `meshhesse
 * **Auto-reconnect** – after settings changes that require a device reboot
 * **Per-node station name** – a dedicated station name per connected node (✏ button next to the Connect button)
 
+### Bluetooth keeps dropping?
+
+If the debug log shows `[BLE] Device disconnected` over and over, followed by 10–50 seconds in which the client cannot reconnect ("Meshtastic service not found … Unreachable"), the **node** is dropping the link, not the client. After the third drop within 10 minutes the client shows a hint explaining this.
+
+Most common cause: **nRF52 boards (RAK4631, T-Echo, ThinkNode M1/M6, T114, T1000-E …) on firmware older than 2.8.0** switch Bluetooth off completely as soon as a serial client opens the Meshtastic API over USB – the Python CLI, the web client, a phone on a USB cable or a second client instance. Bluetooth only comes back when that client disconnects, or after 15 minutes at the latest. A program that polls the node over USB thus produces an endless loop of drops.
+
+Remedy: unplug the USB data link to the node or close the other program – or update the firmware to **2.8.0 or newer**, where this is fixed. The Meshhessen Client itself tells the node that the session is over when disconnecting (`disconnect`), so Bluetooth is free again right after a serial session in the client.
+
 ## System & UI
 
 * **Update check** – automatically checks for new versions on startup; a clickable hint appears in the status bar if an update is available (offline-safe)
