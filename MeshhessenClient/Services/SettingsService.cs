@@ -28,6 +28,7 @@ public record AppSettings
     public bool DebugSerial { get; init; } = false;
     public bool DebugDevice { get; init; } = false;
     public bool DebugBluetooth { get; init; } = false;
+    public bool DebugBleNodeLog { get; init; } = false;        // Debug: mirror the node's own log via the BLE LOGRADIO characteristic
     public bool AlertBellSound { get; init; } = true;           // Play sound on alert bell character
     public bool MessageToasts { get; init; } = true;            // Windows toast notification on new incoming message
     public string DmStyle { get; init; } = "window";           // Direct messages: "window" (separate) or "inline" (WhatsApp-style)
@@ -215,6 +216,7 @@ public static class SettingsService
                 DebugSerial = values.TryGetValue("DebugSerial", out var dbs) && bool.TryParse(dbs, out var dbsBool) && dbsBool,
                 DebugDevice = values.TryGetValue("DebugDevice", out var dbd) && bool.TryParse(dbd, out var dbdBool) && dbdBool,
                 DebugBluetooth = values.TryGetValue("DebugBluetooth", out var dbb) && bool.TryParse(dbb, out var dbbBool) && dbbBool,
+                DebugBleNodeLog = values.TryGetValue("DebugBleNodeLog", out var dbn) && bool.TryParse(dbn, out var dbnBool) && dbnBool,
                 AlertBellSound = !values.TryGetValue("AlertBellSound", out var abs) || !bool.TryParse(abs, out var absBool) || absBool,
                 MessageToasts = !values.TryGetValue("MessageToasts", out var mtb) || !bool.TryParse(mtb, out var mtbBool) || mtbBool,
                 DmStyle = values.TryGetValue("DmStyle", out var dmsv) ? dmsv : "window",
@@ -294,6 +296,7 @@ public static class SettingsService
                 $"DebugSerial={settings.DebugSerial}",
                 $"DebugDevice={settings.DebugDevice}",
                 $"DebugBluetooth={settings.DebugBluetooth}",
+                $"DebugBleNodeLog={settings.DebugBleNodeLog}",
                 $"AlertBellSound={settings.AlertBellSound}",
                 $"MessageToasts={settings.MessageToasts}",
                 $"DmStyle={settings.DmStyle}",

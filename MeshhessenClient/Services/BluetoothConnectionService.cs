@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Windows.Devices.Bluetooth;
+using Windows.Devices.Bluetooth.Advertisement;
 using Windows.Devices.Bluetooth.GenericAttributeProfile;
 using Windows.Storage.Streams;
 
@@ -19,11 +20,26 @@ public class BluetoothConnectionService : IConnectionService
     private GattCharacteristic? _toRadioChar;
     private GattCharacteristic? _fromRadioChar;
     private GattCharacteristic? _fromNumChar;
+    private GattCharacteristic? _logRadioChar;
     private bool _isConnected;
     private readonly object _lock = new();
     private string _displayName = string.Empty;
     private System.Threading.Thread? _readerThread;
     private bool _wantExit = false;
+
+    // Debug option "node log over Bluetooth": the firmware pushes its own log as LogRecord protobufs on the
+    // LOGRADIO characteristic (only with config.security.debug_log_api_enabled). Off by default — every line
+    // costs airtime on a link that may already be weak.
+    public static bool NodeLogDefault;
+    private bool _nodeLogEnabled = NodeLogDefault;
+    private bool _nodeLogSubscribed;
+    private int _nodeLogRecords;
+
+    /// <summary>Advertising signal strength of the node heard while this connection was being set up, in dBm.
+    /// Null when no advertisement was caught (Windows may connect before the first one arrives). Windows has
+    /// no RSSI for a connected device, so this is the one number we can give a user with a flaky link.</summary>
+    public int? ConnectRssiDbm { get; private set; }
+    public int ConnectAdvertisementsHeard { get; private set; }
 
     // Debug logging control
     private static bool _debugEnabled = false;
@@ -41,6 +57,9 @@ public class BluetoothConnectionService : IConnectionService
     private static readonly Guid ToRadioUuid = Guid.Parse("f75c76d2-129e-4dad-a1dd-7866124401e7");
     private static readonly Guid FromRadioUuid = Guid.Parse("2c55e69e-4993-11ed-b878-0242ac120002");
     private static readonly Guid FromNumUuid = Guid.Parse("ed9da18c-a800-4f66-a670-aa7547e34453");
+    // Firmware BluetoothCommon.h: LOGRADIO_UUID (current) and LEGACY_LOGRADIO_UUID (pre-2.5)
+    private static readonly Guid LogRadioUuid = Guid.Parse("5a3d6e49-06e6-4423-9944-e9de8cdf9547");
+    private static readonly Guid LegacyLogRadioUuid = Guid.Parse("6c6fd238-78fa-436b-aacf-15c5be1ef2e2");
 
     public ConnectionType Type => ConnectionType.Bluetooth;
     public string DisplayName => _displayName;
@@ -76,6 +95,10 @@ public class BluetoothConnectionService : IConnectionService
             throw new ArgumentException("Device address cannot be zero", nameof(parameters));
 
         _displayName = btParams.DeviceName;
+
+        // Signal strength: the node advertises until the link is up — listen for its advertisements while we
+        // connect. Runs alongside the connect, adds no waiting time; stopped as soon as the link is up or failed.
+        var rssiWatch = StartRssiWatch(btParams.DeviceAddress);
 
         try
         {
@@ -179,8 +202,9 @@ public class BluetoothConnectionService : IConnectionService
             _toRadioChar = toRadioResult.Characteristics.First();
             _fromRadioChar = fromRadioResult.Characteristics.First();
             _fromNumChar = fromNumResult.Characteristics.First();
+            _logRadioChar = await FindLogRadioCharacteristicAsync(service);
 
-            LogDebug($"[BLE] All characteristics found");
+            LogDebug($"[BLE] All characteristics found (node log characteristic: {(_logRadioChar != null ? "yes" : "no")})");
 
             // Check characteristic properties
             LogDebug($"[BLE] TORADIO properties: {_toRadioChar.CharacteristicProperties}");
@@ -270,12 +294,17 @@ public class BluetoothConnectionService : IConnectionService
             // first raced against the flag — it could exit immediately ("Reader thread stopping ...
             // IsConnected=False") and, if the flag flipped meanwhile, tear a healthy link down again
             // ("Reader thread stopped unexpectedly, forcing disconnect"; bug report 2026-11-14).
+            StopRssiWatch(rssiWatch);
             IsConnected = true;
             _readerThread.Start();
             LogDebug($"[BLE] Connected to {btParams.DeviceName}, notifications: {notificationsEnabled}");
+
+            if (_nodeLogEnabled)
+                await SubscribeNodeLogAsync();   // never throws — a debug feature must not fail the connect
         }
         catch (Exception ex)
         {
+            StopRssiWatch(rssiWatch);
             LogDebug($"[BLE] ERROR: Connection failed: {ex.GetType().Name}: {ex.Message}");
             if (ex.InnerException != null)
             {
@@ -669,6 +698,174 @@ public class BluetoothConnectionService : IConnectionService
         }
     }
 
+    // ---- Signal strength during connect -------------------------------------------------------------------
+
+    private sealed class RssiWatch
+    {
+        public BluetoothLEAdvertisementWatcher? Watcher;
+        public int Count;
+        public int LastRssi;
+        public readonly System.Diagnostics.Stopwatch Elapsed = System.Diagnostics.Stopwatch.StartNew();
+    }
+
+    private RssiWatch StartRssiWatch(ulong address)
+    {
+        var w = new RssiWatch();
+        ConnectRssiDbm = null;
+        ConnectAdvertisementsHeard = 0;
+        try
+        {
+            w.Watcher = new BluetoothLEAdvertisementWatcher { ScanningMode = BluetoothLEScanningMode.Passive };
+            w.Watcher.Received += (_, a) =>
+            {
+                if (a.BluetoothAddress != address) return;
+                w.LastRssi = a.RawSignalStrengthInDBm;
+                System.Threading.Interlocked.Increment(ref w.Count);
+            };
+            w.Watcher.Start();
+        }
+        catch (Exception ex)
+        {
+            LogDebug($"[BLE] Advertisement watcher unavailable: {ex.Message}");
+            w.Watcher = null;
+        }
+        return w;
+    }
+
+    private void StopRssiWatch(RssiWatch w)
+    {
+        try { w.Watcher?.Stop(); } catch { }
+        w.Elapsed.Stop();
+        int n = System.Threading.Volatile.Read(ref w.Count);
+        ConnectAdvertisementsHeard = n;
+        if (n > 0)
+        {
+            ConnectRssiDbm = w.LastRssi;
+            Logger.WriteLine($"[BLE] Node signal during connect: {w.LastRssi} dBm ({n} advertisement(s) in {w.Elapsed.Elapsed.TotalSeconds:0.0} s)");
+        }
+        else if (w.Watcher != null)
+        {
+            Logger.WriteLine($"[BLE] No advertisement from the node heard during connect ({w.Elapsed.Elapsed.TotalSeconds:0.0} s) — " +
+                             "either connected before the first one, or the node is out of range / not advertising");
+        }
+    }
+
+    // ---- Node log over Bluetooth (debug option) -----------------------------------------------------------
+
+    private async Task<GattCharacteristic?> FindLogRadioCharacteristicAsync(GattDeviceService service)
+    {
+        foreach (var uuid in new[] { LogRadioUuid, LegacyLogRadioUuid })
+        {
+            try
+            {
+                var r = await service.GetCharacteristicsForUuidAsync(uuid, BluetoothCacheMode.Uncached);
+                if (r.Status == GattCommunicationStatus.Success && r.Characteristics.Any())
+                    return r.Characteristics.First();
+            }
+            catch (Exception ex)
+            {
+                LogDebug($"[BLE] LOGRADIO lookup failed: {ex.Message}");
+            }
+        }
+        return null;
+    }
+
+    /// <summary>Switches the node-log mirror on or off for this link (and remembers the wish for a link that
+    /// is still being set up).</summary>
+    public void SetNodeLogEnabled(bool enabled)
+    {
+        _nodeLogEnabled = enabled;
+        if (!IsConnected) return;
+        _ = Task.Run(async () =>
+        {
+            if (enabled) await SubscribeNodeLogAsync();
+            else await UnsubscribeNodeLogAsync();
+        });
+    }
+
+    private async Task SubscribeNodeLogAsync()
+    {
+        if (_nodeLogSubscribed) return;
+        var chr = _logRadioChar;
+        if (chr == null)
+        {
+            Logger.WriteLine("[NODE] Node log requested, but the device has no LOGRADIO characteristic (firmware too old?)");
+            return;
+        }
+        try
+        {
+            var status = await chr.WriteClientCharacteristicConfigurationDescriptorAsync(
+                GattClientCharacteristicConfigurationDescriptorValue.Notify);
+            if (status != GattCommunicationStatus.Success)
+            {
+                Logger.WriteLine($"[NODE] Could not subscribe to the node log: {status}");
+                return;
+            }
+            chr.ValueChanged += OnLogRadioValueChanged;
+            _nodeLogSubscribed = true;
+            _nodeLogRecords = 0;
+            Logger.WriteLine("[NODE] Node log over Bluetooth enabled — the node must have 'Debug log over API' (Security config) switched on, otherwise nothing arrives");
+            _ = Task.Run(async () =>
+            {
+                await Task.Delay(TimeSpan.FromSeconds(45));
+                if (_nodeLogSubscribed && IsConnected && System.Threading.Volatile.Read(ref _nodeLogRecords) == 0)
+                    Logger.WriteLine("[NODE] No log record in 45 s — check Security → 'Debug log over API' on the node " +
+                                     "(the firmware also pauses this log while it sends the config)");
+            });
+        }
+        catch (Exception ex)
+        {
+            Logger.WriteLine($"[NODE] Subscribing to the node log failed: {ex.Message}");
+        }
+    }
+
+    private async Task UnsubscribeNodeLogAsync()
+    {
+        var chr = _logRadioChar;
+        if (!_nodeLogSubscribed || chr == null)
+        {
+            _nodeLogSubscribed = false;
+            return;
+        }
+        chr.ValueChanged -= OnLogRadioValueChanged;
+        _nodeLogSubscribed = false;
+        try
+        {
+            await chr.WriteClientCharacteristicConfigurationDescriptorAsync(
+                GattClientCharacteristicConfigurationDescriptorValue.None);
+        }
+        catch { /* link may be gone */ }
+        Logger.WriteLine("[NODE] Node log over Bluetooth disabled");
+    }
+
+    private void OnLogRadioValueChanged(GattCharacteristic sender, GattValueChangedEventArgs args)
+    {
+        try
+        {
+            using var reader = DataReader.FromBuffer(args.CharacteristicValue);
+            var bytes = new byte[reader.UnconsumedBufferLength];
+            reader.ReadBytes(bytes);
+            var rec = Meshtastic.Protobufs.LogRecord.Parser.ParseFrom(bytes);
+            System.Threading.Interlocked.Increment(ref _nodeLogRecords);
+            var level = rec.Level switch
+            {
+                Meshtastic.Protobufs.LogRecord.Types.Level.Critical => "CRIT",
+                Meshtastic.Protobufs.LogRecord.Types.Level.Error    => "ERROR",
+                Meshtastic.Protobufs.LogRecord.Types.Level.Warning  => "WARN",
+                Meshtastic.Protobufs.LogRecord.Types.Level.Info     => "INFO",
+                Meshtastic.Protobufs.LogRecord.Types.Level.Debug    => "DEBUG",
+                Meshtastic.Protobufs.LogRecord.Types.Level.Trace    => "TRACE",
+                _                                                   => "LOG",
+            };
+            var source = string.IsNullOrEmpty(rec.Source) ? "" : $" {rec.Source}";
+            Logger.WriteLine($"[NODE] {level}{source}: {rec.Message.TrimEnd('\r', '\n')}");
+        }
+        catch (Exception ex)
+        {
+            LogDebug($"[NODE] Unparseable log record: {ex.Message}");
+        }
+    }
+
     private int _disconnectRunning;
 
     public void Disconnect()
@@ -705,6 +902,12 @@ public class BluetoothConnectionService : IConnectionService
             {
                 _fromNumChar.ValueChanged -= OnFromNumValueChanged;
             }
+            if (_logRadioChar != null)
+            {
+                _logRadioChar.ValueChanged -= OnLogRadioValueChanged;
+                _logRadioChar = null;
+            }
+            _nodeLogSubscribed = false;
 
             _fromNumChar = null;
             _toRadioChar = null;

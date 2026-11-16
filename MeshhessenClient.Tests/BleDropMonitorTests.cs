@@ -3,9 +3,10 @@ using MeshhessenClient.Services;
 namespace MeshhessenClient.Tests;
 
 /// <summary>
-/// Bug report 2026-11-14/15: a ThinkNode M6 (nRF52840, firmware 2.7.26) dropped its Bluetooth link 140 times
-/// in one evening because the firmware turns Bluetooth off whenever a USB-serial client opens the API
-/// (fixed in firmware 2.8.0, PR #10349). The client now recognises the storm and names the cause once.
+/// Bug report 2026-11-14/15: a ThinkNode M6 (nRF52840, firmware 2.7.26) lost its Bluetooth link 140 times in
+/// one evening — a fixed attic node on a weak radio path (the drops came ~2 s after the last data, mostly mid
+/// node-list download). The client now recognises the storm and names the usual causes once; for nRF52 on
+/// firmware before 2.8.0 it adds the "serial USB client switches BLE off" case (firmware PR #10349).
 /// </summary>
 public class BleDropMonitorTests
 {

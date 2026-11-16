@@ -268,6 +268,8 @@
     <sys:String x:Key="StrDebugSerial">Serielle Daten-Debug (Hex-Dump)</sys:String>
     <sys:String x:Key="StrDebugDevice">Device-Log (serielle Debug-Ausgabe)</sys:String>
     <sys:String x:Key="StrDebugBluetooth">Bluetooth-Debug (BLE-Kommunikation)</sys:String>
+    <sys:String x:Key="StrDebugBleNodeLog">Node-Log über Bluetooth mitlesen (belastet die Funkstrecke)</sys:String>
+    <sys:String x:Key="StrDebugBleNodeLogTip">Zeigt das Debug-Log des Nodes als „[NODE]“-Zeilen im Client-Log. Der Node muss dafür in der Sicherheits-Konfiguration „Debug-Log über API“ aktiviert haben. Jede Log-Zeile geht zusätzlich über die Bluetooth-Verbindung – bei schwachem Signal nur zur Fehlersuche einschalten.</sys:String>
     <sys:String x:Key="StrSaveSettings">Einstellungen speichern</sys:String>
     <sys:String x:Key="StrSettingsUnsaved">● Ungespeicherte Änderungen</sys:String>
     <sys:String x:Key="StrNodeConfigGroup">Node-Konfiguration</sys:String>
@@ -1007,17 +1009,21 @@ Erstellt: {5}
     <sys:String x:Key="StrConnectedReadySimple">Verbunden – Bereit</sys:String>
     <sys:String x:Key="StrConnectedInitSimple">Verbunden – Initialisiere...</sys:String>
     <sys:String x:Key="StrConnectionLostMsg">Verbindung verloren – bitte manuell verbinden</sys:String>
-    <sys:String x:Key="StrBleDropStormTitle">Node trennt die Bluetooth-Verbindung selbst</sys:String>
-    <sys:String x:Key="StrBleDropStormNrf52Old" xml:space="preserve">Der Node hat die Bluetooth-Verbindung in den letzten 10 Minuten {0}-mal selbst getrennt – nicht der Client.
+    <sys:String x:Key="StrBleDropStormTitle">Bluetooth-Verbindung bricht wiederholt ab</sys:String>
+    <sys:String x:Key="StrBleDropStormNrf52Old" xml:space="preserve">Die Bluetooth-Verbindung zum Node ist in den letzten 10 Minuten {0}-mal abgerissen – gemeldet von Windows, nicht vom Client beendet.
 
-Dein Gerät ({1}) läuft mit Firmware {2}. Diese Firmware schaltet auf nRF52-Geräten Bluetooth komplett ab, sobald ein serieller Client per USB die Meshtastic-Schnittstelle öffnet – z. B. die Python-CLI, der Web-Client, ein Handy am USB-Kabel oder eine zweite Client-Instanz. Bluetooth kommt erst zurück, wenn dieser Client trennt, spätestens nach 15 Minuten.
+Häufigste Ursache ist eine zu schwache Funkstrecke: Entfernung, Decken und Wände (Node auf dem Dachboden), ein schwacher Bluetooth-Adapter im PC oder 2,4-GHz-Störer (WLAN, USB-3-Geräte neben dem Adapter). Typisch dafür: Der Abbruch kommt mitten im Datenstrom, und der Node ist danach 10–50 Sekunden nicht erreichbar. Abhilfe: Abstand verringern oder einen Bluetooth-Adapter mit externer Antenne nutzen.
 
-Abhilfe: USB-Datenverbindung zum Node trennen bzw. das andere Programm beenden – oder die Firmware auf 2.8.0 oder neuer aktualisieren (Tools → Firmware-Update), dort ist das behoben.</sys:String>
-    <sys:String x:Key="StrBleDropStormGeneric" xml:space="preserve">Der Node hat die Bluetooth-Verbindung in den letzten 10 Minuten {0}-mal selbst getrennt – nicht der Client.
+Außerdem: Dein Gerät ({1}) läuft mit Firmware {2}. Auf nRF52-Geräten schaltet diese Firmware Bluetooth komplett ab, solange ein serieller Client per USB die Meshtastic-Schnittstelle offen hat (Python-CLI, Web-Client, Handy am Kabel, zweite Client-Instanz) – nur relevant, wenn an der USB-Buchse des Nodes wirklich ein Rechner hängt. Ab Firmware 2.8.0 behoben (Update über Tools → Firmware-Update).</sys:String>
+    <sys:String x:Key="StrBleDropStormGeneric" xml:space="preserve">Die Bluetooth-Verbindung zum Node ist in den letzten 10 Minuten {0}-mal abgerissen – gemeldet von Windows, nicht vom Client beendet.
 
-Typische Ursachen: ein zweiter Client (USB/seriell, Handy, Web-Client), der sich abwechselnd verbindet; Node-Neustarts (Stromversorgung, Watchdog); oder nRF52-Geräte mit Firmware vor 2.8.0, die Bluetooth abschalten, sobald ein serieller Client verbunden ist.
+Häufigste Ursache ist eine zu schwache Funkstrecke: Entfernung, Decken und Wände, ein schwacher Bluetooth-Adapter im PC oder 2,4-GHz-Störer (WLAN, USB-3-Geräte neben dem Adapter). Weitere Ursachen: ein zweiter Client, der sich abwechselnd verbindet; Node-Neustarts (Stromversorgung, Watchdog); nRF52-Geräte mit Firmware vor 2.8.0, an deren USB-Buchse ein serieller Client hängt.
 
-Details stehen im Debug-Log (Zeilen „[BLE] Device disconnected“).</sys:String>
+Abhilfe: Abstand verringern oder einen Bluetooth-Adapter mit externer Antenne nutzen. Details stehen im Debug-Log (Zeilen „[BLE] Device disconnected“).</sys:String>
+    <sys:String x:Key="StrBleDropStormRssi">Signalstärke des Nodes beim letzten Verbindungsaufbau: {0} dBm ({1}).</sys:String>
+    <sys:String x:Key="StrBleRssiGood">gut</sys:String>
+    <sys:String x:Key="StrBleRssiFair">mittel</sys:String>
+    <sys:String x:Key="StrBleRssiWeak">schwach – das erklärt die Abbrüche</sys:String>
     <sys:String x:Key="StrPacketCount">Pakete: {0}</sys:String>
     <sys:String x:Key="StrChannelReceived">Kanal {0} empfangen: {1}</sys:String>
     <sys:String x:Key="StrAlertSent">Notruf gesendet!</sys:String>

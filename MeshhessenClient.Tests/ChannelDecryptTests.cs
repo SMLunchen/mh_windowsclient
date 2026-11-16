@@ -103,6 +103,87 @@ public class ChannelDecryptTests
         Assert.NotNull(got);
         Assert.Equal("hallo welt", got!.Message);
         Assert.False(got.IsEncrypted);
+        // Routed under the matched channel's INDEX, not the packet's hash (bug: primary-channel messages
+        // relayed over MQTT showed up in a secondary tab and vice versa).
+        Assert.Equal("1", got.Channel);
+    }
+
+    // Firmware default key (Channels.cpp defaultpsk); PSK byte 0x01 = "use default key".
+    private static readonly byte[] DefaultKey =
+        { 0xd4, 0xf1, 0xbb, 0x3a, 0x20, 0x29, 0x07, 0x59, 0xf0, 0xbc, 0xff, 0xab, 0xcf, 0x4e, 0x69, 0x01 };
+
+    private static byte[] CtrEncrypt(byte[] key, byte[] plain)
+    {
+        var nonce = new byte[16];
+        System.BitConverter.GetBytes((ulong)PacketId).CopyTo(nonce, 0);
+        System.BitConverter.GetBytes(FromNode).CopyTo(nonce, 8);
+        var ctr = new SicBlockCipher(new AesEngine());
+        ctr.Init(true, new ParametersWithIV(new KeyParameter(key), nonce));
+        var outBuf = new byte[plain.Length];
+        int full = (plain.Length / 16) * 16;
+        for (int i = 0; i < full; i += 16) ctr.ProcessBlock(plain, i, outBuf, i);
+        int rem = plain.Length - full;
+        if (rem > 0)
+        {
+            var ib = new byte[16]; System.Array.Copy(plain, full, ib, 0, rem);
+            var ob = new byte[16]; ctr.ProcessBlock(ib, 0, ob, 0);
+            System.Array.Copy(ob, 0, outBuf, full, rem);
+        }
+        return outBuf;
+    }
+
+    /// <summary>The reporter's setup: an UNNAMED primary channel on LongFast with the default key. The
+    /// firmware hashes it under the preset name — hash 8. Such a message must land in channel 0, not in
+    /// "Anderer Kanal (8)" (which passed every tab filter and showed up wherever the user happened to be).</summary>
+    [Fact]
+    public void UnnamedPrimaryChannel_LongFastHash8_RoutesToChannel0()
+    {
+        byte h = 0;
+        foreach (var b in System.Text.Encoding.UTF8.GetBytes("LongFast")) h ^= b;
+        foreach (var b in DefaultKey) h ^= b;
+        Assert.Equal(8, h);                                   // the well-known LongFast hash
+
+        var fake = new FakeConnectionService(ConnectionType.Tcp);
+        var svc = new MeshtasticProtocolService(fake);
+        MessageItem? got = null;
+        svc.MessageReceived += (_, m) => got = m;
+
+        fake.Receive(Frame(new FromRadio
+        {
+            Config = new Config { Lora = new Config.Types.LoRaConfig { UsePreset = true, ModemPreset = Config.Types.LoRaConfig.Types.ModemPreset.LongFast } }
+        }));
+        fake.Receive(Frame(new FromRadio
+        {
+            Channel = new Channel
+            {
+                Index = 0,
+                Role = Channel.Types.Role.Primary,
+                Settings = new ChannelSettings { Name = "", Psk = ByteString.CopyFrom(new byte[] { 1 }) }
+            }
+        }));
+        fake.Receive(Frame(new FromRadio
+        {
+            Channel = new Channel
+            {
+                Index = 1,
+                Role = Channel.Types.Role.Secondary,
+                Settings = new ChannelSettings { Name = ChannelName, Psk = ByteString.CopyFrom(Psk) }
+            }
+        }));
+
+        var inner = new Data { Portnum = PortNum.TextMessageApp, Payload = ByteString.CopyFromUtf8("primär") };
+        fake.Receive(Frame(new FromRadio
+        {
+            Packet = new MeshPacket
+            {
+                From = FromNode, To = 0xFFFFFFFF, Id = PacketId,
+                Channel = 8, Encrypted = ByteString.CopyFrom(CtrEncrypt(DefaultKey, inner.ToByteArray()))
+            }
+        }));
+
+        Assert.NotNull(got);
+        Assert.Equal("primär", got!.Message);
+        Assert.Equal("0", got.Channel);
     }
 
     [Fact]

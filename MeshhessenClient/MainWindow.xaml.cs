@@ -378,6 +378,7 @@ public partial class MainWindow : Window
             DebugSerialCheckBox.IsChecked = settings.DebugSerial;
             DebugDeviceCheckBox.IsChecked = settings.DebugDevice;
             DebugBluetoothCheckBox.IsChecked = settings.DebugBluetooth;
+            DebugBleNodeLogCheckBox.IsChecked = settings.DebugBleNodeLog;
             AlertBellSoundCheckBox.IsChecked = settings.AlertBellSound;
             MessageToastsCheckBox.IsChecked = settings.MessageToasts;
             FunkEchoCheckBox.IsChecked = settings.FunkEchoEnabled;
@@ -411,6 +412,7 @@ public partial class MainWindow : Window
             _protocolService.SetDebugSerial(settings.DebugSerial);
             _protocolService.SetDebugDevice(settings.DebugDevice);
             BluetoothConnectionService.SetDebugEnabled(settings.DebugBluetooth);
+            ApplyBleNodeLogSetting(settings.DebugBleNodeLog);
 
             // Load TCP settings
             TcpHostTextBox.Text = settings.LastTcpHost;
@@ -719,7 +721,12 @@ public partial class MainWindow : Window
     /// Incoming must be addressed to us; outgoing to a peer. Overheard unicast between
     /// third parties stays a channel message by design.</summary>
     private bool IsDmMessage(MessageItem msg) =>
-        msg.ToId != 0 && msg.ToId != 0xFFFFFFFF && (msg.IsOwnMessage || msg.ToId == _myNodeId);
+        msg.ToId != 0 && msg.ToId != 0xFFFFFFFF && (msg.IsOwnMessage || msg.ToId == MyNodeIdOrLive);
+
+    /// <summary>_myNodeId is set from the DeviceInfo event, which fires only after the init burst's node events —
+    /// text messages can arrive before that. Fall back to the protocol service's id, so a DM in that window is
+    /// not filed (and persisted) as a primary-channel message.</summary>
+    private uint MyNodeIdOrLive => _myNodeId != 0 ? _myNodeId : (_protocolService?.GetMyNodeId() ?? 0);
 
     /// <summary>True if <paramref name="msg"/> is a direct message between us and <paramref name="partner"/>.</summary>
     private bool IsDmWithPartner(MessageItem msg, uint partner)
@@ -774,7 +781,7 @@ public partial class MainWindow : Window
             DmList.SelectedItem = null;
             _currentDmPartner = 0;
             if (ConversationList.SelectedItem == null)
-                ConversationList.SelectedItem = _channels.FirstOrDefault(c => c.Role == "PRIMARY") ?? _channels.FirstOrDefault();
+                ConversationList.SelectedItem = _channels.FirstOrDefault(c => IsPrimaryRole(c.Role)) ?? _channels.FirstOrDefault();
         }
     }
 
@@ -2004,6 +2011,7 @@ public partial class MainWindow : Window
                 DebugSerial = DebugSerialCheckBox.IsChecked == true,
                 DebugDevice = DebugDeviceCheckBox.IsChecked == true,
                 DebugBluetooth = DebugBluetoothCheckBox.IsChecked == true,
+                DebugBleNodeLog = DebugBleNodeLogCheckBox.IsChecked == true,
                 AlertBellSound = AlertBellSoundCheckBox.IsChecked == true,
                 MessageToasts = MessageToastsCheckBox.IsChecked == true,
                 FunkEchoEnabled = FunkEchoCheckBox.IsChecked == true,
@@ -2073,6 +2081,7 @@ public partial class MainWindow : Window
             _protocolService.SetDebugSerial(settings.DebugSerial);
             _protocolService.SetDebugDevice(settings.DebugDevice);
             BluetoothConnectionService.SetDebugEnabled(settings.DebugBluetooth);
+            ApplyBleNodeLogSetting(settings.DebugBleNodeLog);
             UpdateKioskLockButton();
             ApplyEnvironmentUi();
             SetSettingsDirty(false);
@@ -2131,8 +2140,15 @@ public partial class MainWindow : Window
                     _allMessages.Clear();
                     _messageById.Clear();
                     _dbOldestTimestamp = long.MaxValue;
-                    _nodes.Clear();
-                    _allNodes.Clear();
+                    // Keep the node list (and map pins) while an auto-reconnect is pending: the reconnect carries
+                    // it over and requests config only. It is cleared when the reconnect gives up, or when the
+                    // node turns out to be a different one (NodeDbCleared from the protocol service).
+                    bool reconnectPending = !_intentionalDisconnect && _lastConnectionParams != null;
+                    if (!reconnectPending)
+                    {
+                        _nodes.Clear();
+                        _allNodes.Clear();
+                    }
                     _channels.Clear();
                     _currentLoRaConfig = null;
                     NodeConfigButton.IsEnabled = false;
@@ -2148,7 +2164,7 @@ public partial class MainWindow : Window
                         StatusText.Text = Loc("StrConnectionLost");
                         ConnectButton.Content = Loc("StrDisconnect");
                         if (_lastConnectionType == Services.ConnectionType.Bluetooth)
-                            NoteDeviceInitiatedBleDrop();
+                            NoteUnexpectedBleDrop();
                         _ = TryReconnectAsync();
                     }
                     else if (!_isReconnecting)
@@ -2167,10 +2183,11 @@ public partial class MainWindow : Window
         });
     }
 
-    /// <summary>The node dropped the Bluetooth link on its own. A few of those in a row is not something the
-    /// client can repair by reconnecting — tell the user what is going on, once per session. The hardware and
-    /// firmware labels on the Info tab survive the disconnect, so they are the source here.</summary>
-    private void NoteDeviceInitiatedBleDrop()
+    /// <summary>Windows reported the Bluetooth link gone without the client asking for it (radio path lost, node
+    /// rebooted, node switched BLE off …). A few of those in a row is not something the client can repair by
+    /// reconnecting — tell the user the usual causes, once per session. The hardware and firmware labels on the
+    /// Info tab survive the disconnect, so they are the source here.</summary>
+    private void NoteUnexpectedBleDrop()
     {
         var now = DateTime.UtcNow;
         if (!_bleDropMonitor.RecordDrop(now)) return;
@@ -2178,22 +2195,58 @@ public partial class MainWindow : Window
         int drops = _bleDropMonitor.DropsInWindow(now);
         string hw = HardwareModelText.Text, fw = FirmwareVersionText.Text;
         bool serialKillsBle = Services.BleDropMonitor.IsSerialKillsBleFirmware(hw, fw);
-        Services.Logger.WriteLine($"[BLE] {drops} device-initiated drops within {Services.BleDropMonitor.Window.TotalMinutes:0} min " +
+        Services.Logger.WriteLine($"[BLE] {drops} unexpected drops within {Services.BleDropMonitor.Window.TotalMinutes:0} min " +
                                   $"(hw={hw}, fw={fw}, nRF52+FW<2.8={serialKillsBle}) — showing hint");
         var text = serialKillsBle
             ? string.Format(Loc("StrBleDropStormNrf52Old"), drops, hw, fw)
             : string.Format(Loc("StrBleDropStormGeneric"), drops);
+        // The dropped link is still _connectionService here (the reconnect creates a new one later), so its
+        // connect-time signal reading is the one that describes this radio path.
+        if ((_connectionService as Services.BluetoothConnectionService)?.ConnectRssiDbm is int rssi)
+        {
+            var quality = rssi >= -70 ? Loc("StrBleRssiGood") : rssi >= -85 ? Loc("StrBleRssiFair") : Loc("StrBleRssiWeak");
+            text += "\n\n" + string.Format(Loc("StrBleDropStormRssi"), rssi, quality);
+            Services.Logger.WriteLine($"[BLE] Signal at last connect: {rssi} dBm");
+        }
         MessageBox.Show(this, text, Loc("StrBleDropStormTitle"), MessageBoxButton.OK, MessageBoxImage.Information);
     }
+
+    /// <summary>Debug option "node log over Bluetooth": applies to the live BLE link and to future ones.</summary>
+    private void ApplyBleNodeLogSetting(bool enabled)
+    {
+        BluetoothConnectionService.NodeLogDefault = enabled;
+        (_connectionService as BluetoothConnectionService)?.SetNodeLogEnabled(enabled);
+    }
+
+    private static bool IsPrimaryRole(string? role) =>
+        string.Equals(role, "PRIMARY", StringComparison.OrdinalIgnoreCase);
 
     private async Task TryReconnectAsync()
     {
         Services.Logger.WriteLine("[RECONNECT] Starting auto-reconnect...");
-        // Wait for device to reboot (ESP32 typically takes ~3-5 seconds)
-        await Task.Delay(5000);
+
+        // Same node, same link: keep the node list and ask for config + channels only (want_config_id 69420).
+        // The full node-list download after every reconnect was where a weak Bluetooth path dropped most often.
+        Services.ReconnectCarryOver? carry = null;
+        var previous = _protocolService;
+        if (previous != null && previous.GetMyNodeId() != 0)
+        {
+            var nodes = previous.GetKnownNodes().Values.ToList();
+            if (nodes.Count > 0) carry = new Services.ReconnectCarryOver(previous.GetMyNodeId(), nodes);
+        }
+
+        // Wait for the device to reboot (ESP32 typically takes ~3-5 seconds). A link that keeps dropping gets
+        // a longer breather, so the loop itself stops being the storm.
+        int recentDrops = _lastConnectionType == Services.ConnectionType.Bluetooth
+            ? _bleDropMonitor.DropsInWindow(DateTime.UtcNow) : 0;
+        var initialDelay = Services.ReconnectBackoff.InitialDelay(recentDrops);
+        if (initialDelay > Services.ReconnectBackoff.BaseInitialDelay)
+            Services.Logger.WriteLine($"[RECONNECT] {recentDrops} drops in the last {Services.BleDropMonitor.Window.TotalMinutes:0} min — " +
+                                      $"waiting {initialDelay.TotalSeconds:0} s before the first attempt");
+        await Task.Delay(initialDelay);
 
         int attempt = 0;
-        const int maxAttempts = 15;
+        const int maxAttempts = Services.ReconnectBackoff.MaxAttempts;
 
         while (!_intentionalDisconnect && attempt < maxAttempts)
         {
@@ -2270,7 +2323,7 @@ public partial class MainWindow : Window
                 {
                     try
                     {
-                        await _protocolService.InitializeAsync();
+                        await _protocolService.InitializeAsync(carry);
                         if (_currentSettings.AutoTimeSyncOnConnect)
                             await _protocolService.SendTimeSyncAsync();
                         StartTimeSyncTimer();
@@ -2293,15 +2346,19 @@ public partial class MainWindow : Window
             }
             catch (Exception ex)
             {
-                Services.Logger.WriteLine($"[RECONNECT] Attempt {attempt} failed: {ex.Message}");
+                var retryIn = Services.ReconnectBackoff.RetryDelay(attempt);
+                Services.Logger.WriteLine($"[RECONNECT] Attempt {attempt} failed: {ex.Message}" +
+                                          (attempt < maxAttempts ? $" — next try in {retryIn.TotalSeconds:0} s" : ""));
                 if (attempt < maxAttempts)
-                    await Task.Delay(3000);
+                    await Task.Delay(retryIn);
             }
         }
 
         // All attempts exhausted
         _isReconnecting = false;
         Services.Logger.WriteLine("[RECONNECT] All reconnect attempts failed.");
+        // The node list was kept for the carry-over; without a link it is stale now.
+        OnNodeDbCleared(this, EventArgs.Empty);
         Dispatcher.BeginInvoke(() =>
         {
             StatusIndicator.Fill = Brushes.Gray;
@@ -2699,7 +2756,9 @@ public partial class MainWindow : Window
                 if (_channels.Count > 0 && !_channelsInitialized)
                 {
                     _channelsInitialized = true;
-                    var primaryChannel = _channels.FirstOrDefault(c => c.Role == "PRIMARY");
+                    // Role arrives as "Primary" (enum ToString), the old literal "PRIMARY" never matched and the
+                    // first channel to arrive was selected instead — not necessarily the primary one.
+                    var primaryChannel = _channels.FirstOrDefault(c => IsPrimaryRole(c.Role));
                     if (ConversationList.SelectedItem == null)
                         ConversationList.SelectedItem = primaryChannel ?? _channels.FirstOrDefault();
                 }

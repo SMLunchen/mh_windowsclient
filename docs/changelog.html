@@ -190,10 +190,58 @@
 <div class="section active" id="de">
 <main>
 
-  <!-- ── v1.7.3 ── -->
+  <!-- ── v1.7.3.2 ── -->
   <div class="version-entry current">
     <div class="version-header">
-      <span class="version-tag tag-latest">v1.7.3</span>
+      <span class="version-tag tag-latest">v1.7.3.2</span>
+      <span class="version-date">2026-11-17</span>
+      Bluetooth-Reconnect, Kanal-Zuordnung &amp; sauberes Schließen
+    </div>
+    <p class="version-desc">Bugfix-Release rund um die Geräteverbindung: Nachrichten, die im falschen Kanal-Tab landeten, ständige Bluetooth-Abbrüche auf schwachen Funkstrecken (Reconnect jetzt ohne Node-Listen-Download, mit Backoff und Signalstärke im Log), ein Absturz beim Schließen mit aktiver Bluetooth-Verbindung – und ein Log, das endlich sagt, welche Version abgestürzt ist.</p>
+
+    <div class="cl-section fixed">
+      <h3>🐛 Behoben</h3>
+      <div class="cl-group">
+        <ul class="cl-list">
+          <li><strong>Nachrichten aus dem Primärkanal landeten im Sekundärkanal (und umgekehrt):</strong> Betroffen waren Nachrichten, die der Node noch verschlüsselt weiterreicht (über MQTT relayt) und die der Client selbst entschlüsselt. Sie behielten den 8-Bit-Kanal-Hash statt des Kanal-Index – Hash 0–7 landete im falschen Tab, alles andere (etwa 8 für den unbenannten Standard-Primärkanal „LongFast“) wurde zu „Anderer Kanal“ und rutschte durch jeden Filter in den gerade geöffneten Tab. Nach dem Entschlüsseln trägt das Paket jetzt den Index des passenden Kanals; bei gleichem Hash gewinnt nur der Kanal, dessen Klartext ein gültiges Paket ergibt.</li>
+          <li><strong>Primärkanal:</strong> Ein unbenannter Primärkanal konnte einen Zufallsnamen bekommen (ein Byte des PSK galt als Namensfeld) – es zählt jetzt das geparste Namensfeld, sonst der Preset-Name. Außerdem war der Primärkanal nach dem Verbinden nicht vorausgewählt (Rollenvergleich „PRIMARY“ gegen „Primary“).</li>
+          <li><strong>Direktnachrichten in den ersten Sekunden nach dem Verbinden</strong> konnten als Kanalnachricht gespeichert werden, weil die eigene Node-ID der Oberfläche noch nicht bekannt war.</li>
+          <li><strong>Bluetooth: ständige Abbrüche, obwohl der Client nichts falsch macht:</strong> Nutzer-Log mit 140 Abbrüchen an einem Abend (ThinkNode M6, Firmware 2.7.26, Node fest auf dem Dachboden, nur per Bluetooth angebunden). Windows meldet den Abbruch jeweils ~2 s nach den letzten Daten, meist mitten im Node-Listen-Download, danach ist der Node 10–50 s nicht erreichbar – das Bild einer zu schwachen Funkstrecke. Der Client kann das nicht reparieren – nach dem dritten Abbruch in 10 Minuten nennt er jetzt einmalig die typischen Ursachen (Funkstrecke, Adapter, 2,4-GHz-Störer, zweiter Client, Node-Neustart; auf nRF52 mit Firmware vor 2.8 zusätzlich ein serieller USB-Client, der dort BLE abschaltet – Update über Tools → Firmware-Update). Dazu ein Abschnitt im Handbuch.</li>
+          <li><strong>Sitzungsende wird dem Node gemeldet:</strong> Beim Trennen sendet der Client jetzt <code>disconnect</code> wie die offiziellen Apps. Bisher blieb die Sitzung auf dem Node bis zum 15-Minuten-Timeout offen – auf nRF52 mit alter Firmware war Bluetooth nach einer seriellen Sitzung im Client genauso lange tot.</li>
+          <li><strong>Absturz beim Schließen mit aktiver Bluetooth-Verbindung:</strong> Das Trennen lief auf dem UI-Thread und konnte den Prozess ohne Spur beenden. Das Fenster verschwindet jetzt sofort, die Verbindung wird im Hintergrund mit Zeitlimit abgebaut, dann beendet sich die App.</li>
+          <li><strong>Bluetooth-Robustheit:</strong> Der Lese-Thread startete vor dem „verbunden“-Flag und konnte eine gesunde Verbindung selbst kappen; ein von Windows noch während des Verbindungsaufbaus gemeldeter Abbruch kostete einen Reconnect-Versuch; nach einem Abbruch mitten im Config-Download lief die Initialisierung auf der toten Verbindung weiter. Alles behoben.</li>
+          <li><strong>Firmware-Assistent: Geräte-Architektur-Erkennung</strong> – Hardware-Namen in Enum-Schreibweise (<code>ThinknodeM6</code>) werden erkannt, ThinkNode M3–M9/G3 ergänzt, der längste Treffer gewinnt (PICOMPUTER galt fälschlich als RP2040).</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="cl-section added">
+      <h3>✨ Verbindung</h3>
+      <div class="cl-group">
+        <ul class="cl-list">
+          <li><strong>Reconnect ohne Node-Listen-Download:</strong> Beim automatischen Neuverbinden mit demselben Node fordert der Client nur noch Konfiguration und Kanäle an (Firmware ≥ 2.6.8) und behält die Node-Liste der Sitzung – sie bleibt während des Reconnects sichtbar. Meldet sich ein anderer Node, wird alles neu geladen. Auf schwachen Bluetooth-Strecken war der lange Download der Moment, in dem die Verbindung meist wieder abriss.</li>
+          <li><strong>Reconnect mit Backoff:</strong> Nach fünf schnellen Versuchen wächst der Abstand auf 6, 12, 24, 48 und 60 s; bei gehäuften Bluetooth-Abbrüchen startet der erste Versuch später. Das Fenster für den automatischen Wiederaufbau wächst von 45 Sekunden auf rund 7 Minuten.</li>
+          <li><strong>Signalstärke beim Verbinden:</strong> Während des Bluetooth-Verbindungsaufbaus hört der Client die Advertising-Pakete des Nodes mit und schreibt die Signalstärke ins Log („Node signal during connect: −87 dBm“); der Hinweis bei wiederholten Abbrüchen nennt sie ebenfalls. Kostet keine Wartezeit.</li>
+          <li><strong>Debug-Option „Node-Log über Bluetooth mitlesen“:</strong> Zeigt das Debug-Log des Nodes als <code>[NODE]</code>-Zeilen im Client-Log (der Node braucht „Debug-Log über API“ in der Sicherheits-Konfiguration). Standardmäßig aus, weil jede Zeile zusätzlich über die Funkstrecke geht.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="cl-section changed">
+      <h3>🔧 Diagnose</h3>
+      <div class="cl-group">
+        <ul class="cl-list">
+          <li>Der Log-Kopf nennt jetzt Client-Version, .NET-Laufzeit und Windows-Version – Fehlerberichte lassen sich endlich einer Version zuordnen.</li>
+          <li>Unbehandelte Ausnahmen werden mit vollständigem Stacktrace ins Log geschrieben; einzelne Fehler im UI-Thread beenden die App nicht mehr sofort.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── v1.7.3 ── -->
+  <div class="version-entry">
+    <div class="version-header">
+      <span class="version-tag">v1.7.3</span>
       <span class="version-date">2026-11-10</span>
       Firmware-Update-Assistent, Konfig-Backup &amp; Bluetooth-Robustheit
     </div>
@@ -1435,10 +1483,58 @@
 <div class="section" id="en">
 <main>
 
-  <!-- ── v1.7.3 (EN) ── -->
+  <!-- ── v1.7.3.2 (EN) ── -->
   <div class="version-entry current">
     <div class="version-header">
-      <span class="version-tag tag-latest">v1.7.3</span>
+      <span class="version-tag tag-latest">v1.7.3.2</span>
+      <span class="version-date">2026-11-17</span>
+      Bluetooth reconnect, channel attribution &amp; clean shutdown
+    </div>
+    <p class="version-desc">Bugfix release around the device link: messages that ended up in the wrong channel tab, endless Bluetooth drops on weak radio paths (reconnect now without the node-list download, with backoff and signal strength in the log), a crash when closing with an active Bluetooth link – and a log that finally says which version crashed.</p>
+
+    <div class="cl-section fixed">
+      <h3>🐛 Fixed</h3>
+      <div class="cl-group">
+        <ul class="cl-list">
+          <li><strong>Primary-channel messages showed up in the secondary channel (and vice versa):</strong> affected were messages the node passes on still encrypted (relayed over MQTT) and the client decrypts itself. They kept the 8-bit channel hash instead of the channel index – hash 0–7 landed in the wrong tab, anything else (such as 8 for the unnamed default primary channel "LongFast") became "Other channel" and slipped through every filter into whichever tab was open. After decrypting, the packet now carries the index of the matching channel; when two channels share a hash, only the one whose plaintext yields a valid packet wins.</li>
+          <li><strong>Primary channel:</strong> an unnamed primary channel could get a random name (a PSK byte was taken for the name field) – only the parsed name field counts now, otherwise the preset name. The primary channel was also not pre-selected after connecting (role compare "PRIMARY" vs "Primary").</li>
+          <li><strong>Direct messages in the first seconds after connecting</strong> could be stored as channel messages because the UI did not know its own node id yet.</li>
+          <li><strong>Bluetooth: endless drops although the client does nothing wrong:</strong> a user log with 140 drops in one evening (ThinkNode M6, firmware 2.7.26, node fixed in an attic and reachable over Bluetooth only). Windows reports each drop ~2 s after the last data, mostly in the middle of the node-list download, and the node is unreachable for 10–50 s afterwards – the picture of a weak radio path. The client cannot fix that – after the third drop within 10 minutes it now names the usual causes once (radio path, adapter, 2.4 GHz interference, second client, node reboot; on nRF52 with firmware older than 2.8 additionally a serial USB client, which switches BLE off there – update via Tools → Firmware update). Plus a section in the handbook.</li>
+          <li><strong>Session end is announced to the node:</strong> when disconnecting, the client now sends <code>disconnect</code> like the official apps. Until now the session stayed open on the node until its 15-minute timeout – on nRF52 with old firmware Bluetooth was dead for just as long after a serial session in the client.</li>
+          <li><strong>Crash when closing with an active Bluetooth link:</strong> the teardown ran on the UI thread and could end the process without a trace. The window now disappears immediately, the link is torn down in the background with a time limit, then the app exits.</li>
+          <li><strong>Bluetooth robustness:</strong> the reader thread started before the "connected" flag and could kill a healthy link itself; a drop reported by Windows while still connecting cost a reconnect attempt; after a drop in the middle of the config download the initialisation carried on over the dead link. All fixed.</li>
+          <li><strong>Firmware assistant: device architecture detection</strong> – hardware names in enum spelling (<code>ThinknodeM6</code>) are recognised, ThinkNode M3–M9/G3 added, the longest match wins (PICOMPUTER was wrongly taken for RP2040).</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="cl-section added">
+      <h3>✨ Connection</h3>
+      <div class="cl-group">
+        <ul class="cl-list">
+          <li><strong>Reconnect without the node-list download:</strong> when auto-reconnecting to the same node, the client now requests config and channels only (firmware ≥ 2.6.8) and keeps the session's node list – it stays visible during the reconnect. If a different node answers, everything is reloaded. On weak Bluetooth paths the long download was the moment the link usually broke again.</li>
+          <li><strong>Reconnect with backoff:</strong> after five quick attempts the pause grows to 6, 12, 24, 48 and 60 s; after clustered Bluetooth drops the first attempt starts later. The window for automatic recovery grows from 45 seconds to about 7 minutes.</li>
+          <li><strong>Signal strength when connecting:</strong> during the Bluetooth connect the client listens to the node's advertising packets and logs the signal strength ("Node signal during connect: −87 dBm"); the repeated-drops hint quotes it as well. Costs no waiting time.</li>
+          <li><strong>Debug option "Read the node's log over Bluetooth":</strong> shows the node's debug log as <code>[NODE]</code> lines in the client log (the node needs "Debug log over API" enabled in its Security config). Off by default because every line travels over the radio link.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="cl-section changed">
+      <h3>🔧 Diagnostics</h3>
+      <div class="cl-group">
+        <ul class="cl-list">
+          <li>The log header now states client version, .NET runtime and Windows version – bug reports can finally be matched to a build.</li>
+          <li>Unhandled exceptions are written to the log with a full stack trace; a single error on the UI thread no longer ends the app immediately.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── v1.7.3 (EN) ── -->
+  <div class="version-entry">
+    <div class="version-header">
+      <span class="version-tag">v1.7.3</span>
       <span class="version-date">2026-11-10</span>
       Firmware update assistant, config backup &amp; Bluetooth robustness
     </div>

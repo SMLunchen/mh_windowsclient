@@ -268,6 +268,8 @@
     <sys:String x:Key="StrDebugSerial">Serial data debug (hex dump)</sys:String>
     <sys:String x:Key="StrDebugDevice">Device log (serial debug output)</sys:String>
     <sys:String x:Key="StrDebugBluetooth">Bluetooth debug (BLE communication)</sys:String>
+    <sys:String x:Key="StrDebugBleNodeLog">Read the node's log over Bluetooth (loads the radio link)</sys:String>
+    <sys:String x:Key="StrDebugBleNodeLogTip">Shows the node's debug log as "[NODE]" lines in the client log. The node needs "Debug log over API" enabled in its Security config. Every log line travels over the Bluetooth link as well – on a weak signal, enable this for troubleshooting only.</sys:String>
     <sys:String x:Key="StrSaveSettings">Save settings</sys:String>
     <sys:String x:Key="StrSettingsUnsaved">● Unsaved changes</sys:String>
     <sys:String x:Key="StrNodeConfigGroup">Node Configuration</sys:String>
@@ -1007,17 +1009,21 @@ Created: {5}
     <sys:String x:Key="StrConnectedReadySimple">Connected – Ready</sys:String>
     <sys:String x:Key="StrConnectedInitSimple">Connected – Initializing...</sys:String>
     <sys:String x:Key="StrConnectionLostMsg">Connection lost – please reconnect manually</sys:String>
-    <sys:String x:Key="StrBleDropStormTitle">The node keeps dropping the Bluetooth link</sys:String>
-    <sys:String x:Key="StrBleDropStormNrf52Old" xml:space="preserve">The node itself has dropped the Bluetooth link {0} times in the last 10 minutes – not the client.
+    <sys:String x:Key="StrBleDropStormTitle">Bluetooth link keeps dropping</sys:String>
+    <sys:String x:Key="StrBleDropStormNrf52Old" xml:space="preserve">The Bluetooth link to the node has dropped {0} times in the last 10 minutes – reported by Windows, not closed by the client.
 
-Your device ({1}) runs firmware {2}. On nRF52 boards this firmware switches Bluetooth off completely as soon as a serial client opens the Meshtastic API over USB – e.g. the Python CLI, the web client, a phone on a USB cable or a second client instance. Bluetooth only comes back when that client disconnects, or after 15 minutes at the latest.
+The most common cause is a weak radio path: distance, floors and walls (node in the attic), a weak Bluetooth adapter in the PC or 2.4 GHz interference (Wi-Fi, USB 3 devices next to the adapter). Typical signs: the link drops in the middle of a data burst, and the node is unreachable for 10–50 seconds afterwards. Remedy: reduce the distance or use a Bluetooth adapter with an external antenna.
 
-Remedy: unplug the USB data link to the node or close the other program – or update the firmware to 2.8.0 or newer (Tools → Firmware update), where this is fixed.</sys:String>
-    <sys:String x:Key="StrBleDropStormGeneric" xml:space="preserve">The node itself has dropped the Bluetooth link {0} times in the last 10 minutes – not the client.
+Also: your device ({1}) runs firmware {2}. On nRF52 boards this firmware switches Bluetooth off completely while a serial client has the Meshtastic API open over USB (Python CLI, web client, phone on a cable, second client instance) – only relevant if a computer is actually attached to the node's USB port. Fixed in firmware 2.8.0 (update via Tools → Firmware update).</sys:String>
+    <sys:String x:Key="StrBleDropStormGeneric" xml:space="preserve">The Bluetooth link to the node has dropped {0} times in the last 10 minutes – reported by Windows, not closed by the client.
 
-Typical causes: a second client (USB/serial, phone, web client) connecting in turns; node reboots (power supply, watchdog); or nRF52 boards on firmware older than 2.8.0, which switch Bluetooth off while a serial client is connected.
+The most common cause is a weak radio path: distance, floors and walls, a weak Bluetooth adapter in the PC or 2.4 GHz interference (Wi-Fi, USB 3 devices next to the adapter). Other causes: a second client connecting in turns; node reboots (power supply, watchdog); nRF52 boards on firmware older than 2.8.0 with a serial client on their USB port.
 
-Details are in the debug log (lines “[BLE] Device disconnected”).</sys:String>
+Remedy: reduce the distance or use a Bluetooth adapter with an external antenna. Details are in the debug log (lines “[BLE] Device disconnected”).</sys:String>
+    <sys:String x:Key="StrBleDropStormRssi">Node signal strength when the link was last set up: {0} dBm ({1}).</sys:String>
+    <sys:String x:Key="StrBleRssiGood">good</sys:String>
+    <sys:String x:Key="StrBleRssiFair">fair</sys:String>
+    <sys:String x:Key="StrBleRssiWeak">weak – that explains the drops</sys:String>
     <sys:String x:Key="StrPacketCount">Packets: {0}</sys:String>
     <sys:String x:Key="StrChannelReceived">Channel {0} received: {1}</sys:String>
     <sys:String x:Key="StrAlertSent">SOS sent!</sys:String>
