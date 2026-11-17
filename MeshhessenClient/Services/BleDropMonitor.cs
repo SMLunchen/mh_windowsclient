@@ -1,18 +1,19 @@
 namespace MeshhessenClient.Services;
 
 /// <summary>
-/// Counts Bluetooth links the <em>device</em> dropped (not the user, not the client) and says when that
-/// has become a storm worth telling the user about. Bug report 2026-11-14: 140 drops in one evening from a
-/// ThinkNode M6 on firmware 2.7.26 — the node itself shut Bluetooth down every time a USB-serial client
-/// opened the API (PowerFSM <c>serialEnter()</c> → <c>setBluetoothEnable(false)</c> on nRF52, fixed in
-/// firmware 2.8.0 by PR #10349). The client cannot fix that, but it can name it instead of silently
-/// reconnecting all evening. Pure logic, no timers — the main window drives it.
+/// Counts Bluetooth links that went away without the client asking (Windows reported the drop; not the user,
+/// not the client) and says when that has become a storm worth telling the user about. Bug report 2026-11-14:
+/// 140 drops in one evening from a ThinkNode M6 on firmware 2.7.26, fixed in an attic and reachable over
+/// Bluetooth only — the link died ~2 s after the last data, mostly in the middle of the node-list download,
+/// and the node was unreachable for 10–50 s afterwards: a weak radio path. The client cannot fix that, but
+/// it can name the usual causes instead of silently reconnecting all evening. Pure logic, no timers — the
+/// main window drives it.
 /// </summary>
 public sealed class BleDropMonitor
 {
     /// <summary>Drops are counted within this sliding window.</summary>
     public static readonly TimeSpan Window = TimeSpan.FromMinutes(10);
-    /// <summary>This many device-initiated drops inside <see cref="Window"/> is a storm.</summary>
+    /// <summary>This many unexpected drops inside <see cref="Window"/> is a storm.</summary>
     public const int Threshold = 3;
 
     private readonly List<DateTime> _drops = new();
@@ -24,7 +25,7 @@ public sealed class BleDropMonitor
         return _drops.Count;
     }
 
-    /// <summary>Records a device-initiated drop. True exactly once per session when the storm threshold is
+    /// <summary>Records an unexpected drop. True exactly once per session when the storm threshold is
     /// crossed; the caller shows the hint then.</summary>
     public bool RecordDrop(DateTime nowUtc)
     {

@@ -2544,7 +2544,10 @@
                                     <CheckBox x:Name="DebugDeviceCheckBox"
                                              Content="{DynamicResource StrDebugDevice}" Margin="0,0,0,8"/>
                                     <CheckBox x:Name="DebugBluetoothCheckBox"
-                                             Content="{DynamicResource StrDebugBluetooth}"/>
+                                             Content="{DynamicResource StrDebugBluetooth}" Margin="0,0,0,8"/>
+                                    <CheckBox x:Name="DebugBleNodeLogCheckBox"
+                                             Content="{DynamicResource StrDebugBleNodeLog}"
+                                             ToolTip="{DynamicResource StrDebugBleNodeLogTip}"/>
                                 </StackPanel>
                             </GroupBox>
 
