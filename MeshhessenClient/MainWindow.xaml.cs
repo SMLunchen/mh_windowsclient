@@ -1199,6 +1199,10 @@ public partial class MainWindow : Window
                 // Wire up connection state changed
                 _connectionService.ConnectionStateChanged += OnConnectionStateChanged;
 
+                // MeshStick: a stopped local meshtasticd service is started before the TCP connect
+                if (_currentConnectionType == Services.ConnectionType.Tcp)
+                    await EnsureLocalDaemonAsync(connectionParams);
+
                 // Connect
                 await _connectionService.ConnectAsync(connectionParams);
 
@@ -1775,12 +1779,26 @@ public partial class MainWindow : Window
     /// </summary>
     private async Task ApplyMeshHessenProfileAsync()
     {
-        if (_channels.All(c => c.Psk != MeshHessenPsk) && FindFirstFreeChannelIndex() < 0)
+        var r = await ApplyMeshHessenProfileCoreAsync();
+        if (r.Error != null)
         {
-            MessageBox.Show("Kein freier Kanal-Slot verfügbar (max. 8 Kanäle).", "Fehler",
-                MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show(r.Error, "Mesh-Hessen", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
+        UpdateStatusBar(r.Ok ? "Mesh-Hessen: alle Werte gesetzt ✓" : "Mesh-Hessen: einige Werte weichen ab");
+        MessageBox.Show(
+            r.Report + (r.Ok ? "" : "\n\n(Auch nach automatischem Nachziehen blieben Abweichungen — bitte prüfen.)"),
+            "Mesh-Hessen – Ergebnis", MessageBoxButton.OK,
+            r.Ok ? MessageBoxImage.Information : MessageBoxImage.Warning);
+    }
+
+    /// <summary>The profile write without any dialogs — shared by the Channels tab button and the MeshStick wizard.</summary>
+    private async Task<MeshHessenApplyResult> ApplyMeshHessenProfileCoreAsync()
+    {
+        if (_connectionService?.IsConnected != true || _protocolService == null)
+            return new MeshHessenApplyResult(false, "", "Kein Gerät verbunden.");
+        if (_channels.All(c => c.Psk != MeshHessenPsk) && FindFirstFreeChannelIndex() < 0)
+            return new MeshHessenApplyResult(false, "", "Kein freier Kanal-Slot verfügbar (max. 8 Kanäle).");
 
         // Up to two passes: write → reboot → reconnect → read back → and if something is still
         // missing (e.g. the firmware coerced a value), pull exactly that in on a second pass.
@@ -1810,12 +1828,10 @@ public partial class MainWindow : Window
             bool reconnected = await WaitForReconnectAndInitAsync();
             if (!reconnected)
             {
-                MessageBox.Show(
+                return new MeshHessenApplyResult(false, "",
                     "Profil wurde geschrieben. Das Gerät startet nach dem Region-Wechsel neu; die automatische " +
                     "Neuverbindung hat im Zeitfenster aber nicht geklappt. Bitte manuell neu verbinden und die Werte " +
-                    "prüfen (Region EU868, Preset ShortSlow, Hop 7, ok_to_mqtt = an, ignore_mqtt = aus, Kanal „Mesh Hessen\").",
-                    "Mesh-Hessen", MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
+                    "prüfen (Region EU868, Preset ShortSlow, Hop 7, ok_to_mqtt = an, ignore_mqtt = aus, Kanal „Mesh Hessen\").");
             }
 
             // Wait for the re-init to repopulate the LoRa config + channels, then read back + verify.
@@ -1830,11 +1846,7 @@ public partial class MainWindow : Window
                 (pass < maxPasses ? " — pulling in the missing settings" : " — giving up"));
         }
 
-        UpdateStatusBar(result.AllOk ? "Mesh-Hessen: alle Werte gesetzt ✓" : "Mesh-Hessen: einige Werte weichen ab");
-        MessageBox.Show(
-            result.Text + (result.AllOk ? "" : "\n\n(Auch nach automatischem Nachziehen blieben Abweichungen — bitte prüfen.)"),
-            "Mesh-Hessen – Ergebnis", MessageBoxButton.OK,
-            result.AllOk ? MessageBoxImage.Information : MessageBoxImage.Warning);
+        return new MeshHessenApplyResult(result.AllOk, result.Text);
     }
 
     /// <summary>One staged write of the Mesh-Hessen profile, wrapped in a single edit transaction so
@@ -2304,6 +2316,10 @@ public partial class MainWindow : Window
                 _mqttProxyService.StatusChanged += (s, msg) => Dispatcher.Invoke(() => UpdateStatusBar(msg));
 
                 _connectionService.ConnectionStateChanged += OnConnectionStateChanged;
+
+                // MeshStick: the daemon ends its process on a node reboot — bring the service back first
+                if (_lastConnectionType == Services.ConnectionType.Tcp)
+                    await EnsureLocalDaemonAsync(_lastConnectionParams);
 
                 await _connectionService.ConnectAsync(_lastConnectionParams!);
 

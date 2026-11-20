@@ -18,6 +18,10 @@ public record AppSettings
     public string LastComPort { get; init; } = string.Empty;
     public string LastTcpHost { get; init; } = "192.168.1.1";   // Last TCP/WiFi hostname or IP
     public int LastTcpPort { get; init; } = 4403;               // Last TCP/WiFi port
+    // MeshStick assistant (Tools): TCP API port of the local meshtasticd service and the GitHub repo
+    // whose releases carry the Windows MSI (the Meshhessen fork builds it until upstream ships one)
+    public int MeshStickApiPort { get; init; } = 4403;
+    public string MeshStickMirrorRepo { get; init; } = "SMLunchen/mh_firmware";
     public string MapSource { get; init; } = "osm";             // "osm", "osmtopo", "osmdark"
     public string OSMTileUrl { get; init; } = "https://tile.meshhessenclient.de/osm/{z}/{x}/{y}.png";
     public string OSMTopoTileUrl { get; init; } = "https://tile.meshhessenclient.de/opentopo/{z}/{x}/{y}.png";
@@ -206,6 +210,8 @@ public static class SettingsService
                 LastComPort = lastComPort,
                 LastTcpHost = values.TryGetValue("LastTcpHost", out var tcpHost) ? tcpHost : defaults.LastTcpHost,
                 LastTcpPort = values.TryGetValue("LastTcpPort", out var tcpPort) && int.TryParse(tcpPort, out var tcpPortInt) ? tcpPortInt : defaults.LastTcpPort,
+                MeshStickApiPort = values.TryGetValue("MeshStickApiPort", out var msPort) && int.TryParse(msPort, out var msPortInt) && msPortInt > 0 && msPortInt <= 65535 ? msPortInt : defaults.MeshStickApiPort,
+                MeshStickMirrorRepo = values.TryGetValue("MeshStickMirrorRepo", out var msRepo) && !string.IsNullOrWhiteSpace(msRepo) ? msRepo.Trim() : defaults.MeshStickMirrorRepo,
                 MapSource = values.TryGetValue("MapSource", out var mapSrc) ? mapSrc : defaults.MapSource,
                 OSMTileUrl = osmUrl,
                 OSMTopoTileUrl = osmTopoUrl,
@@ -288,6 +294,8 @@ public static class SettingsService
                 $"LastComPort={settings.LastComPort}",
                 $"LastTcpHost={settings.LastTcpHost}",
                 $"LastTcpPort={settings.LastTcpPort}",
+                $"MeshStickApiPort={settings.MeshStickApiPort}",
+                $"MeshStickMirrorRepo={settings.MeshStickMirrorRepo}",
                 $"MapSource={settings.MapSource}",
                 $"OSMTileUrl={settings.OSMTileUrl}",
                 $"OSMTopoTileUrl={settings.OSMTopoTileUrl}",

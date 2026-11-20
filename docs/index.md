@@ -17,6 +17,7 @@ Willkommen im Handbuch des **Meshhessen Clients** — dem kostenlosen Windows-Cl
 | | [📡 Traceroute](de/traceroute.md) | |
 | | [🔧 Node-Verwaltung & Fernkonfiguration](de/node-verwaltung.md) | |
 | | [⬆️ Firmware-Update](de/firmware-update.md) | |
+| | [🔌 MeshStick-Assistent](de/meshstick.md) | |
 | | [🖧 Virtual Node](de/virtual-node.md) · [🔧 T-Deck](de/t-deck.md) · [🔒 Kiosk](de/kiosk.md) | |
 
 **🎯 How-tos — Schritt für Schritt:**
@@ -34,6 +35,7 @@ Willkommen im Handbuch des **Meshhessen Clients** — dem kostenlosen Windows-Cl
 | | [📡 Traceroute](https://meshhessenclient.de/handbuch/en/traceroute/) | |
 | | [🔧 Node management & remote admin](https://meshhessenclient.de/handbuch/en/node-management/) | |
 | | [⬆️ Firmware update](https://meshhessenclient.de/handbuch/en/firmware-update/) | |
+| | [🔌 MeshStick assistant](https://meshhessenclient.de/handbuch/en/meshstick/) | |
 | | [🖧 Virtual Node](https://meshhessenclient.de/handbuch/en/virtual-node/) · [🔧 T-Deck](https://meshhessenclient.de/handbuch/en/t-deck/) · [🔒 Kiosk](https://meshhessenclient.de/handbuch/en/kiosk/) | |
 
 ---

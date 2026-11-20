@@ -7,6 +7,18 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
 
+## [Unreleased]
+
+### 🔌 MeshStick-Assistent (Tools-Tab)
+- **Elecrow MeshStick am PC einrichten:** Der USB-Stick (CH341A-USB-SPI-Bridge + SX1262, ohne eigenen Prozessor) läuft als Node auf dem Rechner – mit `meshtasticd`, der nativen Meshtastic-Firmware, als Windows-Dienst. Neuer geführter Assistent: Voraussetzungen (Internet, Adminrechte) → CH341PAR-Treiber (WCH-Downloadseite, Datei aus dem Download-Ordner installieren, EXE oder ZIP per `pnputil`; Gerätestatus alle 3 s neu geprüft) → meshtasticd-MSI beschaffen (Meshhessen-Build aus `SMLunchen/mh_firmware`, offizielle Releases sobald sie ein Windows-MSI führen, oder lokale Datei) → `config.yaml` mit der MeshStick-Pinbelegung und TCP-Port nach `%ProgramData%\Meshtastic` schreiben, MSI installieren und Dienst starten (eine UAC-Abfrage) → Verbindung per TCP `127.0.0.1:4403` → LoRa-Einstellungen mit **Meshhessen-Button** (EU868, ShortSlow, Hop 7, Kanal „Mesh Hessen“) oder manuell → fertig
+- **CH341PAR-Treiber wird mitgeliefert:** Das WCH-Paket (Version 2.6.2025.4, WHQL-signiert, unveränderter Ordner „WIN 1X“ aus CH341PAR.EXE) steckt als Ressource in der EXE; der Assistent installiert es per `pnputil /add-driver` mit einer UAC-Abfrage und ohne WCH-Dialog. Hintergrund: Die WCH-Downloadseiten sind reine Script-Seiten ohne stabile Datei-URL, der Microsoft Update Catalog führt nur eine Version von 2009 ohne die DLL, und die WCH-EXE (WinRAR-SFX mit GUI-Setup) kennt keinen Silent-Modus. Neuere WCH-Pakete lassen sich weiterhin aus dem Download-Ordner installieren
+- **Dienst ohne Adminrechte startbar:** Ein Meshtastic-Neustart (jedes Speichern) beendet den Prozess des Nodes. Der Assistent gibt angemeldeten Benutzern Start/Stopp-Rechte am Dienst (`sc sdset`); der Client startet den Dienst beim Verbinden mit `127.0.0.1` selbst, wenn der Port nicht antwortet – auch im automatischen Reconnect
+- **Konfiguration vor dem MSI, „Daemon testen“:** Das MSI startet den Dienst sofort nach dem Kopieren und behält eine vorhandene config.yaml. Mit seiner eigenen Standard-Config (`Module: auto`) findet meshtasticd den Stick, sucht dann den Linux-Ordner available.d und beendet sich – Windows Installer nimmt daraufhin alles zurück (Error 1920 → 1603, so beim ersten Gerätetest). Der Assistent schreibt die Konfiguration jetzt vor der Installation, hängt die Fehlerzeilen des MSI-Logs ins Protokoll und hat einen Knopf „Daemon testen“: meshtasticd 12 s im Vordergrund mit genau dieser Konfiguration, die EXE dafür ohne Adminrechte per `msiexec /a` aus dem MSI geholt – die Konsolenausgabe ist der einzige Ort, an dem der Daemon sagt, warum er nicht startet
+- Neue Einstellungen `MeshStickApiPort` (4403) und `MeshStickMirrorRepo`; Downloads und Einrichtungsprotokoll im Ordner `meshtasticd\` neben der EXE
+- Handbuch-Kapitel „MeshStick-Assistent“ (DE/EN); Meshhessen-Profil aus dem Kanäle-Tab in eine dialogfreie Kernfunktion ausgelagert, die der Assistent mitnutzt
+
+---
+
 ## [1.7.3.2] - 2026-11-17
 
 ### 🐛 Behoben

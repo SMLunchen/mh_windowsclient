@@ -83,43 +83,26 @@ public class FirmwareWizardUiTests
     [Fact]
     public void Wizard_window_xaml_parses_with_all_named_controls()
     {
-        Exception? failure = null;
-        var thread = new Thread(() =>
+        // All window tests share one UI thread (WpfTestApp): Application.Current is owned by the thread that
+        // created it, so a window built on a second STA thread would fail on the first resource lookup.
+        WpfTestApp.Run(() =>
         {
-            try
-            {
-                if (Application.Current == null)
-                    _ = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
-                Application.Current!.Resources.MergedDictionaries.Add(new ResourceDictionary
-                {
-                    Source = new Uri("pack://application:,,,/MeshhessenClient;component/Resources/Strings.de.xaml")
-                });
+            var w = new FirmwareUpdateWindow(new FakeHost());
+            foreach (var name in new[]
+                     {
+                         "Page1", "Page2", "Page3", "Page4", "Page5", "Page6",
+                         "MethodWifiRadio", "MethodBleOtaRadio", "MethodBleDfuRadio", "MethodUf2Radio",
+                         "ReleaseCombo", "LocalFileBox", "PreflightList", "StartBtn", "TransferProgress",
+                         "LogBox", "ReconnectBtn", "BackBtn", "NextBtn", "CancelBtn", "BtMultiBox",
+                     })
+                Assert.NotNull(w.FindName(name));
+            Assert.NotNull(w.FindName("PrefetchBtn"));
+            w.Close();
 
-                var w = new FirmwareUpdateWindow(new FakeHost());
-                foreach (var name in new[]
-                         {
-                             "Page1", "Page2", "Page3", "Page4", "Page5", "Page6",
-                             "MethodWifiRadio", "MethodBleOtaRadio", "MethodBleDfuRadio", "MethodUf2Radio",
-                             "ReleaseCombo", "LocalFileBox", "PreflightList", "StartBtn", "TransferProgress",
-                             "LogBox", "ReconnectBtn", "BackBtn", "NextBtn", "CancelBtn", "BtMultiBox",
-                         })
-                    Assert.NotNull(w.FindName(name));
-                Assert.NotNull(w.FindName("PrefetchBtn"));
-                w.Close();
-
-                // Code-only prefetch dialog: constructor builds the whole tree (Loaded is not raised here).
-                var p = new FirmwarePrefetchWindow(null, null);
-                Assert.NotNull(p.Content);
-                p.Close();
-            }
-            catch (Exception ex)
-            {
-                failure = ex;
-            }
+            // Code-only prefetch dialog: constructor builds the whole tree (Loaded is not raised here).
+            var p = new FirmwarePrefetchWindow(null, null);
+            Assert.NotNull(p.Content);
+            p.Close();
         });
-        thread.SetApartmentState(ApartmentState.STA);
-        thread.Start();
-        thread.Join();
-        Assert.True(failure == null, failure?.ToString());
     }
 }

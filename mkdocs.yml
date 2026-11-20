@@ -112,6 +112,7 @@ nav:
   - Traceroute: de/traceroute.md
   - Node-Verwaltung & Fernkonfiguration: de/node-verwaltung.md
   - Firmware-Update: de/firmware-update.md
+  - MeshStick-Assistent: de/meshstick.md
   - Virtual Node: de/virtual-node.md
   - T-Deck Karten-Assistent: de/t-deck.md
   - Kiosk-Modus: de/kiosk.md

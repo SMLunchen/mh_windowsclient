@@ -80,6 +80,7 @@ Kanal-Chat und Direktnachrichten mit Reaktionen, Antworten und optionaler Nachri
 | [📡 Traceroute](docs/de/traceroute.md) | [📡 Traceroute](docs/en/traceroute.md) |
 | [🔧 Node-Verwaltung & Fernkonfiguration](docs/de/node-verwaltung.md) | [🔧 Node management & remote admin](docs/en/node-management.md) |
 | [⬆️ Firmware-Update](docs/de/firmware-update.md) | [⬆️ Firmware update](docs/en/firmware-update.md) |
+| [🔌 MeshStick-Assistent](docs/de/meshstick.md) | [🔌 MeshStick assistant](docs/en/meshstick.md) |
 | [🖧 Virtual Node](docs/de/virtual-node.md) · [🔧 T-Deck](docs/de/t-deck.md) · [🔒 Kiosk](docs/de/kiosk.md) | [🖧 Virtual Node](docs/en/virtual-node.md) · [🔧 T-Deck](docs/en/t-deck.md) · [🔒 Kiosk](docs/en/kiosk.md) |
 | [🏗️ Technik & Protokoll](docs/de/technik.md) | [🏗️ Technology & protocol](docs/en/technical.md) |
 
@@ -146,7 +147,7 @@ The free, native **Windows client for Meshtastic devices**: send messages, analy
 
 ## 📚 Documentation
 
-[🚀 Getting started](docs/en/getting-started.md) · [🗺️ Map](docs/en/map.md) · [📨 Messaging](docs/en/messaging.md) · [📊 Telemetry](docs/en/telemetry.md) · [📡 Traceroute](docs/en/traceroute.md) · [🔧 Node management](docs/en/node-management.md) · [⬆️ Firmware update](docs/en/firmware-update.md) · [🖧 Virtual Node](docs/en/virtual-node.md) · [🔧 T-Deck](docs/en/t-deck.md) · [🔒 Kiosk](docs/en/kiosk.md) · [🏗️ Technology](docs/en/technical.md) · [Changelog](CHANGELOG.md)
+[🚀 Getting started](docs/en/getting-started.md) · [🗺️ Map](docs/en/map.md) · [📨 Messaging](docs/en/messaging.md) · [📊 Telemetry](docs/en/telemetry.md) · [📡 Traceroute](docs/en/traceroute.md) · [🔧 Node management](docs/en/node-management.md) · [⬆️ Firmware update](docs/en/firmware-update.md) · [🔌 MeshStick](docs/en/meshstick.md) · [🖧 Virtual Node](docs/en/virtual-node.md) · [🔧 T-Deck](docs/en/t-deck.md) · [🔒 Kiosk](docs/en/kiosk.md) · [🏗️ Technology](docs/en/technical.md) · [Changelog](CHANGELOG.md)
 
 📖 **Prefer a searchable manual?** The same chapters live at [meshhessenclient.de/handbuch](https://meshhessenclient.de/handbuch/).
 

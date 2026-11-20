@@ -2810,6 +2810,20 @@
 
                         <Separator Margin="0,20"/>
 
+                        <!-- MeshStick (Elecrow USB LoRa stick): driver, meshtasticd service, config, TCP connect -->
+                        <TextBlock Text="{DynamicResource StrMstToolsSection}"
+                                   FontSize="15" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                        <TextBlock Text="{DynamicResource StrMstToolsDesc}"
+                                   TextWrapping="Wrap" Foreground="#555" Margin="0,0,0,10"/>
+                        <StackPanel Orientation="Horizontal">
+                            <Button x:Name="MeshStickWizardBtn"
+                                    Content="{DynamicResource StrMstToolsBtn}"
+                                    Padding="16,8"
+                                    Click="MeshStickWizardBtn_Click"/>
+                        </StackPanel>
+
+                        <Separator Margin="0,20"/>
+
                         <!-- Device configuration backup / restore (JSON) -->
                         <TextBlock Text="{DynamicResource StrCfgToolsSection}"
                                    FontSize="15" FontWeight="SemiBold" Margin="0,0,0,6"/>
