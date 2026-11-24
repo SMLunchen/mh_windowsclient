@@ -190,10 +190,34 @@
 <div class="section active" id="de">
 <main>
 
-  <!-- ── v1.7.3.2 ── -->
+  <!-- ── v1.7.3.4 ── -->
   <div class="version-entry current">
     <div class="version-header">
-      <span class="version-tag tag-latest">v1.7.3.2</span>
+      <span class="version-tag tag-latest">v1.7.3.4</span>
+      <span class="version-date">2026-11-24</span>
+      MeshStick-Assistent: USB-LoRa-Stick als Node am PC
+    </div>
+    <p class="version-desc">Neuer geführter Assistent im Tools-Tab für den Elecrow MeshStick – einen USB-Stick mit SX1262-Funkmodul, aber ohne eigenen Prozessor. Der Node läuft dafür als Windows-Dienst „meshtasticd“ auf dem PC; der Assistent führt von Treiber und Installation über Konfiguration und Verbindung bis zu den LoRa-Einstellungen mit Meshhessen-Profil.</p>
+
+    <div class="cl-section added">
+      <h3>✨ Neu</h3>
+      <div class="cl-group">
+        <ul class="cl-list">
+          <li><strong>🔌 MeshStick-Assistent</strong> (Tools-Tab, „MeshStick einrichten …“): sechs Schritte – Voraussetzungen &amp; Treiber (Internet und Adminrechte werden vorab genannt, der Stick wird live im Gerätemanager erkannt), meshtasticd beschaffen (Meshhessen-Build, offizielle Releases sobald sie ein Windows-MSI führen, oder lokale Datei), Konfiguration &amp; Dienst (<code>config.yaml</code> mit der MeshStick-Pinbelegung und TCP-Port, Installation und Dienststart mit einer einzigen Sicherheitsabfrage), Verbinden per TCP <code>127.0.0.1:4403</code>, LoRa-Einstellungen mit <strong>Meshhessen-Button</strong> (EU868, ShortSlow, Hop 7, Kanal „Mesh Hessen“) oder manuell, Fertig.</li>
+          <li><strong>Treiber mitgeliefert:</strong> Das WCH-Paket CH341PAR (Version 2.6.2025.4, WHQL-signiert) steckt in der EXE und wird per <code>pnputil</code> ohne weitere Dialoge installiert – nur die Windows-Sicherheitsabfrage. Die WCH-Seite liefert keine stabile Download-Adresse, der Microsoft Update Catalog nur eine Version von 2009 ohne die nötige DLL. Neuere WCH-Pakete lassen sich weiterhin aus dem Download-Ordner installieren.</li>
+          <li><strong>Dienst ohne Adminrechte startbar:</strong> Ein Meshtastic-Neustart (nach jedem Speichern) beendet den Prozess des Nodes. Der Assistent gibt angemeldeten Benutzern Start/Stopp-Rechte am Dienst; der Client startet ihn beim Verbinden mit 127.0.0.1 selbst, wenn der Port nicht antwortet – auch im automatischen Reconnect.</li>
+          <li><strong>„Daemon testen“:</strong> startet meshtasticd 12 Sekunden im Vordergrund mit genau der Konfiguration, die geschrieben wird, und zeigt seine Ausgabe – vor der Installation (die EXE wird ohne Adminrechte aus dem MSI geholt) oder wenn der Dienst nicht hochkommt. Hintergrund: Das MSI startet den Dienst sofort und würde mit seiner Standard-Konfiguration scheitern; der Assistent schreibt die Konfiguration deshalb vor der Installation.</li>
+          <li><strong>Woher kommt meshtasticd für Windows:</strong> Die offiziellen Meshtastic-Releases hängen das Windows-MSI noch nicht an. Der Meshhessen-Fork der Firmware baut es täglich aus dem neuesten Upstream-Release mit den unveränderten Upstream-Build-Schritten und veröffentlicht es als Release <code>meshtasticd-v&lt;Version&gt;</code>. Updates: Assistent erneut starten, ein neueres MSI ersetzt die Installation an Ort und Stelle.</li>
+          <li><strong>Handbuch:</strong> neues Kapitel „MeshStick-Assistent“ (DE/EN) mit allen Schritten, Systemänderungen und Fehlerbildern.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── v1.7.3.2 ── -->
+  <div class="version-entry">
+    <div class="version-header">
+      <span class="version-tag">v1.7.3.2</span>
       <span class="version-date">2026-11-17</span>
       Bluetooth-Reconnect, Kanal-Zuordnung &amp; sauberes Schließen
     </div>
@@ -1483,10 +1507,34 @@
 <div class="section" id="en">
 <main>
 
-  <!-- ── v1.7.3.2 (EN) ── -->
+  <!-- ── v1.7.3.4 (EN) ── -->
   <div class="version-entry current">
     <div class="version-header">
-      <span class="version-tag tag-latest">v1.7.3.2</span>
+      <span class="version-tag tag-latest">v1.7.3.4</span>
+      <span class="version-date">2026-11-24</span>
+      MeshStick assistant: USB LoRa stick as a node on the PC
+    </div>
+    <p class="version-desc">New guided assistant on the Tools tab for the Elecrow MeshStick – a USB stick with an SX1262 radio but no processor of its own. The node runs as the Windows service "meshtasticd" on the PC; the assistant walks from driver and installation through configuration and connection to the LoRa settings with the Meshhessen profile.</p>
+
+    <div class="cl-section added">
+      <h3>✨ New</h3>
+      <div class="cl-group">
+        <ul class="cl-list">
+          <li><strong>🔌 MeshStick assistant</strong> (Tools tab, "Set up MeshStick …"): six steps – requirements &amp; driver (internet and admin rights are stated up front, the stick is detected live in the device tree), get meshtasticd (Meshhessen build, official releases once they carry a Windows MSI, or a local file), configuration &amp; service (<code>config.yaml</code> with the MeshStick pin map and TCP port, installation and service start with a single security prompt), connect over TCP <code>127.0.0.1:4403</code>, LoRa settings with the <strong>Meshhessen button</strong> (EU868, ShortSlow, hop 7, channel "Mesh Hessen") or manually, done.</li>
+          <li><strong>Driver included:</strong> the WCH CH341PAR package (version 2.6.2025.4, WHQL-signed) ships inside the EXE and is installed via <code>pnputil</code> without further dialogs – only the Windows security prompt. The WCH site offers no stable download address, the Microsoft Update Catalog only a 2009 version without the required DLL. Newer WCH packages can still be installed from the Downloads folder.</li>
+          <li><strong>Service startable without admin rights:</strong> a Meshtastic reboot (after every save) ends the node's process. The assistant grants logged-in users start/stop rights on the service; the client starts it itself when connecting to 127.0.0.1 and the port does not answer – in the automatic reconnect as well.</li>
+          <li><strong>"Test daemon":</strong> runs meshtasticd in the foreground for 12 seconds with exactly the configuration that will be written and shows its output – before the installation (the EXE is pulled from the MSI without admin rights) or when the service does not come up. Background: the MSI starts the service immediately and would fail with its default configuration; the assistant therefore writes the configuration before installing.</li>
+          <li><strong>Where meshtasticd for Windows comes from:</strong> the official Meshtastic releases do not attach the Windows MSI yet. The Meshhessen fork of the firmware builds it daily from the newest upstream release with upstream's unchanged build steps and publishes it as release <code>meshtasticd-v&lt;version&gt;</code>. Updates: run the assistant again, a newer MSI replaces the installation in place.</li>
+          <li><strong>Handbook:</strong> new chapter "MeshStick assistant" (DE/EN) with all steps, system changes and troubleshooting.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── v1.7.3.2 (EN) ── -->
+  <div class="version-entry">
+    <div class="version-header">
+      <span class="version-tag">v1.7.3.2</span>
       <span class="version-date">2026-11-17</span>
       Bluetooth reconnect, channel attribution &amp; clean shutdown
     </div>

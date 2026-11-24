@@ -7,7 +7,7 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
 
-## [Unreleased]
+## [1.7.3.4] - 2026-11-24
 
 ### 🔌 MeshStick-Assistent (Tools-Tab)
 - **Elecrow MeshStick am PC einrichten:** Der USB-Stick (CH341A-USB-SPI-Bridge + SX1262, ohne eigenen Prozessor) läuft als Node auf dem Rechner – mit `meshtasticd`, der nativen Meshtastic-Firmware, als Windows-Dienst. Neuer geführter Assistent: Voraussetzungen (Internet, Adminrechte) → CH341PAR-Treiber (WCH-Downloadseite, Datei aus dem Download-Ordner installieren, EXE oder ZIP per `pnputil`; Gerätestatus alle 3 s neu geprüft) → meshtasticd-MSI beschaffen (Meshhessen-Build aus `SMLunchen/mh_firmware`, offizielle Releases sobald sie ein Windows-MSI führen, oder lokale Datei) → `config.yaml` mit der MeshStick-Pinbelegung und TCP-Port nach `%ProgramData%\Meshtastic` schreiben, MSI installieren und Dienst starten (eine UAC-Abfrage) → Verbindung per TCP `127.0.0.1:4403` → LoRa-Einstellungen mit **Meshhessen-Button** (EU868, ShortSlow, Hop 7, Kanal „Mesh Hessen“) oder manuell → fertig
