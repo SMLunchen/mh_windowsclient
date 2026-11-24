@@ -17,7 +17,7 @@
         <link rel="prev" href="../traceroute/">
       
       
-        <link rel="next" href="../virtual-node/">
+        <link rel="next" href="../firmware-update/">
       
       
         
@@ -613,6 +613,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#konfiguration-sichern-wiederherstellen" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Konfiguration sichern &amp; wiederherstellen
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#gerate-display-spiegeln-firmware-28" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -627,6 +638,60 @@
   
 </nav>
       
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../firmware-update/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Firmware-Update
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../meshstick/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MeshStick-Assistent
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -870,6 +935,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#konfiguration-sichern-wiederherstellen" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Konfiguration sichern &amp; wiederherstellen
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#gerate-display-spiegeln-firmware-28" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -972,6 +1048,12 @@
 <p class="admonition-title">Namenslängen sind Byte-Grenzen</p>
 <p>Das Funkprotokoll begrenzt Namen in <strong>Bytes</strong>, nicht Zeichen — Umlaute und Sonderzeichen zählen doppelt. Kanalnamen: max. 11 Byte. Node-Langname: max. 24 Byte ab Firmware 2.8 (ältere Firmware: 39), Kurzname: 4 Byte. Der Client prüft das beim Speichern und warnt, bevor das Gerät einen zu langen Namen still verwerfen würde.</p>
 </div>
+<h2 id="konfiguration-sichern-wiederherstellen">Konfiguration sichern &amp; wiederherstellen<a class="headerlink" href="#konfiguration-sichern-wiederherstellen" title="Permanent link">&para;</a></h2>
+<p>Im <strong>Tools-Tab</strong> unter „💾 Konfiguration sichern &amp; wiederherstellen":</p>
+<ul>
+<li><strong>Backup erstellen</strong> schreibt die komplette Konfiguration des verbundenen Nodes als JSON-Datei (Vorschlag: <code>firmware\backups\node-&lt;ID&gt;-&lt;Datum&gt;.json</code>): Owner (Lang-/Kurzname), alle Config-Abschnitte (Gerät, Position, Energie, Netzwerk, Display, LoRa, Bluetooth, Sicherheit), alle Modul-Konfigurationen und alle 8 Kanäle <strong>inklusive Schlüssel</strong>. Die Datei enthält damit auch WLAN-Zugangsdaten und den privaten Schlüssel des Nodes – vertraulich behandeln. Der Firmware-Assistent legt dasselbe Backup optional vor jedem Update an.</li>
+<li><strong>Backup wiederherstellen</strong> liest eine solche Datei ein, zeigt vorher eine Zusammenfassung (Quell-Node, Firmware-Versionen, enthaltene Abschnitte) und schreibt nach Bestätigung alles in einer Transaktion zurück – das Gerät startet danach einmal neu. Stammt das Backup von einem <strong>anderen</strong> Node, wird der Sicherheits-Abschnitt (privater Schlüssel, Admin-Schlüssel) bewusst ausgelassen, damit nicht zwei Nodes mit derselben Identität entstehen; Owner, LoRa, Kanäle und Module werden trotzdem übernommen – praktisch für Ersatzgeräte.</li>
+</ul>
 <h2 id="gerate-display-spiegeln-firmware-28">Geräte-Display spiegeln (Firmware 2.8)<a class="headerlink" href="#gerate-display-spiegeln-firmware-28" title="Permanent link">&para;</a></h2>
 <p>Meldet das verbundene Gerät in seinen Metadaten ein Display, erscheint im <strong>Tools-Tab</strong> der Abschnitt „📺 Geräte-Display spiegeln": Ein Klick öffnet ein Fenster mit dem Live-Bild des Node-Displays — praktisch für Geräte, die verbaut oder schwer erreichbar montiert sind. Unterstützt werden Mono-OLEDs (inklusive Farb-Zonen, falls das Gerät eine Palette mitliefert) und Farb-Displays (TFT); das Bild wird pixelgenau skaliert. Die Spiegelung funktioniert nur über die lokale Verbindung (USB/BLE/WLAN, nicht übers Mesh) und endet mit dem Schließen des Fensters.</p>
 
@@ -1026,13 +1108,13 @@
         
         
           
-          <a href="../virtual-node/" class="md-footer__link md-footer__link--next" aria-label="Weiter: Virtual Node">
+          <a href="../firmware-update/" class="md-footer__link md-footer__link--next" aria-label="Weiter: Firmware-Update">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Weiter
               </span>
               <div class="md-ellipsis">
-                Virtual Node
+                Firmware-Update
               </div>
             </div>
             <div class="md-footer__button md-icon">

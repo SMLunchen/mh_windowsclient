@@ -1,0 +1,1212 @@
+
+
+<!doctype html>
+<html lang="de" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Handbuch des Meshhessen Clients – dem kostenlosen Windows-Client für Meshtastic-Geräte.">
+      
+      
+      
+        <link rel="canonical" href="https://meshhessenclient.de/handbuch/de/meshstick/">
+      
+      
+        <link rel="prev" href="../firmware-update/">
+      
+      
+        <link rel="next" href="../virtual-node/">
+      
+      
+        
+          <link rel="alternate" href="https://meshhessenclient.de/handbuch/" hreflang="de">
+        
+          <link rel="alternate" href="https://meshhessenclient.de/handbuch/en/" hreflang="en">
+        
+      
+      
+      <link rel="icon" href="https://meshhessenclient.de/favicon.ico">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>MeshStick-Assistent - Meshhessen Client – Handbuch</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  
+  
+  <style>
+    :root { --md-accent-fg-color: #20c997; }
+    [data-md-color-scheme="default"] { --md-typeset-a-color: #198754; }
+    [data-md-color-scheme="slate"]   { --md-typeset-a-color: #20c997; }
+    [data-md-color-primary="black"]  { --md-primary-fg-color: #161b22; }
+  </style>
+  <style>
+    .mh-flags { display: flex; align-items: center; gap: .45rem; padding: 0 .3rem; }
+    .mh-flag { display: inline-flex; line-height: 0; opacity: .5; transition: opacity .15s; }
+    .mh-flag svg { display: block; border-radius: 2px; box-shadow: 0 0 0 1px rgba(255,255,255,.35); }
+    .mh-flag:hover, .mh-flag:focus-visible { opacity: 1; }
+    .mh-flag--active { opacity: 1; }
+    .mh-flag--active svg { box-shadow: 0 0 0 1px rgba(255,255,255,.35), 0 2px 0 0 var(--md-accent-fg-color); }
+  </style>
+  
+  
+
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent="light-blue">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#meshstick-assistent" class="md-skip">
+          Zum Inhalt
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Kopfzeile">
+    <a href="../.." title="Meshhessen Client – Handbuch" class="md-header__button md-logo" aria-label="Meshhessen Client – Handbuch" data-md-component="logo">
+      
+  <img src="https://meshhessenclient.de/favicon.ico" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Meshhessen Client – Handbuch
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              MeshStick-Assistent
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent="light-blue"  aria-label="Helles Design"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Helles Design" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="black" data-md-color-accent="light-blue"  aria-label="Dunkles Design"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Dunkles Design" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+      
+
+
+<div class="md-header__option">
+  <nav class="mh-flags" aria-label="Sprache wechseln">
+    
+      
+      
+      
+        <span class="mh-flag mh-flag--active" title="Deutsch">
+      
+      
+        <svg viewBox="0 0 5 3" width="21" height="13" role="img" aria-label="Deutsch"><rect width="5" height="1" y="0" fill="#000"/><rect width="5" height="1" y="1" fill="#D00"/><rect width="5" height="1" y="2" fill="#FFCE00"/></svg>
+      
+      </span>
+    
+      
+      
+      
+        <a class="mh-flag" href="https://meshhessenclient.de/handbuch/en/" hreflang="en" title="English">
+      
+      
+        <svg viewBox="0 0 60 30" width="26" height="13" role="img" aria-label="English"><clipPath id="mhuk"><path d="M0,0 v30 h60 v-30 z"/></clipPath><path d="M0,0 v30 h60 v-30 z" fill="#012169"/><path d="M0,0 L60,30 M60,0 L0,30" stroke="#fff" stroke-width="6"/><path d="M0,0 L60,30 M60,0 L0,30" clip-path="url(#mhuk)" stroke="#C8102E" stroke-width="4"/><path d="M30,0 v30 M0,15 h60" stroke="#fff" stroke-width="10"/><path d="M30,0 v30 M0,15 h60" stroke="#C8102E" stroke-width="6"/></svg>
+      
+      </a>
+    
+  </nav>
+</div>
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Suche" placeholder="Suche" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Suche">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Zurücksetzen" aria-label="Zurücksetzen" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Suche wird initialisiert
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/SMLunchen/mh_windowsclient" title="Zum Repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    SMLunchen/mh_windowsclient
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Meshhessen Client – Handbuch" class="md-nav__button md-logo" aria-label="Meshhessen Client – Handbuch" data-md-component="logo">
+      
+  <img src="https://meshhessenclient.de/favicon.ico" alt="logo">
+
+    </a>
+    Meshhessen Client – Handbuch
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/SMLunchen/mh_windowsclient" title="Zum Repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    SMLunchen/mh_windowsclient
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Handbuch
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../schnellstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Schnellstart & Verbindung
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../karte/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Karte & Offline-Nutzung
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../nachrichten/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Nachrichten & Kommunikation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../telemetrie/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Telemetrie & Funkanalyse
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../messwerte/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Messwerte verstehen
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../traceroute/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Traceroute
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../node-verwaltung/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Node-Verwaltung & Fernkonfiguration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../firmware-update/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Firmware-Update
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MeshStick-Assistent
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MeshStick-Assistent
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Inhaltsverzeichnis">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Inhaltsverzeichnis
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#die-sechs-schritte" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Die sechs Schritte
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#was-der-assistent-am-system-andert" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Was der Assistent am System ändert
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#im-alltag" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Im Alltag
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#woher-kommt-meshtasticd-fur-windows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Woher kommt meshtasticd für Windows?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#fehlerbilder" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fehlerbilder
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deinstallation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deinstallation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#weiterfuhrend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Weiterführend
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../virtual-node/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Virtual Node
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../t-deck/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    T-Deck Karten-Assistent
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../kiosk/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Kiosk-Modus
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../technik/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Technik & Protokoll
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architektur (Entwickler)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../glossar/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Glossar
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Inhaltsverzeichnis">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Inhaltsverzeichnis
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#die-sechs-schritte" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Die sechs Schritte
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#was-der-assistent-am-system-andert" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Was der Assistent am System ändert
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#im-alltag" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Im Alltag
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#woher-kommt-meshtasticd-fur-windows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Woher kommt meshtasticd für Windows?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#fehlerbilder" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fehlerbilder
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deinstallation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deinstallation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#weiterfuhrend" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Weiterführend
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/SMLunchen/mh_windowsclient/edit/master/docs/de/meshstick.md" title="Seite editieren" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="meshstick-assistent">🔌 MeshStick-Assistent<a class="headerlink" href="#meshstick-assistent" title="Permanent link">&para;</a></h1>
+<p><a href="../../">← Handbuch-Übersicht</a> · <a href="https://meshhessenclient.de/handbuch/en/meshstick/">🇬🇧 English version</a></p>
+<p>Der <strong>Elecrow MeshStick</strong> ist ein USB-Stick mit SX1262-Funkmodul und TCXO – aber ohne eigenen Prozessor. Der Meshtastic-Node läuft deshalb auf dem PC: als <strong>meshtasticd</strong>, der nativen Meshtastic-Firmware für Linux, macOS und Windows. Unter Windows ist meshtasticd ein Dienst, der beim Hochfahren automatisch startet; der Meshhessen Client verbindet sich mit ihm wie mit jedem WLAN-Node per TCP – nur eben lokal (<code>127.0.0.1:4403</code>).</p>
+<p>Der Assistent im <strong>Tools-Tab</strong> („🔌 MeshStick einrichten …") führt von „Stick eingesteckt" bis „Node funkt mit Meshhessen-Profil" durch alle Schritte.</p>
+<div class="admonition note">
+<p class="admonition-title">Voraussetzungen</p>
+<ul>
+<li><strong>Internet</strong> – der Treiber und meshtasticd werden heruntergeladen.</li>
+<li><strong>Administratorrechte</strong> – für die Treiberinstallation und die Einrichtung des Windows-Dienstes erscheint je eine Windows-Sicherheitsabfrage (UAC). Ohne Adminrechte am PC geht es nicht.</li>
+<li>Der Stick steckt <strong>direkt</strong> in einem USB-Anschluss des PCs (USB-Hubs können die CH341-Bridge aus dem Tritt bringen).</li>
+<li>64-Bit-Windows 10/11.</li>
+</ul>
+</div>
+<h2 id="die-sechs-schritte">Die sechs Schritte<a class="headerlink" href="#die-sechs-schritte" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Schritt</th>
+<th>Was passiert</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>1 · Voraussetzungen &amp; Treiber</strong></td>
+<td>Der Assistent prüft Internet und sucht den Stick im Gerätemanager (USB-Kennung <code>VID_1A86&amp;PID_5512</code>). Ohne Treiber meldet Windows Fehlercode 28. Der Stick braucht den Treiber <strong>CH341PAR</strong> des Chip-Herstellers WCH – <em>nicht</em> den seriellen CH340/CH341-Treiber. Der Client <strong>bringt das Paket mit</strong> (Version 2.6.2025.4, WHQL-signiert) und installiert es mit einem Klick ohne weitere Dialoge – nur die Windows-Sicherheitsabfrage. Wer eine neuere Version will, lädt <code>CH341PAR.EXE</code> oder <code>.ZIP</code> von der WCH-Seite; der Assistent erkennt die Datei im Download-Ordner (bei der EXE im WCH-Fenster „Install" klicken). Danach prüft er alle 3 Sekunden neu, bis der Stick „erkannt, Treiber installiert" meldet.</td>
+</tr>
+<tr>
+<td><strong>2 · meshtasticd beschaffen</strong></td>
+<td>Zeigt, ob meshtasticd schon installiert ist (Version, Dienststatus). Sonst Quelle wählen: <strong>Meshhessen-Build</strong> (GitHub <code>SMLunchen/mh_firmware</code>, Standard), <strong>offizielle Meshtastic-Releases</strong> (sobald dort ein Windows-MSI liegt) oder eine <strong>lokale MSI-Datei</strong>. Der Download landet im Ordner <code>meshtasticd\</code> neben der Client-EXE.</td>
+</tr>
+<tr>
+<td><strong>3 · Konfiguration &amp; Dienst</strong></td>
+<td>Zeigt die <code>config.yaml</code>, die geschrieben wird (Pins des MeshSticks, TCP-Port, Standard 4403). „Installieren &amp; einrichten" erledigt mit <strong>einer</strong> Sicherheitsabfrage: Konfiguration nach <code>%ProgramData%\Meshtastic\config.yaml</code> schreiben, MSI installieren, Dienstrechte setzen (siehe unten), Dienst starten – und wartet, bis der Port antwortet. Das Protokoll steht im Fenster und in <code>meshtasticd\setup.log</code>. <strong>„Daemon testen"</strong> startet meshtasticd 12 Sekunden im Vordergrund mit genau dieser Konfiguration und zeigt seine Ausgabe – vor der Installation (die EXE wird ohne Adminrechte aus dem MSI geholt) oder wenn der Dienst nicht hochkommt. Läuft er nach 12 Sekunden noch, passt die Konfiguration.</td>
+</tr>
+<tr>
+<td><strong>4 · Verbinden</strong></td>
+<td>Der Client verbindet sich per TCP mit <code>127.0.0.1:&lt;Port&gt;</code> und wartet, bis Konfiguration und Kanäle geladen sind. Diese Verbindung wird als zuletzt genutzte gespeichert und beim nächsten Start vorausgewählt.</td>
+</tr>
+<tr>
+<td><strong>5 · LoRa-Einstellungen</strong></td>
+<td>Region, Modem-Preset, Hop-Limit, Sendeleistung – oder mit einem Klick das <strong>Meshhessen-Profil</strong> (EU868, ShortSlow, Hop 7, MQTT-Freigabe, Kanal „Mesh Hessen"), identisch mit dem Meshhessen-Button im Kanäle-Tab. Nach dem Speichern startet der Node neu, der Client verbindet sich automatisch wieder und liest die Werte zur Kontrolle zurück.</td>
+</tr>
+<tr>
+<td><strong>6 · Fertig</strong></td>
+<td>Zusammenfassung und Ordner-Link. Ab jetzt: PC an → Dienst läuft → Client verbinden.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="was-der-assistent-am-system-andert">Was der Assistent am System ändert<a class="headerlink" href="#was-der-assistent-am-system-andert" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Treiber:</strong> WCH CH341PAR, installiert per <code>pnputil /add-driver CH341WDM.INF /install</code> (Geräteklasse „WCH", Dienst <code>CH341_A64</code>). Das INF legt <code>CH341DLLA64.DLL</code> nach <code>System32</code> und <code>CH341DLL.DLL</code> nach <code>SysWOW64</code> – meshtasticd lädt die 64-Bit-DLL zur Laufzeit, ohne sie startet der Node nicht. Das mitgelieferte Paket ist der unveränderte Ordner <code>WIN 1X</code> aus WCHs <code>CH341PAR.EXE</code> (siehe <code>Resources/drivers/README.md</code> im Quellcode).</li>
+<li><strong>meshtasticd:</strong> installiert nach <code>%ProgramFiles%\Meshtastic\meshtasticd.exe</code> (MSI aus der Meshtastic-Build-Pipeline, <code>packaging/windows/meshtasticd.wxs</code>), registriert als Dienst <strong>meshtasticd</strong> („Meshtastic Daemon"), Start automatisch, Konto LocalSystem.</li>
+<li><strong>Konfiguration:</strong> <code>%ProgramData%\Meshtastic\config.yaml</code> – die Pinbelegung aus der Firmware-Vorlage <code>lora-usb-meshstick-1262.yaml</code> (SX1262 über <code>spidev: ch341</code>, DIO2 als HF-Schalter, TCXO) plus <code>General.APIPort</code>. Die Node-Datenbank liegt in <code>%ProgramData%\Meshtastic\data</code>.</li>
+<li><strong>Dienstrechte:</strong> Der Assistent erlaubt angemeldeten Benutzern, den Dienst zu starten und zu stoppen (<code>sc sdset</code>). Grund: Ein Meshtastic-„Neustart" (nach jedem Speichern von Einstellungen) beendet den Prozess des Nodes. Der Client startet den Dienst dann beim nächsten Verbinden selbst – ohne diese Rechte bräuchte er jedes Mal Adminrechte. Zusätzlich sind automatische Neustarts nach Abstürzen gesetzt.</li>
+</ul>
+<h2 id="im-alltag">Im Alltag<a class="headerlink" href="#im-alltag" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Der Dienst läuft unabhängig vom Client – der Node ist auch ohne geöffneten Client im Mesh.</li>
+<li>Verbinden: Verbindungstyp <strong>TCP/WiFi</strong>, Host <code>127.0.0.1</code>, Port <code>4403</code> (nach dem Assistenten vorausgewählt). Antwortet der Port nicht und der Dienst ist gestoppt, startet der Client ihn und wartet bis zu 25 Sekunden.</li>
+<li>Alle weiteren Einstellungen (Name, Position, Module, Kanäle) wie bei jedem anderen Node über <strong>Node-Konfiguration</strong>.</li>
+<li>Der Port lässt sich in der INI ändern (<code>MeshStickApiPort</code>), die Download-Quelle ebenfalls (<code>MeshStickMirrorRepo</code>, Standard <code>SMLunchen/mh_firmware</code>).</li>
+</ul>
+<h2 id="woher-kommt-meshtasticd-fur-windows">Woher kommt meshtasticd für Windows?<a class="headerlink" href="#woher-kommt-meshtasticd-fur-windows" title="Permanent link">&para;</a></h2>
+<p>Die Meshtastic-Firmware enthält seit 2026 einen nativen Windows-Build samt MSI und Windows-Dienst – die Build-Pipeline läuft bei jedem Release, aber die <strong>offiziellen Releases hängen das MSI noch nicht an</strong>. Der Meshhessen-Build stammt aus genau dieser Pipeline im Fork <code>SMLunchen/mh_firmware</code>: Ein täglicher Workflow prüft das neueste Upstream-Release, baut daraus mit den unveränderten Upstream-Build-Schritten das MSI und veröffentlicht es als Release <code>meshtasticd-v&lt;Version&gt;</code> mit dem Asset <code>meshtasticd-&lt;Version&gt;-x64.msi</code> und SHA-256-Datei. Der Assistent lädt es von dort. Sobald die offiziellen Releases das MSI führen, erscheint es unter „Offizielle Meshtastic-Releases".</p>
+<p><strong>Updates:</strong> Den Assistenten erneut starten – Schritt 2 zeigt die installierte Version und die verfügbaren Builds; ein neueres MSI ersetzt die Installation an Ort und Stelle (Konfiguration und Node-Datenbank bleiben erhalten). Die Konfiguration selbst wird dabei neu geschrieben, der Dienst neu gestartet.</p>
+<h2 id="fehlerbilder">Fehlerbilder<a class="headerlink" href="#fehlerbilder" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Symptom</th>
+<th>Ursache / Abhilfe</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Stick „nicht gefunden"</td>
+<td>Nicht eingesteckt, defektes Kabel/Hub, oder ein anderes USB-Gerät mit CH341 – im Gerätemanager nach <code>VID_1A86&amp;PID_5512</code> suchen. Ohne Hub direkt am PC probieren.</td>
+</tr>
+<tr>
+<td>„gefunden, aber ohne Treiber (Fehlercode 28)"</td>
+<td>CH341PAR noch nicht installiert, oder nur der serielle Treiber CH341SER. „Treiber installieren" im Assistenten klicken (mitgeliefertes Paket).</td>
+</tr>
+<tr>
+<td>„Treiber vorhanden, aber CH341DLLA64.DLL fehlt"</td>
+<td>Treiber auf anderem Weg installiert, DLL fehlt in <code>System32</code>. „Treiber installieren" im Assistenten wiederholen – das legt die DLL nach.</td>
+</tr>
+<tr>
+<td>Microsoft Update Catalog bietet einen CH341A-Treiber an</td>
+<td>Das ist eine Version von 2009 ohne die DLL – nicht verwenden, der Assistent bringt die aktuelle mit.</td>
+</tr>
+<tr>
+<td>„Installation fehlgeschlagen (MSI-Fehler)"</td>
+<td>Das MSI startet den Dienst sofort nach dem Kopieren; kommt der Node nicht hoch (MSI-Log: <em>Error 1920, Service 'Meshtastic Daemon' failed to start</em>, Ergebnis 1603), nimmt Windows Installer alles zurück. Der Assistent schreibt die Konfiguration deshalb <strong>vor</strong> dem MSI. Bleibt es dabei: „Daemon testen" zeigt die Ausgabe von meshtasticd – typisch sind ein abgezogener Stick, fehlende DLL oder ein belegter Port.</td>
+</tr>
+<tr>
+<td>„Einrichtung fehlgeschlagen (21)"</td>
+<td>Nach der Installation fehlt <code>meshtasticd.exe</code> unter <code>%ProgramFiles%\Meshtastic</code> – MSI defekt oder falsche Architektur (nur x64).</td>
+</tr>
+<tr>
+<td>Port antwortet nicht</td>
+<td>Dienst gestartet, aber der Node kommt nicht hoch: Stick abgezogen? Treiber/DLL fehlt? Anderer Prozess auf dem Port? Die Ausgabe des Dienstes steht in der Windows-Ereignisanzeige (Anwendung). Mit <code>sc query meshtasticd</code> den Status prüfen; der Assistent lässt sich jederzeit wiederholen.</td>
+</tr>
+<tr>
+<td>Nach dem Speichern von Einstellungen bricht die Verbindung ab</td>
+<td>Normal: Der Node startet neu, der Prozess beendet sich kurz. Der Client verbindet sich automatisch wieder (bis zu 7 Minuten Versuche) und startet den Dienst bei Bedarf.</td>
+</tr>
+<tr>
+<td>Sicherheitsabfrage abgelehnt</td>
+<td>Der Schritt wurde abgebrochen, nichts ist passiert – einfach erneut klicken.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="deinstallation">Deinstallation<a class="headerlink" href="#deinstallation" title="Permanent link">&para;</a></h2>
+<p>meshtasticd über <strong>Apps &amp; Features</strong> entfernen (Eintrag „meshtasticd"). Konfiguration und Node-Datenbank in <code>%ProgramData%\Meshtastic</code> bleiben absichtlich erhalten; den CH341PAR-Treiber entfernt der Gerätemanager.</p>
+<h2 id="weiterfuhrend">Weiterführend<a class="headerlink" href="#weiterfuhrend" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../schnellstart/">🚀 Schnellstart &amp; Verbindung</a> · <a href="../node-verwaltung/">🔧 Node-Verwaltung &amp; Fernkonfiguration</a></li>
+<li><a href="https://meshtastic.org/docs/meshtasticd/">Meshtastic-Dokumentation: meshtasticd</a> · <a href="https://meshtastic.org/docs/hardware/devices/elecrow/meshstick/">Elecrow MeshStick</a></li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Zurück zum Seitenanfang
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Fußzeile" >
+        
+          
+          <a href="../firmware-update/" class="md-footer__link md-footer__link--prev" aria-label="Zurück: Firmware-Update">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Zurück
+              </span>
+              <div class="md-ellipsis">
+                Firmware-Update
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../virtual-node/" class="md-footer__link md-footer__link--next" aria-label="Weiter: Virtual Node">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Weiter
+              </span>
+              <div class="md-ellipsis">
+                Virtual Node
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Made with ❤ by the Meshhessen Community · <a href="https://meshhessenclient.de/">meshhessenclient.de</a>
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.sections", "navigation.top", "navigation.footer", "search.suggest", "search.highlight", "content.action.edit"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "In Zwischenablage kopiert", "clipboard.copy": "In Zwischenablage kopieren", "search.result.more.one": "1 weiteres Suchergebnis auf dieser Seite", "search.result.more.other": "# weitere Suchergebnisse auf dieser Seite", "search.result.none": "Keine Suchergebnisse", "search.result.one": "1 Suchergebnis", "search.result.other": "# Suchergebnisse", "search.result.placeholder": "Suchbegriff eingeben", "search.result.term.missing": "Es fehlt", "select.version": "Version ausw\u00e4hlen"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

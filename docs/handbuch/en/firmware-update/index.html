@@ -1,0 +1,1193 @@
+
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Manual for the Meshhessen Client – the free Windows client for Meshtastic devices.">
+      
+      
+      
+        <link rel="canonical" href="https://meshhessenclient.de/handbuch/en/firmware-update/">
+      
+      
+        <link rel="prev" href="../node-management/">
+      
+      
+        <link rel="next" href="../meshstick/">
+      
+      
+        
+          <link rel="alternate" href="https://meshhessenclient.de/handbuch/" hreflang="de">
+        
+          <link rel="alternate" href="https://meshhessenclient.de/handbuch/en/" hreflang="en">
+        
+      
+      
+      <link rel="icon" href="https://meshhessenclient.de/favicon.ico">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Firmware update - Meshhessen Client – Manual</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  
+  
+  <style>
+    :root { --md-accent-fg-color: #20c997; }
+    [data-md-color-scheme="default"] { --md-typeset-a-color: #198754; }
+    [data-md-color-scheme="slate"]   { --md-typeset-a-color: #20c997; }
+    [data-md-color-primary="black"]  { --md-primary-fg-color: #161b22; }
+  </style>
+  <style>
+    .mh-flags { display: flex; align-items: center; gap: .45rem; padding: 0 .3rem; }
+    .mh-flag { display: inline-flex; line-height: 0; opacity: .5; transition: opacity .15s; }
+    .mh-flag svg { display: block; border-radius: 2px; box-shadow: 0 0 0 1px rgba(255,255,255,.35); }
+    .mh-flag:hover, .mh-flag:focus-visible { opacity: 1; }
+    .mh-flag--active { opacity: 1; }
+    .mh-flag--active svg { box-shadow: 0 0 0 1px rgba(255,255,255,.35), 0 2px 0 0 var(--md-accent-fg-color); }
+  </style>
+  
+  
+
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent="light-blue">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#firmware-update" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Meshhessen Client – Manual" class="md-header__button md-logo" aria-label="Meshhessen Client – Manual" data-md-component="logo">
+      
+  <img src="https://meshhessenclient.de/favicon.ico" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Meshhessen Client – Manual
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Firmware update
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent="light-blue"  aria-label="Light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="black" data-md-color-accent="light-blue"  aria-label="Dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Dark mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+      
+
+
+<div class="md-header__option">
+  <nav class="mh-flags" aria-label="Select language">
+    
+      
+      
+      
+        <a class="mh-flag" href="https://meshhessenclient.de/handbuch/" hreflang="de" title="Deutsch">
+      
+      
+        <svg viewBox="0 0 5 3" width="21" height="13" role="img" aria-label="Deutsch"><rect width="5" height="1" y="0" fill="#000"/><rect width="5" height="1" y="1" fill="#D00"/><rect width="5" height="1" y="2" fill="#FFCE00"/></svg>
+      
+      </a>
+    
+      
+      
+      
+        <span class="mh-flag mh-flag--active" title="English">
+      
+      
+        <svg viewBox="0 0 60 30" width="26" height="13" role="img" aria-label="English"><clipPath id="mhuk"><path d="M0,0 v30 h60 v-30 z"/></clipPath><path d="M0,0 v30 h60 v-30 z" fill="#012169"/><path d="M0,0 L60,30 M60,0 L0,30" stroke="#fff" stroke-width="6"/><path d="M0,0 L60,30 M60,0 L0,30" clip-path="url(#mhuk)" stroke="#C8102E" stroke-width="4"/><path d="M30,0 v30 M0,15 h60" stroke="#fff" stroke-width="10"/><path d="M30,0 v30 M0,15 h60" stroke="#C8102E" stroke-width="6"/></svg>
+      
+      </span>
+    
+  </nav>
+</div>
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/SMLunchen/mh_windowsclient" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    SMLunchen/mh_windowsclient
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Meshhessen Client – Manual" class="md-nav__button md-logo" aria-label="Meshhessen Client – Manual" data-md-component="logo">
+      
+  <img src="https://meshhessenclient.de/favicon.ico" alt="logo">
+
+    </a>
+    Meshhessen Client – Manual
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/SMLunchen/mh_windowsclient" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    SMLunchen/mh_windowsclient
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Manual
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting started & connection
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../map/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Map & offline use
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../messaging/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Messaging & communication
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../telemetry/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Telemetry & radio analysis
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../metrics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Understanding the values
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../traceroute/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Traceroute
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../node-management/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Node management & remote admin
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Firmware update
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Firmware update
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#transfer-methods" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Transfer methods
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-six-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The six steps
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bluetooth-adapter-directional-antenna" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bluetooth adapter &amp; directional antenna
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#files-cache" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Files &amp; cache
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prefetch-firmware-flash-offline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prefetch firmware (flash offline)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#your-own-or-manually-downloaded-firmware" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Your own or manually downloaded firmware
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#recovery" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Recovery
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#typical-errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Typical errors
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../meshstick/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MeshStick assistant
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../virtual-node/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Virtual Node
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../t-deck/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    T-Deck map assistant
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../kiosk/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Kiosk mode
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../technical/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Technology & protocol
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../glossary/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Glossary
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#transfer-methods" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Transfer methods
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-six-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The six steps
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bluetooth-adapter-directional-antenna" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bluetooth adapter &amp; directional antenna
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#files-cache" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Files &amp; cache
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prefetch-firmware-flash-offline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prefetch firmware (flash offline)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#your-own-or-manually-downloaded-firmware" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Your own or manually downloaded firmware
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#recovery" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Recovery
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#typical-errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Typical errors
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/SMLunchen/mh_windowsclient/edit/master/docs/en/firmware-update.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="firmware-update">⬆️ Firmware Update<a class="headerlink" href="#firmware-update" title="Permanent link">&para;</a></h1>
+<p><a href="../">← Handbook home</a> · <a href="https://meshhessenclient.de/handbuch/de/firmware-update/">🇩🇪 Deutsche Version</a></p>
+<p>The client updates your node's firmware directly – no web flasher, no command line – with a guided assistant in the <strong>Tools tab</strong> ("⬆️ Start firmware update …"). It works like the Meshtastic Android app: firmware from the official releases, a device catalog for validation, four transfer methods. Nothing is sent to the device until the pre-flight page shows no red item.</p>
+<div class="admonition warning">
+<p class="admonition-title">At your own risk</p>
+<p>The assistant checks what can be checked on the PC – not radio drop-outs, power loss, an unsuitable bootloader or bugs in the firmware itself. If an update fails, the device may have to be restarted on site or recovered via USB/web flasher. The Meshhessen Client developers accept no liability for this.</p>
+</div>
+<h2 id="transfer-methods">Transfer methods<a class="headerlink" href="#transfer-methods" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Devices</th>
+<th>Connection to the client</th>
+<th>How it works</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>📶 Wi-Fi OTA</strong></td>
+<td>ESP32 (Heltec V3/V4, T-Beam, T-Deck, Station G2 …)</td>
+<td>any; Wi-Fi must be configured on the node</td>
+<td>The node reboots into its OTA loader and receives the firmware on TCP port 3232. The loader's IP is found via UDP beacon (PC on the same network). The loader verifies the SHA-256 hash and activates the image only on a match. Fastest method.</td>
+</tr>
+<tr>
+<td><strong>🔵 Bluetooth OTA</strong></td>
+<td>ESP32</td>
+<td>Bluetooth</td>
+<td>Same loader, but over Bluetooth LE: one packet → one acknowledgement. Takes a few minutes, needs no network – ideal with an external dongle and a directional antenna.</td>
+</tr>
+<tr>
+<td><strong>🔵 Bluetooth DFU</strong></td>
+<td>nRF52 (RAK4631, T-Echo, Heltec T114, Nano G2 …)</td>
+<td>Bluetooth</td>
+<td>Nordic DFU through the Adafruit bootloader. The client detects automatically whether the bootloader speaks <strong>Legacy DFU</strong> (the default on RAK &amp; co.) or <strong>Secure DFU</strong>, resumes/retries after a link drop and clears a stuck DFU session. If interrupted the device stays in the bootloader – nothing is broken, just start again.</td>
+</tr>
+<tr>
+<td><strong>💾 USB drive (UF2)</strong></td>
+<td>nRF52, RP2040</td>
+<td>any + USB cable</td>
+<td>The node reboots as a USB drive (bootloader); the client copies the <code>.uf2</code> automatically, the bootloader checks the chip family and reboots. The safest method.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Not supported:</strong> flashing ESP32 over serial. Enable Wi-Fi on the device instead (then Wi-Fi OTA) or use the official <a href="https://flasher.meshtastic.org">web flasher</a> – the assistant links to it.</p>
+<div class="admonition note">
+<p class="admonition-title">Requirement for ESP32 OTA</p>
+<p>The OTA loader protocol (<code>ota_request</code>) exists since firmware <strong>2.7.17</strong>. Update older ESP32 nodes once via the web flasher; after that everything works from the client.</p>
+</div>
+<h2 id="the-six-steps">The six steps<a class="headerlink" href="#the-six-steps" title="Permanent link">&para;</a></h2>
+<ol>
+<li><strong>Device &amp; catalog</strong> – shows hardware model, architecture, current firmware, build identifier (<code>pio_env</code>) and connection. The <strong>device catalog</strong> (api.meshtastic.org) is loaded and cached locally; offline the assistant works from the cache and says so when no validation is possible. Warnings: device no longer actively supported, bootloader upgrade required before the first BLE update (with a link to the guide). Below that the <strong>active Bluetooth adapter</strong> – see the box below.</li>
+<li><strong>Transfer method</strong> – only the methods possible for device and connection are selectable; all others show the reason.</li>
+<li><strong>Choose firmware</strong> – <strong>Stable</strong> (recommended), <strong>Alpha</strong> (pre-releases, with a warning) or a <strong>local file</strong>. Release notes, version comparison (update / same version / ⚠ downgrade) and a check whether the release contains a build for your device at all. Local files: <code>.bin</code> (ESP32), <code>-ota.zip</code> (nRF52 DFU), <code>.uf2</code> (USB).</li>
+<li><strong>Pre-flight &amp; start</strong> – the firmware is downloaded (or read) and checked: manifest MD5/size, ESP image header with chip id against the device architecture, app descriptor (no factory image), UF2 family id, DFU manifest, file name against build identifier, battery level, transport hints. Optionally the <strong>device configuration is backed up as JSON</strong> first (<code>firmware\backups\</code> – contains channel keys, treat accordingly). Red items block the start.</li>
+<li><strong>Transfer</strong> – progress, phase and log. The client releases the mesh connection on purpose (no auto-reconnect) and connects to the loader or bootloader.</li>
+<li><strong>Done</strong> – result; "Reconnect" restores the connection and shows the new firmware version the device reports. After a <strong>Bluetooth OTA (ESP32)</strong> the client removes the device's Windows pairing automatically (see below) and pairs again on reconnect – Windows may ask for the node's PIN.</li>
+</ol>
+<h2 id="bluetooth-adapter-directional-antenna">Bluetooth adapter &amp; directional antenna<a class="headerlink" href="#bluetooth-adapter-directional-antenna" title="Permanent link">&para;</a></h2>
+<p>Windows always uses exactly <strong>one</strong> adapter for Bluetooth LE; selecting one inside an application is technically impossible. The assistant shows the active adapter (name and address). If several Bluetooth adapters are built in or plugged in, a hint appears: <strong>disable the unwanted adapter in Device Manager</strong>, toggle Bluetooth off and on, and reopen the assistant. This way an external dongle with a directional antenna can be used deliberately for distant nodes.</p>
+<h2 id="files-cache">Files &amp; cache<a class="headerlink" href="#files-cache" title="Permanent link">&para;</a></h2>
+<p>Everything lives in the <code>firmware\</code> folder next to the EXE: <code>deviceHardware.json</code> and <code>releases.json</code> (catalog cache), one sub-folder per version with the downloaded images (prefetch – a release downloaded once can be flashed offline later) and <code>backups\</code> with the configuration backups. "Firmware folder" in the assistant opens it.</p>
+<h2 id="prefetch-firmware-flash-offline">Prefetch firmware (flash offline)<a class="headerlink" href="#prefetch-firmware-flash-offline" title="Permanent link">&para;</a></h2>
+<p>For field work without internet: <strong>"📥 Prefetch firmware …"</strong> (Tools tab, or the button next to the release picker in step 3) downloads a release for <strong>any device types</strong> – including nodes that are not connected right now. Pick the release (stable/alpha), tick the device types (filter box, the connected device is pre-selected), "Download". Per device everything the assistant may need is fetched: ESP32 → OTA image (<code>.bin</code>), nRF52 → DFU package (<code>-ota.zip</code>) <strong>and</strong> <code>.uf2</code>, RP2040 → <code>.uf2</code>. Files go to <code>firmware\&lt;version&gt;\firmware-&lt;target&gt;-&lt;version&gt;.&lt;ext&gt;</code>.</p>
+<p>Offline, step 3 lists the cached releases; entries whose file for the connected device is already present are marked <strong>💾 available offline</strong> and pre-selected. Anything else would fail to load.</p>
+<h2 id="your-own-or-manually-downloaded-firmware">Your own or manually downloaded firmware<a class="headerlink" href="#your-own-or-manually-downloaded-firmware" title="Permanent link">&para;</a></h2>
+<p>Choose <strong>"Local file"</strong> in step 3. What each method expects:</p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>File</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ESP32 Wi-Fi/Bluetooth OTA</td>
+<td><code>firmware-&lt;target&gt;-&lt;version&gt;.bin</code> – the <strong>application image</strong> (<code>app0</code>), not <code>*.factory.bin</code> and no <code>littlefs-*.bin</code></td>
+<td>release download, or PlatformIO <code>.pio/build/&lt;env&gt;/firmware.bin</code></td>
+</tr>
+<tr>
+<td>nRF52 Bluetooth DFU</td>
+<td><code>firmware-&lt;target&gt;-&lt;version&gt;-ota.zip</code> (Nordic DFU package with <code>manifest.json</code>, <code>.dat</code>, <code>.bin</code>)</td>
+<td>release download, or <code>adafruit-nrfutil dfu genpkg</code> / the Meshtastic build script</td>
+</tr>
+<tr>
+<td>UF2 drive</td>
+<td><code>firmware-&lt;target&gt;-&lt;version&gt;.uf2</code></td>
+<td>release download, or PlatformIO/<code>uf2conv.py</code></td>
+</tr>
+</tbody>
+</table>
+<p>The assistant checks the file regardless of its name: ESP image header with chip id against the device architecture and application descriptor (embedded version is shown), UF2 chip family, DFU manifest. A self-built <code>firmware.bin</code> therefore only produces the note "file name differs (your own build?)" – the chip and image checks are what counts. If you drop a manually downloaded release file named <code>firmware-&lt;target&gt;-&lt;version&gt;.&lt;ext&gt;</code> into <code>firmware\&lt;version&gt;\</code>, the assistant offers it automatically as 💾 available offline.</p>
+<h2 id="recovery">Recovery<a class="headerlink" href="#recovery" title="Permanent link">&para;</a></h2>
+<p>If an update is interrupted, an OTA/UF2 device simply keeps running the old firmware (the image is only activated after successful verification). An nRF52 stays in its bootloader after an interrupted DFU: open the assistant <strong>without</strong> a mesh connection – it then offers Bluetooth DFU (last Bluetooth address) or the UF2 drive with a local file. On nRF52/RP2040 a UF2 drive also appears manually by double-tapping the RESET button.</p>
+<h2 id="typical-errors">Typical errors<a class="headerlink" href="#typical-errors" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>"Meshtastic service not found" when connecting after an update</strong> (Bluetooth): Windows stores the device's service table (GATT) per Bluetooth address and does not refresh it on its own for paired devices. After a Bluetooth OTA (the loader ran under the same address with a different table), or when a new firmware changes its Bluetooth services, the stored table no longer matches. The client checks this actively before every Bluetooth connect: it asks Windows for the stored table, and if the Meshtastic service is missing from it, removes the pairing automatically and pairs again (Windows may ask for the PIN). If service discovery still fails, a second attempt with a fresh pairing follows; only then a Yes/No dialog offers manual unpairing. Manually: Windows Settings → Bluetooth → remove the device, then connect again in the client.</li>
+<li><strong>"Bluetooth OTA service unreachable"</strong> (ESP32): the OTA loader advertises on the same Bluetooth address as the mesh firmware but knows no encryption. The device stays in OTA mode until it is restarted (reset button); then try again.</li>
+<li><strong>"Bootloader not found"</strong> (nRF52): the device did not enter DFU mode – usually a stale Windows pairing blocks the trigger. Remove the device in Windows Bluetooth settings, pair again, retry.</li>
+<li><strong>"OTA loader unreachable"</strong> (Wi-Fi): PC and node on the same network? Firewall for UDP/TCP 3232? On first use Windows may ask to allow network access for the client.</li>
+<li><strong>"The device refuses OTA mode"</strong>: the firmware reports the reason (e.g. missing OTA partition or a loader without BLE support). The mesh connection stays up.</li>
+<li><strong>Hash rejected / hash verification failed</strong>: the image was <strong>not</strong> activated, the old firmware keeps running. Try again.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../node-management/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Node management &amp; remote admin">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Node management & remote admin
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../meshstick/" class="md-footer__link md-footer__link--next" aria-label="Next: MeshStick assistant">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                MeshStick assistant
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Made with ❤ by the Meshhessen Community · <a href="https://meshhessenclient.de/?lang=en">meshhessenclient.de</a>
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.sections", "navigation.top", "navigation.footer", "search.suggest", "search.highlight", "content.action.edit"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

@@ -17,7 +17,7 @@
         <link rel="prev" href="../traceroute/">
       
       
-        <link rel="next" href="../virtual-node/">
+        <link rel="next" href="../firmware-update/">
       
       
         
@@ -613,6 +613,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#back-up-restore-the-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Back up &amp; restore the configuration
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#mirror-the-device-display-firmware-28" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -627,6 +638,60 @@
   
 </nav>
       
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../firmware-update/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Firmware update
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../meshstick/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MeshStick assistant
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -843,6 +908,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#back-up-restore-the-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Back up &amp; restore the configuration
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#mirror-the-device-display-firmware-28" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -945,6 +1021,12 @@
 <p class="admonition-title">Name lengths are byte limits</p>
 <p>The radio protocol limits names in <strong>bytes</strong>, not characters — umlauts and special characters count twice. Channel names: max. 11 bytes. Node long name: max. 24 bytes from firmware 2.8 (older firmware: 39), short name: 4 bytes. The client validates this on save and warns before the device would silently reject an oversized name.</p>
 </div>
+<h2 id="back-up-restore-the-configuration">Back up &amp; restore the configuration<a class="headerlink" href="#back-up-restore-the-configuration" title="Permanent link">&para;</a></h2>
+<p>In the <strong>Tools tab</strong> under "💾 Back up &amp; restore configuration":</p>
+<ul>
+<li><strong>Create backup</strong> writes the complete configuration of the connected node to a JSON file (suggested: <code>firmware\backups\node-&lt;ID&gt;-&lt;date&gt;.json</code>): owner (long/short name), all config sections (device, position, power, network, display, LoRa, Bluetooth, security), all module configurations and all 8 channels <strong>including keys</strong>. The file therefore also contains Wi-Fi credentials and the node's private key – treat it as confidential. The firmware assistant optionally creates the same backup before every update.</li>
+<li><strong>Restore backup</strong> reads such a file, shows a summary first (source node, firmware versions, contained sections) and, after confirmation, writes everything back in one transaction – the device reboots once afterwards. If the backup comes from a <strong>different</strong> node, the security section (private key, admin keys) is deliberately left out so that two nodes never share one identity; owner, LoRa, channels and modules are still applied – handy for replacement devices.</li>
+</ul>
 <h2 id="mirror-the-device-display-firmware-28">Mirror the device display (firmware 2.8)<a class="headerlink" href="#mirror-the-device-display-firmware-28" title="Permanent link">&para;</a></h2>
 <p>If the connected device reports a display in its metadata, the <strong>Tools tab</strong> shows a "📺 Mirror Device Display" section: one click opens a window with a live image of the node's screen — handy for devices that are built in or mounted out of reach. Mono OLEDs (including color zones when the device supplies a palette) and color TFT displays (partial updates) are supported; the image is scaled pixel-perfectly. Mirroring only works over the local connection (USB/BLE/Wi-Fi, not across the mesh) and stops when the window is closed.</p>
 
@@ -999,13 +1081,13 @@
         
         
           
-          <a href="../virtual-node/" class="md-footer__link md-footer__link--next" aria-label="Next: Virtual Node">
+          <a href="../firmware-update/" class="md-footer__link md-footer__link--next" aria-label="Next: Firmware update">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Virtual Node
+                Firmware update
               </div>
             </div>
             <div class="md-footer__button md-icon">
