@@ -448,6 +448,7 @@ public partial class MainWindow
 
     private void SetConnectionStatus(ConnectionStatus status)
     {
+        _connectionStatus = status;   // read by the MeshStick wizard (IMeshStickHost.IsReady)
         switch (status)
         {
             case ConnectionStatus.Disconnected:

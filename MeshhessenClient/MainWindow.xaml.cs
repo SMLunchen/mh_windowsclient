@@ -1199,6 +1199,10 @@ public partial class MainWindow : Window
                 // Wire up connection state changed
                 _connectionService.ConnectionStateChanged += OnConnectionStateChanged;
 
+                // MeshStick: a stopped local meshtasticd service is started before the TCP connect
+                if (_currentConnectionType == Services.ConnectionType.Tcp)
+                    await EnsureLocalDaemonAsync(connectionParams);
+
                 // Connect
                 await _connectionService.ConnectAsync(connectionParams);
 
@@ -1266,10 +1270,33 @@ public partial class MainWindow : Window
                 if (ex is System.Net.Sockets.SocketException se && se.SocketErrorCode == System.Net.Sockets.SocketError.ConnectionRefused
                     || ex.InnerException is System.Net.Sockets.SocketException se2 && se2.SocketErrorCode == System.Net.Sockets.SocketError.ConnectionRefused)
                     userMsg = Loc("StrErrConnectionRefused");
-                MessageBox.Show(string.Format(Loc("StrConnectFailed"), userMsg), Loc("StrError"), MessageBoxButton.OK, MessageBoxImage.Error);
                 UpdateStatusBar(Loc("StrConnectionFailed"));
                 SetConnectionStatus(ConnectionStatus.Error);
                 ConnectButton.IsEnabled = true;
+
+                // BLE: "Meshtastic service not found" on a device Windows knows almost always means a stale
+                // bond/GATT cache (the device's GATT table changed, e.g. after a firmware update or the OTA
+                // loader ran under the same address). Removing the pairing clears both; connecting again re-pairs.
+                if (connectionParams is BluetoothConnectionParameters btParams &&
+                    ex.Message.Contains("service not found", StringComparison.OrdinalIgnoreCase))
+                {
+                    var choice = MessageBox.Show(string.Format(Loc("StrBleStaleBondHint"), userMsg), Loc("StrError"),
+                        MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                    if (choice == MessageBoxResult.Yes)
+                    {
+                        UpdateStatusBar(Loc("StrBleUnpairing"));
+                        var unpaired = await Services.Firmware.BleGattLink.TryUnpairAsync(btParams.DeviceAddress,
+                            Windows.Devices.Bluetooth.BluetoothAddressType.Unspecified);
+                        UpdateStatusBar(Loc(unpaired ? "StrBleUnpaired" : "StrBleUnpairFailed"));
+                        if (unpaired)
+                        {
+                            await Task.Delay(1500);
+                            Connect_Click(sender, e); // second attempt pairs afresh (Windows may ask for the PIN)
+                        }
+                    }
+                    return;
+                }
+                MessageBox.Show(string.Format(Loc("StrConnectFailed"), userMsg), Loc("StrError"), MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
     }
@@ -1752,12 +1779,26 @@ public partial class MainWindow : Window
     /// </summary>
     private async Task ApplyMeshHessenProfileAsync()
     {
-        if (_channels.All(c => c.Psk != MeshHessenPsk) && FindFirstFreeChannelIndex() < 0)
+        var r = await ApplyMeshHessenProfileCoreAsync();
+        if (r.Error != null)
         {
-            MessageBox.Show("Kein freier Kanal-Slot verfügbar (max. 8 Kanäle).", "Fehler",
-                MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show(r.Error, "Mesh-Hessen", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
+        UpdateStatusBar(r.Ok ? "Mesh-Hessen: alle Werte gesetzt ✓" : "Mesh-Hessen: einige Werte weichen ab");
+        MessageBox.Show(
+            r.Report + (r.Ok ? "" : "\n\n(Auch nach automatischem Nachziehen blieben Abweichungen — bitte prüfen.)"),
+            "Mesh-Hessen – Ergebnis", MessageBoxButton.OK,
+            r.Ok ? MessageBoxImage.Information : MessageBoxImage.Warning);
+    }
+
+    /// <summary>The profile write without any dialogs — shared by the Channels tab button and the MeshStick wizard.</summary>
+    private async Task<MeshHessenApplyResult> ApplyMeshHessenProfileCoreAsync()
+    {
+        if (_connectionService?.IsConnected != true || _protocolService == null)
+            return new MeshHessenApplyResult(false, "", "Kein Gerät verbunden.");
+        if (_channels.All(c => c.Psk != MeshHessenPsk) && FindFirstFreeChannelIndex() < 0)
+            return new MeshHessenApplyResult(false, "", "Kein freier Kanal-Slot verfügbar (max. 8 Kanäle).");
 
         // Up to two passes: write → reboot → reconnect → read back → and if something is still
         // missing (e.g. the firmware coerced a value), pull exactly that in on a second pass.
@@ -1787,12 +1828,10 @@ public partial class MainWindow : Window
             bool reconnected = await WaitForReconnectAndInitAsync();
             if (!reconnected)
             {
-                MessageBox.Show(
+                return new MeshHessenApplyResult(false, "",
                     "Profil wurde geschrieben. Das Gerät startet nach dem Region-Wechsel neu; die automatische " +
                     "Neuverbindung hat im Zeitfenster aber nicht geklappt. Bitte manuell neu verbinden und die Werte " +
-                    "prüfen (Region EU868, Preset ShortSlow, Hop 7, ok_to_mqtt = an, ignore_mqtt = aus, Kanal „Mesh Hessen\").",
-                    "Mesh-Hessen", MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
+                    "prüfen (Region EU868, Preset ShortSlow, Hop 7, ok_to_mqtt = an, ignore_mqtt = aus, Kanal „Mesh Hessen\").");
             }
 
             // Wait for the re-init to repopulate the LoRa config + channels, then read back + verify.
@@ -1807,11 +1846,7 @@ public partial class MainWindow : Window
                 (pass < maxPasses ? " — pulling in the missing settings" : " — giving up"));
         }
 
-        UpdateStatusBar(result.AllOk ? "Mesh-Hessen: alle Werte gesetzt ✓" : "Mesh-Hessen: einige Werte weichen ab");
-        MessageBox.Show(
-            result.Text + (result.AllOk ? "" : "\n\n(Auch nach automatischem Nachziehen blieben Abweichungen — bitte prüfen.)"),
-            "Mesh-Hessen – Ergebnis", MessageBoxButton.OK,
-            result.AllOk ? MessageBoxImage.Information : MessageBoxImage.Warning);
+        return new MeshHessenApplyResult(result.AllOk, result.Text);
     }
 
     /// <summary>One staged write of the Mesh-Hessen profile, wrapped in a single edit transaction so
@@ -2198,7 +2233,9 @@ public partial class MainWindow : Window
     private static bool IsPrimaryRole(string? role) =>
         string.Equals(role, "PRIMARY", StringComparison.OrdinalIgnoreCase);
 
-    private async Task TryReconnectAsync()
+    /// <param name="keepNodeList">False after a firmware update: the node may have reset its NodeDB, so the
+    /// carried-over list could be stale — download everything instead.</param>
+    private async Task TryReconnectAsync(bool keepNodeList = true)
     {
         Services.Logger.WriteLine("[RECONNECT] Starting auto-reconnect...");
 
@@ -2206,7 +2243,7 @@ public partial class MainWindow : Window
         // The full node-list download after every reconnect was where a weak Bluetooth path dropped most often.
         Services.ReconnectCarryOver? carry = null;
         var previous = _protocolService;
-        if (previous != null && previous.GetMyNodeId() != 0)
+        if (keepNodeList && previous != null && previous.GetMyNodeId() != 0)
         {
             var nodes = previous.GetKnownNodes().Values.ToList();
             if (nodes.Count > 0) carry = new Services.ReconnectCarryOver(previous.GetMyNodeId(), nodes);
@@ -2279,6 +2316,10 @@ public partial class MainWindow : Window
                 _mqttProxyService.StatusChanged += (s, msg) => Dispatcher.Invoke(() => UpdateStatusBar(msg));
 
                 _connectionService.ConnectionStateChanged += OnConnectionStateChanged;
+
+                // MeshStick: the daemon ends its process on a node reboot — bring the service back first
+                if (_lastConnectionType == Services.ConnectionType.Tcp)
+                    await EnsureLocalDaemonAsync(_lastConnectionParams);
 
                 await _connectionService.ConnectAsync(_lastConnectionParams!);
 

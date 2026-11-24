@@ -72,6 +72,13 @@ Full device configuration directly from the client, all modules in one window:
 !!! note "Name lengths are byte limits"
     The radio protocol limits names in **bytes**, not characters — umlauts and special characters count twice. Channel names: max. 11 bytes. Node long name: max. 24 bytes from firmware 2.8 (older firmware: 39), short name: 4 bytes. The client validates this on save and warns before the device would silently reject an oversized name.
 
+## Back up & restore the configuration
+
+In the **Tools tab** under "💾 Back up & restore configuration":
+
+* **Create backup** writes the complete configuration of the connected node to a JSON file (suggested: `firmware\backups\node-<ID>-<date>.json`): owner (long/short name), all config sections (device, position, power, network, display, LoRa, Bluetooth, security), all module configurations and all 8 channels **including keys**. The file therefore also contains Wi-Fi credentials and the node's private key – treat it as confidential. The firmware assistant optionally creates the same backup before every update.
+* **Restore backup** reads such a file, shows a summary first (source node, firmware versions, contained sections) and, after confirmation, writes everything back in one transaction – the device reboots once afterwards. If the backup comes from a **different** node, the security section (private key, admin keys) is deliberately left out so that two nodes never share one identity; owner, LoRa, channels and modules are still applied – handy for replacement devices.
+
 ## Mirror the device display (firmware 2.8)
 
 If the connected device reports a display in its metadata, the **Tools tab** shows a "📺 Mirror Device Display" section: one click opens a window with a live image of the node's screen — handy for devices that are built in or mounted out of reach. Mono OLEDs (including color zones when the device supplies a palette) and color TFT displays (partial updates) are supported; the image is scaled pixel-perfectly. Mirroring only works over the local connection (USB/BLE/Wi-Fi, not across the mesh) and stops when the window is closed.

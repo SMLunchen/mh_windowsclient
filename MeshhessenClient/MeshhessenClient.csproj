@@ -21,9 +21,9 @@
     <PublishDir>..\public\</PublishDir>
 
     <AssemblyName>MeshhessenClient</AssemblyName>
-    <Version>1.7.2.2</Version>
-    <AssemblyVersion>1.7.2.2</AssemblyVersion>
-    <FileVersion>1.7.2.2</FileVersion>
+    <Version>1.7.3.4</Version>
+    <AssemblyVersion>1.7.3.4</AssemblyVersion>
+    <FileVersion>1.7.3.4</FileVersion>
     <Company>Meshtastic Community</Company>
     <Product>Meshhessen Client</Product>
     <Description>Offline-fähiger Windows Client für Meshtastic Geräte</Description>
@@ -62,6 +62,15 @@
 
     <!-- Color Emoji rendering (WPF does not natively support COLR color fonts) -->
     <PackageReference Include="Emoji.Wpf" Version="0.3.3" />
+
+    <!-- MeshStick assistant: PnP device probe (WMI) + control of the meshtasticd Windows service -->
+    <PackageReference Include="System.Management" Version="8.0.0" />
+    <PackageReference Include="System.ServiceProcess.ServiceController" Version="8.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- WCH CH341PAR driver package for the MeshStick (see Resources/drivers/README.md); installed by the wizard via pnputil -->
+    <EmbeddedResource Include="Resources\drivers\CH341PAR-WIN1X-2.6.2025.4.zip" LogicalName="MeshhessenClient.Drivers.CH341PAR.zip" />
   </ItemGroup>
 
   <ItemGroup>

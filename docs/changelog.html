@@ -190,27 +190,51 @@
 <div class="section active" id="de">
 <main>
 
-  <!-- ── v1.7.2.2 ── -->
+  <!-- ── v1.7.3.4 ── -->
   <div class="version-entry current">
     <div class="version-header">
-      <span class="version-tag tag-latest">v1.7.2.2</span>
-      <span class="version-date">2026-11-17</span>
-      Verbindungsstabilität: Heartbeat, Bluetooth-Reconnect, Kanal-Zuordnung
+      <span class="version-tag tag-latest">v1.7.3.4</span>
+      <span class="version-date">2026-11-24</span>
+      MeshStick-Assistent: USB-LoRa-Stick als Node am PC
     </div>
-    <p class="version-desc">Bugfix-Release rund um die Geräteverbindung: Verbindungen, die nach 15 Minuten Funkstille einschliefen, ständige Bluetooth-Abbrüche auf schwachen Funkstrecken (Reconnect jetzt ohne Node-Listen-Download, mit Backoff und Signalstärke im Log), Nachrichten, die im falschen Kanal-Tab landeten, ein Absturz beim Schließen mit aktiver Bluetooth-Verbindung – und ein Log, das endlich sagt, welche Version abgestürzt ist.</p>
+    <p class="version-desc">Neuer geführter Assistent im Tools-Tab für den Elecrow MeshStick – einen USB-Stick mit SX1262-Funkmodul, aber ohne eigenen Prozessor. Der Node läuft dafür als Windows-Dienst „meshtasticd“ auf dem PC; der Assistent führt von Treiber und Installation über Konfiguration und Verbindung bis zu den LoRa-Einstellungen mit Meshhessen-Profil.</p>
+
+    <div class="cl-section added">
+      <h3>✨ Neu</h3>
+      <div class="cl-group">
+        <ul class="cl-list">
+          <li><strong>🔌 MeshStick-Assistent</strong> (Tools-Tab, „MeshStick einrichten …“): sechs Schritte – Voraussetzungen &amp; Treiber (Internet und Adminrechte werden vorab genannt, der Stick wird live im Gerätemanager erkannt), meshtasticd beschaffen (Meshhessen-Build, offizielle Releases sobald sie ein Windows-MSI führen, oder lokale Datei), Konfiguration &amp; Dienst (<code>config.yaml</code> mit der MeshStick-Pinbelegung und TCP-Port, Installation und Dienststart mit einer einzigen Sicherheitsabfrage), Verbinden per TCP <code>127.0.0.1:4403</code>, LoRa-Einstellungen mit <strong>Meshhessen-Button</strong> (EU868, ShortSlow, Hop 7, Kanal „Mesh Hessen“) oder manuell, Fertig.</li>
+          <li><strong>Treiber mitgeliefert:</strong> Das WCH-Paket CH341PAR (Version 2.6.2025.4, WHQL-signiert) steckt in der EXE und wird per <code>pnputil</code> ohne weitere Dialoge installiert – nur die Windows-Sicherheitsabfrage. Die WCH-Seite liefert keine stabile Download-Adresse, der Microsoft Update Catalog nur eine Version von 2009 ohne die nötige DLL. Neuere WCH-Pakete lassen sich weiterhin aus dem Download-Ordner installieren.</li>
+          <li><strong>Dienst ohne Adminrechte startbar:</strong> Ein Meshtastic-Neustart (nach jedem Speichern) beendet den Prozess des Nodes. Der Assistent gibt angemeldeten Benutzern Start/Stopp-Rechte am Dienst; der Client startet ihn beim Verbinden mit 127.0.0.1 selbst, wenn der Port nicht antwortet – auch im automatischen Reconnect.</li>
+          <li><strong>„Daemon testen“:</strong> startet meshtasticd 12 Sekunden im Vordergrund mit genau der Konfiguration, die geschrieben wird, und zeigt seine Ausgabe – vor der Installation (die EXE wird ohne Adminrechte aus dem MSI geholt) oder wenn der Dienst nicht hochkommt. Hintergrund: Das MSI startet den Dienst sofort und würde mit seiner Standard-Konfiguration scheitern; der Assistent schreibt die Konfiguration deshalb vor der Installation.</li>
+          <li><strong>Woher kommt meshtasticd für Windows:</strong> Die offiziellen Meshtastic-Releases hängen das Windows-MSI noch nicht an. Der Meshhessen-Fork der Firmware baut es täglich aus dem neuesten Upstream-Release mit den unveränderten Upstream-Build-Schritten und veröffentlicht es als Release <code>meshtasticd-v&lt;Version&gt;</code>. Updates: Assistent erneut starten, ein neueres MSI ersetzt die Installation an Ort und Stelle.</li>
+          <li><strong>Handbuch:</strong> neues Kapitel „MeshStick-Assistent“ (DE/EN) mit allen Schritten, Systemänderungen und Fehlerbildern.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── v1.7.3.2 ── -->
+  <div class="version-entry">
+    <div class="version-header">
+      <span class="version-tag">v1.7.3.2</span>
+      <span class="version-date">2026-11-17</span>
+      Bluetooth-Reconnect, Kanal-Zuordnung &amp; sauberes Schließen
+    </div>
+    <p class="version-desc">Bugfix-Release rund um die Geräteverbindung: Nachrichten, die im falschen Kanal-Tab landeten, ständige Bluetooth-Abbrüche auf schwachen Funkstrecken (Reconnect jetzt ohne Node-Listen-Download, mit Backoff und Signalstärke im Log), ein Absturz beim Schließen mit aktiver Bluetooth-Verbindung – und ein Log, das endlich sagt, welche Version abgestürzt ist.</p>
 
     <div class="cl-section fixed">
       <h3>🐛 Behoben</h3>
       <div class="cl-group">
         <ul class="cl-list">
-          <li><strong>Verbindung schlief nach ~2 Stunden ein (seriell/TCP):</strong> Die Firmware schließt ihre Client-Schnittstelle 15 Minuten nach der letzten vom Client gesendeten Nachricht und liefert dann still nichts mehr – der Port blieb offen, kein Reconnect griff. Der Client sendet jetzt wie Python-CLI und Android-App alle 5 Minuten ein <code>heartbeat</code>; ein <strong>Verbindungswächter</strong> erkennt ausbleibende Antworten (Firmware ≥ 2.8) bzw. 45 Minuten Totenstille und baut die Verbindung neu auf.</li>
-          <li><strong>Bluetooth: ständige Reconnects, obwohl der Client nichts falsch macht:</strong> Nutzer-Log mit 140 Abbrüchen an einem Abend (ThinkNode M6, Firmware 2.7.26, Node fest auf dem Dachboden, nur per Bluetooth angebunden). Windows meldet den Abbruch jeweils ~2 s nach den letzten Daten, meist mitten im Node-Listen-Download, danach ist der Node 10–50 s nicht erreichbar – das Bild einer zu schwachen Funkstrecke. Der Client kann das nicht reparieren – nach dem dritten Abbruch in 10 Minuten nennt er jetzt einmalig die typischen Ursachen (Funkstrecke, Adapter, 2,4-GHz-Störer, zweiter Client, Node-Neustart; auf nRF52 mit Firmware vor 2.8 zusätzlich ein serieller USB-Client, der dort BLE abschaltet). Dazu ein Abschnitt im Handbuch.</li>
-          <li><strong>Sitzungsende wird dem Node gemeldet:</strong> Beim Trennen sendet der Client jetzt <code>disconnect</code> wie die offiziellen Apps. Bisher blieb die Sitzung auf dem Node bis zum 15-Minuten-Timeout offen – auf nRF52 mit alter Firmware war Bluetooth nach einer seriellen Sitzung im Client genauso lange tot.</li>
-          <li><strong>Absturz beim Schließen mit aktiver Bluetooth-Verbindung:</strong> Das Trennen lief auf dem UI-Thread und konnte den Prozess ohne Spur beenden. Das Fenster verschwindet jetzt sofort, die Verbindung wird im Hintergrund mit Zeitlimit abgebaut, dann beendet sich die App.</li>
-          <li><strong>Bluetooth-Robustheit:</strong> Der Lese-Thread startete vor dem „verbunden“-Flag und konnte eine gesunde Verbindung selbst kappen; ein von Windows noch während des Verbindungsaufbaus gemeldeter Abbruch kostete einen Reconnect-Versuch; nach einem Abbruch mitten im Config-Download lief die Initialisierung auf der toten Verbindung weiter. Alles behoben.</li>
           <li><strong>Nachrichten aus dem Primärkanal landeten im Sekundärkanal (und umgekehrt):</strong> Betroffen waren Nachrichten, die der Node noch verschlüsselt weiterreicht (über MQTT relayt) und die der Client selbst entschlüsselt. Sie behielten den 8-Bit-Kanal-Hash statt des Kanal-Index – Hash 0–7 landete im falschen Tab, alles andere (etwa 8 für den unbenannten Standard-Primärkanal „LongFast“) wurde zu „Anderer Kanal“ und rutschte durch jeden Filter in den gerade geöffneten Tab. Nach dem Entschlüsseln trägt das Paket jetzt den Index des passenden Kanals; bei gleichem Hash gewinnt nur der Kanal, dessen Klartext ein gültiges Paket ergibt.</li>
           <li><strong>Primärkanal:</strong> Ein unbenannter Primärkanal konnte einen Zufallsnamen bekommen (ein Byte des PSK galt als Namensfeld) – es zählt jetzt das geparste Namensfeld, sonst der Preset-Name. Außerdem war der Primärkanal nach dem Verbinden nicht vorausgewählt (Rollenvergleich „PRIMARY“ gegen „Primary“).</li>
           <li><strong>Direktnachrichten in den ersten Sekunden nach dem Verbinden</strong> konnten als Kanalnachricht gespeichert werden, weil die eigene Node-ID der Oberfläche noch nicht bekannt war.</li>
+          <li><strong>Bluetooth: ständige Abbrüche, obwohl der Client nichts falsch macht:</strong> Nutzer-Log mit 140 Abbrüchen an einem Abend (ThinkNode M6, Firmware 2.7.26, Node fest auf dem Dachboden, nur per Bluetooth angebunden). Windows meldet den Abbruch jeweils ~2 s nach den letzten Daten, meist mitten im Node-Listen-Download, danach ist der Node 10–50 s nicht erreichbar – das Bild einer zu schwachen Funkstrecke. Der Client kann das nicht reparieren – nach dem dritten Abbruch in 10 Minuten nennt er jetzt einmalig die typischen Ursachen (Funkstrecke, Adapter, 2,4-GHz-Störer, zweiter Client, Node-Neustart; auf nRF52 mit Firmware vor 2.8 zusätzlich ein serieller USB-Client, der dort BLE abschaltet – Update über Tools → Firmware-Update). Dazu ein Abschnitt im Handbuch.</li>
+          <li><strong>Sitzungsende wird dem Node gemeldet:</strong> Beim Trennen sendet der Client jetzt <code>disconnect</code> wie die offiziellen Apps. Bisher blieb die Sitzung auf dem Node bis zum 15-Minuten-Timeout offen – auf nRF52 mit alter Firmware war Bluetooth nach einer seriellen Sitzung im Client genauso lange tot.</li>
+          <li><strong>Absturz beim Schließen mit aktiver Bluetooth-Verbindung:</strong> Das Trennen lief auf dem UI-Thread und konnte den Prozess ohne Spur beenden. Das Fenster verschwindet jetzt sofort, die Verbindung wird im Hintergrund mit Zeitlimit abgebaut, dann beendet sich die App.</li>
+          <li><strong>Bluetooth-Robustheit:</strong> Der Lese-Thread startete vor dem „verbunden“-Flag und konnte eine gesunde Verbindung selbst kappen; ein von Windows noch während des Verbindungsaufbaus gemeldeter Abbruch kostete einen Reconnect-Versuch; nach einem Abbruch mitten im Config-Download lief die Initialisierung auf der toten Verbindung weiter. Alles behoben.</li>
+          <li><strong>Firmware-Assistent: Geräte-Architektur-Erkennung</strong> – Hardware-Namen in Enum-Schreibweise (<code>ThinknodeM6</code>) werden erkannt, ThinkNode M3–M9/G3 ergänzt, der längste Treffer gewinnt (PICOMPUTER galt fälschlich als RP2040).</li>
         </ul>
       </div>
     </div>
@@ -233,6 +257,41 @@
         <ul class="cl-list">
           <li>Der Log-Kopf nennt jetzt Client-Version, .NET-Laufzeit und Windows-Version – Fehlerberichte lassen sich endlich einer Version zuordnen.</li>
           <li>Unbehandelte Ausnahmen werden mit vollständigem Stacktrace ins Log geschrieben; einzelne Fehler im UI-Thread beenden die App nicht mehr sofort.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── v1.7.3 ── -->
+  <div class="version-entry">
+    <div class="version-header">
+      <span class="version-tag">v1.7.3</span>
+      <span class="version-date">2026-11-10</span>
+      Firmware-Update-Assistent, Konfig-Backup &amp; Bluetooth-Robustheit
+    </div>
+    <p class="version-desc">Firmware direkt aus dem Client aktualisieren — ESP32 per WLAN- oder Bluetooth-OTA, nRF52 per Bluetooth-DFU oder UF2-Laufwerk — mit Gerätekatalog, Dateiprüfungen und Offline-Cache. Dazu Konfigurations-Backup und -Wiederherstellung, ein Bluetooth-Verbindungsaufbau, der veraltete Windows-Kopplungen selbst erkennt, und der Fix für die nach ~2 Stunden einschlafende serielle/TCP-Verbindung.</p>
+
+    <div class="cl-section added">
+      <h3>✨ Neu</h3>
+      <div class="cl-group">
+        <ul class="cl-list">
+          <li><strong>⬆️ Firmware-Update-Assistent</strong> (Tools-Tab): Sechs geführte Schritte — Gerät &amp; Katalog, Übertragungsweg, Firmware, Prüfung, Übertragung, Fertig — wie in der Android-App. <strong>Vier Wege:</strong> ESP32 <strong>WLAN-OTA</strong> (Loader über TCP 3232, IP per UDP-Beacon), ESP32 <strong>Bluetooth-OTA</strong> (ACK-getaktet, Hash-geprüft — ideal mit externem Stick und Richtantenne), nRF52 <strong>Bluetooth-DFU</strong> (Legacy- und Secure-DFU des Adafruit-Bootloaders, automatisch erkannt, mit Resume/Retry) und <strong>UF2-Laufwerk</strong> für nRF52/RP2040 (Datei wird automatisch kopiert). Alle vier an Heltec V3 und RAK-Hardware bestätigt; ESP32 seriell bewusst ausgelassen (Hinweis auf den Web-Flasher).</li>
+          <li><strong>Firmware-Quellen &amp; Absicherung:</strong> Offizielle Releases (<strong>Stable und Alpha</strong>) mit Release-Notes, Versionsvergleich (Update / gleich / ⚠ Downgrade) und Prüfung, ob das Release einen Build für dein Gerät enthält — oder lokale Dateien (.bin / -ota.zip / .uf2). Vor dem Start: Manifest-MD5, ESP-Image-Header mit Chip-ID gegen die Gerätearchitektur, kein Factory-Image, UF2-Chipfamilie, DFU-Manifest, Dateiname gegen Build-Kennung, Akkustand, Support-Status. Gerätekatalog und Downloads werden im Ordner <code>firmware/</code> gecacht — der Assistent arbeitet damit auch offline und sagt klar, wenn er nichts validieren kann. <strong>„Firmware vorab laden"</strong> holt ein Release für beliebige Gerätetypen auf die Platte (auch für Nodes, die gerade nicht angeschlossen sind); offline verfügbare Releases sind in der Auswahl mit 💾 markiert. Eigene Builds (PlatformIO) laufen über „Lokale Datei" und werden anhand von Chip-ID und Image-Header statt des Dateinamens geprüft. Nichts wird gesendet, bevor die Prüfseite keinen roten Eintrag mehr zeigt; ein Haftungsausschluss steht in Schritt 1 (die Leiter kann trotzdem nötig werden).</li>
+          <li><strong>Bluetooth-Adapter &amp; Wiederherstellung:</strong> Der aktive Adapter wird angezeigt; weil Windows immer nur einen Bluetooth-Adapter nutzt, gibt es bei mehreren den Hinweis, den anderen im Geräte-Manager zu deaktivieren. Ein Gerät, das bereits im Bootloader steckt, lässt sich ohne Mesh-Verbindung per UF2 oder Bluetooth-DFU flashen. Nach dem Update: Ein-Klick-Reconnect mit Anzeige der neuen Firmware-Version.</li>
+          <li><strong>💾 Konfiguration sichern &amp; wiederherstellen</strong> (Tools-Tab): Komplette Gerätekonfiguration als JSON (Owner, alle Config- und Modul-Abschnitte, alle 8 Kanäle inkl. Schlüssel) — optional auch automatisch vor jedem Firmware-Update. Beim Zurückspielen zeigt der Client erst eine Zusammenfassung und schreibt dann alles in einer Transaktion (ein Neustart). Stammt das Backup von einem anderen Node, bleibt der Sicherheits-Abschnitt außen vor — kein Identitäts-Klon, aber Ersatzgeräte lassen sich komplett einrichten.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="cl-section fixed">
+      <h3>🐛 Behoben / ✨ Verbessert</h3>
+      <div class="cl-group">
+        <ul class="cl-list">
+          <li><strong>Verbindung schlief nach ~2 Stunden ein (seriell/TCP), keine neuen Pakete mehr.</strong> Die Meshtastic-Firmware schließt ihre Client-Schnittstelle 15 Minuten nach der letzten vom Client <em>gesendeten</em> Nachricht und liefert dann still nichts mehr — der Port bleibt offen, deshalb griff kein Reconnect; solange man im Client aktiv war (Node-Info-Anfragen, Reaktionen), blieb die Verbindung zufällig am Leben. Der Client sendet jetzt wie Python-CLI und Android-App alle 5 Minuten ein Heartbeat. Dazu ein <strong>Verbindungswächter</strong>: Firmware 2.8 beantwortet jeden Heartbeat; bleiben zwei Antworten in Folge aus (ältere Firmware: 45 Minuten gar kein Paket), wird die Verbindung automatisch neu aufgebaut.</li>
+          <li><strong>Bluetooth: veraltete Kopplungen werden aktiv erkannt.</strong> Windows merkt sich pro Gerät die Dienstetabelle und aktualisiert sie bei gekoppelten Geräten nicht — nach einem Firmware-Update (oder dem OTA-Loader unter derselben Adresse) hieß es dann „Meshtastic-Dienst nicht gefunden". Der Client fragt die gespeicherte Tabelle jetzt vor jedem Verbinden ab, entfernt eine veraltete Kopplung automatisch und koppelt neu; schlägt die Dienstsuche dennoch fehl, folgt ein zweiter Versuch und erst dann ein Ja/Nein-Dialog zum Entkoppeln.</li>
+          <li><strong>Firmware-Version und Hardware-Modell sofort bekannt:</strong> Beide werden jetzt direkt aus dem Verbindungs-Handshake übernommen — bisher nur über eine nachgelagerte Abfrage, die bei TCP-Verbindungen leer bleiben konnte (Info-Tab zeigte „–").</li>
+          <li><strong>Hauptfenster minimierte sich beim Schließen</strong> von Display-Spiegelung und Höhenprofil (gleiche Ursache wie seinerzeit bei der Fernverwaltung) — behoben, auch für den neuen Assistenten.</li>
+          <li><strong>Handbuch:</strong> neues Kapitel „Firmware-Update" (DE/EN) mit allen Wegen, Fehlerbildern und Wiederherstellung; Backup/Restore in „Node-Verwaltung" dokumentiert.</li>
         </ul>
       </div>
     </div>
@@ -1448,27 +1507,51 @@
 <div class="section" id="en">
 <main>
 
-  <!-- ── v1.7.2.2 (EN) ── -->
+  <!-- ── v1.7.3.4 (EN) ── -->
   <div class="version-entry current">
     <div class="version-header">
-      <span class="version-tag tag-latest">v1.7.2.2</span>
-      <span class="version-date">2026-11-17</span>
-      Connection stability: heartbeat, Bluetooth reconnect, channel attribution
+      <span class="version-tag tag-latest">v1.7.3.4</span>
+      <span class="version-date">2026-11-24</span>
+      MeshStick assistant: USB LoRa stick as a node on the PC
     </div>
-    <p class="version-desc">Bugfix release around the device link: connections that fell asleep after 15 minutes of radio silence, endless Bluetooth drops on weak radio paths (reconnect now without the node-list download, with backoff and signal strength in the log), messages that ended up in the wrong channel tab, a crash when closing with an active Bluetooth link – and a log that finally says which version crashed.</p>
+    <p class="version-desc">New guided assistant on the Tools tab for the Elecrow MeshStick – a USB stick with an SX1262 radio but no processor of its own. The node runs as the Windows service "meshtasticd" on the PC; the assistant walks from driver and installation through configuration and connection to the LoRa settings with the Meshhessen profile.</p>
+
+    <div class="cl-section added">
+      <h3>✨ New</h3>
+      <div class="cl-group">
+        <ul class="cl-list">
+          <li><strong>🔌 MeshStick assistant</strong> (Tools tab, "Set up MeshStick …"): six steps – requirements &amp; driver (internet and admin rights are stated up front, the stick is detected live in the device tree), get meshtasticd (Meshhessen build, official releases once they carry a Windows MSI, or a local file), configuration &amp; service (<code>config.yaml</code> with the MeshStick pin map and TCP port, installation and service start with a single security prompt), connect over TCP <code>127.0.0.1:4403</code>, LoRa settings with the <strong>Meshhessen button</strong> (EU868, ShortSlow, hop 7, channel "Mesh Hessen") or manually, done.</li>
+          <li><strong>Driver included:</strong> the WCH CH341PAR package (version 2.6.2025.4, WHQL-signed) ships inside the EXE and is installed via <code>pnputil</code> without further dialogs – only the Windows security prompt. The WCH site offers no stable download address, the Microsoft Update Catalog only a 2009 version without the required DLL. Newer WCH packages can still be installed from the Downloads folder.</li>
+          <li><strong>Service startable without admin rights:</strong> a Meshtastic reboot (after every save) ends the node's process. The assistant grants logged-in users start/stop rights on the service; the client starts it itself when connecting to 127.0.0.1 and the port does not answer – in the automatic reconnect as well.</li>
+          <li><strong>"Test daemon":</strong> runs meshtasticd in the foreground for 12 seconds with exactly the configuration that will be written and shows its output – before the installation (the EXE is pulled from the MSI without admin rights) or when the service does not come up. Background: the MSI starts the service immediately and would fail with its default configuration; the assistant therefore writes the configuration before installing.</li>
+          <li><strong>Where meshtasticd for Windows comes from:</strong> the official Meshtastic releases do not attach the Windows MSI yet. The Meshhessen fork of the firmware builds it daily from the newest upstream release with upstream's unchanged build steps and publishes it as release <code>meshtasticd-v&lt;version&gt;</code>. Updates: run the assistant again, a newer MSI replaces the installation in place.</li>
+          <li><strong>Handbook:</strong> new chapter "MeshStick assistant" (DE/EN) with all steps, system changes and troubleshooting.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── v1.7.3.2 (EN) ── -->
+  <div class="version-entry">
+    <div class="version-header">
+      <span class="version-tag">v1.7.3.2</span>
+      <span class="version-date">2026-11-17</span>
+      Bluetooth reconnect, channel attribution &amp; clean shutdown
+    </div>
+    <p class="version-desc">Bugfix release around the device link: messages that ended up in the wrong channel tab, endless Bluetooth drops on weak radio paths (reconnect now without the node-list download, with backoff and signal strength in the log), a crash when closing with an active Bluetooth link – and a log that finally says which version crashed.</p>
 
     <div class="cl-section fixed">
       <h3>🐛 Fixed</h3>
       <div class="cl-group">
         <ul class="cl-list">
-          <li><strong>Connection fell asleep after ~2 hours (serial/TCP):</strong> the firmware closes its client API 15 minutes after the last message sent by the client and then silently delivers nothing – the port stayed open, so no reconnect kicked in. The client now sends a <code>heartbeat</code> every 5 minutes like the Python CLI and the Android app; a <strong>link watchdog</strong> detects missing replies (firmware ≥ 2.8) or 45 minutes of total silence and re-establishes the connection.</li>
-          <li><strong>Bluetooth: endless reconnects although the client does nothing wrong:</strong> a user log with 140 drops in one evening (ThinkNode M6, firmware 2.7.26, node fixed in an attic and reachable over Bluetooth only). Windows reports each drop ~2 s after the last data, mostly in the middle of the node-list download, and the node is unreachable for 10–50 s afterwards – the picture of a weak radio path. The client cannot fix that – after the third drop within 10 minutes it now names the usual causes once (radio path, adapter, 2.4 GHz interference, second client, node reboot; on nRF52 with firmware older than 2.8 additionally a serial USB client, which switches BLE off there). Plus a section in the handbook.</li>
-          <li><strong>Session end is announced to the node:</strong> when disconnecting, the client now sends <code>disconnect</code> like the official apps. Until now the session stayed open on the node until its 15-minute timeout – on nRF52 with old firmware Bluetooth was dead for just as long after a serial session in the client.</li>
-          <li><strong>Crash when closing with an active Bluetooth link:</strong> the teardown ran on the UI thread and could end the process without a trace. The window now disappears immediately, the link is torn down in the background with a time limit, then the app exits.</li>
-          <li><strong>Bluetooth robustness:</strong> the reader thread started before the "connected" flag and could kill a healthy link itself; a drop reported by Windows while still connecting cost a reconnect attempt; after a drop in the middle of the config download the initialisation carried on over the dead link. All fixed.</li>
           <li><strong>Primary-channel messages showed up in the secondary channel (and vice versa):</strong> affected were messages the node passes on still encrypted (relayed over MQTT) and the client decrypts itself. They kept the 8-bit channel hash instead of the channel index – hash 0–7 landed in the wrong tab, anything else (such as 8 for the unnamed default primary channel "LongFast") became "Other channel" and slipped through every filter into whichever tab was open. After decrypting, the packet now carries the index of the matching channel; when two channels share a hash, only the one whose plaintext yields a valid packet wins.</li>
           <li><strong>Primary channel:</strong> an unnamed primary channel could get a random name (a PSK byte was taken for the name field) – only the parsed name field counts now, otherwise the preset name. The primary channel was also not pre-selected after connecting (role compare "PRIMARY" vs "Primary").</li>
           <li><strong>Direct messages in the first seconds after connecting</strong> could be stored as channel messages because the UI did not know its own node id yet.</li>
+          <li><strong>Bluetooth: endless drops although the client does nothing wrong:</strong> a user log with 140 drops in one evening (ThinkNode M6, firmware 2.7.26, node fixed in an attic and reachable over Bluetooth only). Windows reports each drop ~2 s after the last data, mostly in the middle of the node-list download, and the node is unreachable for 10–50 s afterwards – the picture of a weak radio path. The client cannot fix that – after the third drop within 10 minutes it now names the usual causes once (radio path, adapter, 2.4 GHz interference, second client, node reboot; on nRF52 with firmware older than 2.8 additionally a serial USB client, which switches BLE off there – update via Tools → Firmware update). Plus a section in the handbook.</li>
+          <li><strong>Session end is announced to the node:</strong> when disconnecting, the client now sends <code>disconnect</code> like the official apps. Until now the session stayed open on the node until its 15-minute timeout – on nRF52 with old firmware Bluetooth was dead for just as long after a serial session in the client.</li>
+          <li><strong>Crash when closing with an active Bluetooth link:</strong> the teardown ran on the UI thread and could end the process without a trace. The window now disappears immediately, the link is torn down in the background with a time limit, then the app exits.</li>
+          <li><strong>Bluetooth robustness:</strong> the reader thread started before the "connected" flag and could kill a healthy link itself; a drop reported by Windows while still connecting cost a reconnect attempt; after a drop in the middle of the config download the initialisation carried on over the dead link. All fixed.</li>
+          <li><strong>Firmware assistant: device architecture detection</strong> – hardware names in enum spelling (<code>ThinknodeM6</code>) are recognised, ThinkNode M3–M9/G3 added, the longest match wins (PICOMPUTER was wrongly taken for RP2040).</li>
         </ul>
       </div>
     </div>
@@ -1491,6 +1574,41 @@
         <ul class="cl-list">
           <li>The log header now states client version, .NET runtime and Windows version – bug reports can finally be matched to a build.</li>
           <li>Unhandled exceptions are written to the log with a full stack trace; a single error on the UI thread no longer ends the app immediately.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── v1.7.3 (EN) ── -->
+  <div class="version-entry">
+    <div class="version-header">
+      <span class="version-tag">v1.7.3</span>
+      <span class="version-date">2026-11-10</span>
+      Firmware update assistant, config backup &amp; Bluetooth robustness
+    </div>
+    <p class="version-desc">Update firmware straight from the client — ESP32 via Wi-Fi or Bluetooth OTA, nRF52 via Bluetooth DFU or UF2 drive — with device catalog, file checks and offline cache. Plus configuration backup/restore, a Bluetooth connect that detects stale Windows pairings by itself, and the fix for serial/TCP connections going silent after ~2 hours.</p>
+
+    <div class="cl-section added">
+      <h3>✨ New</h3>
+      <div class="cl-group">
+        <ul class="cl-list">
+          <li><strong>⬆️ Firmware update assistant</strong> (Tools tab): six guided steps — device &amp; catalog, transfer method, firmware, pre-flight, transfer, done — like the Android app. <strong>Four methods:</strong> ESP32 <strong>Wi-Fi OTA</strong> (loader on TCP 3232, IP via UDP beacon), ESP32 <strong>Bluetooth OTA</strong> (ACK-paced, hash-verified — ideal with an external dongle and directional antenna), nRF52 <strong>Bluetooth DFU</strong> (Legacy and Secure DFU of the Adafruit bootloader, detected automatically, with resume/retry) and <strong>UF2 drive</strong> for nRF52/RP2040 (file copied automatically). All four confirmed on Heltec V3 and RAK hardware; ESP32 over serial deliberately left out (link to the web flasher).</li>
+          <li><strong>Firmware sources &amp; safeguards:</strong> official releases (<strong>stable and alpha</strong>) with release notes, version comparison (update / same / ⚠ downgrade) and a check whether the release contains a build for your device — or local files (.bin / -ota.zip / .uf2). Before starting: manifest MD5, ESP image header with chip id against the device architecture, no factory image, UF2 chip family, DFU manifest, file name against build identifier, battery level, support status. Device catalog and downloads are cached in the <code>firmware/</code> folder — the assistant works offline with them and says clearly when it cannot validate anything. <strong>"Prefetch firmware"</strong> downloads a release for any device types (including nodes not connected right now); releases available offline are marked 💾 in the picker. Your own builds (PlatformIO) go through "Local file" and are checked by chip id and image header rather than file name. Nothing is sent until the pre-flight page shows no red item; a disclaimer sits in step 1 (the ladder may still be needed).</li>
+          <li><strong>Bluetooth adapter &amp; recovery:</strong> the active adapter is shown; since Windows only ever uses one Bluetooth adapter, a hint explains how to disable the other one in Device Manager. A device already sitting in its bootloader can be flashed without a mesh connection via UF2 or Bluetooth DFU. After the update: one-click reconnect showing the new firmware version.</li>
+          <li><strong>💾 Back up &amp; restore configuration</strong> (Tools tab): the complete device configuration as JSON (owner, all config and module sections, all 8 channels incl. keys) — optionally also automatically before every firmware update. Restoring shows a summary first and then writes everything in one transaction (one reboot). If the backup comes from a different node, the security section is left out — no identity clone, but replacement devices can be set up completely.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="cl-section fixed">
+      <h3>🐛 Fixed / ✨ Improved</h3>
+      <div class="cl-group">
+        <ul class="cl-list">
+          <li><strong>Connection went silent after ~2 hours (serial/TCP), no new packets.</strong> The Meshtastic firmware closes its client API 15 minutes after the last message <em>sent by</em> the client and then silently delivers nothing — the port stays open, so no reconnect kicked in; as long as you were active in the client (node-info requests, reactions) the connection happened to stay alive. The client now sends a heartbeat every 5 minutes, like the Python CLI and the Android app. Plus a <strong>link watchdog</strong>: firmware 2.8 answers every heartbeat; if two replies in a row are missing (older firmware: no packet at all for 45 minutes) the connection is re-established automatically.</li>
+          <li><strong>Bluetooth: stale pairings are detected actively.</strong> Windows remembers each device's service table and never refreshes it for paired devices — after a firmware update (or the OTA loader under the same address) the result was "Meshtastic service not found". The client now queries the stored table before every connect, removes a stale pairing automatically and pairs again; if discovery still fails, a second attempt follows and only then a Yes/No dialog offers unpairing.</li>
+          <li><strong>Firmware version and hardware model known immediately:</strong> both are now taken straight from the connection handshake — previously only via a follow-up query that could stay empty over TCP (Info tab showed "–").</li>
+          <li><strong>Main window minimized when closing</strong> the display mirror and elevation profile windows (same cause as the remote admin issue back then) — fixed, including for the new assistant.</li>
+          <li><strong>Handbook:</strong> new "Firmware update" chapter (DE/EN) covering all methods, failure patterns and recovery; backup/restore documented under "Node management".</li>
         </ul>
       </div>
     </div>

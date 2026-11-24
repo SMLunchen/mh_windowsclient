@@ -2791,6 +2791,57 @@
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="24">
 
+                        <!-- Firmware update wizard (ESP32 Wi-Fi/BLE OTA, nRF52 BLE-DFU, UF2) -->
+                        <TextBlock Text="{DynamicResource StrFwToolsSection}"
+                                   FontSize="15" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                        <TextBlock Text="{DynamicResource StrFwToolsDesc}"
+                                   TextWrapping="Wrap" Foreground="#555" Margin="0,0,0,10"/>
+                        <StackPanel Orientation="Horizontal">
+                            <Button x:Name="FirmwareUpdateBtn"
+                                    Content="{DynamicResource StrFwToolsBtn}"
+                                    Padding="16,8" Margin="0,0,10,0"
+                                    Click="FirmwareUpdateBtn_Click"/>
+                            <Button x:Name="FirmwarePrefetchBtn"
+                                    Content="{DynamicResource StrFwPrefetchToolsBtn}"
+                                    ToolTip="{DynamicResource StrFwPrefetchTip}"
+                                    Padding="16,8"
+                                    Click="FirmwarePrefetchBtn_Click"/>
+                        </StackPanel>
+
+                        <Separator Margin="0,20"/>
+
+                        <!-- MeshStick (Elecrow USB LoRa stick): driver, meshtasticd service, config, TCP connect -->
+                        <TextBlock Text="{DynamicResource StrMstToolsSection}"
+                                   FontSize="15" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                        <TextBlock Text="{DynamicResource StrMstToolsDesc}"
+                                   TextWrapping="Wrap" Foreground="#555" Margin="0,0,0,10"/>
+                        <StackPanel Orientation="Horizontal">
+                            <Button x:Name="MeshStickWizardBtn"
+                                    Content="{DynamicResource StrMstToolsBtn}"
+                                    Padding="16,8"
+                                    Click="MeshStickWizardBtn_Click"/>
+                        </StackPanel>
+
+                        <Separator Margin="0,20"/>
+
+                        <!-- Device configuration backup / restore (JSON) -->
+                        <TextBlock Text="{DynamicResource StrCfgToolsSection}"
+                                   FontSize="15" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                        <TextBlock Text="{DynamicResource StrCfgToolsDesc}"
+                                   TextWrapping="Wrap" Foreground="#555" Margin="0,0,0,10"/>
+                        <StackPanel Orientation="Horizontal">
+                            <Button x:Name="ConfigBackupBtn"
+                                    Content="{DynamicResource StrCfgBackupBtn}"
+                                    Padding="16,8" Margin="0,0,10,0"
+                                    Click="ConfigBackupBtn_Click"/>
+                            <Button x:Name="ConfigRestoreBtn"
+                                    Content="{DynamicResource StrCfgRestoreBtn}"
+                                    Padding="16,8"
+                                    Click="ConfigRestoreBtn_Click"/>
+                        </StackPanel>
+
+                        <Separator Margin="0,20"/>
+
                         <!-- Display mirroring (FW 2.8) — visible only when the connected
                              device reports a display panel in its metadata -->
                         <StackPanel x:Name="DisplayMirrorSection" Visibility="Collapsed">

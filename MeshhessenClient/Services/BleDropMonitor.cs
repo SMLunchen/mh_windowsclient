@@ -47,25 +47,9 @@ public sealed class BleDropMonitor
     /// Unknown hardware or version → false (the generic hint is shown instead).</summary>
     public static bool IsSerialKillsBleFirmware(string? hardwareModel, string? firmwareVersion)
     {
-        if (!IsNrf52(hardwareModel)) return false;
+        if (string.IsNullOrWhiteSpace(hardwareModel)) return false;
+        if (Firmware.FirmwareCatalogService.GuessArchitecture(hardwareModel) != "nrf52840") return false;
         var v = FirmwareCaps.Parse(firmwareVersion);
         return v != null && !FirmwareCaps.AtLeast(firmwareVersion, 2, 8);
-    }
-
-    // HardwareModel names of the nRF52840 boards (firmware variants/nrf52840/*). Names arrive as
-    // THINKNODE_M6 (proto) or ThinknodeM6 (C# enum ToString) — compared without underscores.
-    private static readonly string[] Nrf52Patterns =
-    {
-        "RAK4631", "RAK2560", "RAK3", "RAK_WISMESH", "T_ECHO", "TECHO", "T114", "HELTEC_MESH_NODE", "NANO_G2",
-        "WIO_WM1110", "WIO_TRACKER", "TRACKER_T1000", "T1000", "CANARYONE", "NRF52", "PPR", "XIAO_NRF52", "MESHLINK",
-        "THINKNODE_M1", "THINKNODE_M3", "THINKNODE_M4", "THINKNODE_M6", "THINKNODE_M8", "ME25LS01", "MS24SF1",
-        "SEEED_SOLAR", "T_IMPULSE", "MUZI", "R1_NEO", "FEATHER_DIY",
-    };
-
-    public static bool IsNrf52(string? hardwareModel)
-    {
-        if (string.IsNullOrWhiteSpace(hardwareModel)) return false;
-        var n = hardwareModel.ToUpperInvariant().Replace("_", "");
-        return Nrf52Patterns.Any(p => n.Contains(p.Replace("_", "")));
     }
 }

@@ -72,6 +72,13 @@ Vollständige Gerätekonfiguration direkt aus dem Client, alle Module auf einer 
 !!! note "Namenslängen sind Byte-Grenzen"
     Das Funkprotokoll begrenzt Namen in **Bytes**, nicht Zeichen — Umlaute und Sonderzeichen zählen doppelt. Kanalnamen: max. 11 Byte. Node-Langname: max. 24 Byte ab Firmware 2.8 (ältere Firmware: 39), Kurzname: 4 Byte. Der Client prüft das beim Speichern und warnt, bevor das Gerät einen zu langen Namen still verwerfen würde.
 
+## Konfiguration sichern & wiederherstellen
+
+Im **Tools-Tab** unter „💾 Konfiguration sichern & wiederherstellen":
+
+* **Backup erstellen** schreibt die komplette Konfiguration des verbundenen Nodes als JSON-Datei (Vorschlag: `firmware\backups\node-<ID>-<Datum>.json`): Owner (Lang-/Kurzname), alle Config-Abschnitte (Gerät, Position, Energie, Netzwerk, Display, LoRa, Bluetooth, Sicherheit), alle Modul-Konfigurationen und alle 8 Kanäle **inklusive Schlüssel**. Die Datei enthält damit auch WLAN-Zugangsdaten und den privaten Schlüssel des Nodes – vertraulich behandeln. Der Firmware-Assistent legt dasselbe Backup optional vor jedem Update an.
+* **Backup wiederherstellen** liest eine solche Datei ein, zeigt vorher eine Zusammenfassung (Quell-Node, Firmware-Versionen, enthaltene Abschnitte) und schreibt nach Bestätigung alles in einer Transaktion zurück – das Gerät startet danach einmal neu. Stammt das Backup von einem **anderen** Node, wird der Sicherheits-Abschnitt (privater Schlüssel, Admin-Schlüssel) bewusst ausgelassen, damit nicht zwei Nodes mit derselben Identität entstehen; Owner, LoRa, Kanäle und Module werden trotzdem übernommen – praktisch für Ersatzgeräte.
+
 ## Geräte-Display spiegeln (Firmware 2.8)
 
 Meldet das verbundene Gerät in seinen Metadaten ein Display, erscheint im **Tools-Tab** der Abschnitt „📺 Geräte-Display spiegeln": Ein Klick öffnet ein Fenster mit dem Live-Bild des Node-Displays — praktisch für Geräte, die verbaut oder schwer erreichbar montiert sind. Unterstützt werden Mono-OLEDs (inklusive Farb-Zonen, falls das Gerät eine Palette mitliefert) und Farb-Displays (TFT); das Bild wird pixelgenau skaliert. Die Spiegelung funktioniert nur über die lokale Verbindung (USB/BLE/WLAN, nicht übers Mesh) und endet mit dem Schließen des Fensters.
