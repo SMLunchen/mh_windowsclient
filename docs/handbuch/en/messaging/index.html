@@ -804,7 +804,8 @@
 <p><a href="../">← Handbook home</a> · <a href="https://meshhessenclient.de/handbuch/de/nachrichten/">🇩🇪 Deutsche Version</a></p>
 <ul>
 <li><strong>Send and receive messages</strong> (broadcast &amp; direct messages)</li>
-<li><strong>Multi-channel</strong> – all channels from your device loaded automatically</li>
+<li><strong>Multiline messages:</strong> Shift+Enter inserts a line break (like the Android app), Enter alone sends — the input box grows with the text</li>
+<li><strong>Multi-channel</strong> – all channels from your device loaded automatically; channels with AEAD encryption (firmware 2.8, experimental) are marked 🛡 in the channel list. Channel names may be at most 11 bytes (umlauts count twice) — the "Add channel" dialog validates this</li>
 <li><strong>Direct Messages (DMs)</strong> with a dedicated chat window in a tabbed layout</li>
 <li><strong>PKI decryption</strong> – client-side decryption of PKI-encrypted DMs (X25519 + AES-256-CCM, firmware-accurate); private key is loaded automatically from the connected device</li>
 <li><strong>Node public key database</strong> – local CSV file (<code>node_keys.csv</code>) that the client maintains automatically with the public keys of received nodes (manual edits are read on the next start)</li>
@@ -824,7 +825,7 @@
 <li><strong>Channel message:</strong> Messages tab → pick the channel in the "Channels" sidebar on the left → type at the bottom → Enter. Your own message shows right-aligned; replies arrive in the same thread</li>
 <li><strong>Start a DM:</strong> right-click the target node (node list, map, or one of its messages) → <strong>"💬 Send DM"</strong> — the conversation opens as its own tab in the DM window (or directly in the main window, depending on your settings)</li>
 <li><strong>Check encryption:</strong> the 🔑 column in the node list shows whether the target's public key is known. 🔑 = PKI DMs can be encrypted and decrypted (X25519 + AES-256-CCM); an empty cell (table) or 🔓 (tile view) means the key is unknown — then only channel encryption applies</li>
-<li><strong>Success check:</strong> the sent message gets delivery check marks: ✓ = sent, ✓✓ (green) = acknowledged by the recipient (ACK); the reply appears in the tab. Received PKI DMs are decrypted by the client itself</li>
+<li><strong>Success check:</strong> the sent message gets delivery check marks: ✓ = sent, ✓✓ (green) = acknowledged by the recipient (ACK); the reply appears in the tab. Received PKI DMs are decrypted by the client itself. With firmware 2.8 receipts can be cryptographically signed: ✓✓🛡 = receipt verified, ✓✓‼ (red) = invalid signature — the message still counts as delivered, but the receipt may be forged (tooltip shows details)</li>
 <li><strong>Extras:</strong> right-click a message → emoji reaction or "Reply" (quote block); text is selectable and copyable</li>
 </ol>
 <p><strong>Typical pitfalls:</strong></p>

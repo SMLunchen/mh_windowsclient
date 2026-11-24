@@ -448,6 +448,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Verbindungstypen">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#bluetooth-bricht-standig-ab" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bluetooth bricht ständig ab?
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -900,6 +917,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Verbindungstypen">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#bluetooth-bricht-standig-ab" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bluetooth bricht ständig ab?
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1021,6 +1055,11 @@
 <li><strong>Auto-Reconnect</strong> – nach Einstellungsänderungen, die einen Geräte-Neustart erfordern</li>
 <li><strong>Per-Node-Stationsname</strong> – pro verbundenem Node ein eigener Stationsname (✏-Button neben dem Verbinden-Button)</li>
 </ul>
+<h3 id="bluetooth-bricht-standig-ab">Bluetooth bricht ständig ab?<a class="headerlink" href="#bluetooth-bricht-standig-ab" title="Permanent link">&para;</a></h3>
+<p>Wenn der Client im Debug-Log immer wieder <code>[BLE] Device disconnected</code> meldet und danach 10–50 Sekunden lang nicht neu verbinden kann („Meshtastic service not found … Unreachable"), reißt die Funkverbindung ab – der Client beendet sie nicht. Nach dem dritten Abbruch innerhalb von 10 Minuten zeigt der Client dazu einen Hinweis.</p>
+<p>Häufigste Ursache ist eine <strong>zu schwache Funkstrecke</strong>: Node auf dem Dachboden, PC ein oder zwei Etagen tiefer, ein schwacher Bluetooth-Adapter im PC oder 2,4-GHz-Störer (WLAN, USB-3-Geräte direkt neben dem Adapter). Typisch dafür: Der Abbruch kommt mitten im Datenstrom – etwa beim Laden der Node-Liste nach dem Verbinden – und der Node ist danach einige Sekunden nicht erreichbar, bis Windows ihn wieder findet. Abhilfe: Abstand verringern oder einen Bluetooth-Adapter mit externer Antenne nutzen.</p>
+<p>Der Client federt das ab: Beim automatischen Neuverbinden mit demselben Node lädt er die Node-Liste nicht erneut, sondern nur Konfiguration und Kanäle (der lange Download war der Moment, in dem schwache Strecken meist abrissen), und die Pausen zwischen den Versuchen wachsen mit jedem Fehlversuch. Beim Verbinden schreibt er die Signalstärke des Nodes ins Log („Node signal during connect: −87 dBm“) – Werte unter etwa −85 dBm sind zu schwach. Zur Fehlersuche gibt es unter Einstellungen → Debug die Option „Node-Log über Bluetooth mitlesen“; sie braucht auf dem Node „Debug-Log über API“ in der Sicherheits-Konfiguration und belastet die Funkstrecke zusätzlich.</p>
+<p>Zweite Ursache bei <strong>nRF52-Geräten (RAK4631, T-Echo, ThinkNode M1/M6, T114, T1000-E …) mit Firmware vor 2.8.0</strong>: Diese Firmware schaltet Bluetooth komplett ab, sobald ein serieller Client per USB die Meshtastic-Schnittstelle öffnet – Python-CLI, Web-Client, Handy am USB-Kabel oder eine zweite Client-Instanz. Bluetooth kommt erst zurück, wenn dieser Client trennt, spätestens nach 15 Minuten. Das betrifft nur Nodes, an deren USB-Buchse tatsächlich ein Rechner hängt – ein reines Netzteil zählt nicht. Abhilfe: USB-Datenverbindung trennen bzw. das andere Programm beenden – oder die Firmware auf <strong>2.8.0 oder neuer</strong> aktualisieren, dort ist das behoben. Der Meshhessen Client selbst meldet beim Trennen das Sitzungsende an den Node (<code>disconnect</code>), sodass nach einer seriellen Sitzung im Client Bluetooth sofort wieder frei ist.</p>
 <h2 id="system-oberflache">System &amp; Oberfläche<a class="headerlink" href="#system-oberflache" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>Update-Check</strong> – beim Start wird automatisch nach neuen Versionen gesucht; bei verfügbarem Update erscheint ein klickbarer Hinweis in der Statusleiste (offline-fähig: kein Fehler ohne Internet)</li>

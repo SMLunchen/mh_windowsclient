@@ -916,6 +916,7 @@
 <li>Receive <code>my_info</code>, <code>node_info</code> (×N), <code>channel</code> (×8), <code>config</code>, <code>config_complete_id</code></li>
 <li>If channels are missing (e.g. T-Deck): retry mechanism up to 3 rounds via <code>GetChannelRequest</code></li>
 <li>Ready for MeshPackets</li>
+<li><strong>Keepalive:</strong> a <code>heartbeat</code> to the device every 5 minutes — otherwise the firmware closes its client API after 15 minutes without an inbound message (serial and TCP) and silently stops delivering packets. Firmware ≥ 2.8 answers every heartbeat with a <code>queueStatus</code>; if two replies in a row are missing (or, on older firmware, no frame at all for 45 minutes) the client re-establishes the connection automatically</li>
 </ol>
 <h2 id="serial-protocol-robustness">Serial protocol (robustness)<a class="headerlink" href="#serial-protocol-robustness" title="Permanent link">&para;</a></h2>
 <ul>
