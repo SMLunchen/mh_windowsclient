@@ -7,6 +7,24 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
 
+## [Unreleased]
+
+### 📶 Bluetooth: ruhiger lesen, nie ungefragt entkoppeln, Signal in der Kopfzeile
+
+Anlass: Rückmeldungen aus der Community, Bluetooth sei im Client unzuverlässiger als in der Android-App und der Client entferne Geräte ungefragt aus der Windows-Kopplungsliste; mit 1.7.2.2 waren die Abbrüche weniger. Abgleich mit Firmware (NimBLE/nRF52), Android-App (Kable) und Python-CLI:
+
+- **Lesen wie Android und Python-CLI:** Bisher las ein Thread FROMRADIO in einer Dauerschleife mit 1 ms Pause, dazu zwei weitere Leser (FROMNUM-Handler, nach jedem Senden) – der Kommentar „aggressiv wie Python“ stimmte nicht, Python liest nur nach Ankündigung. Auf ESP32 parkt jeder leere Read den NimBLE-Task in einer Warteschleife und weckt die Hauptschleife, bis sie „nichts da“ meldet; bei 15 ms Intervall rund 60-mal pro Sekunde, die ganze Sitzung lang. Jetzt gibt es **einen** Leser (`BleReadPump`): Er liest nach FROMNUM-Meldung und nach jedem Senden, bis der Node ein leeres Paket liefert (nach dem Senden mit 3 Wiederholungen à 100 ms wie die Python-CLI, weil nRF52 die Anfrage manchmal noch nicht verarbeitet hat), dazu ein Sicherheits-Poll alle 1,5 s (250 ms, falls das FROMNUM-Abo scheitert). Drei Lesefehler in Folge gelten als abgerissene Verbindung → sauberer Disconnect → normaler Reconnect, statt auf einer toten Verbindung weiterzuhämmern. Frames kommen damit auch wieder garantiert in Reihenfolge an (bisher konnten drei Leser gleichzeitig `DataReceived` feuern)
+- **Verbindungsintervall nur noch beim Laden schnell:** ThroughputOptimized wird jetzt nur für Konfiguration und Node-Liste angefordert und nach „Init complete“ wieder freigegeben (Sicherheitsnetz: nach 120 s automatisch). Danach greift der Wunsch der Firmware (30–50 ms, Latenz 2 – `requestLowerPowerConnection`), so wie Android nach 30 s auf „Balanced“ wechselt. Bisher hielt der Client die schnellste Rate die gesamte Sitzung
+- **Neue Einstellung „Schonender Bluetooth-Modus“** (Einstellungen → Bluetooth): fordert von Anfang an nur „Balanced“ an – Node-Liste lädt langsamer, schwache Strecken bekommen Luft. Der Hinweis nach drei Abbrüchen in 10 Minuten bietet den Wechsel direkt als Ja/Nein an; „Ja“ speichert die Einstellung und gilt für den bereits laufenden Reconnect
+- **Kopplung wird nie mehr ohne Rückfrage entfernt** (seit 1.7.3 passierte das an zwei Stellen automatisch, und eine davon feuerte auch bei „Unreachable“, also bei einem Node im Neustart oder außer Reichweite – in der Reconnect-Schleife war das Gerät damit nach dem ersten Fehlversuch aus der Windows-Liste, und jeder weitere Versuch öffnete den Kopplungsdialog). Neu: `BleStaleBondClassifier` – „Unreachable“ ist nie ein Kopplungsproblem (→ `BleUnreachableException`, einfach weiter versuchen); nur wenn der Node antwortet und die gespeicherte Kopplung nicht passt (Dienstetabelle ohne Meshtastic-Dienst, Protokollfehler, Zugriff verweigert) → `BleStaleBondException` mit Befund, und das Fenster **fragt** – beim Verbinden sofort, im automatischen Reconnect erst beim zweiten Befund und nur einmal pro Schleife. „Nein“ behält die Kopplung, der Client versucht es weiter. Die Firmware-Update-Prüfung nach einem Bluetooth-OTA bleibt (eindeutiger Fall, wird auf der Fertig-Seite gemeldet)
+- **Zähler ohne Debug-Flag:** Lesevorgänge (leer/mit Daten/Fehler), FROMNUM-Meldungen, Leseläufe nach Auslöser, Schreibvorgänge, Parameter-Anfrage und -Status, ausgehandeltes Verbindungsintervall (Windows 11 22H2+, `GetConnectionParameters`, Änderungen per Event), Signal beim Verbinden – alle 10 Minuten und beim Trennen als `[BLE] Link stats` im Log
+- **📶 in der Kopfzeile:** neben dem Verbindungspunkt steht bei Bluetooth die Signalstärke vom Verbindungsaufbau; Mouseover zeigt die Zähler live, Klick öffnet sie als Popup mit „Kopieren“ für Fehlermeldungen
+- Entfernt: die experimentelle FROMRADIO-Notify-Subscription (die Firmware setzt die Eigenschaft nicht, der Code lief nie)
+- Tests: `BleReadPumpTests` (Drain bis leer, Reihenfolge, Retry nach Senden, Link-lost nach 3 Fehlern, Run-Loop mit Signal und Poll, Signal-Koaleszenz, Log-Zeile), `BleStaleBondClassifierTests` (Unreachable nie Kopplungsproblem, Befund-Texte)
+- Handbuch (Schnellstart → „Bluetooth bricht ständig ab?“): Lesemodell, schonender Modus, 📶-Anzeige, Kopplungsregel
+
+---
+
 ## [1.7.3.4] - 2026-11-24
 
 ### 🔌 MeshStick-Assistent (Tools-Tab)

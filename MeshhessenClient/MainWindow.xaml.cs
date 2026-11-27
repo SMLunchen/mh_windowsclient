@@ -379,6 +379,7 @@ public partial class MainWindow : Window
             DebugDeviceCheckBox.IsChecked = settings.DebugDevice;
             DebugBluetoothCheckBox.IsChecked = settings.DebugBluetooth;
             DebugBleNodeLogCheckBox.IsChecked = settings.DebugBleNodeLog;
+            BleGentleModeCheckBox.IsChecked = settings.BleGentleMode;
             AlertBellSoundCheckBox.IsChecked = settings.AlertBellSound;
             MessageToastsCheckBox.IsChecked = settings.MessageToasts;
             FunkEchoCheckBox.IsChecked = settings.FunkEchoEnabled;
@@ -413,6 +414,7 @@ public partial class MainWindow : Window
             _protocolService.SetDebugDevice(settings.DebugDevice);
             BluetoothConnectionService.SetDebugEnabled(settings.DebugBluetooth);
             ApplyBleNodeLogSetting(settings.DebugBleNodeLog);
+            ApplyBleGentleModeSetting(settings.BleGentleMode);
 
             // Load TCP settings
             TcpHostTextBox.Text = settings.LastTcpHost;
@@ -1239,6 +1241,7 @@ public partial class MainWindow : Window
                     try
                     {
                         await _protocolService.InitializeAsync();
+                        NotifyBleInitComplete();   // config + node list loaded → release the fast BLE interval
                         if (_currentSettings.AutoTimeSyncOnConnect)
                             await _protocolService.SendTimeSyncAsync();
                         StartTimeSyncTimer();
@@ -1274,26 +1277,22 @@ public partial class MainWindow : Window
                 SetConnectionStatus(ConnectionStatus.Error);
                 ConnectButton.IsEnabled = true;
 
-                // BLE: "Meshtastic service not found" on a device Windows knows almost always means a stale
-                // bond/GATT cache (the device's GATT table changed, e.g. after a firmware update or the OTA
-                // loader ran under the same address). Removing the pairing clears both; connecting again re-pairs.
-                if (connectionParams is BluetoothConnectionParameters btParams &&
-                    ex.Message.Contains("service not found", StringComparison.OrdinalIgnoreCase))
+                // BLE: the stored Windows bond no longer fits the node (service table without the Meshtastic
+                // service, keys refused) — typical after a firmware update, factory reset or an OTA loader under
+                // the same address. Only the user decides whether to remove it; the client never unpairs on its own.
+                if (connectionParams is BluetoothConnectionParameters btParams && ex is Services.BleStaleBondException stale)
                 {
-                    var choice = MessageBox.Show(string.Format(Loc("StrBleStaleBondHint"), userMsg), Loc("StrError"),
-                        MessageBoxButton.YesNo, MessageBoxImage.Warning);
-                    if (choice == MessageBoxResult.Yes)
+                    if (await AskUnpairAsync(stale.Evidence, null) && await UnpairWithStatusAsync(btParams.DeviceAddress))
                     {
-                        UpdateStatusBar(Loc("StrBleUnpairing"));
-                        var unpaired = await Services.Firmware.BleGattLink.TryUnpairAsync(btParams.DeviceAddress,
-                            Windows.Devices.Bluetooth.BluetoothAddressType.Unspecified);
-                        UpdateStatusBar(Loc(unpaired ? "StrBleUnpaired" : "StrBleUnpairFailed"));
-                        if (unpaired)
-                        {
-                            await Task.Delay(1500);
-                            Connect_Click(sender, e); // second attempt pairs afresh (Windows may ask for the PIN)
-                        }
+                        await Task.Delay(1500);
+                        Connect_Click(sender, e); // second attempt pairs afresh (Windows may ask for the PIN)
                     }
+                    return;
+                }
+                // BLE: node off, out of range or rebooting — nothing wrong with the pairing, just try again later.
+                if (ex is Services.BleUnreachableException)
+                {
+                    MessageBox.Show(this, Loc("StrBleUnreachable"), Loc("StrConnectionFailed"), MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
                 MessageBox.Show(string.Format(Loc("StrConnectFailed"), userMsg), Loc("StrError"), MessageBoxButton.OK, MessageBoxImage.Error);
@@ -2024,6 +2023,7 @@ public partial class MainWindow : Window
                 DebugDevice = DebugDeviceCheckBox.IsChecked == true,
                 DebugBluetooth = DebugBluetoothCheckBox.IsChecked == true,
                 DebugBleNodeLog = DebugBleNodeLogCheckBox.IsChecked == true,
+                BleGentleMode = BleGentleModeCheckBox.IsChecked == true,
                 AlertBellSound = AlertBellSoundCheckBox.IsChecked == true,
                 MessageToasts = MessageToastsCheckBox.IsChecked == true,
                 FunkEchoEnabled = FunkEchoCheckBox.IsChecked == true,
@@ -2094,6 +2094,7 @@ public partial class MainWindow : Window
             _protocolService.SetDebugDevice(settings.DebugDevice);
             BluetoothConnectionService.SetDebugEnabled(settings.DebugBluetooth);
             ApplyBleNodeLogSetting(settings.DebugBleNodeLog);
+            ApplyBleGentleModeSetting(settings.BleGentleMode);
             UpdateKioskLockButton();
             ApplyEnvironmentUi();
             SetSettingsDirty(false);
@@ -2220,7 +2221,7 @@ public partial class MainWindow : Window
             text += "\n\n" + string.Format(Loc("StrBleDropStormRssi"), rssi, quality);
             Services.Logger.WriteLine($"[BLE] Signal at last connect: {rssi} dBm");
         }
-        MessageBox.Show(this, text, Loc("StrBleDropStormTitle"), MessageBoxButton.OK, MessageBoxImage.Information);
+        ShowDropStormHint(text);   // MainWindow.Ble.cs — offers the gentle Bluetooth mode when it is still off
     }
 
     /// <summary>Debug option "node log over Bluetooth": applies to the live BLE link and to future ones.</summary>
@@ -2261,6 +2262,10 @@ public partial class MainWindow : Window
 
         int attempt = 0;
         const int maxAttempts = Services.ReconnectBackoff.MaxAttempts;
+        // Bluetooth: a verdict "pairing looks stale" is only acted on with the user's consent, asked once per loop
+        // and only after it came up twice (a single one right after a node reboot is not worth a dialog).
+        int staleVerdicts = 0;
+        bool unpairAsked = false;
 
         while (!_intentionalDisconnect && attempt < maxAttempts)
         {
@@ -2342,6 +2347,7 @@ public partial class MainWindow : Window
                     try
                     {
                         await _protocolService.InitializeAsync(carry);
+                        NotifyBleInitComplete();   // same as in Connect_Click — both paths must release the fast interval
                         if (_currentSettings.AutoTimeSyncOnConnect)
                             await _protocolService.SendTimeSyncAsync();
                         StartTimeSyncTimer();
@@ -2367,6 +2373,18 @@ public partial class MainWindow : Window
                 var retryIn = Services.ReconnectBackoff.RetryDelay(attempt);
                 Services.Logger.WriteLine($"[RECONNECT] Attempt {attempt} failed: {ex.Message}" +
                                           (attempt < maxAttempts ? $" — next try in {retryIn.TotalSeconds:0} s" : ""));
+                if (ex is Services.BleStaleBondException stale && _lastConnectionParams is BluetoothConnectionParameters bt)
+                {
+                    staleVerdicts++;
+                    if (staleVerdicts >= 2 && !unpairAsked)
+                    {
+                        unpairAsked = true;
+                        if (await AskUnpairAsync(stale.Evidence, attempt))
+                            await UnpairWithStatusAsync(bt.DeviceAddress);   // next attempt pairs afresh
+                        else
+                            Services.Logger.WriteLine("[RECONNECT] User kept the pairing — continuing to retry");
+                    }
+                }
                 if (attempt < maxAttempts)
                     await Task.Delay(retryIn);
             }

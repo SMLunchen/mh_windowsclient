@@ -849,12 +849,56 @@
     <sys:String x:Key="StrFwErrUf2NotConsumed">Drive {0} is still present after the copy – the bootloader did not consume the file (not a bootloader drive, or wrong chip family).</sys:String>
     <sys:String x:Key="StrFwErrUf2Copy">Copying to the UF2 drive failed: {0}</sys:String>
     <sys:String x:Key="StrFwUnpairedHint">ℹ The Windows Bluetooth pairing with this device was removed because Windows stored the OTA loader's GATT table under the same address during the update. "Reconnect" pairs the device again – Windows may ask for the node's PIN.</sys:String>
-    <sys:String x:Key="StrBleStaleBondHint">Connection attempt failed: {0}
+    <sys:String x:Key="StrBleStaleBondTitle">Check Bluetooth pairing</sys:String>
+    <sys:String x:Key="StrBleStaleBondHint" xml:space="preserve">The Bluetooth connection failed, and the node did answer – but the pairing stored in Windows no longer fits it.
 
-On an already paired device, "Meshtastic service not found" almost always means a stale pairing: Windows still holds the old service table (e.g. after a firmware update). Remove the Bluetooth pairing now and connect again? Windows may ask for the PIN again.</sys:String>
+Finding: {0}
+
+Typical after a firmware update, a factory reset or a Bluetooth OTA whose loader ran under the same address. Remove the pairing now and pair afresh on the next connect? Windows may ask for the PIN again.
+
+No = keep the pairing. The client never removes a pairing without this question.</sys:String>
+    <sys:String x:Key="StrBleStaleBondReconnectHint" xml:space="preserve">During the automatic reconnect (attempt {1}) the node answered, but the pairing stored in Windows no longer fits it.
+
+Finding: {0}
+
+Remove the pairing now and pair afresh on the next attempt? Windows may ask for the PIN again.
+
+No = keep the pairing, the client keeps trying.</sys:String>
+    <sys:String x:Key="StrBleUnreachable">The node is not reachable over Bluetooth right now – switched off, out of range or in the middle of a reboot. The pairing is untouched; just connect again once the node is back.</sys:String>
     <sys:String x:Key="StrBleUnpairing">Removing Bluetooth pairing …</sys:String>
     <sys:String x:Key="StrBleUnpaired">Pairing removed – reconnecting …</sys:String>
     <sys:String x:Key="StrBleUnpairFailed">The pairing could not be removed – please remove it in the Windows Bluetooth settings.</sys:String>
+    <!-- Bluetooth settings + header signal label -->
+    <sys:String x:Key="StrBleSettingsGroup">Bluetooth</sys:String>
+    <sys:String x:Key="StrBleGentleMode">Gentle Bluetooth mode (slower transfer, less load on the radio link)</sys:String>
+    <sys:String x:Key="StrBleGentleModeHint">Normally the client asks for the fastest connection interval while config and node list load, and releases it afterwards. In gentle mode it stays with the balanced interval from the start: the node list loads more slowly, the node gets more breathing room. Helps with nodes that are far away or keep dropping. Applies to the next connection; a running one only switches while it is still loading.</sys:String>
+    <sys:String x:Key="StrBleGentleModeOffer">Switch the client to the gentle Bluetooth mode? It then no longer asks for a fast connection interval – the node list loads more slowly, the radio link carries less load. The setting lives under Settings → Bluetooth.</sys:String>
+    <sys:String x:Key="StrBleGentleModeOn">Gentle Bluetooth mode on – applies from the next connection</sys:String>
+    <sys:String x:Key="StrBleSignalFmt">📶 {0} dBm</sys:String>
+    <sys:String x:Key="StrBleSignalUnknown">📶 –</sys:String>
+    <sys:String x:Key="StrBleStatsTitle">Bluetooth link</sys:String>
+    <sys:String x:Key="StrBleStatsCopy">Copy</sys:String>
+    <sys:String x:Key="StrBleStatsCopied">Bluetooth statistics copied to the clipboard</sys:String>
+    <sys:String x:Key="StrBleStatsText" xml:space="preserve">Signal at connect:     {0}
+Mode:                  {1} · {2}
+Connection interval:   {3}
+Connected for:         {4}
+Reads:                 {5} ({6} % empty, {7} with data, {8} failed)
+FROMNUM notifications: {9} (subscribed: {10})
+Drains:                {11} on notify · {12} after write · {13} safety poll (every {14} s)
+Writes:                {15} ({16} failed)
+
+Windows reports no signal strength for a connected device –
+the value comes from the advertisements heard while connecting.</sys:String>
+    <sys:String x:Key="StrBleModeFast">fast</sys:String>
+    <sys:String x:Key="StrBleModeGentle">gentle</sys:String>
+    <sys:String x:Key="StrBlePhaseInit">initialising (fast interval requested)</sys:String>
+    <sys:String x:Key="StrBlePhaseSteady">steady (interval released)</sys:String>
+    <sys:String x:Key="StrBleIntervalUnknown">unknown (Windows before 11 22H2 does not report it)</sys:String>
+    <sys:String x:Key="StrBleRssiNone">no advertisement heard</sys:String>
+    <sys:String x:Key="StrBleRssiWeakShort">weak</sys:String>
+    <sys:String x:Key="StrBleYes">yes</sys:String>
+    <sys:String x:Key="StrBleNo">no</sys:String>
     <sys:String x:Key="StrLinkStaleReconnect">Device stopped responding – re-establishing the connection …</sys:String>
 
     <!-- Configuration backup / restore (Tools) -->

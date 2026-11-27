@@ -486,6 +486,7 @@ public partial class MainWindow
                 StatusText.Text = Loc("StrError");
                 break;
         }
+        UpdateBleSignalHeader();   // 📶 next to the bubble while a Bluetooth link is up (MainWindow.Ble.cs)
     }
 
     // -- Message DB load / lazy-load -------------------------------------------

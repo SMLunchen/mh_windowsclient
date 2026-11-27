@@ -33,6 +33,7 @@ public record AppSettings
     public bool DebugDevice { get; init; } = false;
     public bool DebugBluetooth { get; init; } = false;
     public bool DebugBleNodeLog { get; init; } = false;        // Debug: mirror the node's own log via the BLE LOGRADIO characteristic
+    public bool BleGentleMode { get; init; } = false;          // Bluetooth: Balanced connection interval from the start (slower download, less radio load)
     public bool AlertBellSound { get; init; } = true;           // Play sound on alert bell character
     public bool MessageToasts { get; init; } = true;            // Windows toast notification on new incoming message
     public string DmStyle { get; init; } = "window";           // Direct messages: "window" (separate) or "inline" (WhatsApp-style)
@@ -223,7 +224,8 @@ public static class SettingsService
                 DebugDevice = values.TryGetValue("DebugDevice", out var dbd) && bool.TryParse(dbd, out var dbdBool) && dbdBool,
                 DebugBluetooth = values.TryGetValue("DebugBluetooth", out var dbb) && bool.TryParse(dbb, out var dbbBool) && dbbBool,
                 DebugBleNodeLog = values.TryGetValue("DebugBleNodeLog", out var dbn) && bool.TryParse(dbn, out var dbnBool) && dbnBool,
-                AlertBellSound = !values.TryGetValue("AlertBellSound", out var abs) || !bool.TryParse(abs, out var absBool) || absBool,
+                BleGentleMode = values.TryGetValue("BleGentleMode", out var bgm) && bool.TryParse(bgm, out var bgmBool) && bgmBool,
+                AlertBellSound =!values.TryGetValue("AlertBellSound", out var abs) || !bool.TryParse(abs, out var absBool) || absBool,
                 MessageToasts = !values.TryGetValue("MessageToasts", out var mtb) || !bool.TryParse(mtb, out var mtbBool) || mtbBool,
                 DmStyle = values.TryGetValue("DmStyle", out var dmsv) ? dmsv : "window",
                 DmAutoPopup = !values.TryGetValue("DmAutoPopup", out var dap) || !bool.TryParse(dap, out var dapBool) || dapBool,
@@ -305,6 +307,7 @@ public static class SettingsService
                 $"DebugDevice={settings.DebugDevice}",
                 $"DebugBluetooth={settings.DebugBluetooth}",
                 $"DebugBleNodeLog={settings.DebugBleNodeLog}",
+                $"BleGentleMode={settings.BleGentleMode}",
                 $"AlertBellSound={settings.AlertBellSound}",
                 $"MessageToasts={settings.MessageToasts}",
                 $"DmStyle={settings.DmStyle}",

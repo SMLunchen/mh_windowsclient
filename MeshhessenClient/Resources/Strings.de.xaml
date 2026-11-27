@@ -849,12 +849,56 @@
     <sys:String x:Key="StrFwErrUf2NotConsumed">Das Laufwerk {0} ist nach dem Kopieren noch vorhanden – die Datei wurde nicht vom Bootloader übernommen (kein Bootloader-Laufwerk oder falsche Chip-Familie).</sys:String>
     <sys:String x:Key="StrFwErrUf2Copy">Kopieren auf das UF2-Laufwerk fehlgeschlagen: {0}</sys:String>
     <sys:String x:Key="StrFwUnpairedHint">ℹ Die Windows-Bluetooth-Kopplung zu diesem Gerät wurde entfernt, weil Windows während des Updates die GATT-Tabelle des OTA-Loaders unter derselben Adresse gespeichert hat. Beim „Erneut verbinden" koppelt der Client das Gerät neu – Windows fragt dabei ggf. nach dem PIN des Nodes.</sys:String>
-    <sys:String x:Key="StrBleStaleBondHint">Verbindungsversuch fehlgeschlagen: {0}
+    <sys:String x:Key="StrBleStaleBondTitle">Bluetooth-Kopplung prüfen</sys:String>
+    <sys:String x:Key="StrBleStaleBondHint" xml:space="preserve">Die Bluetooth-Verbindung ist fehlgeschlagen, und der Node hat geantwortet – nur passt die in Windows gespeicherte Kopplung nicht mehr zu ihm.
 
-Bei einem bereits gekoppelten Gerät bedeutet „Meshtastic-Dienst nicht gefunden" fast immer eine veraltete Kopplung: Windows hat noch die alte Dienstetabelle gespeichert (z. B. nach einem Firmware-Update). Soll die Bluetooth-Kopplung jetzt entfernt und die Verbindung neu aufgebaut werden? Windows fragt dabei ggf. erneut nach dem PIN.</sys:String>
+Befund: {0}
+
+Typisch nach einem Firmware-Update, einem Werksreset oder einem Bluetooth-OTA, bei dem der Loader unter derselben Adresse lief. Soll die Kopplung jetzt entfernt und beim nächsten Verbinden neu aufgebaut werden? Windows fragt dabei ggf. erneut nach dem PIN.
+
+Nein = Kopplung behalten. Der Client entfernt eine Kopplung nie ohne diese Rückfrage.</sys:String>
+    <sys:String x:Key="StrBleStaleBondReconnectHint" xml:space="preserve">Beim automatischen Neuverbinden (Versuch {1}) hat der Node geantwortet, aber die in Windows gespeicherte Kopplung passt nicht mehr zu ihm.
+
+Befund: {0}
+
+Soll die Kopplung jetzt entfernt und beim nächsten Versuch neu aufgebaut werden? Windows fragt dabei ggf. erneut nach dem PIN.
+
+Nein = Kopplung behalten, der Client versucht es weiter.</sys:String>
+    <sys:String x:Key="StrBleUnreachable">Der Node ist per Bluetooth gerade nicht erreichbar – ausgeschaltet, außer Reichweite oder mitten im Neustart. Die Kopplung bleibt unverändert; einfach erneut verbinden, sobald der Node da ist.</sys:String>
     <sys:String x:Key="StrBleUnpairing">Bluetooth-Kopplung wird entfernt …</sys:String>
     <sys:String x:Key="StrBleUnpaired">Kopplung entfernt – verbinde neu …</sys:String>
     <sys:String x:Key="StrBleUnpairFailed">Kopplung konnte nicht entfernt werden – bitte in den Windows-Bluetooth-Einstellungen entfernen.</sys:String>
+    <!-- Bluetooth settings + header signal label -->
+    <sys:String x:Key="StrBleSettingsGroup">Bluetooth</sys:String>
+    <sys:String x:Key="StrBleGentleMode">Schonender Bluetooth-Modus (langsamere Übertragung, weniger Last auf der Funkstrecke)</sys:String>
+    <sys:String x:Key="StrBleGentleModeHint">Normal fordert der Client beim Verbinden das schnellste Verbindungsintervall an, bis Konfiguration und Node-Liste geladen sind, und gibt es danach frei. Im schonenden Modus bleibt es von Anfang an beim ausgewogenen Intervall: Die Node-Liste lädt langsamer, dafür bekommt der Node mehr Luft. Hilft bei Nodes, die weit weg stehen oder immer wieder abreißen. Gilt für die nächste Verbindung; eine laufende wechselt nur, solange sie noch lädt.</sys:String>
+    <sys:String x:Key="StrBleGentleModeOffer">Soll der Client auf den schonenden Bluetooth-Modus umschalten? Er fordert dann kein schnelles Verbindungsintervall mehr an – die Node-Liste lädt langsamer, die Funkstrecke wird weniger belastet. Die Einstellung findest du unter Einstellungen → Bluetooth.</sys:String>
+    <sys:String x:Key="StrBleGentleModeOn">Schonender Bluetooth-Modus aktiv – gilt ab dem nächsten Verbindungsaufbau</sys:String>
+    <sys:String x:Key="StrBleSignalFmt">📶 {0} dBm</sys:String>
+    <sys:String x:Key="StrBleSignalUnknown">📶 –</sys:String>
+    <sys:String x:Key="StrBleStatsTitle">Bluetooth-Verbindung</sys:String>
+    <sys:String x:Key="StrBleStatsCopy">Kopieren</sys:String>
+    <sys:String x:Key="StrBleStatsCopied">Bluetooth-Statistik in die Zwischenablage kopiert</sys:String>
+    <sys:String x:Key="StrBleStatsText" xml:space="preserve">Signal beim Verbinden:  {0}
+Modus:                  {1} · {2}
+Verbindungsintervall:   {3}
+Verbunden seit:         {4}
+Lesevorgänge:           {5} ({6} % leer, {7} mit Daten, {8} Fehler)
+FROMNUM-Meldungen:      {9} (Abo: {10})
+Leseläufe:              {11} nach Meldung · {12} nach Senden · {13} Sicherheits-Poll (alle {14} s)
+Schreibvorgänge:        {15} ({16} Fehler)
+
+Windows liefert während der Verbindung keine Signalstärke –
+der Wert stammt aus den Advertisements beim Verbindungsaufbau.</sys:String>
+    <sys:String x:Key="StrBleModeFast">schnell</sys:String>
+    <sys:String x:Key="StrBleModeGentle">schonend</sys:String>
+    <sys:String x:Key="StrBlePhaseInit">Initialisierung (schnelles Intervall angefordert)</sys:String>
+    <sys:String x:Key="StrBlePhaseSteady">Dauerbetrieb (Intervall freigegeben)</sys:String>
+    <sys:String x:Key="StrBleIntervalUnknown">unbekannt (Windows vor 11 22H2 meldet es nicht)</sys:String>
+    <sys:String x:Key="StrBleRssiNone">kein Advertisement gehört</sys:String>
+    <sys:String x:Key="StrBleRssiWeakShort">schwach</sys:String>
+    <sys:String x:Key="StrBleYes">ja</sys:String>
+    <sys:String x:Key="StrBleNo">nein</sys:String>
     <sys:String x:Key="StrLinkStaleReconnect">Gerät antwortet nicht mehr – Verbindung wird neu aufgebaut …</sys:String>
 
     <!-- Configuration backup / restore (Tools) -->
