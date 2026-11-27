@@ -189,6 +189,72 @@ public class NodeIdentityTests : IDisposable
         Assert.False(ids.ContainsKey(2));
     }
 
+    // ── manual "request user info" exchanges OUR user, as Android does ──────
+
+    private static User OwnUser() => new()
+    {
+        Id = "!00000011", ShortName = "ME", LongName = "Me Node",
+        HwModel = HardwareModel.HeltecV3, Role = Config.Types.DeviceConfig.Types.Role.Router,
+    };
+
+    private static async Task<User> SentUserInfoRequest(MeshtasticProtocolService svc, FakeConnectionService fake)
+    {
+        await svc.RequestNodeInfoAsync(0x42, MeshtasticProtocolService.InfoRequestType.UserInfo);
+
+        var frame = fake.Written.Last();
+        var packet = ToRadio.Parser.ParseFrom(frame.AsSpan(4).ToArray()).Packet;
+        Assert.Equal(0x42u, packet.To);
+        Assert.Equal(PortNum.NodeinfoApp, packet.Decoded.Portnum);
+        Assert.True(packet.Decoded.WantResponse);
+        // An empty payload made the peer overwrite our NodeDB entry with empty names (firmware
+        // NodeDB::updateUser copies names, hardware and role unconditionally).
+        Assert.False(packet.Decoded.Payload.IsEmpty);
+        return User.Parser.ParseFrom(packet.Decoded.Payload);
+    }
+
+    [Fact]
+    public async Task Manual_user_info_request_carries_our_own_names_hardware_and_role()
+    {
+        var (svc, fake) = NewService();
+        fake.Receive(Frame(new FromRadio { MyInfo = new MyNodeInfo { MyNodeNum = 0x11 } }));
+        fake.Receive(Frame(NodeDbRow(0x11, OwnUser())));   // the device's NodeDB row of our own node
+
+        var user = await SentUserInfoRequest(svc, fake);
+        Assert.Equal("!00000011", user.Id);
+        Assert.Equal("Me Node", user.LongName);             // used to be "!00000011" — names were never copied
+        Assert.Equal("ME", user.ShortName);                 // used to be "0011"
+        Assert.Equal(HardwareModel.HeltecV3, user.HwModel);
+        Assert.Equal(Config.Types.DeviceConfig.Types.Role.Router, user.Role);
+    }
+
+    [Fact]
+    public async Task Own_user_falls_back_to_the_known_node_entry()
+    {
+        // Config-only reconnect: my_info arrives after the (carried-over) node list, the NodeDB is not
+        // downloaded again — the names must come from the known-node entry of our own node.
+        var (svc, fake) = NewService();
+        fake.Receive(Frame(NodeDbRow(0x11, OwnUser())));
+        fake.Receive(Frame(new FromRadio { MyInfo = new MyNodeInfo { MyNodeNum = 0x11 } }));
+
+        var user = await SentUserInfoRequest(svc, fake);
+        Assert.Equal("Me Node", user.LongName);
+        Assert.Equal("ME", user.ShortName);
+        Assert.Equal(HardwareModel.HeltecV3, user.HwModel);
+        Assert.Equal(Config.Types.DeviceConfig.Types.Role.Router, user.Role);
+    }
+
+    [Fact]
+    public async Task Own_user_without_any_names_still_identifies_us()
+    {
+        var (svc, fake) = NewService();
+        fake.Receive(Frame(new FromRadio { MyInfo = new MyNodeInfo { MyNodeNum = 0x11 } }));
+
+        var user = await SentUserInfoRequest(svc, fake);
+        Assert.Equal("!00000011", user.Id);
+        Assert.False(string.IsNullOrEmpty(user.LongName));
+        Assert.False(string.IsNullOrEmpty(user.ShortName));
+    }
+
     // ── every decoded packet refreshes signal + last seen (issue #85) ───────
 
     [Fact]

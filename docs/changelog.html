@@ -190,10 +190,43 @@
 <div class="section active" id="de">
 <main>
 
-  <!-- ── v1.7.3.5 ── -->
+  <!-- ── v1.7.3.6 ── -->
   <div class="version-entry current">
     <div class="version-header">
-      <span class="version-tag tag-latest">v1.7.3.5</span>
+      <span class="version-tag tag-latest">v1.7.3.6</span>
+      <span class="version-date">2026-11-27</span>
+      DMs und Node-Namen überleben das Neuverbinden, Traceroute mit Rückweg, Rolle in der Node-Liste
+    </div>
+    <p class="version-desc">Bugfix-Runde: Direktnachrichten im Inline-Modus werden jetzt gespeichert und nach dem Verbinden wiederhergestellt, bekannte Node-Namen fallen nicht mehr auf Platzhalter zurück, Hops und Signalwerte bleiben an Nachrichten aus der Historie erhalten. Dazu drei GitHub-Issues: Traceroute zeigt beide Richtungen und aktualisiert die Node-Liste, neue Spalte „Rolle“, volle Versionsnummer im Titel.</p>
+
+    <div class="cl-section fixed">
+      <h3>🐛 Behoben</h3>
+      <div class="cl-group">
+        <ul class="cl-list">
+          <li><strong>Direktnachrichten im Inline-Modus gingen beim Trennen verloren:</strong> DMs in der Seitenleiste wurden nie gespeichert, der Eintrag blieb beim Trennen stehen und war nach dem Neuverbinden leer. Jetzt werden sie wie im DM-Fenster unter dem Partner gespeichert, die Seitenleiste leert sich beim Trennen mit dem Chat und wird beim Verbinden aus den letzten 24 h neu aufgebaut; Hochscrollen lädt ältere DMs nach.</li>
+          <li><strong>Node-Namen fielen nach dem Neuverbinden auf „Node-xxxx“ zurück:</strong> Liefert die Node-DB des Geräts eine Zeile ohne User (typisch bei PKI-Paketen, die nur der Client entschlüsseln konnte), ersetzte der Platzhalter den bekannten Namen; ein User-Paket mit leeren Namen löschte ihn ganz. Der Client merkt sich jetzt Namen, Hardware und Rolle jedes identifizierten Nodes lokal und benennt solche Zeilen daraus; Platzhalter ersetzen nie einen echten Namen – auch nicht im Chat oder in der DM-Seitenleiste.</li>
+          <li><strong>Hops, SNR und RSSI fehlten an Nachrichten aus der Historie:</strong> Die Nachrichten-Datenbank hatte dafür keine Spalten, nach jedem Reconnect fehlten die Werte in Kanälen und DMs. Jetzt werden sie gespeichert und beim Laden übernommen.</li>
+          <li><strong>#85 Traceroute:</strong> Das Fenster zeigte nur den SNR des Hinwegs. Jetzt zwei Abschnitte wie in der Android-App – „→ Hinweg (Anfrage)“ und „← Rückweg (Antwort)“, die letzte Zeile des Rückwegs ist unser eigenes Funkgerät. Außerdem aktualisiert jetzt jedes dekodierte Paket SNR, RSSI und „Zuletzt gesehen“ in der Node-Liste (vorher nur Position, Telemetrie und User-Pakete), also auch Textnachrichten und Traceroute-Antworten.</li>
+          <li><strong>#87 Vollständige Versionsnummer:</strong> Titel und Fußzeile zeigen alle vier Stellen.</li>
+          <li><strong>„Benutzerinfo anfordern“ löschte beim Gegenüber unseren Namen:</strong> Die manuelle Anfrage schickte ein leeres Payload; die Firmware schreibt das als User mit leeren Namen in ihre Node-DB. Jetzt geht wie bei Android unser eigener User mit (Name, Hardware, Public Key) – ein echter Austausch, der Gegenüber lernt dabei auch unseren Schlüssel.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="cl-section added">
+      <h3>✨ Neu</h3>
+      <div class="cl-group">
+        <ul class="cl-list">
+          <li><strong>#86 Rolle in der Node-Liste:</strong> Spalte „Rolle“ (Client, Router, Client Mute, Repeater, …) hinter der ID, sortierbar und im Textfilter; in der Kachelansicht als Sortieroption.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── v1.7.3.5 ── -->
+  <div class="version-entry">
+    <div class="version-header">
+      <span class="version-tag tag-release">v1.7.3.5</span>
       <span class="version-date">2026-11-27</span>
       Bluetooth ruhiger und ohne ungefragtes Entkoppeln, bunte Emojis, Community-Bugs
     </div>
@@ -1552,10 +1585,43 @@
 <div class="section" id="en">
 <main>
 
-  <!-- ── v1.7.3.5 (EN) ── -->
+  <!-- ── v1.7.3.6 (EN) ── -->
   <div class="version-entry current">
     <div class="version-header">
-      <span class="version-tag tag-latest">v1.7.3.5</span>
+      <span class="version-tag tag-latest">v1.7.3.6</span>
+      <span class="version-date">2026-11-27</span>
+      DMs and node names survive reconnects, traceroute with return leg, role in the node list
+    </div>
+    <p class="version-desc">Bug-fix round: inline direct messages are now stored and restored on connect, known node names no longer fall back to placeholders, hops and signal values stay on messages loaded from history. Plus three GitHub issues: traceroute shows both directions and refreshes the node list, new "Role" column, full version number in the title.</p>
+
+    <div class="cl-section fixed">
+      <h3>🐛 Fixed</h3>
+      <div class="cl-group">
+        <ul class="cl-list">
+          <li><strong>Inline direct messages were lost on disconnect:</strong> DMs in the sidebar were never stored, the entry stayed behind on disconnect and opened empty after reconnecting. They are now stored under the partner like in the DM window, the sidebar clears together with the chat on disconnect and is rebuilt from the last 24 h on connect; scrolling up loads older DMs.</li>
+          <li><strong>Node names fell back to "Node-xxxx" after a reconnect:</strong> when the device NodeDB delivers a row without user (typical for PKI packets only the client could decrypt), the placeholder replaced the known name; a user packet with empty names wiped it entirely. The client now remembers name, hardware and role of every identified node locally and names such rows from that store; a placeholder never replaces a real name – not in the chat or the DM sidebar either.</li>
+          <li><strong>Hops, SNR and RSSI were missing on messages from history:</strong> the message database had no columns for them, so after every reconnect the values were gone in channels and DMs. They are now stored and restored on load.</li>
+          <li><strong>#85 Traceroute:</strong> the window only showed the outbound SNR. Now two sections like the Android app – "→ Towards destination (request)" and "← Back to us (reply)", the last row of the return leg is our own radio. In addition every decoded packet now refreshes SNR, RSSI and "last seen" in the node list (previously only position, telemetry and user packets), i.e. text messages and traceroute replies too.</li>
+          <li><strong>#87 Full version number:</strong> title and footer show all four parts.</li>
+          <li><strong>"Request user info" wiped our name on the peer:</strong> the manual request sent an empty payload, which the firmware writes into its NodeDB as a user with empty names. The request now carries our own user (name, hardware, public key) like Android does – a real exchange, and the peer learns our key at the same time.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="cl-section added">
+      <h3>✨ Added</h3>
+      <div class="cl-group">
+        <ul class="cl-list">
+          <li><strong>#86 Role in the node list:</strong> "Role" column (Client, Router, Client Mute, Repeater, …) after the ID, sortable and part of the text filter; a sort option in tile view as well.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── v1.7.3.5 (EN) ── -->
+  <div class="version-entry">
+    <div class="version-header">
+      <span class="version-tag tag-release">v1.7.3.5</span>
       <span class="version-date">2026-11-27</span>
       Calmer Bluetooth without unasked unpairing, colour emoji, community bugs
     </div>

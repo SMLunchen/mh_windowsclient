@@ -70,4 +70,65 @@ public class DmPersistenceTests : IDisposable
         Assert.Null(updated.Cipher);
         Assert.Equal("Hallo zusammen", updated.Message);
     }
+
+    [Fact]
+    public void Hop_count_and_signal_survive_the_round_trip()
+    {
+        // The bubble's "↪ N" and SNR/RSSI used to exist live only — every reload from the DB dropped them.
+        _mgr.InsertDmMessage(Partner, new MessageItem { Id = 7, FromId = Partner, ToId = Me, Message = "direct", HopCount = 0, RxSnr = 7.25f, RxRssi = -81 });
+        _mgr.InsertDmMessage(Partner, new MessageItem { Id = 8, FromId = Partner, ToId = Me, Message = "relayed", HopCount = 2 });
+        _mgr.InsertChannelMessage(0, "LongFast", new MessageItem { Id = 9, FromId = Partner, ToId = 0xFFFFFFFF, Message = "no hop info" });
+
+        var dms = _mgr.LoadDmMessagesSince(0);
+        var direct = Assert.Single(dms, e => e.PacketId == 7);
+        Assert.Equal(0, direct.HopCount);
+        Assert.Equal(7.25f, direct.RxSnr);
+        Assert.Equal(-81, direct.RxRssi);
+
+        var relayed = Assert.Single(dms, e => e.PacketId == 8);
+        Assert.Equal(2, relayed.HopCount);
+        Assert.Null(relayed.RxSnr);
+        Assert.Null(relayed.RxRssi);
+
+        var channel = Assert.Single(_mgr.LoadAllChannelMessagesSince(0));
+        Assert.Equal(-1, channel.HopCount);   // unknown stays unknown → no "↪" badge
+    }
+
+    [Fact]
+    public void Old_db_without_hop_columns_is_migrated_on_open()
+    {
+        var path = Path.Combine(_dir, "legacy.db");
+        using (var con = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={path}"))
+        {
+            con.Open();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = @"
+CREATE TABLE messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, timestamp INTEGER NOT NULL,
+    from_name TEXT NOT NULL DEFAULT '', from_id INTEGER NOT NULL DEFAULT 0, to_id INTEGER NOT NULL DEFAULT 0,
+    packet_id INTEGER NOT NULL DEFAULT 0, message TEXT NOT NULL DEFAULT '',
+    channel_index INTEGER NOT NULL DEFAULT 0, channel_name TEXT NOT NULL DEFAULT '',
+    is_encrypted INTEGER NOT NULL DEFAULT 0, is_via_mqtt INTEGER NOT NULL DEFAULT 0,
+    reply_id INTEGER NOT NULL DEFAULT 0, reply_from_name TEXT NOT NULL DEFAULT '', reply_preview TEXT NOT NULL DEFAULT '',
+    sender_color TEXT NOT NULL DEFAULT '', sender_note TEXT NOT NULL DEFAULT '', partner_id INTEGER NOT NULL DEFAULT 0);
+INSERT INTO messages (timestamp, from_id, to_id, packet_id, message, partner_id) VALUES (1, 1, 2, 3, 'old row', 2);";
+            cmd.ExecuteNonQuery();
+        }
+
+        using var svc = new MessageDatabaseService(path);   // runs the ADD COLUMN migrations
+        var old = Assert.Single(svc.LoadSince(0));
+        Assert.Equal("old row", old.Message);
+        Assert.Equal(-1, old.HopCount);
+        Assert.Null(old.RxSnr);
+        Assert.Null(old.Cipher);
+
+        svc.Insert(new MessageItem { Id = 4, FromId = 1, ToId = 2, Message = "new row", HopCount = 1, RxSnr = 3f, RxRssi = -70 }, 0, "", partnerId: 2);
+        var rows = svc.LoadSince(0);
+        Assert.Equal(2, rows.Count);
+        var fresh = Assert.Single(rows, e => e.PacketId == 4);
+        Assert.Equal(1, fresh.HopCount);
+        Assert.Equal(3f, fresh.RxSnr);
+        Assert.Equal(-70, fresh.RxRssi);
+        Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+    }
 }

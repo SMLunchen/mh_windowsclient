@@ -48,22 +48,29 @@ CREATE TABLE IF NOT EXISTS messages (
     sender_color    TEXT    NOT NULL DEFAULT '',
     sender_note     TEXT    NOT NULL DEFAULT '',
     partner_id      INTEGER NOT NULL DEFAULT 0,
-    cipher          BLOB
+    cipher          BLOB,
+    hop_count       INTEGER NOT NULL DEFAULT -1,
+    rx_snr          REAL,
+    rx_rssi         INTEGER
 );
 CREATE INDEX IF NOT EXISTS idx_msg_timestamp ON messages(timestamp);
 CREATE INDEX IF NOT EXISTS idx_msg_partner   ON messages(partner_id, timestamp);
 ";
         cmd.ExecuteNonQuery();
 
-        // Migrate older DBs that predate the cipher column (ADD COLUMN has no
-        // IF NOT EXISTS — a duplicate throws and is ignored).
-        try
+        // Migrate older DBs (ADD COLUMN has no IF NOT EXISTS — a duplicate throws and is ignored):
+        // cipher = PKI ciphertext (1.7.x); hop_count / rx_snr / rx_rssi = the bubble's "↪ N" and
+        // SNR/RSSI, which were lost on every reload from the DB (they only existed live).
+        foreach (var column in new[] { "cipher BLOB", "hop_count INTEGER NOT NULL DEFAULT -1", "rx_snr REAL", "rx_rssi INTEGER" })
         {
-            using var mig = con.CreateCommand();
-            mig.CommandText = "ALTER TABLE messages ADD COLUMN cipher BLOB";
-            mig.ExecuteNonQuery();
+            try
+            {
+                using var mig = con.CreateCommand();
+                mig.CommandText = $"ALTER TABLE messages ADD COLUMN {column}";
+                mig.ExecuteNonQuery();
+            }
+            catch { /* column already exists */ }
         }
-        catch { /* column already exists */ }
     }
 
     private SqliteConnection Open()
@@ -85,11 +92,13 @@ CREATE INDEX IF NOT EXISTS idx_msg_partner   ON messages(partner_id, timestamp);
 INSERT INTO messages
     (timestamp, from_name, from_id, to_id, packet_id, message,
      channel_index, channel_name, is_encrypted, is_via_mqtt,
-     reply_id, reply_from_name, reply_preview, sender_color, sender_note, partner_id, cipher)
+     reply_id, reply_from_name, reply_preview, sender_color, sender_note, partner_id, cipher,
+     hop_count, rx_snr, rx_rssi)
 VALUES
     ($ts, $fn, $fi, $ti, $pi, $msg,
      $ci, $cn, $enc, $mqtt,
-     $rid, $rfn, $rp, $sc, $sn, $pid, $cipher)";
+     $rid, $rfn, $rp, $sc, $sn, $pid, $cipher,
+     $hops, $snr, $rssi)";
 
             cmd.Parameters.AddWithValue("$ts",   DateTimeOffset.UtcNow.ToUnixTimeSeconds());
             cmd.Parameters.AddWithValue("$fn",   msg.From ?? string.Empty);
@@ -108,6 +117,9 @@ VALUES
             cmd.Parameters.AddWithValue("$sn",   msg.SenderNote ?? string.Empty);
             cmd.Parameters.AddWithValue("$pid",  (long)partnerId);
             cmd.Parameters.AddWithValue("$cipher", (object?)msg.PkiCipher ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("$hops", msg.HopCount);
+            cmd.Parameters.AddWithValue("$snr",  msg.RxSnr.HasValue  ? (double)msg.RxSnr.Value : DBNull.Value);
+            cmd.Parameters.AddWithValue("$rssi", msg.RxRssi.HasValue ? msg.RxRssi.Value         : DBNull.Value);
             cmd.ExecuteNonQuery();
         }
     }
@@ -248,7 +260,10 @@ SELECT * FROM (
                 SenderColorHex: r.GetString(r.GetOrdinal("sender_color")),
                 SenderNote:     r.GetString(r.GetOrdinal("sender_note")),
                 PartnerId:      (uint)r.GetInt64(r.GetOrdinal("partner_id")),
-                Cipher:         r.IsDBNull(r.GetOrdinal("cipher")) ? null : (byte[])r.GetValue(r.GetOrdinal("cipher"))
+                Cipher:         r.IsDBNull(r.GetOrdinal("cipher")) ? null : (byte[])r.GetValue(r.GetOrdinal("cipher")),
+                HopCount:       r.IsDBNull(r.GetOrdinal("hop_count")) ? -1 : (int)r.GetInt64(r.GetOrdinal("hop_count")),
+                RxSnr:          r.IsDBNull(r.GetOrdinal("rx_snr"))  ? null : (float)r.GetDouble(r.GetOrdinal("rx_snr")),
+                RxRssi:         r.IsDBNull(r.GetOrdinal("rx_rssi")) ? null : (int)r.GetInt64(r.GetOrdinal("rx_rssi"))
             ));
         }
         return list;

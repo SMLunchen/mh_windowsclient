@@ -2022,21 +2022,42 @@ public class MeshtasticProtocolService : Firmware.IFirmwareDeviceLink
         }));
     }
 
+    /// <summary>Our own User as the firmware would broadcast it. Names come from the device (NodeDB row of
+    /// our node or a live User packet), else from the known-node entry (a config-only reconnect skips the
+    /// NodeDB download and my_info carries no names), else the id. Hardware and role ride along because the
+    /// peer's NodeDB::updateUser copies them unconditionally — an Unset hardware model would wipe what the
+    /// peer already knew about us.</summary>
     private User BuildOwnUser()
     {
-        string longName, shortName;
+        string longName, shortName, roleName = "";
+        HardwareModel hw;
         lock (_dataLock)
         {
             longName  = _myDeviceInfo?.LongName ?? "";
             shortName = _myDeviceInfo?.ShortName ?? "";
+            hw        = _myHwModel;
+            if (_knownNodes.TryGetValue(_myNodeId, out var me))
+            {
+                if (string.IsNullOrEmpty(longName) && !ModelNodeInfo.IsPlaceholderName(me.LongName, _myNodeId))
+                    longName = me.LongName;
+                if (string.IsNullOrEmpty(shortName))
+                    shortName = me.ShortName ?? "";
+                roleName = me.Role ?? "";
+                if (hw == HardwareModel.Unset &&
+                    Enum.TryParse<HardwareModel>(me.HardwareModel, ignoreCase: true, out var hwParsed))
+                    hw = hwParsed;
+            }
         }
         string idHex = $"!{_myNodeId:x8}";
         var user = new User
         {
             Id        = idHex,
             LongName  = string.IsNullOrEmpty(longName) ? idHex : longName,
-            ShortName = string.IsNullOrEmpty(shortName) ? (idHex.Length >= 4 ? idHex[^4..] : idHex) : shortName
+            ShortName = string.IsNullOrEmpty(shortName) ? (idHex.Length >= 4 ? idHex[^4..] : idHex) : shortName,
+            HwModel   = hw,
         };
+        if (Enum.TryParse<Role>(roleName, ignoreCase: true, out var role))
+            user.Role = role;
         if (_myPublicKey is { Length: 32 })
             user.PublicKey = ByteString.CopyFrom(_myPublicKey);
         return user;
@@ -2604,8 +2625,14 @@ public class MeshtasticProtocolService : Firmware.IFirmwareDeviceLink
             switch (type)
             {
                 case InfoRequestType.UserInfo:
-                    portnum = 4; // NODEINFO_APP — want_response triggers reply with their User
-                    payload = ByteString.Empty;
+                    // NODEINFO_APP — want_response triggers the reply with their User. The payload must be
+                    // OUR user (as Android sends it, and as the automatic request does): the firmware decodes
+                    // an empty payload as a User with empty names and writes it into the peer's NodeDB
+                    // (NodeDB::updateUser copies names unconditionally) — the manual request used to wipe
+                    // our own name and hardware on the peer until our next NodeInfo broadcast. With our key
+                    // in the payload the peer also learns it, which is what the yellow key needs.
+                    portnum = 4;
+                    payload = BuildOwnUser().ToByteString();
                     break;
 
                 case InfoRequestType.Position:
@@ -2771,14 +2798,23 @@ public class MeshtasticProtocolService : Firmware.IFirmwareDeviceLink
             else if (stored != null)
                 ApplyStoredIdentity(nodeInfo, stored);   // names, hardware, role from an earlier session
 
-            // Update DeviceInfo if this is our own node
-            if (protoNodeInfo.Num == _myNodeId && _myDeviceInfo != null && !string.IsNullOrEmpty(nodeInfo.HardwareModel))
+            // Update DeviceInfo if this is our own node. my_info carries no names — they only exist in this
+            // NodeDB row (or a live User packet of our own node, which rarely reaches the phone API). Only the
+            // hardware model was copied here, so BuildOwnUser fell back to "!id"/"ddc8" and every peer we
+            // asked for user info saw us without a name.
+            if (protoNodeInfo.Num == _myNodeId && _myDeviceInfo != null)
             {
                 lock (_dataLock)
                 {
-                    _myDeviceInfo.HardwareModel = nodeInfo.HardwareModel;
-                    if (protoNodeInfo.User?.HwModel is HardwareModel ownHw && ownHw != HardwareModel.Unset)
+                    if (!string.IsNullOrEmpty(nodeInfo.HardwareModel))
+                        _myDeviceInfo.HardwareModel = nodeInfo.HardwareModel;
+                    if (user?.HwModel is HardwareModel ownHw && ownHw != HardwareModel.Unset)
                         _myHwModel = ownHw;
+                    if (hasRealUser)
+                    {
+                        _myDeviceInfo.ShortName = user!.ShortName;
+                        _myDeviceInfo.LongName  = user.LongName;
+                    }
                 }
             }
 

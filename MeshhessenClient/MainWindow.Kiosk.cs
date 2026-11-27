@@ -630,7 +630,10 @@ public partial class MainWindow
             ReplyFromName   = e.ReplyFromName,
             ReplyPreview    = e.ReplyPreview,
             SenderColorHex  = e.SenderColorHex,
-            SenderNote      = e.SenderNote
+            SenderNote      = e.SenderNote,
+            HopCount        = e.HopCount,
+            RxSnr           = e.RxSnr,
+            RxRssi          = e.RxRssi
         };
     }
 
