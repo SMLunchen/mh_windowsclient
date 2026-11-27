@@ -966,6 +966,9 @@
 </ul>
 </li>
 <li><strong>SNR/RSSI only for direct reception</strong> – signal values are shown only when we hear the node directly (0 hops, no MQTT); for relayed nodes the column shows the hop count instead</li>
+<li><strong>Every decoded packet counts as a contact</strong> – "last seen", SNR and RSSI follow any packet from the node (text message, traceroute reply, ack …), as in the firmware's own NodeDB and the Android app; the direct-link SNR only from 0-hop, non-MQTT packets</li>
+<li><strong>Role column</strong> – the device role (Client, Router, Client Mute, Repeater, …) right after the ID, sortable (known roles first, then alphabetically) and included in the text filter; also a sort option in tile mode</li>
+<li><strong>Names survive reconnects</strong> – the client remembers short/long name, hardware and role of every identified node locally (<code>telemetry.db</code>); a device NodeDB row without user (the node was only heard by id, e.g. PKI packets only the client could decrypt) is named from that store instead of falling back to "Meshtastic abcd"</li>
 <li><strong>Advanced filters</strong> – by "last seen" (5 min to 60 days), hide MQTT nodes, favorites only, <strong>direct links only</strong> (0 hops, not via MQTT – exactly the rows whose SNR column shows a value instead of "N Hops"/"MQTT"), SNR coloring on/off; sort dropdown in tile mode</li>
 <li><strong>Sorting follows the display</strong> – SNR/RSSI sort by what the column shows: direct links by value first, then relays by hop count (fewer hops = better), then MQTT, then unknown. With a column sort active only your own node and pinned nodes stay on top</li>
 <li><strong>Request information</strong> – right-click submenu (list, tile, map) requests data from a node like the Android app: user info, position, device/environment/air-quality/power/host metrics, signal quality/mesh stats, PAX counter</li>

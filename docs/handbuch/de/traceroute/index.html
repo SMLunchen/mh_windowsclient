@@ -866,7 +866,7 @@
 <li><strong>„Nur HF"-Modus</strong> – sendet die Anfrage mit gelöschtem OK-to-MQTT-Bit (vorverschlüsseltes Paket): MQTT-Gateways leiten sie nicht weiter, die Route läuft ausschließlich über Funk. Hinweis: Die <em>Antwort</em> kann trotzdem über MQTT zurückkommen — das bestimmt der Ziel-Node.</li>
 <li><strong>Ehrliche MQTT-Badges:</strong> Hops bekommen das MQTT-Badge nur, wenn für die Teilstrecke keine Funk-Messung vorliegt; das Kopf-Badge „via MQTT" bedeutet nur „die Antwort kam über MQTT an"</li>
 <li><strong>Eigenes Fenster</strong> pro Ziel-Node mit:</li>
-<li>Hop-Tabelle: Node-Name, Entfernung, SNR (in dB), MQTT-Indikator</li>
+<li>Hop-Tabelle in zwei Abschnitten wie in der Android-App: <strong>„→ Hinweg (Anfrage)“</strong> (Ich → Relays → Ziel) und <strong>„← Rückweg (Antwort)“</strong> (Ziel → Relays → Ich); je Zeile Node-Name, Entfernung, SNR (in dB), MQTT-Indikator. Der SNR einer Zeile ist der Wert, mit dem <em>dieser</em> Node den vorherigen Hop gehört hat – die letzte Zeile des Hinwegs ist also das Ziel, die letzte Zeile des Rückwegs unser eigenes Funkgerät (derselbe Wert, der danach in der Node-Liste steht)</li>
 <li>Live-Status (Warten / Empfangen)</li>
 <li><strong>⛰ Höhenprofil pro Hop</strong> – Rechtsklick auf eine Hop-Zeile zeigt das Geländeprofil der Teilstrecke (SRTM, Sichtlinie, Fresnel-Zone)</li>
 <li><strong>Karte:</strong> Route mit Linien plotten</li>

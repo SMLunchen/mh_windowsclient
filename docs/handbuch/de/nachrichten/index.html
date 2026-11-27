@@ -904,8 +904,8 @@
 <li>🚨 SOS-Button in Chat und DMs</li>
 <li>Visuell: rote blinkende Umrandung + Notification-Bar mit „📍 Zur Karte"-Button</li>
 <li><strong>Persistente Nachrichten-Datenbank</strong> – Kanal- und DM-Nachrichten dauerhaft in lokaler SQLite-DB (standardmäßig aktiv; abschaltbar in den Einstellungen unter „Nachrichten-Datenbank")</li>
-<li>Letzten 24 Stunden beim Verbinden automatisch geladen; ältere Nachrichten per Hochscrollen nachladen</li>
-<li><strong>DM-History:</strong> Alle Konversationen der letzten 24 h erscheinen beim Öffnen des DM-Fensters automatisch</li>
+<li>Letzten 24 Stunden beim Verbinden automatisch geladen; ältere Nachrichten per Hochscrollen nachladen – mit Hop-Anzahl („↪ N“) und bei Direktempfang SNR/RSSI, wie bei live empfangenen Nachrichten</li>
+<li><strong>DM-History:</strong> Alle Konversationen der letzten 24 h erscheinen beim Öffnen des DM-Fensters automatisch – und im Inline-Modus (DMs in der Seitenleiste) beim Verbinden in der Seitenleiste; dort werden gesendete und empfangene DMs genauso gespeichert, beim Trennen leert sich die Seitenleiste mit dem Chat und wird beim Neuverbinden aus der Datenbank neu aufgebaut. Hochscrollen in einer offenen DM lädt ältere Nachrichten dieser Unterhaltung nach</li>
 <li><strong>Pro-Kanal-Löschung</strong> direkt im Kanäle-Tab: „Nachrichten-DB leeren"-Spalte mit Zeitraum-Dialog (Alle / 30 / 90 / 365 Tage)</li>
 <li>Bestätigung vor dem Löschen einer DM-Konversation (kein versehentliches Wischen)</li>
 <li>Aufbewahrungsdauer konfigurierbar (30 / 90 / 365 Tage / unbegrenzt — Standard: 90 Tage)</li>
