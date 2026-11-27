@@ -1,12 +1,16 @@
 <Window x:Class="MeshhessenClient.FirmwareUpdateWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="http://schemas.modernwpf.com/2019"
+        ui:WindowHelper.UseModernWindowStyle="True"
         Title="{DynamicResource StrFwTitle}"
         Width="780" Height="640"
         MinWidth="640" MinHeight="520"
         WindowStartupLocation="CenterOwner"
         ResizeMode="CanResizeWithGrip">
 
+    <!-- Theme-aware (issue #82): the window follows the app theme like every other dialog; secondary text and
+         the info/warn boxes use theme brushes and alpha tints instead of light-only hex colors. -->
     <Window.Resources>
         <Style x:Key="FwSectionTitle" TargetType="TextBlock">
             <Setter Property="FontSize" Value="14"/>
@@ -15,11 +19,11 @@
         </Style>
         <Style x:Key="FwHint" TargetType="TextBlock">
             <Setter Property="TextWrapping" Value="Wrap"/>
-            <Setter Property="Foreground" Value="#666"/>
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseMediumBrush}"/>
             <Setter Property="Margin" Value="0,0,0,10"/>
         </Style>
         <Style x:Key="FwWarnBox" TargetType="Border">
-            <Setter Property="Background" Value="#FFF4D6"/>
+            <Setter Property="Background" Value="#33E0A800"/>
             <Setter Property="BorderBrush" Value="#E0A800"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="CornerRadius" Value="4"/>
@@ -27,7 +31,7 @@
             <Setter Property="Margin" Value="0,0,0,10"/>
         </Style>
         <Style x:Key="FwInfoBox" TargetType="Border">
-            <Setter Property="Background" Value="#E8F1FB"/>
+            <Setter Property="Background" Value="#261E6AB8"/>
             <Setter Property="BorderBrush" Value="#1E6AB8"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="CornerRadius" Value="4"/>
@@ -35,7 +39,7 @@
             <Setter Property="Margin" Value="0,0,0,10"/>
         </Style>
         <Style x:Key="FwLabel" TargetType="TextBlock">
-            <Setter Property="Foreground" Value="#666"/>
+            <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseMediumBrush}"/>
             <Setter Property="Margin" Value="0,0,12,4"/>
         </Style>
         <Style x:Key="FwValue" TargetType="TextBlock">
@@ -78,7 +82,7 @@
                     </Border>
 
                     <TextBlock Text="{DynamicResource StrFwDeviceSection}" Style="{StaticResource FwSectionTitle}"/>
-                    <Border BorderBrush="#DDD" BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,0,12">
+                    <Border BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}" BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,0,12">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto"/>
@@ -140,19 +144,19 @@
 
                     <RadioButton x:Name="MethodWifiRadio" GroupName="Method" Content="{DynamicResource StrFwMethodWifi}" FontWeight="SemiBold" Checked="Method_Checked"/>
                     <TextBlock Text="{DynamicResource StrFwMethodWifiDesc}" Style="{StaticResource FwHint}" Margin="24,2,0,2"/>
-                    <TextBlock x:Name="MethodWifiReason" Foreground="#B00020" Margin="24,0,0,12" FontSize="12"/>
+                    <TextBlock x:Name="MethodWifiReason" Foreground="{DynamicResource SystemControlErrorTextForegroundBrush}" Margin="24,0,0,12" FontSize="12"/>
 
                     <RadioButton x:Name="MethodBleOtaRadio" GroupName="Method" Content="{DynamicResource StrFwMethodBleOta}" FontWeight="SemiBold" Checked="Method_Checked"/>
                     <TextBlock Text="{DynamicResource StrFwMethodBleOtaDesc}" Style="{StaticResource FwHint}" Margin="24,2,0,2"/>
-                    <TextBlock x:Name="MethodBleOtaReason" Foreground="#B00020" Margin="24,0,0,12" FontSize="12"/>
+                    <TextBlock x:Name="MethodBleOtaReason" Foreground="{DynamicResource SystemControlErrorTextForegroundBrush}" Margin="24,0,0,12" FontSize="12"/>
 
                     <RadioButton x:Name="MethodBleDfuRadio" GroupName="Method" Content="{DynamicResource StrFwMethodBleDfu}" FontWeight="SemiBold" Checked="Method_Checked"/>
                     <TextBlock Text="{DynamicResource StrFwMethodBleDfuDesc}" Style="{StaticResource FwHint}" Margin="24,2,0,2"/>
-                    <TextBlock x:Name="MethodBleDfuReason" Foreground="#B00020" Margin="24,0,0,12" FontSize="12"/>
+                    <TextBlock x:Name="MethodBleDfuReason" Foreground="{DynamicResource SystemControlErrorTextForegroundBrush}" Margin="24,0,0,12" FontSize="12"/>
 
                     <RadioButton x:Name="MethodUf2Radio" GroupName="Method" Content="{DynamicResource StrFwMethodUf2}" FontWeight="SemiBold" Checked="Method_Checked"/>
                     <TextBlock Text="{DynamicResource StrFwMethodUf2Desc}" Style="{StaticResource FwHint}" Margin="24,2,0,2"/>
-                    <TextBlock x:Name="MethodUf2Reason" Foreground="#B00020" Margin="24,0,0,12" FontSize="12"/>
+                    <TextBlock x:Name="MethodUf2Reason" Foreground="{DynamicResource SystemControlErrorTextForegroundBrush}" Margin="24,0,0,12" FontSize="12"/>
 
                     <Border x:Name="Esp32SerialBox" Style="{StaticResource FwInfoBox}" Visibility="Collapsed">
                         <StackPanel>
@@ -197,7 +201,7 @@
                     <Border x:Name="AlphaWarnBox" Style="{StaticResource FwWarnBox}" Visibility="Collapsed">
                         <TextBlock Text="{DynamicResource StrFwAlphaWarn}" TextWrapping="Wrap"/>
                     </Border>
-                    <TextBlock x:Name="NoReleasesText" Text="{DynamicResource StrFwNoReleases}" Foreground="#B00020" TextWrapping="Wrap" Visibility="Collapsed" Margin="0,0,0,6"/>
+                    <TextBlock x:Name="NoReleasesText" Text="{DynamicResource StrFwNoReleases}" Foreground="{DynamicResource SystemControlErrorTextForegroundBrush}" TextWrapping="Wrap" Visibility="Collapsed" Margin="0,0,0,6"/>
                 </StackPanel>
 
                 <!-- Local file picker -->
@@ -225,7 +229,7 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
-                    <TextBlock Text="{DynamicResource StrFwLblNotes}" Foreground="#666" Margin="0,0,0,4"/>
+                    <TextBlock Text="{DynamicResource StrFwLblNotes}" Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" Margin="0,0,0,4"/>
                     <TextBox x:Name="ReleaseNotesBox" Grid.Row="1" IsReadOnly="True" TextWrapping="Wrap"
                              VerticalScrollBarVisibility="Auto" FontFamily="Consolas" FontSize="11" Padding="8"/>
                 </Grid>
@@ -240,7 +244,7 @@
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
                 <TextBlock Text="{DynamicResource StrFwPreflightHint}" Style="{StaticResource FwHint}"/>
-                <Border Grid.Row="1" BorderBrush="#DDD" BorderThickness="1" CornerRadius="4" Padding="10">
+                <Border Grid.Row="1" BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}" BorderThickness="1" CornerRadius="4" Padding="10">
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
                         <ItemsControl x:Name="PreflightList"/>
                     </ScrollViewer>
@@ -267,13 +271,13 @@
                 </Border>
                 <TextBlock x:Name="PhaseText" Grid.Row="1" FontSize="14" FontWeight="SemiBold" Margin="0,4,0,4" TextWrapping="Wrap"/>
                 <ProgressBar x:Name="TransferProgress" Grid.Row="2" Height="18" Margin="0,0,0,4"/>
-                <TextBlock x:Name="DetailText" Grid.Row="3" Foreground="#666" Margin="0,0,0,8"/>
+                <TextBlock x:Name="DetailText" Grid.Row="3" Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" Margin="0,0,0,8"/>
                 <Grid Grid.Row="4">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
-                    <TextBlock Text="{DynamicResource StrFwLog}" Foreground="#666" Margin="0,0,0,4"/>
+                    <TextBlock Text="{DynamicResource StrFwLog}" Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" Margin="0,0,0,4"/>
                     <TextBox x:Name="LogBox" Grid.Row="1" IsReadOnly="True" VerticalScrollBarVisibility="Auto"
                              FontFamily="Consolas" FontSize="11" Padding="6" TextWrapping="Wrap"/>
                 </Grid>
@@ -283,17 +287,17 @@
             <ScrollViewer x:Name="Page6" VerticalScrollBarVisibility="Auto" Padding="20" Visibility="Collapsed">
                 <StackPanel>
                     <TextBlock x:Name="ResultText" FontSize="14" TextWrapping="Wrap" Margin="0,0,0,12"/>
-                    <TextBlock x:Name="ResultDetailText" Foreground="#666" TextWrapping="Wrap" Margin="0,0,0,12"/>
+                    <TextBlock x:Name="ResultDetailText" Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" TextWrapping="Wrap" Margin="0,0,0,12"/>
                     <StackPanel Orientation="Horizontal">
                         <Button x:Name="ReconnectBtn" Content="{DynamicResource StrFwReconnectBtn}" Padding="14,6" Click="Reconnect_Click"/>
-                        <TextBlock x:Name="ReconnectStatusText" VerticalAlignment="Center" Margin="12,0,0,0" Foreground="#666"/>
+                        <TextBlock x:Name="ReconnectStatusText" VerticalAlignment="Center" Margin="12,0,0,0" Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"/>
                     </StackPanel>
                 </StackPanel>
             </ScrollViewer>
         </Grid>
 
         <!-- ── FOOTER ── -->
-        <Border Grid.Row="2" BorderBrush="#DDD" BorderThickness="0,1,0,0" Padding="16,10">
+        <Border Grid.Row="2" BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}" BorderThickness="0,1,0,0" Padding="16,10">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -301,7 +305,7 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <TextBlock x:Name="FooterStatusText" Foreground="#666" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                <TextBlock x:Name="FooterStatusText" Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
                 <Button x:Name="BackBtn" Grid.Column="1" Content="{DynamicResource StrFwBack}" Padding="14,6" Margin="0,0,8,0" Click="Back_Click"/>
                 <Button x:Name="NextBtn" Grid.Column="2" Content="{DynamicResource StrFwNext}" Padding="14,6" Margin="0,0,8,0" Click="Next_Click"/>
                 <Button x:Name="CancelBtn" Grid.Column="3" Content="{DynamicResource StrFwCancel}" Padding="14,6" Click="Cancel_Click"/>

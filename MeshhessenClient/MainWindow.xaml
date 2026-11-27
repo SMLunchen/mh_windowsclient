@@ -1425,6 +1425,13 @@
                                   Margin="0,0,10,0"
                                   Checked="NodeAdvancedFilter_Changed"
                                   Unchecked="NodeAdvancedFilter_Changed"/>
+                        <CheckBox x:Name="OnlyDirectNodesCheckBox"
+                                  Content="{DynamicResource StrNodeFilterOnlyDirect}"
+                                  ToolTip="{DynamicResource StrNodeFilterOnlyDirectTip}"
+                                  FontSize="11" VerticalAlignment="Center"
+                                  Margin="0,0,10,0"
+                                  Checked="NodeAdvancedFilter_Changed"
+                                  Unchecked="NodeAdvancedFilter_Changed"/>
                         <CheckBox x:Name="SnrColorCheckBox"
                                   Content="{DynamicResource StrNodeFilterSnrColor}"
                                   ToolTip="{DynamicResource StrNodeFilterSnrColorTooltip}"

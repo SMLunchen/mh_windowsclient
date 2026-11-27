@@ -1394,6 +1394,8 @@ Remedy: reduce the distance or use a Bluetooth adapter with an external antenna.
     <sys:String x:Key="StrNodeFilterLastSeen">Seen:</sys:String>
     <sys:String x:Key="StrNodeFilterHideMqtt">Hide MQTT</sys:String>
     <sys:String x:Key="StrNodeFilterOnlyFavorites">Favorites ⭐ only</sys:String>
+    <sys:String x:Key="StrNodeFilterOnlyDirect">Direct links only</sys:String>
+    <sys:String x:Key="StrNodeFilterOnlyDirectTip">Only nodes your own radio heard itself: last packet with 0 hops and not via MQTT – the rows whose SNR column shows a value instead of "N Hops" or "MQTT".</sys:String>
     <sys:String x:Key="StrNodeFilterSnrColor">SNR color</sys:String>
     <sys:String x:Key="StrNodeFilterSnrColorTooltip">Color avatar circle by SNR (direct HF packets only, no MQTT)</sys:String>
 

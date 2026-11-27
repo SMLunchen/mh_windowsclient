@@ -1394,6 +1394,8 @@ Abhilfe: Abstand verringern oder einen Bluetooth-Adapter mit externer Antenne nu
     <sys:String x:Key="StrNodeFilterLastSeen">Gesehen:</sys:String>
     <sys:String x:Key="StrNodeFilterHideMqtt">MQTT ausblenden</sys:String>
     <sys:String x:Key="StrNodeFilterOnlyFavorites">Favoriten ⭐ only</sys:String>
+    <sys:String x:Key="StrNodeFilterOnlyDirect">Nur Direktverbindungen</sys:String>
+    <sys:String x:Key="StrNodeFilterOnlyDirectTip">Nur Nodes, die dein Node selbst per Funk gehört hat: letztes Paket mit 0 Hops und nicht über MQTT – also die Zeilen, bei denen die SNR-Spalte einen Wert statt „N Hops“ oder „MQTT“ zeigt.</sys:String>
     <sys:String x:Key="StrNodeFilterSnrColor">SNR-Farbe</sys:String>
     <sys:String x:Key="StrNodeFilterSnrColorTooltip">Avatar-Kreis nach SNR einfärben (nur direkte HF-Pakete, kein MQTT)</sys:String>
 

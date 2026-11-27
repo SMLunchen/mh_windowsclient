@@ -21,9 +21,9 @@
     <PublishDir>..\public\</PublishDir>
 
     <AssemblyName>MeshhessenClient</AssemblyName>
-    <Version>1.7.3.4</Version>
-    <AssemblyVersion>1.7.3.4</AssemblyVersion>
-    <FileVersion>1.7.3.4</FileVersion>
+    <Version>1.7.3.5</Version>
+    <AssemblyVersion>1.7.3.5</AssemblyVersion>
+    <FileVersion>1.7.3.5</FileVersion>
     <Company>Meshtastic Community</Company>
     <Product>Meshhessen Client</Product>
     <Description>Offline-fähiger Windows Client für Meshtastic Geräte</Description>
@@ -60,8 +60,9 @@
     <PackageReference Include="Mapsui" Version="4.1.7" />
     <PackageReference Include="Mapsui.Wpf" Version="4.1.7" />
 
-    <!-- Color Emoji rendering (WPF does not natively support COLR color fonts) -->
-    <PackageReference Include="Emoji.Wpf" Version="0.3.3" />
+    <!-- Color Emoji rendering (WPF does not natively support COLR color fonts).
+         0.3.4 carries Emoji 15.0 data (0.3.3 stopped at 13.1 — 🫡 and friends were plain text). -->
+    <PackageReference Include="Emoji.Wpf" Version="0.3.4" />
 
     <!-- MeshStick assistant: PnP device probe (WMI) + control of the meshtasticd Windows service -->
     <PackageReference Include="System.Management" Version="8.0.0" />

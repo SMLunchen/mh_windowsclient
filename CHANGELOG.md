@@ -7,7 +7,7 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
 
-## [Unreleased]
+## [1.7.3.5] - 2026-11-27
 
 ### 📶 Bluetooth: ruhiger lesen, nie ungefragt entkoppeln, Signal in der Kopfzeile
 
@@ -22,6 +22,20 @@ Anlass: Rückmeldungen aus der Community, Bluetooth sei im Client unzuverlässig
 - Entfernt: die experimentelle FROMRADIO-Notify-Subscription (die Firmware setzt die Eigenschaft nicht, der Code lief nie)
 - Tests: `BleReadPumpTests` (Drain bis leer, Reihenfolge, Retry nach Senden, Link-lost nach 3 Fehlern, Run-Loop mit Signal und Poll, Signal-Koaleszenz, Log-Zeile), `BleStaleBondClassifierTests` (Unreachable nie Kopplungsproblem, Befund-Texte)
 - Handbuch (Schnellstart → „Bluetooth bricht ständig ab?“): Lesemodell, schonender Modus, 📶-Anzeige, Kopplungsregel
+
+### 😀 Emojis in Nachrichten: bunt und aktuell
+
+- **Nachrichtentext zeigt Emojis jetzt farbig:** Bisher rendert WPF Emojis im Nachrichtentext einfarbig (keine COLR-Schriften); Namen und Reaktionen nutzten bereits Emoji.Wpf. Jetzt werden die Emoji-Sequenzen im fertigen Nachrichtendokument (Kanal-Chat und DM-Fenster) durch Emoji.Wpf-Inlines ersetzt – Fettdruck, Links und Monospace bleiben erhalten
+- **Emoji.Wpf 0.3.3 → 0.3.4:** Emoji-Daten 13.1 → 15.0. Neuere Emojis wie 🫡 (Unicode 14) waren der Bibliothek unbekannt und blieben Schwarz-Weiß-Text, auch in Node-Namen und Reaktionen. Voraussetzung für die Darstellung bleibt die Systemschrift Segoe UI Emoji (Windows 11 kennt 🫡, Windows 10 nicht)
+- Tests: `EmojiInlineTests` (Emoji-Daten kennen Unicode 14/15; gebundenes Nachrichtendokument bekommt Emoji-Inlines, Text/Fett/Links bleiben erhalten)
+
+### 🐛 Fehlerbehebungen (GitHub-Issues)
+
+- **#83 Sortierung nach SNR und RSSI:** Die Spalten zeigen seit der Node-Liste von 1.6 `SnrDisplay`/`RssiDisplay` („2 Hops“, „MQTT“, „7,5 / MQTT“ bzw. leer bei Relay/MQTT), die Sortierung griff aber weiter auf die Rohwerte zu – ein Node mit „3 Hops“ stand nach dem SNR seines letzten weitergeleiteten Pakets einsortiert, die sichtbare Reihenfolge wirkte zufällig. Neue `NodeSortKeys` sortieren nach dem, was die Spalte zeigt, SNR und RSSI mit denselben Gruppen: erst direkte Links nach Wert, dann Relays nach Hop-Zahl (weniger Hops = besser), dann MQTT mit/ohne früherem Direkt-SNR, dann unbekannt. Zahlen werden kulturtolerant gelesen („12,5“ und „12.5“), was auch Entfernung und Akku betrifft. Gilt für Listen-Spaltenköpfe und die Sortier-Box der Kachelansicht. Zweite Ursache: Favoriten wurden immer als Block nach oben gezogen – mit einem Dutzend Favoriten verdeckte das jede Spaltensortierung. Bei aktiver Spaltensortierung bleiben jetzt nur der eigene Node und angepinnte Nodes oben, Favoriten sortieren mit (in der Standardreihenfolge ohne Spaltensortierung bleibt der Favoriten-Block). Mit Tests
+- **Node-Liste: Filter „Nur Direktverbindungen“** (neben „MQTT ausblenden“/„Favoriten“): Nodes, die der eigene Node selbst per Funk gehört hat – letztes Paket mit 0 Hops und nicht über MQTT, also genau die Zeilen, deren SNR-Spalte einen Wert statt „N Hops“/„MQTT“ zeigt. Das 📶-Flag der Firmware 2.8 („über eigenes Funkgerät gehört“) zählt bewusst nicht, es ist auch bei weitergeleiteten Paketen gesetzt. Nebenbei: `hops_away` aus der Node-DB wird nur noch übernommen, wenn die Firmware es wirklich gesetzt hat (vorher wurde „unbekannt“ zu „0 Hops“), und ein Snapshot ohne Hop-Info überschreibt keine live gezählten Hops mehr
+- **#82 Dark Mode im Firmware-Update-Assistenten (unlesbar):** Das Fenster hatte keinen ModernWpf-Fensterstil und feste helle Farben (`#666`-Text, helle Hinweisboxen, Schwarz im Code-Behind). Jetzt `UseModernWindowStyle`, Theme-Pinsel für Sekundärtext, Fehlerfarbe und Fußzeile, Hinweis-/Warnboxen als Alpha-Tönung; Code-Behind setzt statt Schwarz keine Farbe (erbt das Theme). Der MeshStick-Assistent hatte denselben Aufbau und ist mit umgestellt. Nicht umgestellt (gleiches Muster, noch ungeprüft): LinkProfile-, MapPick(er)-, NodeKeyMismatch-, SegmentSnr-, TDeck*- und WaypointCreate-Fenster
+- **#81 „Benutzerinfo anfordern“ ging immer auf Kanal 0:** Die manuelle Info-Anfrage (Benutzerinfo, Position, Telemetrie …) sendete fest auf dem Primärkanal. Teilt der Gegenüber mit uns nur einen Sekundärkanal (bei ihm Index 0, bei uns Index 1), konnte er die Anfrage nicht entschlüsseln und antwortete nie – der Public Key blieb auf beiden Seiten gelb. Jetzt geht die Anfrage wie die automatischen auf den Kanal, auf dem zuletzt ein Paket dieses Nodes entschlüsselt wurde; das Log nennt den Kanal. Die automatische Anfrage („unknown channel sender“) nutzte schon den Paketkanal – meldet der Reporter weiterhin `ch=0`, brauchen wir sein Debug-Log mit der auslösenden Nachricht
+- **#73 DMs erschienen auch im Primärkanal:** Im Inline-DM-Modus liegen DMs mit in der Nachrichtenliste und tragen einen Kanalindex (meist 0). Der Kanal-Wechsel filterte sie heraus, der Neuaufbau der Ansicht (History aus der DB, Kanalnamen-Refresh) nicht – danach standen alle DMs im Kanal 0 („LongFast“). Der Neuaufbau filtert jetzt gleich: offene DM → nur dieser Partner, offener Kanal → keine DMs
 
 ---
 

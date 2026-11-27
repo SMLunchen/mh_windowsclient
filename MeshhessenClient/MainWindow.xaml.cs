@@ -93,6 +93,7 @@ public partial class MainWindow : Window
     private int  _nodeFilterLastSeenMinutes = 0;
     private bool _nodeFilterHideMqtt        = false;
     private bool _nodeFilterOnlyFavorites   = false;
+    private bool _nodeFilterOnlyDirect      = false;   // only nodes our own radio heard (NodeSortKeys.IsDirectLink)
     private bool _nodeSortAscending = true;
     private LoRaConfig? _currentLoRaConfig;
 
@@ -3374,6 +3375,7 @@ public partial class MainWindow : Window
                          ?.Tag as string, out var m) ? m : 0;
         _nodeFilterHideMqtt      = HideMqttNodesCheckBox.IsChecked == true;
         _nodeFilterOnlyFavorites = OnlyFavoritesFilterCheckBox.IsChecked == true;
+        _nodeFilterOnlyDirect    = OnlyDirectNodesCheckBox?.IsChecked == true;
         ApplyNodeSortAndFilterCore();
     }
 

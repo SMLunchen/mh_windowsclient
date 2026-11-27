@@ -407,7 +407,9 @@ public partial class FirmwareUpdateWindow : Window
             : sel == cur ? Loc("StrFwVersionSame")
             : Loc("StrFwVersionDowngrade");
         VersionLineText.Text = Loc("StrFwVersionLine", _currentFirmware ?? "?", selectedVersion) + $" — {verdict}";
-        VersionLineText.Foreground = sel != null && cur != null && sel < cur ? Brushes.OrangeRed : Brushes.Black;
+        // Theme-aware: only a downgrade gets a colour, everything else inherits the window's text brush (#82).
+        if (sel != null && cur != null && sel < cur) VersionLineText.Foreground = Brushes.OrangeRed;
+        else VersionLineText.ClearValue(ForegroundProperty);
     }
 
     private void ReleasePage_Click(object sender, RoutedEventArgs e)
@@ -840,11 +842,13 @@ public partial class FirmwareUpdateWindow : Window
     {
         var (icon, brush) = level switch
         {
-            FileCheckLevel.Error => ("✗ ", Brushes.OrangeRed),
+            FileCheckLevel.Error => ("✗ ", (Brush?)Brushes.OrangeRed),
             FileCheckLevel.Warning => ("⚠ ", Brushes.DarkOrange),
-            _ => (text.StartsWith('✓') || text.StartsWith('✗') || text.StartsWith('?') || text.StartsWith('ℹ') ? "" : "✓ ", Brushes.Black)
+            _ => (text.StartsWith('✓') || text.StartsWith('✗') || text.StartsWith('?') || text.StartsWith('ℹ') ? "" : "✓ ", null)
         };
-        return new TextBlock { Text = icon + text, Foreground = brush, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 2, 0, 2) };
+        var tb = new TextBlock { Text = icon + text, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 2, 0, 2) };
+        if (brush != null) tb.Foreground = brush;   // null = inherit the theme's text brush (readable in dark mode, #82)
+        return tb;
     }
 
     private static void OpenUrl(string url)

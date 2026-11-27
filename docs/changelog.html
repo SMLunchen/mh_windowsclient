@@ -190,10 +190,55 @@
 <div class="section active" id="de">
 <main>
 
-  <!-- ── v1.7.3.4 ── -->
+  <!-- ── v1.7.3.5 ── -->
   <div class="version-entry current">
     <div class="version-header">
-      <span class="version-tag tag-latest">v1.7.3.4</span>
+      <span class="version-tag tag-latest">v1.7.3.5</span>
+      <span class="version-date">2026-11-27</span>
+      Bluetooth ruhiger und ohne ungefragtes Entkoppeln, bunte Emojis, Community-Bugs
+    </div>
+    <p class="version-desc">Bluetooth-Runde nach Rückmeldungen aus der Community: Der Client liest den Node nur noch, wenn der etwas angekündigt hat (wie Android und Python-CLI), fordert das schnelle Verbindungsintervall nur zum Laden an und entfernt eine Windows-Kopplung nie mehr ohne Rückfrage. Dazu ein schonender Bluetooth-Modus, die Signalstärke mit Verbindungszählern in der Kopfzeile, farbige Emojis im Nachrichtentext (inkl. 🫡) und vier behobene GitHub-Issues.</p>
+
+    <div class="cl-section changed">
+      <h3>📶 Bluetooth</h3>
+      <div class="cl-group">
+        <ul class="cl-list">
+          <li><strong>Lesen wie Android und Python-CLI:</strong> Bisher las ein Thread FROMRADIO in einer Dauerschleife mit 1 ms Pause, dazu zwei weitere Leser. Auf ESP32 parkt jeder leere Read den Bluetooth-Task und weckt die Hauptschleife des Nodes – rund 60-mal pro Sekunde, die ganze Sitzung lang. Jetzt gibt es einen Leser, der nach FROMNUM-Meldung und nach jedem Senden liest, bis der Node ein leeres Paket liefert; dazu ein Sicherheits-Poll alle 1,5 s. Drei Lesefehler in Folge gelten als abgerissene Verbindung und lösen den normalen Reconnect aus.</li>
+          <li><strong>Schnelles Intervall nur beim Laden:</strong> ThroughputOptimized gilt nur, bis Konfiguration und Node-Liste geladen sind, danach greift der Wunsch der Firmware (30–50 ms). Neue Einstellung <strong>„Schonender Bluetooth-Modus“</strong> (Einstellungen → Bluetooth): von Anfang an nur „Balanced“ – Node-Liste lädt langsamer, schwache Strecken bekommen Luft. Der Hinweis nach wiederholten Abbrüchen bietet den Wechsel direkt an.</li>
+          <li><strong>Kopplung nie mehr ohne Rückfrage entfernen:</strong> Seit 1.7.3 entkoppelte der Client automatisch, auch wenn der Node nur gerade nicht erreichbar war (Neustart, außer Reichweite) – im Reconnect war das Gerät danach aus der Windows-Liste und jeder Versuch öffnete den Kopplungsdialog. Jetzt: „Unreachable“ ist nie ein Kopplungsproblem; nur wenn der Node antwortet und die gespeicherte Kopplung nicht mehr passt, fragt der Client (im Reconnect erst beim zweiten Befund).</li>
+          <li><strong>📶 in der Kopfzeile:</strong> Signalstärke des Nodes vom Verbindungsaufbau neben dem Verbindungspunkt; Mouseover zeigt die Zähler der Verbindung (Intervall, Lesevorgänge, FROMNUM-Meldungen, Schreibvorgänge), Klick öffnet sie mit „Kopieren“. Dieselben Zahlen stehen alle 10 Minuten als <code>[BLE] Link stats</code> im Log.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="cl-section added">
+      <h3>😀 Emojis</h3>
+      <div class="cl-group">
+        <ul class="cl-list">
+          <li><strong>Nachrichtentext zeigt Emojis farbig:</strong> Namen und Reaktionen waren schon bunt, der Nachrichtentext nicht (WPF kennt keine Farbschriften). Jetzt werden Emojis im Nachrichtentext durch Emoji.Wpf-Inlines ersetzt – Fettdruck, Links und Monospace bleiben erhalten.</li>
+          <li><strong>Neuere Emojis wie 🫡:</strong> Emoji.Wpf auf 0.3.4 (Emoji-Daten 15.0 statt 13.1). Voraussetzung bleibt die Systemschrift: Windows 11 kennt die neuen Zeichen, Windows 10 nicht.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="cl-section fixed">
+      <h3>🐛 Behoben</h3>
+      <div class="cl-group">
+        <ul class="cl-list">
+          <li><strong>#83 Sortierung nach SNR/RSSI:</strong> Die Spalten zeigen „N Hops“ bzw. „MQTT“, sortiert wurde aber nach den Rohwerten – und Favoriten wurden immer als Block nach oben gezogen, was jede Spaltensortierung verdeckte. Jetzt wird nach dem sortiert, was die Spalte zeigt (direkte Links nach Wert, dann Relays nach Hop-Zahl, dann MQTT); bei aktiver Spaltensortierung bleiben nur der eigene Node und angepinnte Nodes oben.</li>
+          <li><strong>Neuer Filter „Nur Direktverbindungen“</strong> in der Node-Liste: Nodes, die der eigene Node selbst per Funk gehört hat (0 Hops, nicht über MQTT).</li>
+          <li><strong>#82 Dark Mode im Firmware-Update-Assistenten:</strong> Fenster war unlesbar – fehlender Theme-Fensterstil und feste helle Farben. Firmware- und MeshStick-Assistent folgen jetzt dem Theme.</li>
+          <li><strong>#81 „Benutzerinfo anfordern“ ging immer auf Kanal 0:</strong> Teilt der Gegenüber nur einen Sekundärkanal mit uns, konnte er die Anfrage nie entschlüsseln. Die Anfrage geht jetzt auf den Kanal, auf dem zuletzt ein Paket dieses Nodes entschlüsselt wurde.</li>
+          <li><strong>#73 DMs erschienen auch im Primärkanal:</strong> Im Inline-DM-Modus filterte der Neuaufbau der Ansicht (History, Kanalnamen) DMs nicht heraus. Jetzt identisch zum Kanalwechsel.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── v1.7.3.4 ── -->
+  <div class="version-entry">
+    <div class="version-header">
+      <span class="version-tag">v1.7.3.4</span>
       <span class="version-date">2026-11-24</span>
       MeshStick-Assistent: USB-LoRa-Stick als Node am PC
     </div>
@@ -1507,10 +1552,55 @@
 <div class="section" id="en">
 <main>
 
-  <!-- ── v1.7.3.4 (EN) ── -->
+  <!-- ── v1.7.3.5 (EN) ── -->
   <div class="version-entry current">
     <div class="version-header">
-      <span class="version-tag tag-latest">v1.7.3.4</span>
+      <span class="version-tag tag-latest">v1.7.3.5</span>
+      <span class="version-date">2026-11-27</span>
+      Calmer Bluetooth without unasked unpairing, colour emoji, community bugs
+    </div>
+    <p class="version-desc">Bluetooth round after community feedback: the client now reads the node only when it has announced data (like Android and the Python CLI), asks for the fast connection interval only while loading, and never removes a Windows pairing without asking. Plus a gentle Bluetooth mode, the signal strength with link counters in the header, colour emoji in message bodies (🫡 included) and four fixed GitHub issues.</p>
+
+    <div class="cl-section changed">
+      <h3>📶 Bluetooth</h3>
+      <div class="cl-group">
+        <ul class="cl-list">
+          <li><strong>Reading like Android and the Python CLI:</strong> a thread used to poll FROMRADIO in a loop with a 1 ms pause, with two more readers on top. On ESP32 every empty read parks the Bluetooth task and wakes the node's main loop – about 60 times a second, all session long. Now one reader reads after a FROMNUM notification and after every write until the node returns an empty packet, plus a safety poll every 1.5 s. Three read failures in a row count as a lost link and trigger the normal reconnect.</li>
+          <li><strong>Fast interval only while loading:</strong> ThroughputOptimized applies until config and node list are loaded, then the firmware's own preference (30–50 ms) takes over. New setting <strong>"Gentle Bluetooth mode"</strong> (Settings → Bluetooth): Balanced from the start – the node list loads more slowly, weak links get breathing room. The hint after repeated drops offers the switch directly.</li>
+          <li><strong>Never remove a pairing without asking:</strong> since 1.7.3 the client unpaired automatically, even when the node was merely unreachable (rebooting, out of range) – during the reconnect the device was then gone from the Windows list and every attempt opened the pairing prompt. Now: "Unreachable" is never a pairing problem; only when the node answers and the stored pairing no longer fits does the client ask (in the reconnect not before the second finding).</li>
+          <li><strong>📶 in the header:</strong> the node's signal strength from the connect next to the connection dot; hovering shows the link counters (interval, reads, FROMNUM notifications, writes), a click opens them with "Copy". The same numbers land in the log every 10 minutes as <code>[BLE] Link stats</code>.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="cl-section added">
+      <h3>😀 Emoji</h3>
+      <div class="cl-group">
+        <ul class="cl-list">
+          <li><strong>Message bodies show emoji in colour:</strong> names and reactions were already in colour, message text was not (WPF has no colour-font support). Emoji in message text are now replaced by Emoji.Wpf inlines – bold, links and monospace are kept.</li>
+          <li><strong>Newer emoji such as 🫡:</strong> Emoji.Wpf 0.3.4 (emoji data 15.0 instead of 13.1). The system font still decides: Windows 11 knows the new characters, Windows 10 does not.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="cl-section fixed">
+      <h3>🐛 Fixed</h3>
+      <div class="cl-group">
+        <ul class="cl-list">
+          <li><strong>#83 Sorting by SNR/RSSI:</strong> the columns show "N Hops" or "MQTT" but the sort used the raw values – and favourites were always pulled to the top as a block, hiding any column sort. Sorting now follows what the column shows (direct links by value, then relays by hop count, then MQTT); with a column sort active only your own node and pinned nodes stay on top.</li>
+          <li><strong>New filter "Direct links only"</strong> in the node list: nodes your own radio heard itself (0 hops, not via MQTT).</li>
+          <li><strong>#82 Dark mode in the firmware-update assistant:</strong> the window was unreadable – no theme window style and fixed light colours. The firmware and MeshStick assistants now follow the theme.</li>
+          <li><strong>#81 "Request user info" always went out on channel 0:</strong> a node that only shares a secondary channel with us could never decrypt the request. It now goes out on the channel a packet from that node was last decoded on.</li>
+          <li><strong>#73 DMs also appeared in the primary channel:</strong> in the inline DM mode the view rebuild (history, channel names) did not filter DMs out. Now identical to the channel switch.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── v1.7.3.4 (EN) ── -->
+  <div class="version-entry">
+    <div class="version-header">
+      <span class="version-tag">v1.7.3.4</span>
       <span class="version-date">2026-11-24</span>
       MeshStick assistant: USB LoRa stick as a node on the PC
     </div>
