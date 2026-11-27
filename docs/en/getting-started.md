@@ -44,7 +44,20 @@ The client softens this: when it auto-reconnects to the same node it no longer r
 
 **How the client reads:** it reads the node only when the node has announced something (FROMNUM notification) or the client has just sent something – the way the Android app and the Python CLI do. A safety look every 1.5 seconds covers a notification Windows swallowed. When connecting it asks for the fastest connection interval so config and node list load quickly, and releases it afterwards; the node may then choose its own, calmer interval. The setting **"Gentle Bluetooth mode"** (Settings → Bluetooth) skips the fast interval altogether: the node list loads more slowly, a weak link gets more breathing room. After repeated drops the client offers this mode right in the hint dialog.
 
-**📶 in the header:** on a Bluetooth link the node's signal strength appears next to the green connection dot, measured while connecting (Windows reports no value for an established link). Hovering or clicking shows the link counters: mode and phase, the negotiated connection interval (Windows 11 22H2 and newer), reads with their empty and failure share, FROMNUM notifications received, writes. "Copy" puts everything on the clipboard for a bug report; the same numbers land in the log every 10 minutes and on disconnect as `[BLE] Link stats`.
+#### 📶 Bluetooth indicator in the header
+
+On a Bluetooth link **📶 −72 dBm** appears next to the green connection dot: the node's signal strength measured while connecting. Windows reports no value for an established link, so the number only changes on the next connect; "📶 –" means no advertising packet was heard while connecting. Hovering shows the link counters, a click opens them as a panel with **"Copy"** – just paste it into a bug report. The same numbers land in the log every 10 minutes and on disconnect as `[BLE] Link stats`.
+
+| Line | Meaning |
+|---|---|
+| **Signal at connect** | Strength of the node's advertising packets in dBm, plus the number of packets heard. −70 dBm and better is good, down to −85 dBm fair, below that weak – then the radio path explains the drops. |
+| **Mode · phase** | *fast* (default) or *gentle* (setting). *Initialising* = fast interval requested while config and node list load; *steady* = request released, the node picks its own interval. |
+| **Connection interval** | The interval Windows negotiated in ms, plus latency and supervision timeout. About 15 ms while loading, typically 30–50 ms afterwards. Windows 11 22H2 and newer only; older versions do not report it. |
+| **Connected for** | Duration of the current link. |
+| **Reads** | All queries to the node, with the share that came back empty, with data and failed. A high empty share is normal (safety poll). Failures should stay at 0 – three in a row count as a lost link. |
+| **FROMNUM notifications** | How often the node announced new data, and whether the subscription is in place. If the number stays at 0 for long on an established link, notifications do not arrive on this adapter and the safety poll alone carries the link. |
+| **Drains** | What triggered reading: a notification, our own write, or the safety poll (interval in brackets). On a healthy link notification and write dominate. |
+| **Writes** | Packets sent to the node and how many failed. |
 
 **Pairing:** the client **never removes a Windows pairing without asking**. If the node is unreachable (off, out of range, rebooting) it simply keeps trying. Only when the node answers and the stored pairing no longer fits it – typical after a firmware update, factory reset or Bluetooth OTA – does it ask whether to remove the pairing and pair afresh; during the automatic reconnect not before the second such finding, and only once.
 

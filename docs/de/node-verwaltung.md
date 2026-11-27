@@ -10,7 +10,8 @@
     * Strom (extern versorgt oder Batterie + Spannung), Entfernung + Höhe, Hops, RSSI/SNR mit Farbverlauf, Umwelt-Telemetrie (🌡/💧/🌬), Hardware-Modell · Geräterolle · Node-ID
     * Eigener Node immer ganz oben, virtualisiertes Scrolling auch bei 1000+ Nodes
   * **SNR/RSSI nur bei direktem Empfang** – Signalwerte werden nur angezeigt, wenn wir den Node direkt (0 Hops, kein MQTT) hören; bei Relay-Nodes zeigt die Spalte stattdessen die Hop-Anzahl
-  * **Erweiterte Filter** – nach „zuletzt gesehen" (5 Min bis 60 Tage), MQTT-Nodes ausblenden, nur Favoriten, SNR-Einfärbung an/aus; Sortier-Dropdown im Kachelmodus
+  * **Erweiterte Filter** – nach „zuletzt gesehen" (5 Min bis 60 Tage), MQTT-Nodes ausblenden, nur Favoriten, **nur Direktverbindungen** (0 Hops, nicht über MQTT – genau die Zeilen, deren SNR-Spalte einen Wert statt „N Hops“/„MQTT“ zeigt), SNR-Einfärbung an/aus; Sortier-Dropdown im Kachelmodus
+  * **Sortierung folgt der Anzeige** – SNR/RSSI sortieren nach dem, was die Spalte zeigt: erst direkte Links nach Wert, dann Relays nach Hop-Zahl (weniger Hops = besser), dann MQTT, dann unbekannt. Bei aktiver Spaltensortierung bleiben nur der eigene Node und angepinnte Nodes oben
 * **Informationen anfordern** – Rechtsklick-Untermenü (Liste, Kachel, Karte) fordert wie die Android-App gezielt Daten von einem Node an: Benutzer-Info, Position, Geräte-/Umwelt-/Luftqualität-/Strom-/Host-Metriken, Signalqualität/Mesh-Statistik, PAX-Zähler
 * **Node-Info-Fenster** – Rechtsklick auf einen Node (Liste, Kachel, Karte oder Nachricht) → „ℹ️ Node Info“: Hardware-Modell, Rolle, PKI-Status, Akku, Signal, Zuerst/Zuletzt gesehen und Position. Die Firmware-Version des eigenen Geräts steht unter Einstellungen → Geräteinfo; die eines entfernten Nodes zeigt das Fernverwaltungs-Fenster:
 
@@ -20,7 +21,7 @@
 * **Node-Farben** – Nodes individuell einfärben (Karte + Listen)
 * **Node-Notizen** – Freitext-Notizen pro Node
 * **Nodes anpinnen** – Nodes in der Liste oben fixieren (unabhängig von Sortierung)
-* **Favoriten** – Nodes als Favoriten markieren (★-Symbol, Rechtsklick-Menü); wird mit dem Gerät synchronisiert (`set_favorite_node` / `remove_favorite_node`); Favoriten erscheinen oben in der Liste
+* **Favoriten** – Nodes als Favoriten markieren (★-Symbol, Rechtsklick-Menü); wird mit dem Gerät synchronisiert (`set_favorite_node` / `remove_favorite_node`); in der Standardreihenfolge erscheinen Favoriten oben in der Liste, bei aktiver Spaltensortierung sortieren sie mit
 
 Node-Übersicht als Tabelle – mit Avatar, Signal-LEDs, Filtern und Sortierung:
 <img alt="Meshhessen Client – Node-Übersicht als Tabelle mit Avatar, SNR, RSSI, Batterie und Signal-LEDs" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/nodelist_new.png" />

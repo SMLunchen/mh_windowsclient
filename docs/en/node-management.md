@@ -10,7 +10,8 @@
     * Power (externally powered or battery + voltage), distance + altitude, hops, RSSI/SNR with color gradient, environment telemetry (🌡/💧/🌬), hardware model · device role · node ID
     * Own node always on top, virtualized scrolling even with 1000+ nodes
   * **SNR/RSSI only for direct reception** – signal values are shown only when we hear the node directly (0 hops, no MQTT); for relayed nodes the column shows the hop count instead
-  * **Advanced filters** – by "last seen" (5 min to 60 days), hide MQTT nodes, favorites only, SNR coloring on/off; sort dropdown in tile mode
+  * **Advanced filters** – by "last seen" (5 min to 60 days), hide MQTT nodes, favorites only, **direct links only** (0 hops, not via MQTT – exactly the rows whose SNR column shows a value instead of "N Hops"/"MQTT"), SNR coloring on/off; sort dropdown in tile mode
+  * **Sorting follows the display** – SNR/RSSI sort by what the column shows: direct links by value first, then relays by hop count (fewer hops = better), then MQTT, then unknown. With a column sort active only your own node and pinned nodes stay on top
 * **Request information** – right-click submenu (list, tile, map) requests data from a node like the Android app: user info, position, device/environment/air-quality/power/host metrics, signal quality/mesh stats, PAX counter
 * **Node info window** – right-click a node (list, tile, map or message) → "ℹ️ Node Info": hardware model, role, PKI status, battery, signal, first/last seen and position. Your own device's firmware version lives under Settings → Device info; a remote node's is shown in the remote admin window:
 
@@ -20,7 +21,7 @@
 * **Node colors** – color-code nodes individually (map + lists)
 * **Node notes** – free-text annotations per node
 * **Pin nodes** – pin nodes to the top of the list (independent of sorting)
-* **Favorites** – mark nodes as favorites (★ icon, right-click menu); synced with the device (`set_favorite_node` / `remove_favorite_node`); favorites shown at the top of the list
+* **Favorites** – mark nodes as favorites (★ icon, right-click menu); synced with the device (`set_favorite_node` / `remove_favorite_node`); in the default order favorites are shown at the top of the list, with a column sort active they take part in it
 
 Node overview as a table – with avatar, signal LEDs, filters and sorting:
 <img alt="Meshhessen Client – node overview as a table with avatar, SNR, RSSI, battery and signal LEDs" src="https://raw.githubusercontent.com/SMLunchen/mh_windowsclient/master/img/nodelist_new.png" />

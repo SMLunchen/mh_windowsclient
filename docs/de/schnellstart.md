@@ -44,7 +44,20 @@ Der Client federt das ab: Beim automatischen Neuverbinden mit demselben Node lä
 
 **Wie der Client liest:** Er liest den Node nur dann, wenn der Node etwas angekündigt hat (FROMNUM-Meldung) oder der Client gerade etwas gesendet hat – so wie die Android-App und die Python-CLI. Dazu kommt alle 1,5 Sekunden ein Sicherheits-Blick, falls Windows eine Meldung verschluckt. Beim Verbinden fordert er das schnellste Verbindungsintervall an, damit Konfiguration und Node-Liste zügig laden, und gibt es danach wieder frei; der Node darf dann sein eigenes, ruhigeres Intervall wählen. Die Einstellung **„Schonender Bluetooth-Modus“** (Einstellungen → Bluetooth) verzichtet von Anfang an auf das schnelle Intervall: Die Node-Liste lädt langsamer, dafür bekommt eine schwache Strecke mehr Luft. Nach wiederholten Abbrüchen bietet der Client diesen Modus im Hinweis-Dialog direkt an.
 
-**📶 in der Kopfzeile:** Bei einer Bluetooth-Verbindung steht neben dem grünen Verbindungspunkt die Signalstärke des Nodes, gemessen beim Verbindungsaufbau (Windows liefert für eine stehende Verbindung keinen Wert). Mauszeiger darauf oder ein Klick zeigt die Zähler der Verbindung: Modus und Phase, das ausgehandelte Verbindungsintervall (ab Windows 11 22H2), Lesevorgänge mit Leer- und Fehleranteil, empfangene FROMNUM-Meldungen, Schreibvorgänge. „Kopieren“ legt alles für eine Fehlermeldung in die Zwischenablage; dieselben Zahlen stehen alle 10 Minuten und beim Trennen als `[BLE] Link stats` im Log.
+#### 📶 Bluetooth-Anzeige in der Kopfzeile
+
+Bei einer Bluetooth-Verbindung steht neben dem grünen Verbindungspunkt **📶 −72 dBm**: die Signalstärke des Nodes, gemessen beim Verbindungsaufbau. Windows liefert für eine stehende Verbindung keinen Wert, deshalb ändert sich die Zahl erst beim nächsten Verbinden; „📶 –“ heißt, dass beim Verbinden kein Advertising-Paket gehört wurde. Mauszeiger darauf zeigt die Zähler der Verbindung, ein Klick öffnet sie als Fenster mit **„Kopieren“** – für eine Fehlermeldung einfach einfügen. Dieselben Zahlen stehen alle 10 Minuten und beim Trennen als `[BLE] Link stats` im Log.
+
+| Zeile | Bedeutung |
+|---|---|
+| **Signal beim Verbinden** | Stärke der Advertising-Pakete des Nodes in dBm, dazu die Zahl der gehörten Pakete. Ab −70 dBm gut, bis −85 dBm mittel, darunter schwach – dann erklärt die Funkstrecke die Abbrüche. |
+| **Modus · Phase** | *schnell* (Standard) oder *schonend* (Einstellung). *Initialisierung* = schnelles Intervall angefordert, solange Konfiguration und Node-Liste laden; *Dauerbetrieb* = Anforderung freigegeben, der Node wählt sein eigenes Intervall. |
+| **Verbindungsintervall** | Das von Windows ausgehandelte Intervall in ms, dazu Latenz und Supervision-Timeout. Beim Laden etwa 15 ms, danach typisch 30–50 ms. Nur ab Windows 11 22H2; ältere Versionen melden es nicht. |
+| **Verbunden seit** | Dauer der aktuellen Verbindung. |
+| **Lesevorgänge** | Alle Abfragen des Nodes, davon Anteil leer, mit Daten und fehlgeschlagen. Ein hoher Leer-Anteil ist normal (Sicherheits-Poll). Fehler sollten bei 0 bleiben – drei in Folge gelten als abgerissene Verbindung. |
+| **FROMNUM-Meldungen** | Wie oft der Node neue Daten angekündigt hat, und ob das Abo steht. Bleibt die Zahl bei stehender Verbindung lange bei 0, kommen die Meldungen auf diesem Adapter nicht an; dann trägt allein der Sicherheits-Poll. |
+| **Leseläufe** | Wodurch gelesen wurde: nach Meldung, nach eigenem Senden, per Sicherheits-Poll (Intervall in Klammern). Im gesunden Betrieb überwiegen Meldung und Senden. |
+| **Schreibvorgänge** | An den Node gesendete Pakete und davon fehlgeschlagene. |
 
 **Kopplung:** Der Client entfernt eine Windows-Kopplung **nie ohne Rückfrage**. Ist der Node nicht erreichbar (aus, außer Reichweite, Neustart), versucht er es einfach weiter. Nur wenn der Node antwortet und die gespeicherte Kopplung nicht mehr zu ihm passt – typisch nach Firmware-Update, Werksreset oder Bluetooth-OTA –, fragt er, ob die Kopplung entfernt und neu aufgebaut werden soll; im automatischen Neuverbinden frühestens beim zweiten solchen Befund und nur einmal.
 
