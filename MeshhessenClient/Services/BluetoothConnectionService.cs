@@ -1,15 +1,30 @@
 using System;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Windows.Devices.Bluetooth;
 using Windows.Devices.Bluetooth.Advertisement;
 using Windows.Devices.Bluetooth.GenericAttributeProfile;
+using Windows.Foundation.Metadata;
 using Windows.Storage.Streams;
 
 namespace MeshhessenClient.Services;
 
 /// <summary>
-/// Bluetooth LE connection implementation for Meshtastic devices
+/// Bluetooth LE connection to a Meshtastic node (WinRT GATT).
+///
+/// Reading follows the firmware's contract, the way Android and the Python CLI do it: FROMNUM notifies when the node
+/// has queued something, then we read FROMRADIO until it returns an empty packet; after every write we read as well
+/// (config requests and admin messages are answered on FROMRADIO); a slow safety poll covers a lost notification. One
+/// reader (<see cref="BleReadPump"/>) — not the 1 ms polling loop plus two side readers of earlier versions.
+///
+/// Connection interval: the fastest Windows offers while config and node list load, released once the client's
+/// initialisation is complete so the firmware's own preference (30–50 ms, latency 2) can take over. The "gentle" mode
+/// (user setting) asks for Balanced from the start instead.
+///
+/// Pairing: this class never removes a Windows bond. When the stored bond no longer fits the node it throws
+/// <see cref="BleStaleBondException"/> and the window asks the user; an unreachable node is
+/// <see cref="BleUnreachableException"/> — retry material, nothing else.
 /// </summary>
 public class BluetoothConnectionService : IConnectionService
 {
@@ -24,8 +39,27 @@ public class BluetoothConnectionService : IConnectionService
     private bool _isConnected;
     private readonly object _lock = new();
     private string _displayName = string.Empty;
-    private System.Threading.Thread? _readerThread;
-    private bool _wantExit = false;
+
+    private BleReadPump? _pump;
+    private CancellationTokenSource? _pumpCts;
+    private Task? _pumpTask;
+    private Timer? _steadyFallbackTimer;
+    private Timer? _statsLogTimer;
+    private readonly BleLinkStats _stats = new();
+
+    /// <summary>Safety poll when FROMNUM notifications are subscribed — one empty read every 1.5 s costs nothing and
+    /// catches a notification Windows swallowed.</summary>
+    public static readonly TimeSpan PollIntervalWithNotify = TimeSpan.FromMilliseconds(1500);
+    /// <summary>Poll cadence when the FROMNUM subscription failed and polling is the only way to learn about data.</summary>
+    public static readonly TimeSpan PollIntervalWithoutNotify = TimeSpan.FromMilliseconds(250);
+    /// <summary>If the window never reports "init complete" (e.g. init failed), the fast interval is released anyway.</summary>
+    public static readonly TimeSpan SteadyFallbackDelay = TimeSpan.FromSeconds(120);
+    public static readonly TimeSpan StatsLogInterval = TimeSpan.FromMinutes(10);
+
+    /// <summary>User setting "gentle Bluetooth mode": Balanced interval from the start, never ThroughputOptimized.
+    /// Applied to every new link; <see cref="SetGentleMode"/> changes a live one.</summary>
+    public static bool GentleModeDefault;
+    private bool _gentle = GentleModeDefault;
 
     // Debug option "node log over Bluetooth": the firmware pushes its own log as LogRecord protobufs on the
     // LOGRADIO characteristic (only with config.security.debug_log_api_enabled). Off by default — every line
@@ -38,8 +72,13 @@ public class BluetoothConnectionService : IConnectionService
     /// <summary>Advertising signal strength of the node heard while this connection was being set up, in dBm.
     /// Null when no advertisement was caught (Windows may connect before the first one arrives). Windows has
     /// no RSSI for a connected device, so this is the one number we can give a user with a flaky link.</summary>
-    public int? ConnectRssiDbm { get; private set; }
-    public int ConnectAdvertisementsHeard { get; private set; }
+    public int? ConnectRssiDbm => _stats.RssiDbm;
+    public int ConnectAdvertisementsHeard => _stats.AdvertisementsHeard;
+
+    public BleLinkMode Mode => _gentle ? BleLinkMode.Gentle : BleLinkMode.Fast;
+
+    /// <summary>Counters of this link for the log line and the header tooltip.</summary>
+    public BleLinkStatsSnapshot GetStats() => _stats.Snapshot(DateTime.UtcNow);
 
     // Debug logging control
     private static bool _debugEnabled = false;
@@ -51,6 +90,14 @@ public class BluetoothConnectionService : IConnectionService
             Logger.WriteLine(message);
         }
     }
+
+    // Windows 11 22H2 (build 22621) added the connection-parameter APIs. Older Windows: the calls do not exist.
+    private static readonly bool HasPreferredParamsApi =
+        ApiInformation.IsMethodPresent("Windows.Devices.Bluetooth.BluetoothLEDevice", "RequestPreferredConnectionParameters");
+    private static readonly bool HasConnParamsApi =
+        ApiInformation.IsMethodPresent("Windows.Devices.Bluetooth.BluetoothLEDevice", "GetConnectionParameters");
+    private static readonly bool HasConnParamsEvent =
+        ApiInformation.IsEventPresent("Windows.Devices.Bluetooth.BluetoothLEDevice", "ConnectionParametersChanged");
 
     // Meshtastic BLE UUIDs (from Python/Web clients)
     public static readonly Guid ServiceUuid = Guid.Parse("6ba1b218-15a8-461f-9fa8-5dcae273eafd");
@@ -95,6 +142,8 @@ public class BluetoothConnectionService : IConnectionService
             throw new ArgumentException("Device address cannot be zero", nameof(parameters));
 
         _displayName = btParams.DeviceName;
+        _stats.Mode = Mode;
+        _stats.Phase = BleLinkPhase.Connecting;
 
         // Signal strength: the node advertises until the link is up — listen for its advertisements while we
         // connect. Runs alongside the connect, adds no waiting time; stopped as soon as the link is up or failed.
@@ -102,95 +151,80 @@ public class BluetoothConnectionService : IConnectionService
 
         try
         {
-            LogDebug($"[BLE] Connecting to {btParams.DeviceName} ({btParams.DeviceAddress:X})...");
+            Logger.WriteLine($"[BLE] Connecting to {btParams.DeviceName} ({btParams.DeviceAddress:X}), mode {Mode}");
 
-            // Connect to BLE device
             _device = await BluetoothLEDevice.FromBluetoothAddressAsync(btParams.DeviceAddress);
             if (_device == null)
                 throw new Exception("Failed to connect to Bluetooth device");
 
-            // Subscribe to connection status changes
             _device.ConnectionStatusChanged += OnDeviceConnectionStatusChanged;
 
-            LogDebug($"[BLE] Device connected, checking pairing status...");
-
-            // Stale bond? Windows keeps the GATT table of a bonded device and never re-reads it, so after a
-            // firmware update (or the OTA loader having run under this address) the Meshtastic service is
-            // "not found" until the bond is dropped. Ask Windows' cache first — no radio traffic — and
-            // re-pair when it holds a table without our service.
-            if (_device.DeviceInformation.Pairing.IsPaired &&
-                await Firmware.BleGattLink.IsCachedGattTableStaleAsync(_device, ServiceUuid))
-            {
-                Logger.WriteLine("[BLE] Windows holds a stale GATT table for this bonded device — removing the pairing and pairing again");
-                await UnpairAndReopenAsync(btParams.DeviceAddress);
-            }
+            // Evidence only, no action: Windows keeps the GATT table of a bonded device and may serve a stale one
+            // after a firmware update or an OTA loader under the same address. Whether that is a problem is decided
+            // by the live discovery below — and removing a bond is the user's call, never ours.
+            bool paired = _device.DeviceInformation.Pairing.IsPaired;
+            bool cachedStale = paired && await Firmware.BleGattLink.IsCachedGattTableStaleAsync(_device, ServiceUuid);
 
             await EnsurePairedAsync();
 
-            LogDebug($"[BLE] Discovering services...");
-
-            // Get Meshtastic service
-            var serviceResult = await _device.GetGattServicesForUuidAsync(ServiceUuid, Windows.Devices.Bluetooth.BluetoothCacheMode.Uncached);
-            if ((serviceResult.Status != GattCommunicationStatus.Success || !serviceResult.Services.Any())
-                && _device.DeviceInformation.Pairing.IsPaired)
+            LogDebug("[BLE] Discovering services...");
+            var serviceResult = await _device.GetGattServicesForUuidAsync(ServiceUuid, BluetoothCacheMode.Uncached);
+            int serviceCount = serviceResult.Status == GattCommunicationStatus.Success ? serviceResult.Services.Count : 0;
+            var status = MapStatus(serviceResult.Status);
+            var verdict = BleStaleBondClassifier.Classify(_device.DeviceInformation.Pairing.IsPaired, status, serviceCount);
+            switch (verdict)
             {
-                // Discovery fallback for the same stale-bond case when the cache gave no verdict:
-                // drop the bond, pair afresh, discover once more.
-                Logger.WriteLine($"[BLE] Meshtastic service not found on a bonded device (status {serviceResult.Status}) — removing the pairing and retrying once");
-                await UnpairAndReopenAsync(btParams.DeviceAddress);
-                await EnsurePairedAsync();
-                serviceResult = await _device.GetGattServicesForUuidAsync(ServiceUuid, Windows.Devices.Bluetooth.BluetoothCacheMode.Uncached);
-            }
-            if (serviceResult.Status != GattCommunicationStatus.Success || !serviceResult.Services.Any())
-            {
-                throw new Exception($"Meshtastic service not found (status: {serviceResult.Status})");
+                case BleBondVerdict.ServiceFound:
+                    if (cachedStale)
+                        Logger.WriteLine("[BLE] Windows' cached service table lacked the Meshtastic service, but live discovery found it — the pairing is fine");
+                    break;
+                case BleBondVerdict.Unreachable:
+                    Logger.WriteLine($"[BLE] Node not reachable (service discovery: {serviceResult.Status}) — pairing untouched");
+                    throw new BleUnreachableException($"Node not reachable over Bluetooth (service discovery: {serviceResult.Status})");
+                case BleBondVerdict.StaleBond:
+                {
+                    var evidence = BleStaleBondClassifier.DescribeEvidence(status, serviceCount, cachedStale);
+                    Logger.WriteLine($"[BLE] Pairing looks stale — leaving the decision to the user: {evidence}");
+                    throw new BleStaleBondException(evidence);
+                }
+                default:
+                    throw new Exception($"Meshtastic service not found (status: {serviceResult.Status})");
             }
 
             var service = serviceResult.Services.First();
             _service = service; // keep so Disconnect can dispose it (else Windows holds the link → next connect fails until app restart)
             foreach (var extra in serviceResult.Services.Skip(1))
                 try { extra.Dispose(); } catch { }
-            LogDebug($"[BLE] Found Meshtastic service");
+            LogDebug("[BLE] Found Meshtastic service");
 
-            // Maintain persistent GATT session for better reliability
-            // Note: UWP doesn't allow explicit MTU setting, but maintaining the session
-            // helps Windows negotiate optimal parameters automatically
+            // Maintain a persistent GATT session: Windows otherwise drops the link between operations.
             try
             {
-                _gattSession = await Windows.Devices.Bluetooth.GenericAttributeProfile.GattSession.FromDeviceIdAsync(_device.BluetoothDeviceId);
+                _gattSession = await GattSession.FromDeviceIdAsync(_device.BluetoothDeviceId);
                 if (_gattSession != null)
                 {
                     _gattSession.MaintainConnection = true;
-                    LogDebug($"[BLE] GATT Session established. Current MaxPduSize: {_gattSession.MaxPduSize}");
-                    LogDebug($"[BLE] Note: Meshtastic recommends MTU 512, but UWP negotiates this automatically");
+                    LogDebug($"[BLE] GATT Session established. MaxPduSize: {_gattSession.MaxPduSize}");
                 }
             }
             catch (Exception ex)
             {
-                LogDebug($"[BLE] WARNING: Could not establish GATT session: {ex.Message}");
-                LogDebug($"[BLE] Continuing anyway...");
+                LogDebug($"[BLE] WARNING: Could not establish GATT session: {ex.Message} — continuing anyway");
             }
 
-            // Request a LOW-LATENCY connection interval. Windows defaults to a power-optimized
-            // (~180 ms) interval, which makes each FROMRADIO read take ~180 ms — reading a large
-            // NodeDB then takes tens of seconds. ThroughputOptimized drops it to ~15 ms (~10× faster).
-            // Keep the request object alive (dispose on Disconnect) or Windows reverts to the slow
-            // interval. Guarded: no-ops on Windows older than the supporting build.
-            try
+            if (HasConnParamsEvent)
             {
-                _connParamsRequest = _device.RequestPreferredConnectionParameters(
-                    BluetoothLEPreferredConnectionParameters.ThroughputOptimized);
-                LogDebug($"[BLE] Requested ThroughputOptimized connection params (status: {_connParamsRequest?.Status})");
+                try { _device.ConnectionParametersChanged += OnConnectionParametersChanged; }
+                catch (Exception ex) { LogDebug($"[BLE] ConnectionParametersChanged not available: {ex.Message}"); }
             }
-            catch (Exception ex)
-            {
-                LogDebug($"[BLE] Could not request fast connection params: {ex.Message}");
-            }
+            LogConnectionParameters("at connect");
+            _stats.Phase = BleLinkPhase.Init;
+            RequestInitConnParams();
 
             // Get characteristics
-            var toRadioResult = await service.GetCharacteristicsForUuidAsync(ToRadioUuid, Windows.Devices.Bluetooth.BluetoothCacheMode.Uncached);
-            var fromRadioResult = await service.GetCharacteristicsForUuidAsync(FromRadioUuid, Windows.Devices.Bluetooth.BluetoothCacheMode.Uncached);
-            var fromNumResult = await service.GetCharacteristicsForUuidAsync(FromNumUuid, Windows.Devices.Bluetooth.BluetoothCacheMode.Uncached);
+            var toRadioResult = await service.GetCharacteristicsForUuidAsync(ToRadioUuid, BluetoothCacheMode.Uncached);
+            var fromRadioResult = await service.GetCharacteristicsForUuidAsync(FromRadioUuid, BluetoothCacheMode.Uncached);
+            var fromNumResult = await service.GetCharacteristicsForUuidAsync(FromNumUuid, BluetoothCacheMode.Uncached);
 
             if (toRadioResult.Status != GattCommunicationStatus.Success || !toRadioResult.Characteristics.Any())
                 throw new Exception($"TORADIO characteristic not found (status: {toRadioResult.Status})");
@@ -205,99 +239,68 @@ public class BluetoothConnectionService : IConnectionService
             _logRadioChar = await FindLogRadioCharacteristicAsync(service);
 
             LogDebug($"[BLE] All characteristics found (node log characteristic: {(_logRadioChar != null ? "yes" : "no")})");
-
-            // Check characteristic properties
             LogDebug($"[BLE] TORADIO properties: {_toRadioChar.CharacteristicProperties}");
             LogDebug($"[BLE] FROMRADIO properties: {_fromRadioChar.CharacteristicProperties}");
             LogDebug($"[BLE] FROMNUM properties: {_fromNumChar.CharacteristicProperties}");
 
-            // Subscribe to FROMNUM notifications (NOT FROMRADIO!)
-            // FROMNUM notifies when new data is available in FROMRADIO
+            // FROMNUM tells us when FROMRADIO has data. (FROMRADIO itself has no notify — the firmware says so.)
             bool notificationsEnabled = false;
             if (_fromNumChar.CharacteristicProperties.HasFlag(GattCharacteristicProperties.Notify))
             {
                 try
                 {
-                    LogDebug($"[BLE] Subscribing to FROMNUM notifications...");
                     var cccdResult = await _fromNumChar.WriteClientCharacteristicConfigurationDescriptorAsync(
                         GattClientCharacteristicConfigurationDescriptorValue.Notify);
-
                     if (cccdResult == GattCommunicationStatus.Success)
                     {
-                        // Attach notification handler (but we don't rely on it - polling is primary method)
                         _fromNumChar.ValueChanged += OnFromNumValueChanged;
-                        LogDebug($"[BLE] Successfully subscribed to FROMNUM notifications (not relying on it)");
                         notificationsEnabled = true;
                     }
                     else
-                    {
-                        LogDebug($"[BLE] WARNING: Failed to subscribe to FROMNUM: {cccdResult}");
-                        LogDebug($"[BLE] Falling back to polling mode");
-                    }
+                        Logger.WriteLine($"[BLE] FROMNUM subscription refused ({cccdResult}) — falling back to polling every {PollIntervalWithoutNotify.TotalMilliseconds:0} ms");
                 }
                 catch (Exception ex)
                 {
-                    LogDebug($"[BLE] WARNING: Exception subscribing to FROMNUM: {ex.Message}");
-                    LogDebug($"[BLE] Falling back to polling mode");
+                    Logger.WriteLine($"[BLE] FROMNUM subscription failed ({ex.Message}) — falling back to polling every {PollIntervalWithoutNotify.TotalMilliseconds:0} ms");
                 }
             }
             else
-            {
-                LogDebug($"[BLE] FROMNUM does not support notifications, using polling mode");
-            }
+                Logger.WriteLine("[BLE] FROMNUM has no notify property — polling");
 
-            // EXPERIMENTAL: Try subscribing to FROMRADIO as well (even though firmware says NOTIFY is "broken")
-            // Maybe it works on UWP or on newer firmware?
-            if (_fromRadioChar.CharacteristicProperties.HasFlag(GattCharacteristicProperties.Notify))
-            {
-                try
-                {
-                    LogDebug($"[BLE] EXPERIMENTAL: Attempting to subscribe to FROMRADIO notifications...");
-                    var cccdResult = await _fromRadioChar.WriteClientCharacteristicConfigurationDescriptorAsync(
-                        GattClientCharacteristicConfigurationDescriptorValue.Notify);
+            _stats.NotifySubscribed = notificationsEnabled;
+            _stats.PollInterval = notificationsEnabled ? PollIntervalWithNotify : PollIntervalWithoutNotify;
 
-                    if (cccdResult == GattCommunicationStatus.Success)
-                    {
-                        _fromRadioChar.ValueChanged += OnFromRadioValueChanged;
-                        LogDebug($"[BLE] EXPERIMENTAL: Successfully subscribed to FROMRADIO notifications!");
-                    }
-                    else
-                    {
-                        LogDebug($"[BLE] EXPERIMENTAL: Failed to subscribe to FROMRADIO: {cccdResult}");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    LogDebug($"[BLE] EXPERIMENTAL: Exception subscribing to FROMRADIO: {ex.Message}");
-                }
-            }
-            else
+            // One reader for the whole link. Connected BEFORE it starts so a drop reported during the first reads
+            // is handled as a real drop (the 1.7.2.2 ordering fix stays).
+            _pumpCts = new CancellationTokenSource();
+            var pump = new BleReadPump(ReadOnceAsync, data => DataReceived?.Invoke(this, data), _stats,
+                                       _stats.PollInterval, log: Logger.WriteLine);
+            pump.LinkLost += why =>
             {
-                LogDebug($"[BLE] FROMRADIO does not support notifications (expected)");
-            }
-
-            // Prime the read once in case data is already queued (like Web Bluetooth does)
-            LogDebug($"[BLE] Performing initial read to check for queued data...");
-            await ReadAvailablePacketsAsync();
-
-            // CRITICAL FIX: Python client uses AGGRESSIVE POLLING, NO notifications!
-            // Windows BLE notifications appear to be unreliable - use polling like Python does
-            LogDebug($"[BLE] Starting AGGRESSIVE polling thread (1ms interval) like Python client...");
-            _wantExit = false;
-            _readerThread = new System.Threading.Thread(ReaderThreadFunc)
-            {
-                IsBackground = true,
-                Name = "BleReader"
+                Logger.WriteLine($"[BLE] Link lost: {why} — disconnecting so the reconnect can take over");
+                _ = Task.Run(Disconnect);
             };
+            _pump = pump;
 
-            // Connected BEFORE the reader starts: the thread's loop condition is IsConnected, so starting it
-            // first raced against the flag — it could exit immediately ("Reader thread stopping ...
-            // IsConnected=False") and, if the flag flipped meanwhile, tear a healthy link down again
-            // ("Reader thread stopped unexpectedly, forcing disconnect"; bug report 2026-11-14).
             StopRssiWatch(rssiWatch);
+            _stats.ConnectedUtc = DateTime.UtcNow;
             IsConnected = true;
-            _readerThread.Start();
-            LogDebug($"[BLE] Connected to {btParams.DeviceName}, notifications: {notificationsEnabled}");
+            _pumpTask = Task.Run(() => pump.RunAsync(_pumpCts.Token));
+            pump.Signal(BleDrainTrigger.Initial);   // packets may already be queued (like Web Bluetooth's first read)
+
+            _steadyFallbackTimer = new Timer(_ =>
+            {
+                if (_stats.Phase == BleLinkPhase.Init)
+                {
+                    Logger.WriteLine($"[BLE] No init-complete signal after {SteadyFallbackDelay.TotalSeconds:0} s — releasing the fast connection interval anyway");
+                    InitComplete();
+                }
+            }, null, SteadyFallbackDelay, Timeout.InfiniteTimeSpan);
+            _statsLogTimer = new Timer(_ => Logger.WriteLine(_stats.Snapshot(DateTime.UtcNow).ToLogLine()),
+                                       null, StatsLogInterval, StatsLogInterval);
+
+            Logger.WriteLine($"[BLE] Connected to {btParams.DeviceName} — notifications: {(notificationsEnabled ? "on" : "off")}, " +
+                             $"safety poll every {_stats.PollInterval.TotalSeconds:0.#} s, mode {Mode}");
 
             if (_nodeLogEnabled)
                 await SubscribeNodeLogAsync();   // never throws — a debug feature must not fail the connect
@@ -305,16 +308,25 @@ public class BluetoothConnectionService : IConnectionService
         catch (Exception ex)
         {
             StopRssiWatch(rssiWatch);
-            LogDebug($"[BLE] ERROR: Connection failed: {ex.GetType().Name}: {ex.Message}");
-            if (ex.InnerException != null)
+            if (ex is not BleUnreachableException and not BleStaleBondException)
             {
-                LogDebug($"[BLE] Inner exception: {ex.InnerException.GetType().Name}: {ex.InnerException.Message}");
+                LogDebug($"[BLE] ERROR: Connection failed: {ex.GetType().Name}: {ex.Message}");
+                if (ex.InnerException != null)
+                    LogDebug($"[BLE] Inner exception: {ex.InnerException.GetType().Name}: {ex.InnerException.Message}");
+                LogDebug($"[BLE] Stack trace: {ex.StackTrace}");
             }
-            LogDebug($"[BLE] Stack trace: {ex.StackTrace}");
             Disconnect();
             throw;
         }
     }
+
+    private static BleGattStatus MapStatus(GattCommunicationStatus s) => s switch
+    {
+        GattCommunicationStatus.Success => BleGattStatus.Success,
+        GattCommunicationStatus.Unreachable => BleGattStatus.Unreachable,
+        GattCommunicationStatus.AccessDenied => BleGattStatus.AccessDenied,
+        _ => BleGattStatus.ProtocolError,
+    };
 
     private void OnDeviceConnectionStatusChanged(BluetoothLEDevice sender, object args)
     {
@@ -336,301 +348,160 @@ public class BluetoothConnectionService : IConnectionService
     {
         if (_device!.DeviceInformation.Pairing.IsPaired)
         {
-            LogDebug($"[BLE] Device is already paired");
+            LogDebug("[BLE] Device is already paired");
             return;
         }
-        LogDebug($"[BLE] Device is not paired, requesting pairing...");
+        Logger.WriteLine("[BLE] Device is not paired — asking Windows to pair (PIN prompt may appear)");
         var pairingResult = await _device.DeviceInformation.Pairing.PairAsync();
         switch (pairingResult.Status)
         {
             case Windows.Devices.Enumeration.DevicePairingResultStatus.Paired:
-                LogDebug($"[BLE] Device paired successfully");
+                Logger.WriteLine("[BLE] Device paired");
                 break;
             case Windows.Devices.Enumeration.DevicePairingResultStatus.AlreadyPaired:
-                LogDebug($"[BLE] Device was already paired");
+                LogDebug("[BLE] Device was already paired");
                 break;
             default:
                 throw new Exception($"Pairing failed: {pairingResult.Status}");
         }
     }
 
-    /// <summary>Drops the Windows bond and re-resolves the device object so pairing state and GATT cache start fresh.</summary>
-    private async Task UnpairAndReopenAsync(ulong address)
-    {
-        var r = await _device!.DeviceInformation.Pairing.UnpairAsync();
-        Logger.WriteLine($"[BLE] Unpair → {r.Status}");
-        _device.ConnectionStatusChanged -= OnDeviceConnectionStatusChanged;
-        try { _device.Dispose(); } catch { }
-        await Task.Delay(1000);
-        _device = await BluetoothLEDevice.FromBluetoothAddressAsync(address)
-                  ?? throw new Exception("Bluetooth device not found after removing the pairing");
-        _device.ConnectionStatusChanged += OnDeviceConnectionStatusChanged;
-    }
+    // ---- Connection parameters ----------------------------------------------------------------------------
 
-    // Handle FROMNUM notifications (tells us data is available in FROMRADIO)
-    private void OnFromNumValueChanged(GattCharacteristic sender, GattValueChangedEventArgs args)
+    /// <summary>Asks Windows for the init-phase interval: ThroughputOptimized (fast) or, in gentle mode, Balanced.
+    /// The request object must stay alive or Windows reverts; <see cref="InitComplete"/> releases it.</summary>
+    private void RequestInitConnParams()
     {
-        LogDebug($"[BLE] !!!!! FROMNUM NOTIFICATION RECEIVED !!!!!");
+        if (_device == null) return;
+        if (!HasPreferredParamsApi)
+        {
+            _stats.ConnParamsRequest = "API not available (Windows before 11 22H2)";
+            Logger.WriteLine("[BLE] Connection-parameter API not available on this Windows — using the system default interval");
+            return;
+        }
         try
         {
-            using var reader = DataReader.FromBuffer(args.CharacteristicValue);
-            var length = reader.UnconsumedBufferLength;
-            LogDebug($"[BLE] FROMNUM: notification buffer has {length} bytes");
+            var label = _gentle ? "Balanced" : "ThroughputOptimized";
+            var pref = _gentle ? BluetoothLEPreferredConnectionParameters.Balanced
+                               : BluetoothLEPreferredConnectionParameters.ThroughputOptimized;
+            _connParamsRequest?.Dispose();
+            _connParamsRequest = _device.RequestPreferredConnectionParameters(pref);
+            _stats.ConnParamsRequest = $"{label}: {_connParamsRequest?.Status}";
+            Logger.WriteLine($"[BLE] Requested {label} connection parameters for the init phase (status: {_connParamsRequest?.Status})");
+            _ = Task.Run(async () => { await Task.Delay(1500); LogConnectionParameters("1.5 s after request"); });
+        }
+        catch (Exception ex)
+        {
+            _stats.ConnParamsRequest = $"request failed: {ex.Message}";
+            Logger.WriteLine($"[BLE] Could not request connection parameters: {ex.Message}");
+        }
+    }
 
-            if (length >= 4)
-            {
-                var data = new byte[length];
-                reader.ReadBytes(data);
-                // FROMNUM contains a uint32 telling us how many packets are available
-                uint packetCount = BitConverter.ToUInt32(data, 0);
-                LogDebug($"[BLE] FROMNUM: {packetCount} packets available - triggering FROMRADIO read");
+    private void ReleaseConnParams(string why)
+    {
+        var req = _connParamsRequest;
+        _connParamsRequest = null;
+        if (req == null) return;
+        try { req.Dispose(); } catch { }
+        _stats.ConnParamsRequest += " → released";
+        Logger.WriteLine($"[BLE] Released the init-phase connection-parameter request ({why}) — the node's own preference applies now");
+    }
 
-                // Now read from FROMRADIO repeatedly
-                Task.Run(async () => await ReadAvailablePacketsAsync());
-            }
-            else if (length > 0)
+    /// <summary>The window calls this once config and node list are loaded: the fast interval is no longer needed,
+    /// the firmware wants 30–50 ms with latency afterwards, and a weak link is happier with it.</summary>
+    public void InitComplete()
+    {
+        if (_stats.Phase == BleLinkPhase.Steady || !IsConnected) return;
+        _stats.Phase = BleLinkPhase.Steady;
+        ReleaseConnParams("init complete");
+        _ = Task.Run(async () => { await Task.Delay(2500); LogConnectionParameters("2.5 s after release"); });
+    }
+
+    /// <summary>Switches the interval policy. A live link in its init phase re-requests; a steady link has already
+    /// released its request and is not touched. New links read <see cref="GentleModeDefault"/>.</summary>
+    public void SetGentleMode(bool gentle)
+    {
+        if (_gentle == gentle) return;
+        _gentle = gentle;
+        _stats.Mode = Mode;
+        if (IsConnected && _stats.Phase == BleLinkPhase.Init)
+            RequestInitConnParams();
+    }
+
+    private void OnConnectionParametersChanged(BluetoothLEDevice sender, object args) => LogConnectionParameters("changed");
+
+    private void LogConnectionParameters(string when)
+    {
+        var dev = _device;
+        if (!HasConnParamsApi || dev == null) return;
+        try
+        {
+            var p = dev.GetConnectionParameters();
+            if (p == null) return;
+            int intervalMs = (int)Math.Round(p.ConnectionInterval * 1.25);
+            int timeoutMs = p.LinkTimeout * 10;
+            _stats.IntervalMs = intervalMs;
+            _stats.LinkTimeoutMs = timeoutMs;
+            _stats.Latency = p.ConnectionLatency;
+            Logger.WriteLine($"[BLE] Connection parameters {when}: interval {intervalMs} ms, latency {p.ConnectionLatency}, supervision timeout {timeoutMs} ms");
+        }
+        catch (Exception ex)
+        {
+            LogDebug($"[BLE] GetConnectionParameters failed ({when}): {ex.Message}");
+        }
+    }
+
+    // ---- Reading ------------------------------------------------------------------------------------------
+
+    private void OnFromNumValueChanged(GattCharacteristic sender, GattValueChangedEventArgs args)
+    {
+        try
+        {
+            _stats.CountNotify();
+            if (_debugEnabled)
             {
-                var data = new byte[length];
-                reader.ReadBytes(data);
-                LogDebug($"[BLE] WARNING: FROMNUM notification with unexpected length: {length} bytes, data: {BitConverter.ToString(data)}");
+                using var reader = DataReader.FromBuffer(args.CharacteristicValue);
+                var length = reader.UnconsumedBufferLength;
+                uint fromNum = 0;
+                if (length >= 4)
+                {
+                    var data = new byte[length];
+                    reader.ReadBytes(data);
+                    fromNum = BitConverter.ToUInt32(data, 0);
+                }
+                LogDebug($"[BLE] FROMNUM notify: {fromNum} ({length} bytes) — draining FROMRADIO");
             }
-            else
-            {
-                LogDebug($"[BLE] WARNING: FROMNUM notification with ZERO bytes");
-            }
+            _pump?.Signal(BleDrainTrigger.Notify);
         }
         catch (Exception ex)
         {
             LogDebug($"[BLE] ERROR in FROMNUM handler: {ex.GetType().Name}: {ex.Message}");
-            LogDebug($"[BLE] Stack: {ex.StackTrace}");
         }
     }
 
-    // EXPERIMENTAL: Handle FROMRADIO notifications (firmware says this is "broken" but let's try)
-    private void OnFromRadioValueChanged(GattCharacteristic sender, GattValueChangedEventArgs args)
+    /// <summary>One uncached FROMRADIO read for the pump. Cached mode would hand back Windows' copy, not the node's.</summary>
+    private async Task<BleReadResult> ReadOnceAsync(CancellationToken ct)
     {
-        LogDebug($"[BLE] !!!!! FROMRADIO NOTIFICATION RECEIVED (UNEXPECTED!) !!!!!");
-        try
+        var chr = _fromRadioChar;
+        if (chr == null || !IsConnected) return BleReadResult.Failed("characteristic gone");
+        var result = await chr.ReadValueAsync(BluetoothCacheMode.Uncached).AsTask(ct);
+        switch (result.Status)
         {
-            using var reader = DataReader.FromBuffer(args.CharacteristicValue);
-            var length = reader.UnconsumedBufferLength;
-            LogDebug($"[BLE] FROMRADIO notification: {length} bytes");
-
-            if (length > 0)
+            case GattCommunicationStatus.Success:
             {
-                var data = new byte[length];
-                reader.ReadBytes(data);
-                LogDebug($"[BLE] FROMRADIO notification data: {BitConverter.ToString(data)}");
-
-                // Fire DataReceived event
-                try
-                {
-                    DataReceived?.Invoke(this, data);
-                }
-                catch (Exception ex)
-                {
-                    LogDebug($"[BLE] ERROR: DataReceived event failed: {ex.Message}");
-                }
-            }
-            else
-            {
-                LogDebug($"[BLE] FROMRADIO notification with ZERO bytes");
-            }
-        }
-        catch (Exception ex)
-        {
-            LogDebug($"[BLE] ERROR in FROMRADIO handler: {ex.GetType().Name}: {ex.Message}");
-        }
-    }
-
-    // Read all available packets from FROMRADIO
-    private async Task ReadAvailablePacketsAsync()
-    {
-        try
-        {
-            if (_fromRadioChar == null || !IsConnected)
-                return;
-
-            // Read until we get an empty response
-            while (true)
-            {
-                // CRITICAL: Use Uncached mode to force actual BLE read from device!
-                var readResult = await _fromRadioChar.ReadValueAsync(Windows.Devices.Bluetooth.BluetoothCacheMode.Uncached);
-                if (readResult.Status != GattCommunicationStatus.Success)
-                {
-                    LogDebug($"[BLE] ReadAvailablePackets: Read failed: {readResult.Status}");
-                    break;
-                }
-
-                using var reader = DataReader.FromBuffer(readResult.Value);
+                using var reader = DataReader.FromBuffer(result.Value);
                 var length = reader.UnconsumedBufferLength;
-
-                if (length == 0)
-                {
-                    // Empty response means no more data
-                    LogDebug($"[BLE] ReadAvailablePackets: No more data");
-                    break;
-                }
-
+                if (length == 0) return BleReadResult.Empty;
                 var data = new byte[length];
                 reader.ReadBytes(data);
-                LogDebug($"[BLE] ReadAvailablePackets: Read {length} bytes: {BitConverter.ToString(data)}");
-
-                // Fire DataReceived event
-                try
-                {
-                    DataReceived?.Invoke(this, data);
-                }
-                catch (Exception ex)
-                {
-                    LogDebug($"[BLE] ERROR: DataReceived event failed: {ex.Message}");
-                }
-
-                // Small delay between reads
-                await Task.Delay(100);
+                LogDebug($"[BLE] Received {length} bytes: {BitConverter.ToString(data)}");
+                return BleReadResult.Of(data);
             }
-        }
-        catch (Exception ex)
-        {
-            LogDebug($"[BLE] ERROR in ReadAvailablePackets: {ex.GetType().Name}: {ex.Message}");
-        }
-    }
-
-    // Reader thread - continuously polls FROMRADIO for data (like Python client)
-    private void ReaderThreadFunc()
-    {
-        try
-        {
-            Logger.WriteLine("[BLE] Reader thread started");
-            int readCount = 0;
-            int emptyReadCount = 0;
-            int dataPackets = 0;
-            bool detailedLogging = true; // Detailed logging for first 10 reads
-
-            while (!_wantExit)
-            {
-                try
-                {
-                    if (_fromRadioChar == null || !IsConnected)
-                    {
-                        LogDebug($"[BLE] Reader thread stopping: _fromRadioChar={_fromRadioChar != null}, IsConnected={IsConnected}");
-                        break;
-                    }
-
-                    readCount++;
-
-                    // Disable detailed logging after first 10 reads
-                    if (readCount == 11)
-                    {
-                        LogDebug($"[BLE] Switching to periodic logging (every 100 reads or when data received)");
-                        detailedLogging = false;
-                    }
-
-                    // Periodic status update every 100 reads
-                    if (readCount % 100 == 0)
-                    {
-                        LogDebug($"[BLE] Reader alive: {readCount} reads, {dataPackets} packets received, {emptyReadCount} empty");
-                    }
-
-                    // Detailed logging for first 10 reads
-                    if (detailedLogging)
-                    {
-                        LogDebug($"[BLE] Read #{readCount}: Starting ReadValueAsync...");
-                    }
-
-                    // Read from FROMRADIO characteristic
-                    // CRITICAL: Use Uncached mode to force actual BLE read from device, not cache!
-                    var readTask = _fromRadioChar.ReadValueAsync(Windows.Devices.Bluetooth.BluetoothCacheMode.Uncached).AsTask();
-                    readTask.Wait();
-                    var readResult = readTask.Result;
-
-                    if (detailedLogging)
-                    {
-                        LogDebug($"[BLE] Read #{readCount}: Status={readResult.Status}");
-                    }
-
-                    if (readResult.Status == GattCommunicationStatus.Success)
-                    {
-                        using var reader = DataReader.FromBuffer(readResult.Value);
-                        var length = reader.UnconsumedBufferLength;
-
-                        if (length > 0)
-                        {
-                            dataPackets++;
-                            var data = new byte[length];
-                            reader.ReadBytes(data);
-                            LogDebug($"[BLE] Received {length} bytes (packet #{dataPackets}): {BitConverter.ToString(data)}");
-
-                            // Fire DataReceived event
-                            try
-                            {
-                                DataReceived?.Invoke(this, data);
-                            }
-                            catch (Exception ex)
-                            {
-                                LogDebug($"[BLE] ERROR: DataReceived event failed: {ex.Message}");
-                            }
-
-                            // If we got data, read again immediately (there might be more)
-                            continue;
-                        }
-                        else
-                        {
-                            emptyReadCount++;
-                            if (detailedLogging)
-                            {
-                                LogDebug($"[BLE] Read #{readCount}: Empty (0 bytes)");
-                            }
-                        }
-                    }
-                    else
-                    {
-                        LogDebug($"[BLE] Read #{readCount}: FAILED with status {readResult.Status}");
-                        // Don't break on single read failure, might be temporary
-                    }
-
-                    // No data available, wait a SHORT time before next poll
-                    // Firmware's onRead handler blocks up to 20s waiting for data
-                    // Aggressive polling like Python client (no reliance on notifications)
-                    if (detailedLogging)
-                    {
-                        LogDebug($"[BLE] Read #{readCount}: Sleeping 1ms...");
-                    }
-                    System.Threading.Thread.Sleep(1);  // Aggressive polling like Python - 1ms interval
-                }
-                catch (AggregateException ae) when (ae.InnerException is System.IO.IOException)
-                {
-                    LogDebug($"[BLE] CRITICAL: I/O error (device disconnected?): {ae.InnerException.Message}");
-                    break;
-                }
-                catch (Exception ex)
-                {
-                    if (!_wantExit)
-                    {
-                        LogDebug($"[BLE] CRITICAL: Reader thread exception: {ex.GetType().Name}: {ex.Message}");
-                        LogDebug($"[BLE] Stack trace: {ex.StackTrace}");
-                        if (ex.InnerException != null)
-                        {
-                            LogDebug($"[BLE] Inner exception: {ex.InnerException.GetType().Name}: {ex.InnerException.Message}");
-                        }
-                    }
-                    break;
-                }
-            }
-
-            LogDebug($"[BLE] Reader thread stopped (wantExit={_wantExit}, readCount={readCount}, dataPackets={dataPackets}, emptyReadCount={emptyReadCount})");
-
-            // If thread is stopping unexpectedly, trigger disconnect
-            if (!_wantExit && IsConnected)
-            {
-                Logger.WriteLine("[BLE] WARNING: Reader thread stopped unexpectedly, forcing disconnect");
-                Task.Run(() => Disconnect());
-            }
-        }
-        catch (Exception ex)
-        {
-            LogDebug($"[BLE] FATAL: Reader thread crashed: {ex.GetType().Name}: {ex.Message}");
-            LogDebug($"[BLE] Stack trace: {ex.StackTrace}");
+            case GattCommunicationStatus.Unreachable:
+                return BleReadResult.Unreachable("GATT read: Unreachable");
+            default:
+                return BleReadResult.Failed($"GATT read: {result.Status}" +
+                                            (result.ProtocolError is { } pe ? $" (ATT 0x{pe:X2})" : ""));
         }
     }
 
@@ -649,25 +520,17 @@ public class BluetoothConnectionService : IConnectionService
             using var writer = new DataWriter();
             writer.WriteBytes(data);
 
-            // Try WriteWithoutResponse first - some devices handle this better
             GattCommunicationStatus status;
             if (_toRadioChar.CharacteristicProperties.HasFlag(GattCharacteristicProperties.WriteWithoutResponse))
             {
-                LogDebug($"[BLE] Using WriteValueAsync (WriteWithoutResponse)...");
                 status = await _toRadioChar.WriteValueAsync(writer.DetachBuffer());
-                LogDebug($"[BLE] Write result: Status={status}");
             }
             else if (_toRadioChar.CharacteristicProperties.HasFlag(GattCharacteristicProperties.Write))
             {
-                LogDebug($"[BLE] Using WriteValueWithResultAsync (WriteWithResponse)...");
                 var result = await _toRadioChar.WriteValueWithResultAsync(writer.DetachBuffer());
                 status = result.Status;
-                LogDebug($"[BLE] Write result: Status={status}");
-
                 if (result.Status != GattCommunicationStatus.Success && result.ProtocolError.HasValue)
-                {
                     LogDebug($"[BLE] Protocol Error: {result.ProtocolError.Value}");
-                }
             }
             else
             {
@@ -676,16 +539,14 @@ public class BluetoothConnectionService : IConnectionService
 
             if (status != GattCommunicationStatus.Success)
             {
-                var errorMsg = $"Write failed: {status}";
-                LogDebug($"[BLE] ERROR: {errorMsg}");
-                throw new Exception(errorMsg);
+                _stats.CountWrite(false);
+                throw new Exception($"Write failed: {status}");
             }
 
-            LogDebug($"[BLE] Write successful, immediately reading response...");
-            // Immediately read response after write (like Web Bluetooth does)
-            // This ensures we read any response the device queues
-            await ReadAvailablePacketsAsync();
-            LogDebug($"[BLE] Write complete");
+            _stats.CountWrite(true);
+            // The node answers config requests and admin messages on FROMRADIO without a FROMNUM notify in the
+            // config phase — the pump reads right after every write (Python: sleep 10 ms, then should_read).
+            _pump?.Signal(BleDrainTrigger.Write);
         }
         catch (Exception ex)
         {
@@ -711,8 +572,8 @@ public class BluetoothConnectionService : IConnectionService
     private RssiWatch StartRssiWatch(ulong address)
     {
         var w = new RssiWatch();
-        ConnectRssiDbm = null;
-        ConnectAdvertisementsHeard = 0;
+        _stats.RssiDbm = null;
+        _stats.AdvertisementsHeard = 0;
         try
         {
             w.Watcher = new BluetoothLEAdvertisementWatcher { ScanningMode = BluetoothLEScanningMode.Passive };
@@ -720,7 +581,7 @@ public class BluetoothConnectionService : IConnectionService
             {
                 if (a.BluetoothAddress != address) return;
                 w.LastRssi = a.RawSignalStrengthInDBm;
-                System.Threading.Interlocked.Increment(ref w.Count);
+                Interlocked.Increment(ref w.Count);
             };
             w.Watcher.Start();
         }
@@ -736,11 +597,11 @@ public class BluetoothConnectionService : IConnectionService
     {
         try { w.Watcher?.Stop(); } catch { }
         w.Elapsed.Stop();
-        int n = System.Threading.Volatile.Read(ref w.Count);
-        ConnectAdvertisementsHeard = n;
+        int n = Volatile.Read(ref w.Count);
+        _stats.AdvertisementsHeard = n;
         if (n > 0)
         {
-            ConnectRssiDbm = w.LastRssi;
+            _stats.RssiDbm = w.LastRssi;
             Logger.WriteLine($"[BLE] Node signal during connect: {w.LastRssi} dBm ({n} advertisement(s) in {w.Elapsed.Elapsed.TotalSeconds:0.0} s)");
         }
         else if (w.Watcher != null)
@@ -808,7 +669,7 @@ public class BluetoothConnectionService : IConnectionService
             _ = Task.Run(async () =>
             {
                 await Task.Delay(TimeSpan.FromSeconds(45));
-                if (_nodeLogSubscribed && IsConnected && System.Threading.Volatile.Read(ref _nodeLogRecords) == 0)
+                if (_nodeLogSubscribed && IsConnected && Volatile.Read(ref _nodeLogRecords) == 0)
                     Logger.WriteLine("[NODE] No log record in 45 s — check Security → 'Debug log over API' on the node " +
                                      "(the firmware also pauses this log while it sends the config)");
             });
@@ -846,7 +707,7 @@ public class BluetoothConnectionService : IConnectionService
             var bytes = new byte[reader.UnconsumedBufferLength];
             reader.ReadBytes(bytes);
             var rec = Meshtastic.Protobufs.LogRecord.Parser.ParseFrom(bytes);
-            System.Threading.Interlocked.Increment(ref _nodeLogRecords);
+            Interlocked.Increment(ref _nodeLogRecords);
             var level = rec.Level switch
             {
                 Meshtastic.Protobufs.LogRecord.Types.Level.Critical => "CRIT",
@@ -866,14 +727,16 @@ public class BluetoothConnectionService : IConnectionService
         }
     }
 
+    // ---- Teardown -----------------------------------------------------------------------------------------
+
     private int _disconnectRunning;
 
     public void Disconnect()
     {
-        // Re-entrancy: the device's ConnectionStatusChanged, the reader thread's "forcing disconnect" and the
-        // user's Disconnect/Close can all arrive within milliseconds of each other. Only one teardown runs;
-        // the others return (the first one's finally sets IsConnected = false for everyone).
-        if (System.Threading.Interlocked.CompareExchange(ref _disconnectRunning, 1, 0) != 0)
+        // Re-entrancy: the device's ConnectionStatusChanged, the pump's LinkLost and the user's Disconnect/Close can
+        // all arrive within milliseconds of each other. Only one teardown runs; the others return (the first one's
+        // finally sets IsConnected = false for everyone).
+        if (Interlocked.CompareExchange(ref _disconnectRunning, 1, 0) != 0)
         {
             LogDebug("[BLE] Disconnect already in progress — skipping");
             return;
@@ -885,23 +748,29 @@ public class BluetoothConnectionService : IConnectionService
 
             Logger.WriteLine("[BLE] Disconnecting...");
 
-            // Stop reader thread first
-            _wantExit = true;
+            _steadyFallbackTimer?.Dispose();
+            _steadyFallbackTimer = null;
+            _statsLogTimer?.Dispose();
+            _statsLogTimer = null;
 
-            var reader = _readerThread;
-            if (reader != null && reader.IsAlive && reader != System.Threading.Thread.CurrentThread)
+            // Stop the reader first; it may be inside a GATT read, so give it a moment.
+            try { _pumpCts?.Cancel(); } catch { }
+            var pumpTask = _pumpTask;
+            if (pumpTask != null && !pumpTask.IsCompleted)
             {
-                if (!reader.Join(3000))
-                {
-                    Logger.WriteLine("[BLE] WARNING: Reader thread did not stop");
-                }
+                try { if (!pumpTask.Wait(3000)) Logger.WriteLine("[BLE] WARNING: Reader did not stop within 3 s"); }
+                catch { /* cancelled — expected */ }
             }
+            _pump = null;
+            _pumpTask = null;
+            _pumpCts?.Dispose();
+            _pumpCts = null;
 
-            // Unsubscribe from notifications
+            if (_stats.ConnectedUtc != null)
+                Logger.WriteLine(_stats.Snapshot(DateTime.UtcNow).ToLogLine());
+
             if (_fromNumChar != null)
-            {
                 _fromNumChar.ValueChanged -= OnFromNumValueChanged;
-            }
             if (_logRadioChar != null)
             {
                 _logRadioChar.ValueChanged -= OnLogRadioValueChanged;
@@ -935,11 +804,14 @@ public class BluetoothConnectionService : IConnectionService
             if (_device != null)
             {
                 _device.ConnectionStatusChanged -= OnDeviceConnectionStatusChanged;
+                if (HasConnParamsEvent)
+                {
+                    try { _device.ConnectionParametersChanged -= OnConnectionParametersChanged; } catch { }
+                }
                 _device.Dispose();
                 _device = null;
             }
 
-            _readerThread = null;
             Logger.WriteLine("[BLE] Disconnected");
         }
         catch (Exception ex)
@@ -949,7 +821,7 @@ public class BluetoothConnectionService : IConnectionService
         finally
         {
             IsConnected = false;
-            System.Threading.Volatile.Write(ref _disconnectRunning, 0);
+            Volatile.Write(ref _disconnectRunning, 0);
         }
     }
 

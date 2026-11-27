@@ -2573,11 +2573,19 @@ public class MeshtasticProtocolService : Firmware.IFirmwareDeviceLink
                     break;
             }
 
+            // Issue #81: this always went out on channel 0 (our primary). A node that only shares a secondary
+            // channel with us (private channel added as index 1 here, index 0 there) could not decrypt it and
+            // never answered — its public key stayed missing on both sides. Use the channel we last decoded a
+            // packet from this node on, like the automatic requests do.
+            uint channel;
+            lock (_pendingPkiLock)
+                channel = _lastGoodChannel.TryGetValue(destinationId, out var good) ? good : 0;
+
             var meshPacket = new MeshPacket
             {
                 From = _myNodeId,
                 To = destinationId,
-                Channel = 0,
+                Channel = channel,
                 Decoded = new Data
                 {
                     Portnum = (PortNum)portnum,
@@ -2593,7 +2601,8 @@ public class MeshtasticProtocolService : Firmware.IFirmwareDeviceLink
 
             await SendToRadioAsync(new ToRadio { Packet = meshPacket });
             NoteInfoRequestSent(destinationId);
-            Logger.WriteLine($"Info request ({type}) sent to !{destinationId:x8}");
+            Logger.WriteLine($"Info request ({type}) sent to !{destinationId:x8} on channel {channel}" +
+                             (channel == 0 && !_lastGoodChannel.ContainsKey(destinationId) ? " (no packet decoded from this node yet — primary channel)" : ""));
         }
         catch (Exception ex)
         {
@@ -2676,7 +2685,8 @@ public class MeshtasticProtocolService : Firmware.IFirmwareDeviceLink
             nodeInfo.PkiKeyKnown  = _nodeKeyService?.GetPublicKey(protoNodeInfo.Num) != null;
             nodeInfo.IsFavorite   = protoNodeInfo.IsFavorite;
             nodeInfo.IsViaMqtt    = protoNodeInfo.ViaMqtt;
-            nodeInfo.HopsToReach  = (int)protoNodeInfo.HopsAway;
+            // hops_away is optional: unset (older firmware / never heard) must stay "unknown", not become 0 hops.
+            nodeInfo.HopsToReach  = protoNodeInfo.HasHopsAway ? (int)protoNodeInfo.HopsAway : null;
             // Only firmware 2.8+ fills this bit; on older firmware false would be
             // indistinguishable from "not supported", so leave it null there.
             if (FirmwareCaps.AtLeast(GetFirmwareVersion(), 2, 8))
@@ -2865,7 +2875,8 @@ public class MeshtasticProtocolService : Firmware.IFirmwareDeviceLink
         {
             target.IsFavorite  = incoming.IsFavorite;
             target.IsViaMqtt   = incoming.IsViaMqtt;
-            target.HopsToReach = incoming.HopsToReach;
+            if (incoming.HopsToReach.HasValue)   // a snapshot without hop info must not erase a live hop count
+                target.HopsToReach = incoming.HopsToReach;
             if (incoming.HeardOnCurrentLora.HasValue)
                 target.HeardOnCurrentLora = incoming.HeardOnCurrentLora;
         }

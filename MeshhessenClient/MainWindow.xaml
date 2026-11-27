@@ -546,6 +546,38 @@
                     <TextBlock x:Name="StatusText"
                               Text="{DynamicResource StrDisconnected}"
                               VerticalAlignment="Center"/>
+                    <!-- Bluetooth only: signal heard while connecting; hover/click shows the link counters -->
+                    <TextBlock x:Name="BleSignalText"
+                              Text="📶 –"
+                              Margin="10,0,0,0"
+                              VerticalAlignment="Center"
+                              Visibility="Collapsed"
+                              Cursor="Hand"
+                              ToolTipOpening="BleSignalText_ToolTipOpening"
+                              MouseLeftButtonUp="BleSignalText_Click">
+                        <TextBlock.ToolTip>
+                            <ToolTip>
+                                <TextBlock x:Name="BleSignalToolTipText" FontFamily="Consolas" FontSize="12"/>
+                            </ToolTip>
+                        </TextBlock.ToolTip>
+                    </TextBlock>
+                    <Popup x:Name="BleStatsPopup"
+                           StaysOpen="False"
+                           Placement="Bottom"
+                           PlacementTarget="{Binding ElementName=BleSignalText}"
+                           AllowsTransparency="True">
+                        <Border Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}"
+                                BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+                                BorderThickness="1" CornerRadius="6" Padding="12" Margin="0,4,0,0">
+                            <StackPanel>
+                                <TextBlock Text="{DynamicResource StrBleStatsTitle}" FontWeight="Bold" Margin="0,0,0,6"/>
+                                <TextBlock x:Name="BleStatsPopupText" FontFamily="Consolas" FontSize="12"/>
+                                <Button Content="{DynamicResource StrBleStatsCopy}"
+                                        HorizontalAlignment="Left" Margin="0,8,0,0" Padding="8,3"
+                                        Click="BleStatsCopy_Click"/>
+                            </StackPanel>
+                        </Border>
+                    </Popup>
                 </StackPanel>
             </Grid>
         </Border>
@@ -1389,6 +1421,13 @@
                                   Unchecked="NodeAdvancedFilter_Changed"/>
                         <CheckBox x:Name="OnlyFavoritesFilterCheckBox"
                                   Content="{DynamicResource StrNodeFilterOnlyFavorites}"
+                                  FontSize="11" VerticalAlignment="Center"
+                                  Margin="0,0,10,0"
+                                  Checked="NodeAdvancedFilter_Changed"
+                                  Unchecked="NodeAdvancedFilter_Changed"/>
+                        <CheckBox x:Name="OnlyDirectNodesCheckBox"
+                                  Content="{DynamicResource StrNodeFilterOnlyDirect}"
+                                  ToolTip="{DynamicResource StrNodeFilterOnlyDirectTip}"
                                   FontSize="11" VerticalAlignment="Center"
                                   Margin="0,0,10,0"
                                   Checked="NodeAdvancedFilter_Changed"
@@ -2532,6 +2571,16 @@
                                     <TextBlock Text="{DynamicResource StrKioskForgotHint}"
                                               FontStyle="Italic" Foreground="Gray" FontSize="11"
                                               TextWrapping="Wrap" Margin="0,8,0,0"/>
+                                </StackPanel>
+                            </GroupBox>
+
+                            <!-- Bluetooth -->
+                            <GroupBox Header="{DynamicResource StrBleSettingsGroup}" Margin="0,0,0,16">
+                                <StackPanel Margin="10">
+                                    <CheckBox x:Name="BleGentleModeCheckBox"
+                                             Content="{DynamicResource StrBleGentleMode}" Margin="0,0,0,6"/>
+                                    <TextBlock Text="{DynamicResource StrBleGentleModeHint}"
+                                               TextWrapping="Wrap" FontSize="11" Foreground="Gray"/>
                                 </StackPanel>
                             </GroupBox>
 

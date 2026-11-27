@@ -486,6 +486,7 @@ public partial class MainWindow
                 StatusText.Text = Loc("StrError");
                 break;
         }
+        UpdateBleSignalHeader();   // 📶 next to the bubble while a Bluetooth link is up (MainWindow.Ble.cs)
     }
 
     // -- Message DB load / lazy-load -------------------------------------------
@@ -621,10 +622,20 @@ public partial class MainWindow
         _messages.Clear();
         foreach (var msg in _allMessages.OrderBy(m => m.SortTime))
         {
-            bool passes = true;
-            if (_messageChannelFilter != null && _messageChannelFilter.Index != 999)
+            bool passes;
+            if (_currentDmPartner != 0)
             {
-                if (uint.TryParse(msg.Channel, out uint idx))
+                // A DM conversation is open: only that partner's messages, both directions.
+                passes = IsDmWithPartner(msg, _currentDmPartner);
+            }
+            else
+            {
+                // A channel (or "all channels") is open. DMs never belong here — in the inline DM mode they sit
+                // in _allMessages and ride on a channel index too (usually 0), which is how every rebuild (history
+                // load, channel-name refresh) leaked them into the primary channel (issue #73).
+                passes = !IsDmMessage(msg);
+                if (passes && _messageChannelFilter != null && _messageChannelFilter.Index != 999
+                    && uint.TryParse(msg.Channel, out uint idx))
                     passes = idx == _messageChannelFilter.Index;
             }
             if (passes) _messages.Add(msg);

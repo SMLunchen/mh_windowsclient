@@ -132,9 +132,19 @@ public partial class MainWindow
         if (_nodeFilterOnlyFavorites)
             filtered = filtered.Where(n => n.IsFavorite);
 
-        // Apply sorting
+        if (_nodeFilterOnlyDirect)
+            filtered = filtered.Where(NodeSortKeys.IsDirectLink);
+
+        // Apply sorting. SNR/RSSI/Battery/Distance sort by what the column shows (NodeSortKeys, issue #83):
+        // rows with a value first (grouped like the display), then the value in the chosen direction, ties by
+        // short name.
         if (!string.IsNullOrEmpty(_nodeSortColumn))
         {
+            IEnumerable<NodeInfo> Numeric(Func<NodeInfo, int> group, Func<NodeInfo, double> key) =>
+                _nodeSortAscending
+                    ? filtered.OrderBy(group).ThenBy(key).ThenBy(n => n.ShortName)
+                    : filtered.OrderBy(group).ThenByDescending(key).ThenBy(n => n.ShortName);
+
             filtered = _nodeSortColumn switch
             {
                 "Name" => _nodeSortAscending
@@ -146,34 +156,10 @@ public partial class MainWindow
                 "Id" => _nodeSortAscending
                     ? filtered.OrderBy(n => n.Id)
                     : filtered.OrderByDescending(n => n.Id),
-                "Distance" => _nodeSortAscending
-                    ? filtered.OrderBy(n => HasValidDistance(n.Distance) ? 0 : 1)
-                             .ThenBy(n => ParseDistanceForSorting(n.Distance))
-                             .ThenBy(n => n.ShortName)
-                    : filtered.OrderBy(n => HasValidDistance(n.Distance) ? 0 : 1)
-                             .ThenByDescending(n => ParseDistanceForSorting(n.Distance))
-                             .ThenBy(n => n.ShortName),
-                "Snr" => _nodeSortAscending
-                    ? filtered.OrderBy(n => HasValidNumeric(n.Snr) ? 0 : 1)
-                             .ThenBy(n => ParseNumericForSorting(n.Snr))
-                             .ThenBy(n => n.ShortName)
-                    : filtered.OrderBy(n => HasValidNumeric(n.Snr) ? 0 : 1)
-                             .ThenByDescending(n => ParseNumericForSorting(n.Snr))
-                             .ThenBy(n => n.ShortName),
-                "Rssi" => _nodeSortAscending
-                    ? filtered.OrderBy(n => HasValidNumeric(n.Rssi) ? 0 : 1)
-                             .ThenBy(n => ParseNumericForSorting(n.Rssi))
-                             .ThenBy(n => n.ShortName)
-                    : filtered.OrderBy(n => HasValidNumeric(n.Rssi) ? 0 : 1)
-                             .ThenByDescending(n => ParseNumericForSorting(n.Rssi))
-                             .ThenBy(n => n.ShortName),
-                "Battery" => _nodeSortAscending
-                    ? filtered.OrderBy(n => HasValidNumeric(n.Battery) ? 0 : 1)
-                             .ThenBy(n => ParseNumericForSorting(n.Battery))
-                             .ThenBy(n => n.ShortName)
-                    : filtered.OrderBy(n => HasValidNumeric(n.Battery) ? 0 : 1)
-                             .ThenByDescending(n => ParseNumericForSorting(n.Battery))
-                             .ThenBy(n => n.ShortName),
+                "Distance" => Numeric(NodeSortKeys.DistanceGroup, NodeSortKeys.DistanceKey),
+                "Snr"      => Numeric(NodeSortKeys.SnrGroup,      NodeSortKeys.SnrKey),
+                "Rssi"     => Numeric(NodeSortKeys.RssiGroup,     NodeSortKeys.RssiKey),
+                "Battery"  => Numeric(NodeSortKeys.BatteryGroup,  NodeSortKeys.BatteryKey),
                 "LastSeen" => _nodeSortAscending
                     ? filtered.OrderBy(n => n.LastSeenDateTime ?? DateTime.MinValue)
                     : filtered.OrderByDescending(n => n.LastSeenDateTime ?? DateTime.MinValue),
@@ -181,9 +167,12 @@ public partial class MainWindow
             };
         }
 
-        // Own node always first, then favorites, then pinned, then rest
-        filtered = filtered.OrderBy(n =>
-            n.NodeId == _myNodeId ? 0 : n.IsFavorite ? 1 : n.IsPinned ? 2 : 3);
+        // Own node always first and pinned nodes next (explicit "pin to top"). Favorites are grouped on top only
+        // in the default order: with a column sort active they take part in it — with a dozen favorites the
+        // grouping hid the sort completely ("SNR/RSSI sorting does not work", #83).
+        filtered = string.IsNullOrEmpty(_nodeSortColumn)
+            ? filtered.OrderBy(n => n.NodeId == _myNodeId ? 0 : n.IsFavorite ? 1 : n.IsPinned ? 2 : 3)
+            : filtered.OrderBy(n => n.NodeId == _myNodeId ? 0 : n.IsPinned ? 1 : 2);
 
         if (IsTileViewActive && NodeTileView != null)
         {
@@ -213,59 +202,7 @@ public partial class MainWindow
         }
     }
 
-    private bool HasValidDistance(string distance)
-    {
-        if (string.IsNullOrEmpty(distance) || distance == "-")
-            return false;
-        var cleaned = distance.Replace("km", "").Replace("m", "").Trim();
-        // Use CurrentCulture to handle comma decimal separator
-        return double.TryParse(cleaned, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.CurrentCulture, out _);
-    }
-
-    private bool HasValidNumeric(string value)
-    {
-        if (string.IsNullOrEmpty(value) || value == "-")
-            return false;
-        var cleaned = value.Replace("%", "").Replace("dB", "").Trim();
-        // Use CurrentCulture to handle comma decimal separator
-        if (double.TryParse(cleaned, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.CurrentCulture, out var result))
-        {
-            // 0.0 is considered "no value" for RSSI/SNR
-            return Math.Abs(result) >= 0.01;
-        }
-        return false;
-    }
-
-    private double ParseDistanceForSorting(string distance)
-    {
-        if (string.IsNullOrEmpty(distance) || distance == "-")
-            return 0;
-
-        var cleaned = distance.Replace("km", "").Replace("m", "").Trim();
-        // Use CurrentCulture to handle comma decimal separator (DE: "160,2")
-        if (double.TryParse(cleaned, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.CurrentCulture, out var value))
-        {
-            // Convert meters to km if needed
-            if (distance.EndsWith("m") && !distance.EndsWith("km"))
-                return value / 1000.0;
-            return value;
-        }
-        return 0;
-    }
-
-    private double ParseNumericForSorting(string value)
-    {
-        if (string.IsNullOrEmpty(value) || value == "-")
-            return 0;
-
-        var cleaned = value.Replace("%", "").Replace("dB", "").Trim();
-        // Use CurrentCulture to handle comma decimal separator (DE: "-10,8")
-        if (double.TryParse(cleaned, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.CurrentCulture, out var result))
-        {
-            return result;
-        }
-        return 0;
-    }
+    // Numeric parsing for the sort lives in Models.NodeSortKeys (culture-tolerant, display-consistent, unit-tested).
 
     private double CalculateDistance(double lat1, double lon1, double lat2, double lon2)
     {
