@@ -4,8 +4,8 @@
         xmlns:ui="http://schemas.modernwpf.com/2019"
         ui:WindowHelper.UseModernWindowStyle="True"
         Title="{DynamicResource StrTrTitle}"
-        Width="780" Height="460"
-        MinWidth="660" MinHeight="300"
+        Width="860" Height="540"
+        MinWidth="720" MinHeight="320"
         WindowStartupLocation="CenterOwner"
         ResizeMode="CanResize">
 

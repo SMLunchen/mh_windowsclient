@@ -140,6 +140,10 @@ public class MeshtasticProtocolService : Firmware.IFirmwareDeviceLink
     /// (NodeInfo/Position/Telemetry/Traceroute with want_response, or any foreign admin packet).</summary>
     public event EventHandler<MeshhessenClient.Models.RequestEchoEvent>? RequestEchoReceived;
 
+    /// <summary>Every decoded packet from another node once initialised (not the connect backlog) —
+    /// feeds the live situation map in the Funk-Echo window. Raised on the protocol thread.</summary>
+    public event EventHandler<MeshhessenClient.Models.PacketObservation>? PacketObserved;
+
     /// <summary>Injects a FromRadio payload originating from a VN client into the local processing pipeline.</summary>
     public void ProcessExternalPacket(byte[] fromRadioPayload)
     {
@@ -1457,6 +1461,17 @@ public class MeshtasticProtocolService : Firmware.IFirmwareDeviceLink
                     // updates); every other port needs the nudge here so the node list repaints the row.
                     if (heard != null && data.Portnum is not (PortNum.PositionApp or PortNum.NodeinfoApp or PortNum.TelemetryApp))
                         NodeInfoReceived?.Invoke(this, heard);
+
+                    // Live situation map: who we hear, how, and any traceroute path in the payload.
+                    if (PacketObserved is { } observers)
+                    {
+                        var obs = MeshhessenClient.Models.PacketObservation.From(packet, DateTime.UtcNow);
+                        if (obs != null)
+                        {
+                            try { observers.Invoke(this, obs); }
+                            catch (Exception ex) { Logger.WriteLine($"[Scope] observer failed: {ex.Message}"); }
+                        }
+                    }
                     // RF-link evidence: we heard this node directly (0 hops, not MQTT)
                     if (directRf)
                     {

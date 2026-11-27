@@ -29,6 +29,18 @@ public partial class MainWindow
         [RequestEchoType.Admin]      = Color.FromRgb(0xF0, 0x4C, 0x4C), // red
     };
 
+    /// <summary>Every decoded packet from another node (protocol thread) → the situation map in the
+    /// Funk-Echo window, if it is open. Nothing is stored; the map forgets after its display time.</summary>
+    private void OnPacketObserved(object? sender, PacketObservation obs)
+    {
+        if (_funkEchoWindow == null) return;
+        Dispatcher.BeginInvoke(() =>
+        {
+            try { _funkEchoWindow?.NotifyPacket(obs, _myNodeId); }
+            catch (Exception ex) { Services.Logger.WriteLine($"[Scope] packet handling failed: {ex.Message}"); }
+        });
+    }
+
     private void OnRequestEchoReceived(object? sender, RequestEchoEvent evt)
     {
         // Persist off the UI thread (burst aggregation happens in the DB layer)
@@ -164,6 +176,10 @@ public partial class MainWindow
 
         if (_funkEchoWindow == null)
         {
+            // Lagebild sliders start from the saved values; changes are written back below
+            RequestEchoWindow.ScopeTtlDefault        = _currentSettings.FunkEchoScopeTtl;
+            RequestEchoWindow.ScopeBrightnessDefault = _currentSettings.FunkEchoScopeBrightness;
+            RequestEchoWindow.ScopeRoutersDefault    = _currentSettings.FunkEchoScopeRouters;
             _funkEchoWindow = new RequestEchoWindow(_db, FunkEchoNodeLabel,
                 id => _protocolService.GetKnownNodes().TryGetValue(id, out var n) ? n.Name : $"!{id:x8}",
                 () => _currentSettings.FunkEchoTone != "factual",
@@ -179,8 +195,22 @@ public partial class MainWindow
                 }),
                 openDm:       id => WithKnownNode(id, OpenDmToNode),
                 modemPreset:  () => _currentLoRaConfig?.ModemPreset,
-                showRouteOnMap: ShowRequestRouteOnMap) { Owner = this };
+                showRouteOnMap: ShowRequestRouteOnMap,
+                // Situation map ("Lagebild"): our position, node positions from the live list, the configured raster map
+                myPosition:   GetMyPosition,
+                nodePosition: id => _allNodes.FirstOrDefault(n => n.NodeId == id) is { Latitude: double la, Longitude: double lo }
+                                    ? (la, lo) : null,
+                tileSource:   () => { try { return CreateRasterTileSource(); } catch { return null; } },
+                routerNodes:  () => _allNodes
+                    .Where(n => n.IsInfrastructure && n.Latitude is double && n.Longitude is double)
+                    .Select(n => (n.NodeId, n.RoleDisplay, n.Latitude!.Value, n.Longitude!.Value))
+                    .ToList()) { Owner = this };
             _funkEchoWindow.Closed += (_, _) => _funkEchoWindow = null;
+            _funkEchoWindow.ScopeSettingsChanged += (ttl, brightness, routers) =>
+            {
+                _currentSettings = _currentSettings with { FunkEchoScopeTtl = ttl, FunkEchoScopeBrightness = brightness, FunkEchoScopeRouters = routers };
+                try { Services.SettingsService.Save(_currentSettings); } catch { }
+            };
             _funkEchoWindow.Show();
         }
         else

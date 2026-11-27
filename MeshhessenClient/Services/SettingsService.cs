@@ -34,6 +34,9 @@ public record AppSettings
     public bool DebugBluetooth { get; init; } = false;
     public bool DebugBleNodeLog { get; init; } = false;        // Debug: mirror the node's own log via the BLE LOGRADIO characteristic
     public bool BleGentleMode { get; init; } = false;          // Bluetooth: Balanced connection interval from the start (slower download, less radio load)
+    public int FunkEchoScopeTtl { get; init; } = 45;           // Lagebild: seconds a heard packet stays on the situation map (30–60)
+    public int FunkEchoScopeBrightness { get; init; } = 25;    // Lagebild: base-map brightness in percent (20–100), nodes/lines stay full phosphor
+    public bool FunkEchoScopeRouters { get; init; } = true;    // Lagebild: routers/repeaters with a known position as permanent markers
     public bool AlertBellSound { get; init; } = true;           // Play sound on alert bell character
     public bool MessageToasts { get; init; } = true;            // Windows toast notification on new incoming message
     public string DmStyle { get; init; } = "window";           // Direct messages: "window" (separate) or "inline" (WhatsApp-style)
@@ -225,6 +228,9 @@ public static class SettingsService
                 DebugBluetooth = values.TryGetValue("DebugBluetooth", out var dbb) && bool.TryParse(dbb, out var dbbBool) && dbbBool,
                 DebugBleNodeLog = values.TryGetValue("DebugBleNodeLog", out var dbn) && bool.TryParse(dbn, out var dbnBool) && dbnBool,
                 BleGentleMode = values.TryGetValue("BleGentleMode", out var bgm) && bool.TryParse(bgm, out var bgmBool) && bgmBool,
+                FunkEchoScopeTtl = values.TryGetValue("FunkEchoScopeTtl", out var sttl) && int.TryParse(sttl, out var sttlInt) ? Math.Clamp(sttlInt, 30, 60) : 45,
+                FunkEchoScopeBrightness = values.TryGetValue("FunkEchoScopeBrightness", out var sbr) && int.TryParse(sbr, out var sbrInt) ? Math.Clamp(sbrInt, 20, 100) : 25,
+                FunkEchoScopeRouters = !(values.TryGetValue("FunkEchoScopeRouters", out var sro) && bool.TryParse(sro, out var sroBool)) || sroBool,
                 AlertBellSound =!values.TryGetValue("AlertBellSound", out var abs) || !bool.TryParse(abs, out var absBool) || absBool,
                 MessageToasts = !values.TryGetValue("MessageToasts", out var mtb) || !bool.TryParse(mtb, out var mtbBool) || mtbBool,
                 DmStyle = values.TryGetValue("DmStyle", out var dmsv) ? dmsv : "window",
@@ -308,6 +314,9 @@ public static class SettingsService
                 $"DebugBluetooth={settings.DebugBluetooth}",
                 $"DebugBleNodeLog={settings.DebugBleNodeLog}",
                 $"BleGentleMode={settings.BleGentleMode}",
+                $"FunkEchoScopeTtl={settings.FunkEchoScopeTtl}",
+                $"FunkEchoScopeBrightness={settings.FunkEchoScopeBrightness}",
+                $"FunkEchoScopeRouters={settings.FunkEchoScopeRouters}",
                 $"AlertBellSound={settings.AlertBellSound}",
                 $"MessageToasts={settings.MessageToasts}",
                 $"DmStyle={settings.DmStyle}",

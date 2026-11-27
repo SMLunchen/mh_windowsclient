@@ -54,6 +54,8 @@ public partial class NodeConfigWindow : Window
     public NodeConfigWindow(MeshtasticProtocolService protocolService, Func<(double lat, double lon)?>? mapCenterProvider = null, Func<(double lat, double lon)?>? myPosProvider = null, Func<Mapsui.Tiling.Layers.TileLayer>? tileLayerFactory = null)
     {
         InitializeComponent();
+        // Owned, modeless window: closing it would otherwise minimize the main window (issue #53).
+        Closing += (_, _) => { try { Owner?.Activate(); } catch { } };
         _protocolService = protocolService;
         _mapCenterProvider = mapCenterProvider;
         _myPosProvider = myPosProvider;

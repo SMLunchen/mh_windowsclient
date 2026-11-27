@@ -37,6 +37,8 @@ public partial class PlotWindow : Window
         uint preselectedNodeId = 0)
     {
         InitializeComponent();
+        // Owned, modeless window: closing it would otherwise minimize the main window (issue #53).
+        Closing += (_, _) => { try { Owner?.Activate(); } catch { } };
         _db        = db;
         _nodeNames = nodeNames;
 

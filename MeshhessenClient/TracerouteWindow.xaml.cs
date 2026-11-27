@@ -40,6 +40,10 @@ public partial class TracerouteWindow : Window
         Title = $"Traceroute → {targetNode.LongName}";
 
         _protocolService.TracerouteReceived += OnTracerouteReceived;
+
+        // Owned window: without this, closing it minimizes the main window (issue #53 — same pitfall as in
+        // every other `{ Owner = this }` window; this one had been missed).
+        Closing += (_, _) => { try { Owner?.Activate(); } catch { } };
     }
 
     public void SetKnownPositions(
@@ -328,25 +332,30 @@ public partial class TracerouteWindow : Window
         // Two legs like the Android app: the request towards the destination and the reply back to us.
         // The reply's SNRs (snr_back) were not shown before — the last row of the return leg is the SNR
         // our own radio measured (issue #85).
-        AddLegHeader(Loc("StrTrTowards"), Loc("StrTrTowardsTip"));
+        AddLegHeader(Loc("StrTrTowards"), Loc("StrTrTowardsTip"), returnLeg: false);
         AddLegRows(forward);
         if (back.Count > 0)
         {
-            AddLegHeader(Loc("StrTrBack"), Loc("StrTrBackTip"));
+            AddLegHeader(Loc("StrTrBack"), Loc("StrTrBackTip"), returnLeg: true);
             AddLegRows(back);
         }
     }
 
-    private void AddLegHeader(string text, string tip)
+    /// <summary>Section bar for a leg: tinted band with the leg title; the return leg gets a thick accent
+    /// rule and a gap above it so the two directions read as two tables, not one long list.</summary>
+    private void AddLegHeader(string text, string tip, bool returnLeg)
     {
-        HopsPanel.Children.Add(new TextBlock
+        var accent = TryFindResource("SystemControlHighlightAccentBrush") as Brush
+                     ?? new SolidColorBrush(Color.FromRgb(0x19, 0x87, 0x54));
+        HopsPanel.Children.Add(new Border
         {
-            Text = text,
+            BorderBrush = accent,
+            BorderThickness = new Thickness(0, returnLeg ? 4 : 0, 0, 1),
+            Background = new SolidColorBrush(Color.FromArgb(0x1A, 0x20, 0xC9, 0x97)),   // alpha tint: works in both themes
+            Padding = new Thickness(10, 5, 10, 5),
+            Margin = new Thickness(0, returnLeg ? 12 : 0, 0, 0),
             ToolTip = tip,
-            FontSize = 11,
-            FontWeight = FontWeights.SemiBold,
-            Opacity = 0.7,
-            Margin = new Thickness(8, 6, 8, 2),
+            Child = new TextBlock { Text = text, FontSize = 12, FontWeight = FontWeights.SemiBold },
         });
     }
 
@@ -367,12 +376,15 @@ public partial class TracerouteWindow : Window
                     : Brushes.Transparent,
             };
 
+            // Fixed widths for distance, SNR and the badge column: with an Auto badge column the distance
+            // and SNR values jumped left on rows that carried a badge and sat flush against the scrollbar
+            // on rows that did not — hard to read on the right-hand side.
             var grid = new Grid();
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(32) });
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(90) });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(80) });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(96) });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(96) });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(64) });
 
             // Icon column
             var iconText = new TextBlock

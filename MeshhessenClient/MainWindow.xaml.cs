@@ -244,6 +244,7 @@ public partial class MainWindow : Window
         _protocolService.TracerouteReceived += OnTracerouteReceived;
         _protocolService.ReactionReceived += OnReactionReceived;
         _protocolService.RequestEchoReceived += OnRequestEchoReceived;
+        _protocolService.PacketObserved += OnPacketObserved;   // live situation map (Funk-Echo window)
         _protocolService.NodeStatusReceived  += OnNodeStatusReceived;
         _protocolService.StatusMessageConfigReceived += OnStatusMessageConfigReceived;
         _protocolService.LinkStale += OnLinkStale;
@@ -1182,6 +1183,7 @@ public partial class MainWindow : Window
                 _protocolService.TracerouteReceived += OnTracerouteReceived;
                 _protocolService.ReactionReceived += OnReactionReceived;
                 _protocolService.RequestEchoReceived += OnRequestEchoReceived;
+        _protocolService.PacketObserved += OnPacketObserved;   // live situation map (Funk-Echo window)
         _protocolService.NodeStatusReceived  += OnNodeStatusReceived;
         _protocolService.StatusMessageConfigReceived += OnStatusMessageConfigReceived;
         _protocolService.LinkStale += OnLinkStale;
@@ -2323,6 +2325,7 @@ public partial class MainWindow : Window
                 _protocolService.TracerouteReceived += OnTracerouteReceived;
                 _protocolService.ReactionReceived += OnReactionReceived;
                 _protocolService.RequestEchoReceived += OnRequestEchoReceived;
+        _protocolService.PacketObserved += OnPacketObserved;   // live situation map (Funk-Echo window)
         _protocolService.NodeStatusReceived  += OnNodeStatusReceived;
         _protocolService.StatusMessageConfigReceived += OnStatusMessageConfigReceived;
         _protocolService.LinkStale += OnLinkStale;

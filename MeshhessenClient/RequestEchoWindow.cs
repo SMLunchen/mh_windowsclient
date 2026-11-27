@@ -21,7 +21,7 @@ namespace MeshhessenClient;
 /// <summary>Funk-Echo window "Wer funkt mich an?": journal of directed requests other
 /// stations sent to our node, plus a 7-day curiosity statistic. V1 — the interactive
 /// radar view is planned as a third tab later.</summary>
-public class RequestEchoWindow : Window
+public partial class RequestEchoWindow : Window
 {
     private static string Loc(string key) =>
         Application.Current?.Resources[key] as string ?? key;
@@ -77,7 +77,10 @@ public class RequestEchoWindow : Window
     public RequestEchoWindow(TelemetryDatabaseService db, Func<uint, string> shortLabel,
         Func<uint, string> fullName, Func<bool> casualTone,
         Action<uint>? openNodeInfo = null, Action<uint>? showOnMap = null, Action<uint>? openDm = null,
-        Func<ModemPreset?>? modemPreset = null, Action<uint, List<uint>>? showRouteOnMap = null)
+        Func<ModemPreset?>? modemPreset = null, Action<uint, List<uint>>? showRouteOnMap = null,
+        Func<(double lat, double lon)?>? myPosition = null, Func<uint, (double lat, double lon)?>? nodePosition = null,
+        Func<BruTile.ITileSource?>? tileSource = null,
+        Func<IReadOnlyList<(uint Id, string Role, double Lat, double Lon)>>? routerNodes = null)
     {
         _db = db;
         _shortLabel = shortLabel;
@@ -88,6 +91,7 @@ public class RequestEchoWindow : Window
         _openDm = openDm;
         _modemPreset = modemPreset;
         _showRouteOnMap = showRouteOnMap;
+        InitScope(myPosition, nodePosition, tileSource, routerNodes);   // "Lagebild" tab (RequestEchoWindow.Scope.cs)
 
         _isDark    = ThemeManager.Current.ActualApplicationTheme == ApplicationTheme.Dark;
         _bgCard    = _isDark ? Color.FromRgb(22, 27, 34)    : Color.FromRgb(250, 251, 253);
@@ -125,6 +129,11 @@ public class RequestEchoWindow : Window
         {
             Header  = Loc("StrFunkEchoTabRadar"),
             Content = BuildRadarTab(),
+        });
+        tabs.Items.Add(new TabItem
+        {
+            Header  = Loc("StrFunkEchoTabScope"),
+            Content = BuildScopeTab(),
         });
         tabs.Items.Add(new TabItem
         {
@@ -655,58 +664,8 @@ public class RequestEchoWindow : Window
         var (x, y) = _radarPositions.TryGetValue(nodeId, out var p)
             ? p
             : RadarPosition(nodeId, 0.2);   // brand-new station: deterministic fallback spot
-        double dist = Math.Max(Math.Sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy)), 12);
-        var dur = TimeSpan.FromMilliseconds(1000);
-
-        void Expand(double ox, double oy, double targetR, Action? completed)
-        {
-            var ring = new Ellipse
-            {
-                Width = targetR * 2, Height = targetR * 2,
-                Stroke = new SolidColorBrush(PhosBright),
-                StrokeThickness = 2,
-                Opacity = 0.9,
-                RenderTransformOrigin = new Point(0.5, 0.5),
-            };
-            var scale = new ScaleTransform(0.04, 0.04);
-            ring.RenderTransform = scale;
-            Canvas.SetLeft(ring, ox - targetR);
-            Canvas.SetTop(ring, oy - targetR);
-            _pingOverlay.Children.Add(ring);
-
-            var grow = new System.Windows.Media.Animation.DoubleAnimation(0.04, 1.0, dur);
-            var fade = new System.Windows.Media.Animation.DoubleAnimation(0.9, 0.25, dur);
-            grow.Completed += (_, _) =>
-            {
-                _pingOverlay.Children.Remove(ring);
-                completed?.Invoke();
-            };
-            scale.BeginAnimation(ScaleTransform.ScaleXProperty, grow);
-            scale.BeginAnimation(ScaleTransform.ScaleYProperty, grow);
-            ring.BeginAnimation(UIElement.OpacityProperty, fade);
-        }
-
-        // outbound (sender → us), then reflected (us → sender), then a blip at the sender
-        Expand(x, y, dist, () => Expand(cx, cy, dist, () =>
-        {
-            var blip = new Ellipse
-            {
-                Width = 26, Height = 26,
-                Fill = new SolidColorBrush(Color.FromArgb(160, PhosBright.R, PhosBright.G, PhosBright.B)),
-                RenderTransformOrigin = new Point(0.5, 0.5),
-            };
-            var blipScale = new ScaleTransform(0.3, 0.3);
-            blip.RenderTransform = blipScale;
-            Canvas.SetLeft(blip, x - 13);
-            Canvas.SetTop(blip, y - 13);
-            _pingOverlay.Children.Add(blip);
-            var pop  = new System.Windows.Media.Animation.DoubleAnimation(0.3, 1.4, TimeSpan.FromMilliseconds(450));
-            var gone = new System.Windows.Media.Animation.DoubleAnimation(1.0, 0.0, TimeSpan.FromMilliseconds(450));
-            gone.Completed += (_, _) => _pingOverlay.Children.Remove(blip);
-            blipScale.BeginAnimation(ScaleTransform.ScaleXProperty, pop);
-            blipScale.BeginAnimation(ScaleTransform.ScaleYProperty, pop);
-            blip.BeginAnimation(UIElement.OpacityProperty, gone);
-        }));
+        // Animation shared with the situation map (RequestEchoWindow.Scope.cs)
+        PlaySonarPing(_pingOverlay, x, y, cx, cy);
     }
 
     private string RadarTooltip(uint nodeId, int total, Dictionary<string, int> perType)

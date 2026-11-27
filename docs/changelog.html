@@ -208,7 +208,9 @@
           <li><strong>Hops, SNR und RSSI fehlten an Nachrichten aus der Historie:</strong> Die Nachrichten-Datenbank hatte dafür keine Spalten, nach jedem Reconnect fehlten die Werte in Kanälen und DMs. Jetzt werden sie gespeichert und beim Laden übernommen.</li>
           <li><strong>#85 Traceroute:</strong> Das Fenster zeigte nur den SNR des Hinwegs. Jetzt zwei Abschnitte wie in der Android-App – „→ Hinweg (Anfrage)“ und „← Rückweg (Antwort)“, die letzte Zeile des Rückwegs ist unser eigenes Funkgerät. Außerdem aktualisiert jetzt jedes dekodierte Paket SNR, RSSI und „Zuletzt gesehen“ in der Node-Liste (vorher nur Position, Telemetrie und User-Pakete), also auch Textnachrichten und Traceroute-Antworten.</li>
           <li><strong>#87 Vollständige Versionsnummer:</strong> Titel und Fußzeile zeigen alle vier Stellen.</li>
-          <li><strong>„Benutzerinfo anfordern“ löschte beim Gegenüber unseren Namen:</strong> Die manuelle Anfrage schickte ein leeres Payload; die Firmware schreibt das als User mit leeren Namen in ihre Node-DB. Jetzt geht wie bei Android unser eigener User mit (Name, Hardware, Public Key) – ein echter Austausch, der Gegenüber lernt dabei auch unseren Schlüssel.</li>
+          <li><strong>„Benutzerinfo anfordern“ löschte beim Gegenüber unseren Namen:</strong> Die manuelle Anfrage schickte ein leeres Payload; die Firmware schreibt das als User mit leeren Namen in ihre Node-DB. Jetzt geht wie bei Android unser eigener User mit (Name, Hardware, Public Key) – ein echter Austausch, der Gegenüber lernt dabei auch unseren Schlüssel. Dazu wurden die eigenen Namen beim Verbinden gar nicht übernommen (nur das Hardware-Modell), so dass selbst die automatische Anfrage nur die ID schickte – behoben.</li>
+          <li><strong>Traceroute-Fenster minimierte beim Schließen das Hauptfenster:</strong> fehlender Owner-Handler, ebenso in Node-Konfiguration und Plot-Fenster – alle drei ergänzt.</li>
+          <li><strong>Traceroute-Fenster besser lesbar:</strong> feste Spaltenbreiten (Entfernung und SNR rutschten je nach Badge hin und her und klebten am Scrollbalken), etwas größeres Fenster, Hin- und Rückweg als getönte Abschnittsbalken, der Rückweg mit kräftigem Akzentrand abgesetzt.</li>
         </ul>
       </div>
     </div>
@@ -218,6 +220,7 @@
       <div class="cl-group">
         <ul class="cl-list">
           <li><strong>#86 Rolle in der Node-Liste:</strong> Spalte „Rolle“ (Client, Router, Client Mute, Repeater, …) hinter der ID, sortierbar und im Textfilter; in der Kachelansicht als Sortieroption.</li>
+          <li><strong>Funk-Echo: neuer Reiter „🗺️ Lagebild“:</strong> ein Pip-Boy-artiges Sichtgerät in Phosphorgrün – unser Standort in der Mitte, 70 km Radius, nicht zoombar, die konfigurierte Karte absichtlich grob und verpixelt. Jedes gehörte Paket lässt den Absender an seinem Standort aufleuchten, Anfragen an uns spielen den Sonar-Ping hin und zurück, Traceroutes zeichnen ihren Weg animiert über die beteiligten Nodes, jede Station mit Kurznamen. Alles verblasst nach der oben einstellbaren Zeit (30–60 s); ein zweiter Regler dimmt die Karte, ein Haken hält Router dauerhaft als Rauten auf dem Lagebild.</li>
         </ul>
       </div>
     </div>
@@ -1603,7 +1606,9 @@
           <li><strong>Hops, SNR and RSSI were missing on messages from history:</strong> the message database had no columns for them, so after every reconnect the values were gone in channels and DMs. They are now stored and restored on load.</li>
           <li><strong>#85 Traceroute:</strong> the window only showed the outbound SNR. Now two sections like the Android app – "→ Towards destination (request)" and "← Back to us (reply)", the last row of the return leg is our own radio. In addition every decoded packet now refreshes SNR, RSSI and "last seen" in the node list (previously only position, telemetry and user packets), i.e. text messages and traceroute replies too.</li>
           <li><strong>#87 Full version number:</strong> title and footer show all four parts.</li>
-          <li><strong>"Request user info" wiped our name on the peer:</strong> the manual request sent an empty payload, which the firmware writes into its NodeDB as a user with empty names. The request now carries our own user (name, hardware, public key) like Android does – a real exchange, and the peer learns our key at the same time.</li>
+          <li><strong>"Request user info" wiped our name on the peer:</strong> the manual request sent an empty payload, which the firmware writes into its NodeDB as a user with empty names. The request now carries our own user (name, hardware, public key) like Android does – a real exchange, and the peer learns our key at the same time. On top, our own names were never taken from the device on connect (only the hardware model), so even the automatic request only sent the id – fixed.</li>
+          <li><strong>Closing the traceroute window minimised the main window:</strong> missing owner handler, likewise in the node configuration and plot windows – all three added.</li>
+          <li><strong>Traceroute window easier to read:</strong> fixed column widths (distance and SNR shifted depending on badges and sat flush against the scrollbar), slightly larger window, outbound and return legs as tinted section bars, the return leg set off with a strong accent rule.</li>
         </ul>
       </div>
     </div>
@@ -1613,6 +1618,7 @@
       <div class="cl-group">
         <ul class="cl-list">
           <li><strong>#86 Role in the node list:</strong> "Role" column (Client, Router, Client Mute, Repeater, …) after the ID, sortable and part of the text filter; a sort option in tile view as well.</li>
+          <li><strong>Funk-Echo: new "🗺️ Situation map" tab:</strong> a Pip-Boy style scope in phosphor green – our position in the centre, 70 km radius, no zoom, the configured map deliberately coarse and pixelated. Every packet we hear lights up the sender at its position, requests to us play the sonar ping out and back, traceroutes draw their path over the nodes involved, animated from start to end, every station with its short name. Everything fades after the time set at the top (30–60 s); a second slider dims the map, a checkbox keeps routers on the map permanently as diamonds.</li>
         </ul>
       </div>
     </div>
