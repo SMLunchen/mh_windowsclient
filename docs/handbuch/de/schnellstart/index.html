@@ -460,6 +460,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Bluetooth bricht ständig ab?">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#bluetooth-anzeige-in-der-kopfzeile" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📶 Bluetooth-Anzeige in der Kopfzeile
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
       </ul>
@@ -983,6 +1000,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Bluetooth bricht ständig ab?">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#bluetooth-anzeige-in-der-kopfzeile" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        📶 Bluetooth-Anzeige in der Kopfzeile
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
       </ul>
@@ -1114,7 +1148,50 @@
 <p>Häufigste Ursache ist eine <strong>zu schwache Funkstrecke</strong>: Node auf dem Dachboden, PC ein oder zwei Etagen tiefer, ein schwacher Bluetooth-Adapter im PC oder 2,4-GHz-Störer (WLAN, USB-3-Geräte direkt neben dem Adapter). Typisch dafür: Der Abbruch kommt mitten im Datenstrom – etwa beim Laden der Node-Liste nach dem Verbinden – und der Node ist danach einige Sekunden nicht erreichbar, bis Windows ihn wieder findet. Abhilfe: Abstand verringern oder einen Bluetooth-Adapter mit externer Antenne nutzen.</p>
 <p>Der Client federt das ab: Beim automatischen Neuverbinden mit demselben Node lädt er die Node-Liste nicht erneut, sondern nur Konfiguration und Kanäle (der lange Download war der Moment, in dem schwache Strecken meist abrissen), und die Pausen zwischen den Versuchen wachsen mit jedem Fehlversuch. Beim Verbinden schreibt er die Signalstärke des Nodes ins Log („Node signal during connect: −87 dBm“) – Werte unter etwa −85 dBm sind zu schwach. Zur Fehlersuche gibt es unter Einstellungen → Debug die Option „Node-Log über Bluetooth mitlesen“; sie braucht auf dem Node „Debug-Log über API“ in der Sicherheits-Konfiguration und belastet die Funkstrecke zusätzlich.</p>
 <p><strong>Wie der Client liest:</strong> Er liest den Node nur dann, wenn der Node etwas angekündigt hat (FROMNUM-Meldung) oder der Client gerade etwas gesendet hat – so wie die Android-App und die Python-CLI. Dazu kommt alle 1,5 Sekunden ein Sicherheits-Blick, falls Windows eine Meldung verschluckt. Beim Verbinden fordert er das schnellste Verbindungsintervall an, damit Konfiguration und Node-Liste zügig laden, und gibt es danach wieder frei; der Node darf dann sein eigenes, ruhigeres Intervall wählen. Die Einstellung <strong>„Schonender Bluetooth-Modus“</strong> (Einstellungen → Bluetooth) verzichtet von Anfang an auf das schnelle Intervall: Die Node-Liste lädt langsamer, dafür bekommt eine schwache Strecke mehr Luft. Nach wiederholten Abbrüchen bietet der Client diesen Modus im Hinweis-Dialog direkt an.</p>
-<p><strong>📶 in der Kopfzeile:</strong> Bei einer Bluetooth-Verbindung steht neben dem grünen Verbindungspunkt die Signalstärke des Nodes, gemessen beim Verbindungsaufbau (Windows liefert für eine stehende Verbindung keinen Wert). Mauszeiger darauf oder ein Klick zeigt die Zähler der Verbindung: Modus und Phase, das ausgehandelte Verbindungsintervall (ab Windows 11 22H2), Lesevorgänge mit Leer- und Fehleranteil, empfangene FROMNUM-Meldungen, Schreibvorgänge. „Kopieren“ legt alles für eine Fehlermeldung in die Zwischenablage; dieselben Zahlen stehen alle 10 Minuten und beim Trennen als <code>[BLE] Link stats</code> im Log.</p>
+<h4 id="bluetooth-anzeige-in-der-kopfzeile">📶 Bluetooth-Anzeige in der Kopfzeile<a class="headerlink" href="#bluetooth-anzeige-in-der-kopfzeile" title="Permanent link">&para;</a></h4>
+<p>Bei einer Bluetooth-Verbindung steht neben dem grünen Verbindungspunkt <strong>📶 −72 dBm</strong>: die Signalstärke des Nodes, gemessen beim Verbindungsaufbau. Windows liefert für eine stehende Verbindung keinen Wert, deshalb ändert sich die Zahl erst beim nächsten Verbinden; „📶 –“ heißt, dass beim Verbinden kein Advertising-Paket gehört wurde. Mauszeiger darauf zeigt die Zähler der Verbindung, ein Klick öffnet sie als Fenster mit <strong>„Kopieren“</strong> – für eine Fehlermeldung einfach einfügen. Dieselben Zahlen stehen alle 10 Minuten und beim Trennen als <code>[BLE] Link stats</code> im Log.</p>
+<table>
+<thead>
+<tr>
+<th>Zeile</th>
+<th>Bedeutung</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Signal beim Verbinden</strong></td>
+<td>Stärke der Advertising-Pakete des Nodes in dBm, dazu die Zahl der gehörten Pakete. Ab −70 dBm gut, bis −85 dBm mittel, darunter schwach – dann erklärt die Funkstrecke die Abbrüche.</td>
+</tr>
+<tr>
+<td><strong>Modus · Phase</strong></td>
+<td><em>schnell</em> (Standard) oder <em>schonend</em> (Einstellung). <em>Initialisierung</em> = schnelles Intervall angefordert, solange Konfiguration und Node-Liste laden; <em>Dauerbetrieb</em> = Anforderung freigegeben, der Node wählt sein eigenes Intervall.</td>
+</tr>
+<tr>
+<td><strong>Verbindungsintervall</strong></td>
+<td>Das von Windows ausgehandelte Intervall in ms, dazu Latenz und Supervision-Timeout. Beim Laden etwa 15 ms, danach typisch 30–50 ms. Nur ab Windows 11 22H2; ältere Versionen melden es nicht.</td>
+</tr>
+<tr>
+<td><strong>Verbunden seit</strong></td>
+<td>Dauer der aktuellen Verbindung.</td>
+</tr>
+<tr>
+<td><strong>Lesevorgänge</strong></td>
+<td>Alle Abfragen des Nodes, davon Anteil leer, mit Daten und fehlgeschlagen. Ein hoher Leer-Anteil ist normal (Sicherheits-Poll). Fehler sollten bei 0 bleiben – drei in Folge gelten als abgerissene Verbindung.</td>
+</tr>
+<tr>
+<td><strong>FROMNUM-Meldungen</strong></td>
+<td>Wie oft der Node neue Daten angekündigt hat, und ob das Abo steht. Bleibt die Zahl bei stehender Verbindung lange bei 0, kommen die Meldungen auf diesem Adapter nicht an; dann trägt allein der Sicherheits-Poll.</td>
+</tr>
+<tr>
+<td><strong>Leseläufe</strong></td>
+<td>Wodurch gelesen wurde: nach Meldung, nach eigenem Senden, per Sicherheits-Poll (Intervall in Klammern). Im gesunden Betrieb überwiegen Meldung und Senden.</td>
+</tr>
+<tr>
+<td><strong>Schreibvorgänge</strong></td>
+<td>An den Node gesendete Pakete und davon fehlgeschlagene.</td>
+</tr>
+</tbody>
+</table>
 <p><strong>Kopplung:</strong> Der Client entfernt eine Windows-Kopplung <strong>nie ohne Rückfrage</strong>. Ist der Node nicht erreichbar (aus, außer Reichweite, Neustart), versucht er es einfach weiter. Nur wenn der Node antwortet und die gespeicherte Kopplung nicht mehr zu ihm passt – typisch nach Firmware-Update, Werksreset oder Bluetooth-OTA –, fragt er, ob die Kopplung entfernt und neu aufgebaut werden soll; im automatischen Neuverbinden frühestens beim zweiten solchen Befund und nur einmal.</p>
 <p>Zweite Ursache bei <strong>nRF52-Geräten (RAK4631, T-Echo, ThinkNode M1/M6, T114, T1000-E …) mit Firmware vor 2.8.0</strong>: Diese Firmware schaltet Bluetooth komplett ab, sobald ein serieller Client per USB die Meshtastic-Schnittstelle öffnet – Python-CLI, Web-Client, Handy am USB-Kabel oder eine zweite Client-Instanz. Bluetooth kommt erst zurück, wenn dieser Client trennt, spätestens nach 15 Minuten. Das betrifft nur Nodes, an deren USB-Buchse tatsächlich ein Rechner hängt – ein reines Netzteil zählt nicht. Abhilfe: USB-Datenverbindung trennen bzw. das andere Programm beenden – oder die Firmware auf <strong>2.8.0 oder neuer</strong> aktualisieren (<a href="../firmware-update/">Firmware-Update</a>), dort ist das behoben. Der Meshhessen Client selbst meldet beim Trennen das Sitzungsende an den Node (<code>disconnect</code>), sodass nach einer seriellen Sitzung im Client Bluetooth sofort wieder frei ist.</p>
 <h2 id="system-oberflache">System &amp; Oberfläche<a class="headerlink" href="#system-oberflache" title="Permanent link">&para;</a></h2>
