@@ -6,6 +6,19 @@ public class NodeInfo
     /// "Meshtastic abcd" where abcd = last 4 hex digits of the node id (as in the apps).</summary>
     public static string DefaultName(uint nodeId) => $"Meshtastic {nodeId & 0xFFFF:x4}";
 
+    /// <summary>True for every name that only stands in for a missing NodeInfo: empty, "Unknown",
+    /// "!abcdef12", the old client placeholder "Node-abcdef12" and the Meshtastic-style default
+    /// "Meshtastic abcd". Such a name must never overwrite a real one (node list, chat sender,
+    /// DM sidebar) — that is how a known node turned back into "Node-xxxx" after a reconnect.</summary>
+    public static bool IsPlaceholderName(string? name, uint nodeId)
+    {
+        if (string.IsNullOrWhiteSpace(name) || name == "Unknown") return true;
+        if (name.StartsWith('!')) return true;
+        if (name.Equals($"Node-{nodeId:x4}", StringComparison.OrdinalIgnoreCase)) return true;
+        if (name.Equals($"Node-{nodeId:x8}", StringComparison.OrdinalIgnoreCase)) return true;
+        return name.Equals(DefaultName(nodeId), StringComparison.OrdinalIgnoreCase);
+    }
+
     public string Name { get; set; } = "Unknown";
     public string ShortName { get; set; } = string.Empty;
     public string LongName { get; set; } = string.Empty;

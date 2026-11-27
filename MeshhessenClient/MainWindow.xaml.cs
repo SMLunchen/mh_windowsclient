@@ -189,16 +189,16 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
 
-        // Set version from assembly: title + status bar show the short 3-part version,
-        // the Info tab shows the full version incl. revision (e.g. v1.6.4.5)
+        // Set version from assembly: title, status bar and Info tab all show the full version incl.
+        // revision (e.g. v1.7.3.5). Title/footer used to drop the 4th part, which hid the hotfix
+        // level users were asked to report (issue #87).
         var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
-        var versionStr = version != null ? $"v{version.Major}.{version.Minor}.{version.Build}" : "";
         var fullVersionStr = version != null
             ? "v" + version.ToString(version.Revision > 0 ? 4 : 3)
             : "";
-        Title = $"Meshhessen Client {versionStr}";
+        Title = $"Meshhessen Client {fullVersionStr}";
         AboutVersionText.Text = fullVersionStr;
-        FooterVersionText.Text = versionStr;
+        FooterVersionText.Text = fullVersionStr;
 
         // Toast click → bring the app to the front (previously clicking did nothing)
         Services.ToastService.Initialize(
@@ -742,16 +742,20 @@ public partial class MainWindow : Window
 
     private DmSidebarItem GetOrCreateDmItem(uint partnerId, string name, string colorHex)
     {
+        // A placeholder ("!hex", "Node-…", "Meshtastic abcd", "Unknown") may create the entry but never
+        // replace a real name — the node list can regress to a placeholder for a while (NodeDB row
+        // without user after a reconnect) and the sidebar must not follow it.
+        bool placeholder = Models.NodeInfo.IsPlaceholderName(name, partnerId);
         if (!_dmByPartner.TryGetValue(partnerId, out var dm))
         {
-            dm = new DmSidebarItem(partnerId, string.IsNullOrWhiteSpace(name) ? $"!{partnerId:x8}" : name)
+            dm = new DmSidebarItem(partnerId, placeholder ? Models.NodeInfo.DefaultName(partnerId) : name)
             {
                 ColorHex = colorHex
             };
             _dmByPartner[partnerId] = dm;
             _dmSidebarItems.Add(dm);
         }
-        else if (!string.IsNullOrWhiteSpace(name) && name != dm.Name && !name.StartsWith("!"))
+        else if (!placeholder && name != dm.Name)
         {
             dm.Name = name;
         }
@@ -1588,6 +1592,14 @@ public partial class MainWindow : Window
 
         // channel 0 for a DM; not persisted to the channel DB.
         await SendMessageItemAsync(msg, text, partnerId, 0, msg.ReplyId, dmName, persist: false);
+
+        // Persist the outgoing DM under its partner in dm.db (the channel DB is wrong for it, hence
+        // persist:false above) — before, only the separate DM window stored what it sent.
+        if (_messageDbManager != null && msg.Status != SendState.Failed)
+        {
+            var persisted = msg;
+            Task.Run(() => _messageDbManager.InsertDmMessage(partnerId, persisted));
+        }
     }
 
     private const string MeshHessenPsk = "+uTMEaOR7hkqaXv+DROOEd5BhvAIQY/CZ/Hr4soZcOU=";
@@ -2154,6 +2166,13 @@ public partial class MainWindow : Window
                     _allMessages.Clear();
                     _messageById.Clear();
                     _dbOldestTimestamp = long.MaxValue;
+                    // The inline DM sidebar mirrors the (now cleared) message list — drop it too, or its
+                    // entries stay behind with nothing in them. Ready → LoadMessagesFromDbAsync rebuilds
+                    // it from dm.db together with the channel history.
+                    _dmSidebarItems.Clear();
+                    _dmByPartner.Clear();
+                    _currentDmPartner = 0;
+                    if (DmList.SelectedItem != null) DmList.SelectedItem = null;
                     // Keep the node list (and map pins) while an auto-reconnect is pending: the reconnect carries
                     // it over and requests config only. It is cleared when the reconnect gives up, or when the
                     // node turns out to be a different one (NodeDbCleared from the protocol service).
@@ -2506,6 +2525,15 @@ public partial class MainWindow : Window
                         var dmItem = GetOrCreateDmItem(partner, message.From, message.SenderColorHex);
                         _allMessages.Add(message);
                         if (message.Id != 0) _messageById[message.Id] = message;
+                        // Persist like the DM window does (dm.db, keyed by partner) — inline DMs were never
+                        // stored, so every reconnect/restart showed an empty conversation. A not-yet-
+                        // decryptable PKI DM keeps its ciphertext; the late-decrypt handler updates the row.
+                        if (_messageDbManager != null)
+                        {
+                            var pid = partner;
+                            var persisted = message;
+                            Task.Run(() => _messageDbManager.InsertDmMessage(pid, persisted));
+                        }
                         if (_currentDmPartner == partner)
                         {
                             MessageItem.InsertByTime(_messages, message);
@@ -6085,17 +6113,23 @@ public partial class MainWindow : Window
     // so an "Unknown" sender resolves to the real name in place.
     private void UpdateMessagesForNode(Models.NodeInfo node)
     {
-        string name = !string.IsNullOrEmpty(node.Name) && node.Name != "Unknown" ? node.Name : Models.NodeInfo.DefaultName(node.NodeId);
+        // A real node name replaces whatever the messages carry; a placeholder only fills in where the
+        // message itself still shows one (never downgrade a sender name the node list has since lost).
+        bool real = !Models.NodeInfo.IsPlaceholderName(node.Name, node.NodeId);
+        string name = real ? node.Name : Models.NodeInfo.DefaultName(node.NodeId);
         int updated = 0;
         foreach (var m in _allMessages)
         {
             if (m.FromId != node.NodeId || m.IsOwnMessage) continue;
-            if (m.From != name) { m.From = name; updated++; }
+            if (m.From != name && (real || Models.NodeInfo.IsPlaceholderName(m.From, node.NodeId))) { m.From = name; updated++; }
             if (!string.IsNullOrEmpty(node.ShortName)) m.SenderShortName = node.ShortName;
             if (!string.IsNullOrEmpty(node.ColorHex)) m.SenderColorHex = node.ColorHex;
         }
         if (updated > 0)
             Services.Logger.WriteLine($"[Chat] Resolved {updated} message(s) from !{node.NodeId:x8} → \"{name}\" (viaMqtt={node.IsViaMqtt})");
+        // The inline DM sidebar entry was named after the first message's sender — follow the node.
+        if (real && _dmByPartner.TryGetValue(node.NodeId, out var dmItem) && dmItem.Name != name)
+            dmItem.Name = name;
         _dmWindow?.UpdateSenderInfo(node.NodeId, name, node.ShortName ?? string.Empty, node.ColorHex ?? string.Empty);
     }
 

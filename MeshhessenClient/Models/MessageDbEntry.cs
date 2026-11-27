@@ -19,5 +19,8 @@ public record MessageDbEntry(
     string SenderColorHex,
     string SenderNote,
     uint   PartnerId,       // 0 for channel messages; chat-partner node ID for DMs
-    byte[]? Cipher = null   // PKI ciphertext for an undecryptable DM (null otherwise)
+    byte[]? Cipher = null,  // PKI ciphertext for an undecryptable DM (null otherwise)
+    int    HopCount = -1,   // relay hops of the received packet; -1 = unknown (old rows, own messages)
+    float? RxSnr = null,    // our radio's reading — only stored for direct (0-hop, non-MQTT) reception
+    int?   RxRssi = null
 );

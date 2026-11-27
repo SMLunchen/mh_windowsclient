@@ -112,6 +112,7 @@
     <sys:String x:Key="StrColChannel">Channel</sys:String>
     <sys:String x:Key="StrColDistance">Distance</sys:String>
     <sys:String x:Key="StrColBattery">Battery</sys:String>
+    <sys:String x:Key="StrColRole">Role</sys:String>
     <sys:String x:Key="StrColLastSeen">Last seen</sys:String>
     <sys:String x:Key="StrNodeFilterPlaceholder">🔍 Filter by name, ID, SNR, battery...</sys:String>
 
@@ -1362,6 +1363,10 @@ Remedy: reduce the distance or use a Bluetooth adapter with an external antenna.
     <sys:String x:Key="StrTrResultReceived">Result received</sys:String>
     <sys:String x:Key="StrTrHop">Hop</sys:String>
     <sys:String x:Key="StrTrSnr">SNR</sys:String>
+    <sys:String x:Key="StrTrTowards">→ Towards destination (request)</sys:String>
+    <sys:String x:Key="StrTrTowardsTip">SNR per row: how this node heard the previous hop on the way out. Last row = the destination.</sys:String>
+    <sys:String x:Key="StrTrBack">← Back to us (reply)</sys:String>
+    <sys:String x:Key="StrTrBackTip">SNR per row: how this node heard the previous hop on the way back. Last row = our own radio, i.e. the value the node list shows.</sys:String>
     <sys:String x:Key="StrTrNoData">No data</sys:String>
     <sys:String x:Key="StrTrLegendRemoveTip">Remove traceroute from map</sys:String>
     <sys:String x:Key="StrTrViaMqttTip">The reply reached this client via MQTT. That says nothing about the outbound path — hops with an RF SNR were genuine radio links.</sys:String>
@@ -1998,6 +2003,7 @@ Green ≤15% | Yellow 15–25% | Red &gt;25% | Gray = no airtime data</sys:Strin
     <sys:String x:Key="StrTileSortDistance">Distance ↑</sys:String>
     <sys:String x:Key="StrTileSortBattery">Battery ↓</sys:String>
     <sys:String x:Key="StrTileSortLastSeen">Last seen</sys:String>
+    <sys:String x:Key="StrTileSortRole">Role</sys:String>
     <sys:String x:Key="StrSigGood">Good</sys:String>
     <sys:String x:Key="StrSigFair">Fair</sys:String>
     <sys:String x:Key="StrSigWeak">Weak</sys:String>

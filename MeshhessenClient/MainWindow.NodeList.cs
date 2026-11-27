@@ -116,7 +116,8 @@ public partial class MainWindow
                 n.SnrDisplay.ToLowerInvariant().Contains(filterText) ||
                 n.Rssi.ToLowerInvariant().Contains(filterText) ||
                 n.Battery.ToLowerInvariant().Contains(filterText) ||
-                n.LastSeen.ToLowerInvariant().Contains(filterText)
+                n.LastSeen.ToLowerInvariant().Contains(filterText) ||
+                n.RoleDisplay.ToLowerInvariant().Contains(filterText)
             );
         }
 
@@ -160,6 +161,10 @@ public partial class MainWindow
                 "Snr"      => Numeric(NodeSortKeys.SnrGroup,      NodeSortKeys.SnrKey),
                 "Rssi"     => Numeric(NodeSortKeys.RssiGroup,     NodeSortKeys.RssiKey),
                 "Battery"  => Numeric(NodeSortKeys.BatteryGroup,  NodeSortKeys.BatteryKey),
+                // Role (issue #86): rows with a known role first, alphabetically by the shown label, then unknown.
+                "Role" => _nodeSortAscending
+                    ? filtered.OrderBy(n => string.IsNullOrEmpty(n.RoleDisplay) ? 1 : 0).ThenBy(n => n.RoleDisplay).ThenBy(n => n.ShortName)
+                    : filtered.OrderBy(n => string.IsNullOrEmpty(n.RoleDisplay) ? 1 : 0).ThenByDescending(n => n.RoleDisplay).ThenBy(n => n.ShortName),
                 "LastSeen" => _nodeSortAscending
                     ? filtered.OrderBy(n => n.LastSeenDateTime ?? DateTime.MinValue)
                     : filtered.OrderByDescending(n => n.LastSeenDateTime ?? DateTime.MinValue),

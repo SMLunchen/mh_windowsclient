@@ -13,8 +13,8 @@
 * **Selectable & copyable messages** – select text, copy to clipboard, click links; right-click any message → "Copy Message" (always copies the right-clicked message)
 * **🚨 Alert Bell support** – send and receive emergency alerts; 🚨 SOS button in chat and DMs; red blinking border + notification bar with "📍 Go to map" button
 * **Persistent message database** – channel and DM messages in a local SQLite DB (enabled by default; can be turned off in the settings under "Message database")
-  * Last 24 hours loaded automatically on connect; older messages lazy-loaded when scrolling up
-  * **DM history:** all conversations from the last 24 h appear automatically when the DM window is opened
+  * Last 24 hours loaded automatically on connect; older messages lazy-loaded when scrolling up – including the hop count ("↪ N") and, for direct reception, SNR/RSSI, just like live messages
+  * **DM history:** all conversations from the last 24 h appear automatically when the DM window is opened – and, in inline mode (DMs in the sidebar), in the sidebar on connect; sent and received DMs are stored there the same way, on disconnect the sidebar clears together with the chat and is rebuilt from the database on reconnect. Scrolling up in an open DM loads older messages of that conversation
   * **Per-channel deletion** directly in the Channels tab with a time-range dialog (All / 30 / 90 / 365 days)
   * Confirmation before clearing a DM conversation; configurable retention period (30 / 90 / 365 days / unlimited — default: 90 days)
 

@@ -499,10 +499,15 @@ public partial class MainWindow
             if (_messageDbManager == null) return;
             var since = DateTimeOffset.UtcNow.AddHours(-24).ToUnixTimeSeconds();
             var entries = _messageDbManager.LoadAllChannelMessagesSince(since);
-            if (entries.Count == 0) return;
+            // Inline (WhatsApp-style) DMs live in the same list as channel messages and are restored here;
+            // in window mode the DM window loads its own history. Inline DMs were never restored before —
+            // after every reconnect the sidebar entry (if it survived) opened an empty conversation.
+            var dmEntries = DmInline ? _messageDbManager.LoadDmMessagesSince(since) : new List<Models.MessageDbEntry>();
+            if (entries.Count == 0 && dmEntries.Count == 0) return;
 
             // Sort by timestamp
             entries.Sort((a, b) => a.Timestamp.CompareTo(b.Timestamp));
+            dmEntries.Sort((a, b) => a.Timestamp.CompareTo(b.Timestamp));
 
             Dispatcher.BeginInvoke(() =>
             {
@@ -513,7 +518,7 @@ public partial class MainWindow
                         continue;
 
                     var msg = DbEntryToMessageItem(entry);
-                    msg.IsOwnMessage = (_myNodeId != 0 && msg.FromId == _myNodeId);
+                    msg.IsOwnMessage = (MyNodeIdOrLive != 0 && msg.FromId == MyNodeIdOrLive);
                     var senderNodeA = _allNodes.FirstOrDefault(n => n.NodeId == msg.FromId);
                     if (senderNodeA != null) msg.SenderShortName = senderNodeA.ShortName;
                     _allMessages.Add(msg);
@@ -524,6 +529,9 @@ public partial class MainWindow
                     if (entry.Timestamp < _dbOldestTimestamp)
                         _dbOldestTimestamp = entry.Timestamp;
                 }
+
+                foreach (var entry in dmEntries)
+                    RestoreInlineDm(entry, prepend: false);
 
                 // Resolve stored "Kanal N" names against the current channel list, then rebuild.
                 RefreshChannelNames();
@@ -542,15 +550,22 @@ public partial class MainWindow
     {
         if (_messageDbManager == null || _dbOldestTimestamp == long.MaxValue) return;
 
-        // Collect entries from all channel DBs older than current oldest
+        // Collect entries older than current oldest: the open inline DM conversation, or all channel DBs
         var allEntries = new List<Models.MessageDbEntry>();
 
-        // We load 50 messages older than the oldest timestamp per channel
-        foreach (var channel in _channels)
+        if (_currentDmPartner != 0)
         {
-            var entries = _messageDbManager.LoadChannelMessagesBefore(
-                channel.Index, channel.Name, _dbOldestTimestamp, 50);
-            allEntries.AddRange(entries);
+            allEntries.AddRange(_messageDbManager.LoadDmConversationBefore(_currentDmPartner, _dbOldestTimestamp, 50));
+        }
+        else
+        {
+            // We load 50 messages older than the oldest timestamp per channel
+            foreach (var channel in _channels)
+            {
+                var entries = _messageDbManager.LoadChannelMessagesBefore(
+                    channel.Index, channel.Name, _dbOldestTimestamp, 50);
+                allEntries.AddRange(entries);
+            }
         }
 
         if (allEntries.Count == 0) return;
@@ -563,8 +578,9 @@ public partial class MainWindow
         foreach (var entry in allEntries)
         {
             if (entry.PacketId != 0 && _messageById.ContainsKey(entry.PacketId)) continue;
+            if (entry.PartnerId != 0) { RestoreInlineDm(entry, prepend: true); continue; }
             var msg = DbEntryToMessageItem(entry);
-            msg.IsOwnMessage = (_myNodeId != 0 && msg.FromId == _myNodeId);
+            msg.IsOwnMessage = (MyNodeIdOrLive != 0 && msg.FromId == MyNodeIdOrLive);
             var senderNodeB = _allNodes.FirstOrDefault(n => n.NodeId == msg.FromId);
             if (senderNodeB != null) msg.SenderShortName = senderNodeB.ShortName;
 
@@ -608,13 +624,59 @@ public partial class MainWindow
             ChannelIndex    = (uint)e.ChannelIndex,
             ChannelName     = e.ChannelName,
             IsEncrypted     = e.IsEncrypted,
+            PkiCipher       = e.Cipher,
             IsViaMqtt       = e.IsViaMqtt,
             ReplyId         = e.ReplyId,
             ReplyFromName   = e.ReplyFromName,
             ReplyPreview    = e.ReplyPreview,
             SenderColorHex  = e.SenderColorHex,
-            SenderNote      = e.SenderNote
+            SenderNote      = e.SenderNote,
+            HopCount        = e.HopCount,
+            RxSnr           = e.RxSnr,
+            RxRssi          = e.RxRssi
         };
+    }
+
+    /// <summary>Put a persisted inline DM back into the message list and make sure its partner has a sidebar
+    /// entry (history carries no unread badge). The partner's name comes from the live node list first — the
+    /// stored sender name may be a placeholder captured before the node was known. A still-encrypted PKI DM
+    /// with kept ciphertext is retried (or the sender's key requested), as the DM window does.</summary>
+    private void RestoreInlineDm(Models.MessageDbEntry entry, bool prepend)
+    {
+        if (entry.PartnerId == 0) return;
+        if (entry.PacketId != 0 && _messageById.ContainsKey(entry.PacketId)) return;
+
+        var msg = DbEntryToMessageItem(entry);
+        uint me = MyNodeIdOrLive;
+        msg.IsOwnMessage = me != 0 && msg.FromId == me;
+
+        var partnerNode = _allNodes.FirstOrDefault(n => n.NodeId == entry.PartnerId);
+        string partnerName =
+            partnerNode != null && !Models.NodeInfo.IsPlaceholderName(partnerNode.Name, entry.PartnerId) ? partnerNode.Name
+            : !msg.IsOwnMessage && !Models.NodeInfo.IsPlaceholderName(entry.FromName, entry.PartnerId) ? entry.FromName
+            : Models.NodeInfo.DefaultName(entry.PartnerId);
+        if (!msg.IsOwnMessage)
+        {
+            msg.From = partnerName;
+            if (partnerNode != null)
+            {
+                if (!string.IsNullOrEmpty(partnerNode.ShortName)) msg.SenderShortName = partnerNode.ShortName;
+                if (!string.IsNullOrEmpty(partnerNode.ColorHex)) msg.SenderColorHex = partnerNode.ColorHex;
+            }
+        }
+
+        var color = !string.IsNullOrEmpty(partnerNode?.ColorHex) ? partnerNode!.ColorHex : entry.SenderColorHex ?? string.Empty;
+        GetOrCreateDmItem(entry.PartnerId, partnerName, color);
+
+        if (prepend) _allMessages.Insert(0, msg); else _allMessages.Add(msg);
+        if (entry.PacketId != 0) _messageById[entry.PacketId] = msg;
+        if (entry.Timestamp < _dbOldestTimestamp) _dbOldestTimestamp = entry.Timestamp;
+
+        if (msg.IsEncrypted && msg.PkiCipher is { Length: > 0 } && !msg.IsOwnMessage)
+        {
+            try { _protocolService.RetryOrRequestPendingDm(msg); }
+            catch (Exception ex) { Services.Logger.WriteLine($"[MsgDB] DM retry failed: {ex.Message}"); }
+        }
     }
 
     private void RebuildVisibleMessages()

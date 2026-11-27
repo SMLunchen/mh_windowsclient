@@ -112,6 +112,7 @@
     <sys:String x:Key="StrColChannel">Kanal</sys:String>
     <sys:String x:Key="StrColDistance">Entfernung</sys:String>
     <sys:String x:Key="StrColBattery">Batterie</sys:String>
+    <sys:String x:Key="StrColRole">Rolle</sys:String>
     <sys:String x:Key="StrColLastSeen">Zuletzt gesehen</sys:String>
     <sys:String x:Key="StrNodeFilterPlaceholder">🔍 Filter nach Name, ID, SNR, Batterie...</sys:String>
 
@@ -1362,6 +1363,10 @@ Abhilfe: Abstand verringern oder einen Bluetooth-Adapter mit externer Antenne nu
     <sys:String x:Key="StrTrResultReceived">Ergebnis empfangen</sys:String>
     <sys:String x:Key="StrTrHop">Hop</sys:String>
     <sys:String x:Key="StrTrSnr">SNR</sys:String>
+    <sys:String x:Key="StrTrTowards">→ Hinweg (Anfrage)</sys:String>
+    <sys:String x:Key="StrTrTowardsTip">SNR je Zeile: wie dieser Node den vorherigen Hop auf dem Hinweg gehört hat. Letzte Zeile = das Ziel.</sys:String>
+    <sys:String x:Key="StrTrBack">← Rückweg (Antwort)</sys:String>
+    <sys:String x:Key="StrTrBackTip">SNR je Zeile: wie dieser Node den vorherigen Hop auf dem Rückweg gehört hat. Letzte Zeile = unser eigenes Funkgerät, also der Wert, der auch in der Node-Liste steht.</sys:String>
     <sys:String x:Key="StrTrNoData">Keine Daten</sys:String>
     <sys:String x:Key="StrTrLegendRemoveTip">Traceroute von Karte entfernen</sys:String>
     <sys:String x:Key="StrTrViaMqttTip">Die Antwort hat diesen Client über MQTT erreicht. Das sagt nichts über den Hinweg aus — Hops mit Funk-SNR waren echte Funkstrecken.</sys:String>
@@ -1998,6 +2003,7 @@ Grün ≤15% | Gelb 15–25% | Rot &gt;25% | Grau = keine Airtime-Daten</sys:Str
     <sys:String x:Key="StrTileSortDistance">Entfernung ↑</sys:String>
     <sys:String x:Key="StrTileSortBattery">Batterie ↓</sys:String>
     <sys:String x:Key="StrTileSortLastSeen">Zuletzt gesehen</sys:String>
+    <sys:String x:Key="StrTileSortRole">Rolle</sys:String>
     <sys:String x:Key="StrSigGood">Gut</sys:String>
     <sys:String x:Key="StrSigFair">Mittel</sys:String>
     <sys:String x:Key="StrSigWeak">Schwach</sys:String>

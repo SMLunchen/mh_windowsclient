@@ -6,7 +6,7 @@
 * **"RF only" mode** – sends the request with the OK-to-MQTT bit cleared (pre-encrypted packet): MQTT gateways won't uplink it, the route runs over RF exclusively. Note: the *reply* may still come back via MQTT — that's up to the target node.
 * **Honest MQTT badges:** hops only get the MQTT badge when no radio measurement exists for that segment; the header badge "via MQTT" only means "the reply arrived via MQTT"
 * **Dedicated window** per target node with:
-  * Hop table: node name, distance, SNR (in dB), MQTT indicator
+  * Hop table in two sections like the Android app: **"→ Towards destination (request)"** (me → relays → target) and **"← Back to us (reply)"** (target → relays → me); per row node name, distance, SNR (in dB), MQTT indicator. A row's SNR is the value with which *that* node heard the previous hop – so the last row of the outbound leg is the target, the last row of the return leg is our own radio (the same value the node list shows afterwards)
   * Live status (waiting / received)
   * **⛰ Elevation profile per hop** – right-click a hop row to see the segment's terrain profile (SRTM, line of sight, Fresnel zone)
 * **Map plotting** – solid line where positions are known, dashed where missing; direction arrows; MQTT bridges as lightning zigzag; click a segment → SNR popup

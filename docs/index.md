@@ -44,4 +44,4 @@ Willkommen im Handbuch des **Meshhessen Clients** — dem kostenlosen Windows-Cl
 >
 > ✍️ Fehler gefunden? Jede Seite hat einen „Bearbeiten"-Stift — Korrekturen per Pull Request sind willkommen. / Found a mistake? Every page has an edit pencil — corrections via pull request are welcome.
 >
-> 📌 Stand des Handbuchs / manual written for: **Meshhessen Client v1.7.3.5**
+> 📌 Stand des Handbuchs / manual written for: **Meshhessen Client v1.7.3.6**
