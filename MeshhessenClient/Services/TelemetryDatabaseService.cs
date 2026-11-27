@@ -175,6 +175,18 @@ CREATE TABLE IF NOT EXISTS node_status (
     status    TEXT    NOT NULL,
     timestamp INTEGER NOT NULL
 );
+
+-- Last known identity (names, hardware, role) per node. The device NodeDB forgets it
+-- (eviction, reboot, PKI packets only this client could decode); without this a
+-- reconnect turned a known node back into a placeholder name.
+CREATE TABLE IF NOT EXISTS node_identity (
+    node_id    INTEGER PRIMARY KEY,
+    short_name TEXT    NOT NULL DEFAULT '',
+    long_name  TEXT    NOT NULL DEFAULT '',
+    hw_model   TEXT    NOT NULL DEFAULT '',
+    role       TEXT    NOT NULL DEFAULT '',
+    timestamp  INTEGER NOT NULL
+);
 ";
         cmd.ExecuteNonQuery();
 
@@ -310,6 +322,74 @@ ON CONFLICT(node_id) DO UPDATE SET status = $s, timestamp = $ts";
             using var rdr = cmd.ExecuteReader();
             while (rdr.Read())
                 result[(uint)rdr.GetInt64(0)] = rdr.GetString(1);
+        }
+        return result;
+    }
+
+    // ── Node identity (names / hardware / role the device NodeDB may forget) ──────
+
+    public record NodeIdentity(uint NodeId, string ShortName, string LongName, string HwModel, string Role);
+
+    /// <summary>Remember one node's identity (see <see cref="UpsertNodeIdentities"/>).</summary>
+    public void UpsertNodeIdentity(NodeIdentity id) => UpsertNodeIdentities(new[] { id });
+
+    /// <summary>Remember node identities in one transaction. Rows without any name are skipped (they would
+    /// replace a real name with nothing); an empty hardware model / role keeps the stored value.</summary>
+    public void UpsertNodeIdentities(IEnumerable<NodeIdentity> ids)
+    {
+        var rows = ids.Where(i => !string.IsNullOrEmpty(i.LongName) || !string.IsNullOrEmpty(i.ShortName)).ToList();
+        if (rows.Count == 0) return;
+        long ts = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        lock (_lock)
+        {
+            using var con = Open();
+            using var tx  = con.BeginTransaction();
+            using var cmd = con.CreateCommand();
+            cmd.Transaction = tx;
+            cmd.CommandText = @"
+INSERT INTO node_identity (node_id, short_name, long_name, hw_model, role, timestamp)
+VALUES ($n, $s, $l, $h, $r, $ts)
+ON CONFLICT(node_id) DO UPDATE SET
+    short_name = $s,
+    long_name  = $l,
+    hw_model   = CASE WHEN $h = '' THEN hw_model ELSE $h END,
+    role       = CASE WHEN $r = '' THEN role     ELSE $r END,
+    timestamp  = $ts";
+            var pN = cmd.Parameters.AddWithValue("$n", 0L);
+            var pS = cmd.Parameters.AddWithValue("$s", string.Empty);
+            var pL = cmd.Parameters.AddWithValue("$l", string.Empty);
+            var pH = cmd.Parameters.AddWithValue("$h", string.Empty);
+            var pR = cmd.Parameters.AddWithValue("$r", string.Empty);
+            cmd.Parameters.AddWithValue("$ts", ts);
+            foreach (var row in rows)
+            {
+                pN.Value = (long)row.NodeId;
+                pS.Value = row.ShortName ?? string.Empty;
+                pL.Value = row.LongName  ?? string.Empty;
+                pH.Value = row.HwModel   ?? string.Empty;
+                pR.Value = row.Role      ?? string.Empty;
+                cmd.ExecuteNonQuery();
+            }
+            tx.Commit();
+        }
+    }
+
+    /// <summary>All stored identities, keyed by node id — loaded once per connection into the protocol
+    /// service's cache so a NodeDB row without user can be named without a query per node.</summary>
+    public Dictionary<uint, NodeIdentity> GetNodeIdentities()
+    {
+        var result = new Dictionary<uint, NodeIdentity>();
+        lock (_lock)
+        {
+            using var con = Open();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "SELECT node_id, short_name, long_name, hw_model, role FROM node_identity";
+            using var rdr = cmd.ExecuteReader();
+            while (rdr.Read())
+            {
+                var id = (uint)rdr.GetInt64(0);
+                result[id] = new NodeIdentity(id, rdr.GetString(1), rdr.GetString(2), rdr.GetString(3), rdr.GetString(4));
+            }
         }
         return result;
     }

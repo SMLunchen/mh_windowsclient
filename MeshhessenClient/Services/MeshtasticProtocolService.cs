@@ -169,6 +169,9 @@ public class MeshtasticProtocolService : Firmware.IFirmwareDeviceLink
     private DateTime _lastDriftCheck = DateTime.MinValue;
 
     private TelemetryDatabaseService? _db;
+    /// <summary>Names/hardware/role we stored for nodes earlier (telemetry.db node_identity), loaded once per
+    /// connection. Names a NodeDB row the device only knows by id. Guarded by _dataLock.</summary>
+    private Dictionary<uint, TelemetryDatabaseService.NodeIdentity> _identityCache = new();
     private NodeKeyService? _nodeKeyService;
     private PskMismatchAction _pskMismatchAction = PskMismatchAction.Overwrite;
     private readonly PkiDecryptionService _pkiDecrypt = new();
@@ -236,7 +239,7 @@ public class MeshtasticProtocolService : Firmware.IFirmwareDeviceLink
     {
         lock (_dataLock)
         {
-            return _knownNodes.TryGetValue(nodeId, out var n) && !string.IsNullOrEmpty(n.Name) && n.Name != "Unknown"
+            return _knownNodes.TryGetValue(nodeId, out var n) && !ModelNodeInfo.IsPlaceholderName(n.Name, nodeId)
                 ? n.Name : null;
         }
     }
@@ -250,6 +253,13 @@ public class MeshtasticProtocolService : Firmware.IFirmwareDeviceLink
     public void SetDatabase(TelemetryDatabaseService db)
     {
         _db = db;
+        // Identities the device NodeDB may have forgotten (see HandleNodeInfo) — one query per connection.
+        try
+        {
+            var ids = db.GetNodeIdentities();
+            lock (_dataLock) { _identityCache = ids; }
+        }
+        catch (Exception ex) { Logger.WriteLine($"Node identity cache load failed: {ex.Message}"); }
     }
 
     public void SetNodeKeyService(NodeKeyService service)
@@ -583,6 +593,41 @@ public class MeshtasticProtocolService : Firmware.IFirmwareDeviceLink
             }
         }
         catch (Exception ex) { Logger.WriteLine($"Position backfill failed: {ex.Message}"); }
+
+        // Identities: name the nodes the device only knows by id from what an earlier session stored, then
+        // remember every node that has real names now — one transaction instead of one write per NodeDB
+        // row during init. Without this a reconnect turned a freshly learned node back into a placeholder.
+        try
+        {
+            if (_db != null)
+            {
+                var toStore = new List<TelemetryDatabaseService.NodeIdentity>();
+                int namesFilled = 0;
+                lock (_dataLock)
+                {
+                    foreach (var node in _knownNodes.Values)
+                    {
+                        if (ModelNodeInfo.IsPlaceholderName(node.Name, node.NodeId))
+                        {
+                            if (!_identityCache.TryGetValue(node.NodeId, out var st)) continue;
+                            ApplyStoredIdentity(node, st);
+                            namesFilled++;
+                        }
+                        else
+                        {
+                            var id = IdentityOf(node);
+                            _identityCache[node.NodeId] = id;
+                            toStore.Add(id);
+                        }
+                    }
+                }
+                if (namesFilled > 0)
+                    Logger.WriteLine($"Backfilled {namesFilled} node names from local DB (device NodeDB had no user)");
+                if (toStore.Count > 0)
+                    _db.UpsertNodeIdentities(toStore);
+            }
+        }
+        catch (Exception ex) { Logger.WriteLine($"Node identity backfill failed: {ex.Message}"); }
 
         // Events erlauben
         lock (_dataLock)
@@ -1380,6 +1425,7 @@ public class MeshtasticProtocolService : Firmware.IFirmwareDeviceLink
                 if (packet.From != _myNodeId)
                 {
                     bool directRf = hops == 0 && !packet.ViaMqtt;
+                    ModelNodeInfo? heard = null;
                     lock (_dataLock)
                     {
                         if (_knownNodes.TryGetValue(packet.From, out var knownNode))
@@ -1391,8 +1437,26 @@ public class MeshtasticProtocolService : Firmware.IFirmwareDeviceLink
                                 knownNode.DirectNeighborAt  = DateTime.Now;
                                 knownNode.DirectNeighborSnr = packet.RxSnr;
                             }
+                            // Every decoded packet is a contact — last seen and signal follow it, as the
+                            // firmware's own NodeDB and the Android app do. Before, only position/telemetry/
+                            // user packets refreshed the row: a text message or a traceroute reply left
+                            // SNR/RSSI/"last seen" in the node list stale (issue #85).
+                            var now = DateTime.Now;
+                            knownNode.LastSeen         = FormatLastSeen(now);
+                            knownNode.LastSeenDateTime = now;
+                            if (packet.RxRssi != 0) knownNode.Rssi = packet.RxRssi.ToString();
+                            if (packet.RxSnr != 0f)
+                            {
+                                knownNode.Snr = packet.RxSnr.ToString("F1");
+                                if (IsDirectRx(packet)) knownNode.SnrValue = packet.RxSnr;
+                            }
+                            heard = knownNode;
                         }
                     }
+                    // Position, user and telemetry handlers fire NodeInfoReceived themselves (after their own
+                    // updates); every other port needs the nudge here so the node list repaints the row.
+                    if (heard != null && data.Portnum is not (PortNum.PositionApp or PortNum.NodeinfoApp or PortNum.TelemetryApp))
+                        NodeInfoReceived?.Invoke(this, heard);
                     // RF-link evidence: we heard this node directly (0 hops, not MQTT)
                     if (directRf)
                     {
@@ -2625,13 +2689,24 @@ public class MeshtasticProtocolService : Firmware.IFirmwareDeviceLink
     {
         try
         {
+            // Protobuf strings are never null: a user with empty names is as good as no user. Such a row
+            // (the device heard the node by id only — e.g. packets only this client could decrypt, or the
+            // NodeDB lost the user) must not overwrite a known name; it gets the identity we stored earlier.
+            var user = protoNodeInfo.User;
+            bool hasRealUser = user != null && (!string.IsNullOrEmpty(user.LongName) || !string.IsNullOrEmpty(user.ShortName));
+            TelemetryDatabaseService.NodeIdentity? stored = null;
+            if (!hasRealUser)
+                lock (_dataLock) { _identityCache.TryGetValue(protoNodeInfo.Num, out stored); }
+
             var nodeInfo = new ModelNodeInfo
             {
                 NodeId = protoNodeInfo.Num,
                 Id = $"!{protoNodeInfo.Num:x8}",
-                ShortName = protoNodeInfo.User?.ShortName ?? $"{protoNodeInfo.Num:x4}",
-                LongName = protoNodeInfo.User?.LongName ?? protoNodeInfo.User?.ShortName ?? $"Node-{protoNodeInfo.Num:x4}",
-                Name = protoNodeInfo.User?.LongName ?? protoNodeInfo.User?.ShortName ?? $"Node-{protoNodeInfo.Num:x4}",
+                ShortName = hasRealUser ? user!.ShortName : $"{protoNodeInfo.Num:x4}",
+                LongName = hasRealUser ? (!string.IsNullOrEmpty(user!.LongName) ? user.LongName : user.ShortName)
+                                       : ModelNodeInfo.DefaultName(protoNodeInfo.Num),
+                Name = hasRealUser ? (!string.IsNullOrEmpty(user!.LongName) ? user.LongName : user.ShortName)
+                                   : ModelNodeInfo.DefaultName(protoNodeInfo.Num),
                 Snr = protoNodeInfo.Snr.ToString("F1"),
                 LastSeenDateTime = protoNodeInfo.LastHeard > 0
                     ? DateTimeOffset.FromUnixTimeSeconds(protoNodeInfo.LastHeard).LocalDateTime
@@ -2691,8 +2766,10 @@ public class MeshtasticProtocolService : Firmware.IFirmwareDeviceLink
             // indistinguishable from "not supported", so leave it null there.
             if (FirmwareCaps.AtLeast(GetFirmwareVersion(), 2, 8))
                 nodeInfo.HeardOnCurrentLora = protoNodeInfo.HeardOnCurrentLora;
-            if (protoNodeInfo.User != null)
-                nodeInfo.Role = protoNodeInfo.User.Role.ToString();
+            if (hasRealUser)
+                nodeInfo.Role = user!.Role.ToString();
+            else if (stored != null)
+                ApplyStoredIdentity(nodeInfo, stored);   // names, hardware, role from an earlier session
 
             // Update DeviceInfo if this is our own node
             if (protoNodeInfo.Num == _myNodeId && _myDeviceInfo != null && !string.IsNullOrEmpty(nodeInfo.HardwareModel))
@@ -2710,8 +2787,11 @@ public class MeshtasticProtocolService : Firmware.IFirmwareDeviceLink
             {
                 if (_knownNodes.TryGetValue(protoNodeInfo.Num, out var existing))
                 {
-                    MergeNodeInfo_NoLock(existing, nodeInfo,
-                        hasUser: protoNodeInfo.User != null, deviceFlags: true);
+                    // Names only from a real user — or from the stored identity while the entry still carries
+                    // a placeholder. A row without (real) user never wipes a known name.
+                    bool applyNames = hasRealUser
+                        || (stored != null && ModelNodeInfo.IsPlaceholderName(existing.Name, existing.NodeId));
+                    MergeNodeInfo_NoLock(existing, nodeInfo, hasUser: applyNames, deviceFlags: true);
                     nodeInfo = existing;
                 }
                 else
@@ -2721,6 +2801,11 @@ public class MeshtasticProtocolService : Firmware.IFirmwareDeviceLink
                 ApplyPendingPosition_NoLock(nodeInfo);
                 shouldFireEvent = !_isInitializing;
             }
+
+            // Live NodeDB rows with real names are remembered one by one; the init burst is stored in one
+            // transaction after "Init complete" (see InitializeAsync).
+            if (hasRealUser && !_isInitializing)
+                RememberIdentity(nodeInfo);
 
             if (_debugSerial)
             {
@@ -2757,11 +2842,16 @@ public class MeshtasticProtocolService : Firmware.IFirmwareDeviceLink
                 RetryPendingPkiForNode(packet.From, pubKey);
             }
 
+            // Protobuf strings are never null: an empty long name falls back to the short name, and a user
+            // without any name must not overwrite a known one (merge below only applies names when real).
+            bool hasRealUser = !string.IsNullOrEmpty(user.LongName) || !string.IsNullOrEmpty(user.ShortName);
             var nodeInfo = new ModelNodeInfo
             {
                 NodeId = packet.From,
                 Id = $"!{packet.From:x8}",
-                Name = user.LongName ?? user.ShortName ?? $"Node-{packet.From:x4}",
+                Name = !string.IsNullOrEmpty(user.LongName) ? user.LongName
+                     : !string.IsNullOrEmpty(user.ShortName) ? user.ShortName
+                     : ModelNodeInfo.DefaultName(packet.From),
                 ShortName = user.ShortName ?? "",
                 LongName = user.LongName ?? "",
                 Snr = packet.RxSnr != 0f ? packet.RxSnr.ToString("F1") : "-",
@@ -2796,7 +2886,7 @@ public class MeshtasticProtocolService : Firmware.IFirmwareDeviceLink
                 if (_knownNodes.TryGetValue(packet.From, out var existing))
                 {
                     // RF NodeInfo = User proto only: no position, no device flags
-                    MergeNodeInfo_NoLock(existing, nodeInfo, hasUser: true, deviceFlags: false);
+                    MergeNodeInfo_NoLock(existing, nodeInfo, hasUser: hasRealUser, deviceFlags: false);
                     nodeInfo = existing;
                 }
                 else
@@ -2806,6 +2896,9 @@ public class MeshtasticProtocolService : Firmware.IFirmwareDeviceLink
                 ApplyPendingPosition_NoLock(nodeInfo);
                 shouldFireEvent = !_isInitializing;
             }
+
+            if (hasRealUser && !_isInitializing)
+                RememberIdentity(nodeInfo);
 
             if (_debugSerial)
             {
@@ -2880,6 +2973,33 @@ public class MeshtasticProtocolService : Firmware.IFirmwareDeviceLink
             if (incoming.HeardOnCurrentLora.HasValue)
                 target.HeardOnCurrentLora = incoming.HeardOnCurrentLora;
         }
+    }
+
+    /// <summary>Identity snapshot of a node for the local node_identity store.</summary>
+    private static TelemetryDatabaseService.NodeIdentity IdentityOf(ModelNodeInfo n) =>
+        new(n.NodeId, n.ShortName ?? string.Empty,
+            !string.IsNullOrEmpty(n.LongName) ? n.LongName : n.Name,
+            n.HardwareModel ?? string.Empty, n.Role ?? string.Empty);
+
+    /// <summary>Fill names (and hardware/role where still unknown) from a stored identity.</summary>
+    private static void ApplyStoredIdentity(ModelNodeInfo n, TelemetryDatabaseService.NodeIdentity st)
+    {
+        if (!string.IsNullOrEmpty(st.ShortName)) n.ShortName = st.ShortName;
+        var longName = !string.IsNullOrEmpty(st.LongName) ? st.LongName : st.ShortName;
+        if (!string.IsNullOrEmpty(longName)) { n.LongName = longName; n.Name = longName; }
+        if (string.IsNullOrEmpty(n.HardwareModel) && !string.IsNullOrEmpty(st.HwModel)) n.HardwareModel = st.HwModel;
+        if (string.IsNullOrEmpty(n.Role) && !string.IsNullOrEmpty(st.Role)) n.Role = st.Role;
+    }
+
+    /// <summary>Remember a node's real names/hardware/role in the session cache and in telemetry.db, so a later
+    /// NodeDB row without user — or the next connection — can name it again. Placeholders are never stored.</summary>
+    private void RememberIdentity(ModelNodeInfo n)
+    {
+        if (ModelNodeInfo.IsPlaceholderName(n.Name, n.NodeId)) return;
+        var id = IdentityOf(n);
+        lock (_dataLock) { _identityCache[n.NodeId] = id; }
+        try { _db?.UpsertNodeIdentity(id); }
+        catch (Exception ex) { Logger.WriteLine($"Node identity store failed for !{n.NodeId:x8}: {ex.Message}"); }
     }
 
     // Apply a buffered position to a node that just became known. Must be called

@@ -1392,6 +1392,7 @@
                                 <ComboBoxItem Tag="Distance_asc"  Content="{DynamicResource StrTileSortDistance}"/>
                                 <ComboBoxItem Tag="Battery_desc"  Content="{DynamicResource StrTileSortBattery}"/>
                                 <ComboBoxItem Tag="LastSeen_desc" Content="{DynamicResource StrTileSortLastSeen}"/>
+                                <ComboBoxItem Tag="Role_asc"      Content="{DynamicResource StrTileSortRole}"/>
                             </ComboBox>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
@@ -1624,6 +1625,16 @@
                                     </GridViewColumn.Header>
                                     <GridViewColumn.DisplayMemberBinding>
                                         <Binding Path="Id"/>
+                                    </GridViewColumn.DisplayMemberBinding>
+                                </GridViewColumn>
+
+                                <!-- Rolle (Config.DeviceConfig.Role aus der NodeInfo, issue #86) -->
+                                <GridViewColumn Width="92">
+                                    <GridViewColumn.Header>
+                                        <GridViewColumnHeader Content="{DynamicResource StrColRole}" Click="NodeColumnHeader_Click" Tag="Role"/>
+                                    </GridViewColumn.Header>
+                                    <GridViewColumn.DisplayMemberBinding>
+                                        <Binding Path="RoleDisplay"/>
                                     </GridViewColumn.DisplayMemberBinding>
                                 </GridViewColumn>
 

@@ -65,8 +65,9 @@ public partial class TracerouteWindow : Window
         // Positions may have arrived after the window was opened — refresh before measuring.
         RefreshPositionsFromKnownNodes();
 
-        // Build hop list: [us] → relay1 → relay2 → ... → destination
+        // Build hop lists: [us] → relay1 → relay2 → ... → destination, and the reply's way back
         var hops = BuildHopList(result);
+        var backHops = BuildBackHopList(result);
 
         StatusText.Text = $"{Loc("StrTrResultReceived")} {result.ReceivedAt:HH:mm:ss}";
         LastResultText.Text = $"{Loc("StrTrLastResult")} {result.ReceivedAt:HH:mm:ss}";
@@ -75,7 +76,7 @@ public partial class TracerouteWindow : Window
         int knownCount = hops.Count(h => h.HasPosition);
         HopCountText.Text = string.Format(Loc("StrTrHopsPositions"), hops.Count, knownCount);
 
-        RebuildHopRows(hops);
+        RebuildHopRows(hops, backHops);
 
         PlotOnMapButton.IsEnabled = true;
         ClearMapButton.IsEnabled = false; // erst nach Plot aktivieren
@@ -140,6 +141,61 @@ public partial class TracerouteWindow : Window
         destHop.Distance = CalcDistanceFromLastKnown(hops, destHop);
         hops.Add(destHop);
 
+        return hops;
+    }
+
+    /// <summary>Return leg: destination → relays → us. Each row's SNR is how that node heard the previous
+    /// hop on the way back (snr_back); the last row is us with the SNR our own radio measured on the reply.
+    /// Empty when the reply carries no return leg (very old firmware).</summary>
+    private List<TracerouteHopItem> BuildBackHopList(TracerouteResult result)
+    {
+        var links = TraceroutePath.Back(result);
+        var hops = new List<TracerouteHopItem>();
+        for (int i = 0; i < links.Count; i++)
+        {
+            var link = links[i];
+            bool isUs = i == links.Count - 1;
+            TracerouteHopItem hop;
+            if (isUs)
+            {
+                hop = new TracerouteHopItem
+                {
+                    HopIndex = i,
+                    NodeId = $"!{_myNodeId:x8}",
+                    NodeName = Loc("StrSentFrom") + " (Quelle)",
+                    IsSource = true,
+                };
+                ApplyPosition(hop, _myNodeId, preferMyPosition: true);
+            }
+            else
+            {
+                hop = MakeHopItem(i, link.NodeId);
+                if (i == 0)
+                {
+                    hop.IsDestination = true;
+                    if (!string.IsNullOrWhiteSpace(_targetNode.LongName))
+                        hop.NodeName = _targetNode.LongName;
+                    if (!hop.HasPosition && _targetNode.Latitude is double tLat && _targetNode.Longitude is double tLon)
+                    {
+                        hop.HasPosition = true;
+                        hop.Latitude = tLat;
+                        hop.Longitude = tLon;
+                    }
+                }
+            }
+
+            if (i == 0)
+            {
+                hop.Distance = "—"; // start of the leg: no previous hop
+            }
+            else
+            {
+                if (link.SnrScaled is int snr) ApplySegmentSnr(hop, snr);
+                else hop.SnrDisplay = "?";   // relay listed without an SNR (pre-2.3 firmware)
+                hop.Distance = CalcDistanceFromLastKnown(hops, hop);
+            }
+            hops.Add(hop);
+        }
         return hops;
     }
 
@@ -265,10 +321,37 @@ public partial class TracerouteWindow : Window
         $"{snrScaled / 4.0:F1} dB";
 
     // ─── Build hop rows in the StackPanel ───────────────────────────────────
-    private void RebuildHopRows(List<TracerouteHopItem> hops)
+    private void RebuildHopRows(List<TracerouteHopItem> forward, List<TracerouteHopItem> back)
     {
         HopsPanel.Children.Clear();
 
+        // Two legs like the Android app: the request towards the destination and the reply back to us.
+        // The reply's SNRs (snr_back) were not shown before — the last row of the return leg is the SNR
+        // our own radio measured (issue #85).
+        AddLegHeader(Loc("StrTrTowards"), Loc("StrTrTowardsTip"));
+        AddLegRows(forward);
+        if (back.Count > 0)
+        {
+            AddLegHeader(Loc("StrTrBack"), Loc("StrTrBackTip"));
+            AddLegRows(back);
+        }
+    }
+
+    private void AddLegHeader(string text, string tip)
+    {
+        HopsPanel.Children.Add(new TextBlock
+        {
+            Text = text,
+            ToolTip = tip,
+            FontSize = 11,
+            FontWeight = FontWeights.SemiBold,
+            Opacity = 0.7,
+            Margin = new Thickness(8, 6, 8, 2),
+        });
+    }
+
+    private void AddLegRows(List<TracerouteHopItem> hops)
+    {
         for (int i = 0; i < hops.Count; i++)
         {
             var hop = hops[i];
